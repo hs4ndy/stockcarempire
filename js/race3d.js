@@ -342,17 +342,7 @@ class Race3DEngine {
     const side = TW / 2 + 3;
     const d    = this._dummy;
 
-    // Flat red bleacher strips on each side — simple, no big boxes
-    const bleacherMat = new THREE.MeshLambertMaterial({ color: 0xcc1111 });
-    [-1, 1].forEach(sx => {
-      const strip = new THREE.Mesh(
-        new THREE.PlaneGeometry(55, TL + 100),
-        bleacherMat
-      );
-      strip.rotation.x = -Math.PI / 2;
-      strip.position.set(sx * (side + 27.5), 0.01, TL / 2);
-      s.add(strip);
-    });
+    // Sides are open grass — no bleacher strips
 
     // ── Light poles — InstancedMesh ─────────────────────────────
     const POLE_STEP  = 180;
@@ -657,10 +647,10 @@ class Race3DEngine {
 
     // Wall bounce
     if (Math.abs(p.x) >= hw - 0.05) {
-      p.lv    = -p.lv * 0.25;
-      p.speed = Math.max(p.speed * 0.65, 30);
-      this.camShake = Math.max(this.camShake, 0.55);
-      this._warn('⚠️  WALL HIT!');
+      p.lv    = -p.lv * 0.28;               // gentle bounce
+      p.speed = Math.max(p.speed * 0.88, 80); // only ~12% speed scrub
+      this.camShake = Math.max(this.camShake, 0.35);
+      this._warn('⚠️  WALL BRUSH!');
     }
 
     // ── Forward speed ─────────────────────────────────────────
@@ -805,8 +795,29 @@ class Race3DEngine {
         const adx = Math.abs(dx);
         if (adx >= R3D.CAR_SEP_X) continue;         // not overlapping in X
 
-        // Allow locked push-draft: directly in line, one behind the other
-        if (adx < R3D.PUSH_X && dz < R3D.PUSH_Z) continue;
+        // Push-draft alignment: directly in line, one car behind the other.
+        // Don't push laterally — let them lock bumpers. Instead enforce a
+        // minimum Z gap and transfer speed from pusher to pushed car.
+        if (adx < R3D.PUSH_X && dz < R3D.PUSH_Z) {
+          const behind = signedDz >= 0 ? a : b;  // lower Z = behind
+          const ahead  = signedDz >= 0 ? b : a;
+          // Keep minimum Z gap so they don't clip
+          const zGap = R3D.CAR_SEP_Z * 0.82;
+          if (dz < zGap) {
+            const push = (zGap - dz) * 0.55;
+            behind.z -= push * 0.3;
+            ahead.z  += push * 0.7;   // ahead car gets pushed forward more
+            behind.mesh.position.z = behind.z;
+            ahead.mesh.position.z  = ahead.z;
+          }
+          // Speed transfer: pusher shoves the car ahead
+          const diff = behind.speed - ahead.speed;
+          if (diff > 0) {
+            ahead.speed  = Math.min(R3D.SPEED_MAX, ahead.speed  + diff * 0.35);
+            behind.speed = Math.max(0,              behind.speed - diff * 0.08);
+          }
+          continue; // no lateral separation for push-aligned pairs
+        }
 
         // How deep the overlap is, split equally
         const overlap = (R3D.CAR_SEP_X - adx) * 0.5;
@@ -969,14 +980,18 @@ class Race3DEngine {
 
     const rect = wrap.getBoundingClientRect();
     const cr   = this.canvas.getBoundingClientRect();
-    // Scale from CSS pixels to actual canvas pixels
-    const dpr  = this.renderer.getPixelRatio();
-    const mx   = Math.round((rect.left - cr.left) * dpr);
-    const my   = Math.round((rect.top  - cr.top)  * dpr);
-    const mw   = Math.round(rect.width  * dpr);
-    const mh   = Math.round(rect.height * dpr);
-    // WebGL origin is bottom-left
-    const glY  = this.canvas.height * dpr - my - mh;
+
+    // Three.js setViewport/setScissor take LOGICAL (CSS-pixel) coords —
+    // they multiply by pixelRatio internally. Do NOT scale by DPR here.
+    const mx = Math.round(rect.left - cr.left);
+    const my = Math.round(rect.top  - cr.top);
+    const mw = Math.round(rect.width);
+    const mh = Math.round(rect.height);
+
+    // Logical renderer size (what setViewport expects, NOT canvas.width/height)
+    const sz = new THREE.Vector2();
+    this.renderer.getSize(sz);
+    const glY = Math.round(sz.y - my - mh); // flip: WebGL origin = bottom-left
 
     this.mirrorCam.aspect = mw / mh;
     this.mirrorCam.updateProjectionMatrix();
@@ -987,7 +1002,7 @@ class Race3DEngine {
     r.setViewport(mx, glY, mw, mh);
     r.render(this.scene, this.mirrorCam);
     r.setScissorTest(false);
-    r.setViewport(0, 0, this.canvas.width * dpr, this.canvas.height * dpr);
+    r.setViewport(0, 0, sz.x, sz.y);
   }
 
   _updateHUD() {
