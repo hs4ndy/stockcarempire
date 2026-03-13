@@ -133,11 +133,12 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
-<!--  RACE (LIVE) SCREEN                                    -->
+<!--  RACE SETUP SCREEN (replaced by race-setup-content)   -->
+<!--  RACE 3D SCREEN                                       -->
 <!-- ═══════════════════════════════════════════════════════ -->
 <div id="screen-game-race" class="screen hidden">
-  <div id="race-display">
-    <!-- Rendered by JS -->
+  <div id="race-3d-container">
+    <!-- Race3D injects canvas + HUD here -->
   </div>
 </div>
 
@@ -145,11 +146,13 @@
 <div id="toast-container"></div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
-<!--  Scripts (load order matters: data → game → race → ui → main) -->
+<!--  Scripts                                               -->
 <!-- ═══════════════════════════════════════════════════════ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
 <script src="js/data.js"></script>
 <script src="js/game.js"></script>
 <script src="js/race.js"></script>
+<script src="js/race3d.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/main.js"></script>
 

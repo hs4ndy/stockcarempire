@@ -237,28 +237,21 @@ function handleDropSponsor(sponsorId) {
 
 // ─── Race Weekend ─────────────────────────────────────────────
 function handleStartRace() {
-  const race  = currentRace();
-  const track = TRACKS.find(t => t.id === race.trackId);
+  const race   = currentRace();
   const series = SERIES[game.currentSeries];
+  const isHiredMode = game.driverMode === 'hired';
 
   // Determine which car the player is driving
   let playerCarId = null;
   if (game.driverMode === 'driver') {
     const radioSelected = document.querySelector('input[name="drive-car"]:checked');
-    if (radioSelected) {
-      playerCarId = radioSelected.value;
-    } else {
-      const driverCar = game.cars.find(c => c.assignedDriverId === 'player') || game.cars[0];
-      playerCarId = driverCar?.id;
-    }
-    // Assign player to this car
+    playerCarId = radioSelected?.value
+      || (game.cars.find(c => c.assignedDriverId === 'player') || game.cars[0])?.id;
     game.cars.forEach(c => {
       if (c.id === playerCarId) c.assignedDriverId = 'player';
       else if (c.assignedDriverId === 'player') c.assignedDriverId = null;
     });
   }
-
-  const isHiredMode = game.driverMode === 'hired';
 
   // Deduct entry fee
   const entryFee = series.entryFee * Math.max(1, game.cars.length);
@@ -268,59 +261,93 @@ function handleStartRace() {
   }
   game.money -= entryFee;
 
-  // Run simulation
-  const simResult = simulateRace({ playerCarId, trackId: race.trackId, isHiredMode });
+  // Build AI entry list for 3D race
+  const aiEntries = [];
+  game.season.aiTeams.forEach(team => {
+    team.cars.forEach(car => {
+      if (isHiredMode && team.id === game.hiredTeamId) return;
+      aiEntries.push({
+        name:  team.name.split(' ')[0],
+        color: team.color,
+        power: clamp(car.power * (car.condition / 100), 0.25, 0.95),
+      });
+    });
+  });
+  // Pad with generic backmarkers to fill field
+  while (aiEntries.length < series.fieldSize - 1) {
+    const tmpl = pick(AI_TEAM_TEMPLATES);
+    aiEntries.push({ name: tmpl.name.split(' ')[0], color: tmpl.color, power: rand(0.28, 0.48) });
+  }
 
-  // Apply results to standings
-  applyRaceResults(simResult.results);
+  // Player power based on their car + skill
+  const pCar = game.cars.find(c => c.assignedDriverId === 'player') || game.cars[0];
+  const carScore  = pCar ? (pCar.speed + pCar.handling + pCar.reliability) / 300 : 0.5;
+  const playerPower = clamp(carScore * 0.65 + game.playerSkill / 100 * 0.35, 0.3, 0.95);
 
-  // Update player result and earnings
-  const pr = simResult.playerResult;
-  const earnings = pr ? pr.prize : 0;
-
-  // Mark race complete
-  race.status = 'completed';
-  race.playerResult = pr;
-  race.playerPoints = pr ? series.points[pr.position - 1] || 0 : 0;
-  race.earnings = earnings;
-
-  postRaceUpdate(pr || { position: series.fieldSize, carId: playerCarId }, earnings);
-  saveGame();
-
-  // Show race screen with playback
+  // Switch to race screen and launch 3D
   showScreen('game-race');
-  document.getElementById('race-display').innerHTML = renderRaceScreen(track.name);
 
-  startRacePlayback(simResult.results, simResult.events, simResult.playerResult);
+  launch3DRace(
+    {
+      playerColor: '#e8001d',
+      playerPower,
+      fieldSize:   series.fieldSize,
+      aiEntries:   aiEntries.slice(0, series.fieldSize - 1),
+    },
+    (playerPosition) => {
+      // 3D race complete — playerPosition is 1-indexed finish position
+      // Run background sim to get AI standings (player result will be overridden)
+      const simResult = simulateRace({ playerCarId, trackId: race.trackId, isHiredMode });
+
+      // Override player result with actual 3D finish
+      const prize  = series.prize[playerPosition - 1] || series.prize[series.prize.length - 1] || 0;
+      const pts    = series.points[playerPosition - 1] || 0;
+      const pr = {
+        entrantId:   'player',
+        carId:       playerCarId,
+        displayName: game.teamName,
+        teamName:    game.teamName,
+        teamColor:   '#e8001d',
+        position:    playerPosition,
+        isPlayer:    true,
+        points:      pts,
+        prize,
+        dnf:         false,
+      };
+
+      // Apply all results (AI from sim, player from 3D)
+      const allResults = simResult.results.map(r => r.isPlayer ? pr : r);
+      applyRaceResults(allResults);
+
+      // Persist race state
+      race.status       = 'completed';
+      race.playerResult = pr;
+      race.playerPoints = pts;
+      race.earnings     = prize;
+
+      postRaceUpdate(pr, prize);
+      saveGame();
+
+      // Show results modal over the now-blank race screen
+      showScreen('game');
+      document.body.insertAdjacentHTML('beforeend',
+        renderRaceResultsModal(
+          allResults.sort((a, b) => a.position - b.position),
+          [],
+          pr
+        )
+      );
+    }
+  );
 }
 
-function handleRaceSkipToEnd() {
-  racePlayback.skipRequested = true;
-  if (racePlayback.timer) clearTimeout(racePlayback.timer);
-  finishRacePlayback();
-}
+// ─── Kept for potential future use (unused with 3D mode) ──────
+function handleRaceSkipToEnd() {}
+function handleRaceSpeed() {}
 
-function handleRaceSpeed() {
-  racePlayback.speed = racePlayback.speed === 1 ? 3 : 1;
-  const btn = document.getElementById('btn-race-speed');
-  if (btn) btn.textContent = racePlayback.speed === 3 ? '⚡ Normal Speed' : '⚡ Speed Up';
-}
-
-// ─── Race Playback ────────────────────────────────────────────
-const PHASE_LABELS = {
-  start:  '🚦 Race Start',
-  early:  '🏁 Early Stages',
-  mid:    '⚙️ Mid-Race',
-  late:   '🔥 Late Race',
-  finish: '🏆 Final Laps',
-};
-
+// ─── (Legacy playback removed — replaced by 3D race) ─────────
 function startRacePlayback(results, events, playerResult) {
-  racePlayback = { results, events, playerResult, step: 0, speed: 1, timer: null, skipRequested: false };
-
-  // Show initial grid
-  const lb = document.getElementById('race-leaderboard');
-  if (lb) lb.innerHTML = renderLeaderboard(results, true);
+  // no-op placeholder
   setPhaseLabel('start');
   scheduleNextEvent();
 }
