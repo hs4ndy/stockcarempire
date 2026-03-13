@@ -1031,6 +1031,34 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   padding: 0;
 }
 
+/* ── Rear-view mirror ─────────────────────────────────────── */
+#r3d-mirror-wrap {
+  position: absolute;
+  top: 52px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  height: 78px;
+  border: 2px solid rgba(255,255,255,0.55);
+  border-radius: 6px 6px 10px 10px;
+  box-shadow: 0 0 16px rgba(0,0,0,0.7), inset 0 0 6px rgba(0,0,0,0.4);
+  pointer-events: none;
+  overflow: hidden;
+  background: transparent; /* WebGL renders into this region */
+}
+.r3d-mirror-label {
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  font-family: var(--mono);
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.55);
+  text-shadow: 0 1px 3px #000;
+  white-space: nowrap;
+}
+
 /* ── Top bar ──────────────────────────────────────────────── */
 .r3d-top-bar {
   display: flex;

@@ -9,30 +9,30 @@ const R3D = {
   TRACK_W:        22,
   HALF_W:         11,
   SPEED_BASE:     175,    // units/sec nominal forward speed
-  SPEED_MAX:      275,    // absolute max
-  ACCEL:          2.5,    // forward accel lerp factor
+  SPEED_MAX:      268,    // absolute max
+  ACCEL:          1.6,    // forward accel lerp — lower = smoother speed changes
   BRAKE_FORCE:    140,    // speed loss when braking (units/sec²)
   LAT_ACC:        160,    // lateral acceleration (units/sec²)
   LAT_MAX:        13,     // max lateral speed (units/sec)
   LAT_DAMP:       0.0005, // damping when key released
   DRAFT_Z:        32,     // draft cone depth
   DRAFT_X:        3.8,    // draft cone width
-  DRAFT_BOOST:    44,     // max speed bonus at bumper
-  DRAFT_SLING:    11,     // units/sec draft momentum decays per sec when out of cone
-  PUSH_Z:         5.0,    // bumper-to-bumper push distance
-  PUSH_X:         1.8,    // lateral tolerance for push draft
-  PUSH_BONUS:     22,     // extra speed when physically pushing/being pushed
-  RUBBER_BAND:    20,     // max extra speed for last-place player (tapers to 0 at P1)
-  WRECK_FIRST:    50,     // seconds before first wreck
-  WRECK_MIN:      65,     // min cooldown between wrecks
-  WRECK_MAX:      120,    // max cooldown between wrecks
-  MAX_WRECKS:     2,      // hard cap
-  SPIN_CHANCE:    0.02,   // 2% chance per contact — rubbing is racing
-  BUMP_DEBOUNCE:  0.9,    // min seconds between registering contact from same car
-  CAR_SEP_X:      2.15,   // min x separation before cars push apart
-  CAR_SEP_Z:      4.6,    // min z separation
+  DRAFT_BOOST:    32,     // max speed bonus at bumper (reduced)
+  DRAFT_SLING:    6.5,    // momentum decay/sec — 32/6.5 ≈ 5 sec slingshot window
+  PUSH_Z:         5.2,    // bumper-to-bumper push distance
+  PUSH_X:         1.8,    // lateral tolerance for locked push
+  PUSH_BONUS:     7,      // ≈+5 mph when locked bumpers (modest and realistic)
+  RUBBER_BAND:    10,     // max extra speed for last-place player (halved)
+  WRECK_FIRST:    50,
+  WRECK_MIN:      65,
+  WRECK_MAX:      120,
+  MAX_WRECKS:     2,
+  SPIN_CHANCE:    0.02,   // 2% — rubbing is racing
+  BUMP_DEBOUNCE:  0.9,
+  CAR_SEP_X:      2.15,   // minimum lateral gap between cars
+  CAR_SEP_Z:      4.6,    // minimum z gap
   GRID_SPACING:   28,
-  PACE_SPEED:     65,     // rolling start speed (≈65 mph equivalent)
+  PACE_SPEED:     65,
 };
 
 // ─── Public launcher ─────────────────────────────────────────
@@ -50,6 +50,9 @@ function launch3DRace(config, onComplete) {
         <div class="r3d-chip" id="r3d-pos">P—</div>
         <div class="r3d-draft-badge" id="r3d-draft">⚡ SLIPSTREAM</div>
         <div class="r3d-chip" id="r3d-speed">— mph</div>
+      </div>
+      <div id="r3d-mirror-wrap">
+        <div class="r3d-mirror-label">◀ REAR VIEW ▶</div>
       </div>
       <div class="r3d-progress-wrap">
         <div class="r3d-progress-fill" id="r3d-prog-fill"></div>
@@ -119,6 +122,10 @@ class Race3DEngine {
 
     this.camera = new THREE.PerspectiveCamera(60, w / h, 0.5, 3000);
     this.camera.position.set(0, 5, -12);
+
+    // Rear-view mirror camera (wide, looks backward)
+    this.mirrorCam = new THREE.PerspectiveCamera(75, 3.5, 0.5, 1200);
+    this.mirrorCam.position.set(0, 4, 0);
 
     this.renderer = new THREE.WebGLRenderer({ canvas: c, antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -335,28 +342,17 @@ class Race3DEngine {
     const side = TW / 2 + 3;
     const d    = this._dummy;
 
-    // Grandstands — tile every 320 units throughout track
-    const standColors  = [0x8B4513, 0x7B3A00, 0x9a5216, 0x6b3510];
-    const seatPalette  = [0xcc2222, 0x2255cc, 0x22aa44, 0xddcc00, 0xaa22cc];
-
-    for (let z = 200; z < TL - 100; z += 320) {
-      [-1, 1].forEach(sx => {
-        const sw = 90, sh = 14;
-        const stand = new THREE.Mesh(
-          new THREE.BoxGeometry(sw, sh, 110),
-          new THREE.MeshLambertMaterial({ color: standColors[(z / 320 | 0) % standColors.length] })
-        );
-        stand.position.set(sx * (side + sw / 2 + 2), sh / 2, z);
-        s.add(stand);
-        // One colored seating band
-        const seat = new THREE.Mesh(
-          new THREE.BoxGeometry(sw * 0.94, 6, 100),
-          new THREE.MeshLambertMaterial({ color: seatPalette[(z / 320 | 0) % seatPalette.length] })
-        );
-        seat.position.set(sx * (side + sw / 2 + 2), sh * 0.55, z);
-        s.add(seat);
-      });
-    }
+    // Flat red bleacher strips on each side — simple, no big boxes
+    const bleacherMat = new THREE.MeshLambertMaterial({ color: 0xcc1111 });
+    [-1, 1].forEach(sx => {
+      const strip = new THREE.Mesh(
+        new THREE.PlaneGeometry(55, TL + 100),
+        bleacherMat
+      );
+      strip.rotation.x = -Math.PI / 2;
+      strip.position.set(sx * (side + 27.5), 0.01, TL / 2);
+      s.add(strip);
+    });
 
     // ── Light poles — InstancedMesh ─────────────────────────────
     const POLE_STEP  = 180;
@@ -504,6 +500,7 @@ class Race3DEngine {
     g.add(glow);
 
     g.position.set(x, 0, z);
+    g.rotation.y = Math.PI; // nose faces +Z (direction of travel); spoiler faces camera
     this.scene.add(g);
 
     return {
@@ -615,8 +612,8 @@ class Race3DEngine {
     const p  = this.player;
 
     // Player can steer laterally during formation lap
-    if      (this.keys.a) p.lv += R3D.LAT_ACC * 0.6 * dt;
-    else if (this.keys.d) p.lv -= R3D.LAT_ACC * 0.6 * dt;
+    if      (this.keys.a) p.lv -= R3D.LAT_ACC * 0.6 * dt;
+    else if (this.keys.d) p.lv += R3D.LAT_ACC * 0.6 * dt;
     else                  p.lv *= Math.pow(R3D.LAT_DAMP, dt);
     p.lv = clamp(p.lv, -R3D.LAT_MAX * 0.6, R3D.LAT_MAX * 0.6);
     p.x  = clamp(p.x + p.lv * dt, -hw, hw);
@@ -649,11 +646,11 @@ class Race3DEngine {
     }
 
     // ── Lateral steering ──────────────────────────────────────
-    // Car model nose faces toward camera (-Z), so driver's left = world +X.
-    // A (left) increases X, D (right) decreases X.
-    if      (this.keys.a) p.lv += R3D.LAT_ACC * dt;
-    else if (this.keys.d) p.lv -= R3D.LAT_ACC * dt;
-    else                  p.lv *= Math.pow(R3D.LAT_DAMP, dt); // near-instant stop on release
+    // Car now faces +Z (direction of travel), camera is behind it.
+    // Screen-left = -X world. A (left) decreases X, D (right) increases X.
+    if      (this.keys.a) p.lv -= R3D.LAT_ACC * dt;
+    else if (this.keys.d) p.lv += R3D.LAT_ACC * dt;
+    else                  p.lv *= Math.pow(R3D.LAT_DAMP, dt);
 
     p.lv = clamp(p.lv, -R3D.LAT_MAX, R3D.LAT_MAX);
     p.x  = clamp(p.x + p.lv * dt, -hw, hw);
@@ -686,8 +683,8 @@ class Race3DEngine {
     p.z += p.speed * dt;
     p.mesh.position.set(p.x, 0, p.z);
 
-    // Subtle body roll (visual only — rolls into the turn)
-    const roll = this.keys.a ? 0.05 : this.keys.d ? -0.05 : 0;
+    // Body roll: turning left → body rolls right (rotation.z negative from behind)
+    const roll = this.keys.a ? -0.05 : this.keys.d ? 0.05 : 0;
     p.mesh.rotation.z += (roll - p.mesh.rotation.z) * 0.12;
   }
 
@@ -801,11 +798,15 @@ class Race3DEngine {
       for (let j = i + 1; j < active.length; j++) {
         const a = active[i];
         const b = active[j];
-        const dx = b.x - a.x;
-        const dz = Math.abs(b.z - a.z);
+        const dx      = b.x - a.x;
+        const signedDz = b.z - a.z;
+        const dz      = Math.abs(signedDz);
         if (dz >= R3D.CAR_SEP_Z) continue;          // not overlapping in Z
         const adx = Math.abs(dx);
         if (adx >= R3D.CAR_SEP_X) continue;         // not overlapping in X
+
+        // Allow locked push-draft: directly in line, one behind the other
+        if (adx < R3D.PUSH_X && dz < R3D.PUSH_Z) continue;
 
         // How deep the overlap is, split equally
         const overlap = (R3D.CAR_SEP_X - adx) * 0.5;
@@ -955,6 +956,38 @@ class Race3DEngine {
 
     this.camera.lookAt(p.x * 0.55, 1.5, p.z + 26);
     this.camShake = Math.max(0, sk - dt * 2.5);
+
+    // Mirror camera: hovering just above the player, looking backward
+    this.mirrorCam.position.set(p.x * 0.7, 3.8, p.z + 3);
+    this.mirrorCam.lookAt(p.x * 0.3, 1.0, p.z - 40);
+  }
+
+  // ── Rear-view mirror rendering (scissor into main canvas) ────
+  _renderMirror() {
+    const wrap = document.getElementById('r3d-mirror-wrap');
+    if (!wrap || !this.scene || !this.mirrorCam) return;
+
+    const rect = wrap.getBoundingClientRect();
+    const cr   = this.canvas.getBoundingClientRect();
+    // Scale from CSS pixels to actual canvas pixels
+    const dpr  = this.renderer.getPixelRatio();
+    const mx   = Math.round((rect.left - cr.left) * dpr);
+    const my   = Math.round((rect.top  - cr.top)  * dpr);
+    const mw   = Math.round(rect.width  * dpr);
+    const mh   = Math.round(rect.height * dpr);
+    // WebGL origin is bottom-left
+    const glY  = this.canvas.height * dpr - my - mh;
+
+    this.mirrorCam.aspect = mw / mh;
+    this.mirrorCam.updateProjectionMatrix();
+
+    const r = this.renderer;
+    r.setScissorTest(true);
+    r.setScissor(mx, glY, mw, mh);
+    r.setViewport(mx, glY, mw, mh);
+    r.render(this.scene, this.mirrorCam);
+    r.setScissorTest(false);
+    r.setViewport(0, 0, this.canvas.width * dpr, this.canvas.height * dpr);
   }
 
   _updateHUD() {
@@ -1035,7 +1068,8 @@ class Race3DEngine {
     const dt  = Math.min(this.clock.getDelta(), 0.05); // cap at 50ms
     this._update(dt);
     if (this.renderer && this.scene && this.camera) {
-      this.renderer.render(this.scene, this.camera);
+      this._renderMirror();                          // mirror first (scissor)
+      this.renderer.render(this.scene, this.camera); // main view
     }
   }
 
