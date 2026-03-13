@@ -5,28 +5,34 @@
 // ============================================================
 
 const R3D = {
-  TRACK_LEN:    15000,  // long superspeedway — ~90 sec race
-  TRACK_W:      22,
-  HALF_W:       11,
-  SPEED_BASE:   175,    // units/sec nominal forward speed
-  SPEED_MAX:    270,    // absolute max
-  ACCEL:        2.5,    // forward accel lerp factor
-  BRAKE_FORCE:  140,    // speed loss when braking (units/sec²)
-  LAT_ACC:      160,    // lateral acceleration (units/sec²)
-  LAT_MAX:      13,     // max lateral speed (units/sec)
-  LAT_DAMP:     0.0005, // damping exponent when no key pressed (near-instant stop)
-  DRAFT_Z:      30,     // draft window depth (how far behind)
-  DRAFT_X:      3.8,    // draft window lateral tolerance
-  DRAFT_BOOST:  42,     // max speed bonus from full draft
-  WRECK_FIRST:  50,     // seconds before first wreck can happen
-  WRECK_MIN:    65,     // min cooldown between wrecks
-  WRECK_MAX:    120,    // max cooldown between wrecks
-  MAX_WRECKS:   2,      // hard cap on total wrecks per race
-  SPIN_CHANCE:  0.07,   // 7% chance of spin per contact event (rubbing is fine)
-  BUMP_DEBOUNCE:0.9,    // min seconds between contact events per car
-  GRID_COLS:    2,
-  GRID_SPACING: 28,     // row spacing on starting grid
-  PACE_SPEED:   38,     // formation lap rolling speed (units/sec)
+  TRACK_LEN:      15000,  // long superspeedway — ~90 sec race
+  TRACK_W:        22,
+  HALF_W:         11,
+  SPEED_BASE:     175,    // units/sec nominal forward speed
+  SPEED_MAX:      275,    // absolute max
+  ACCEL:          2.5,    // forward accel lerp factor
+  BRAKE_FORCE:    140,    // speed loss when braking (units/sec²)
+  LAT_ACC:        160,    // lateral acceleration (units/sec²)
+  LAT_MAX:        13,     // max lateral speed (units/sec)
+  LAT_DAMP:       0.0005, // damping when key released
+  DRAFT_Z:        32,     // draft cone depth
+  DRAFT_X:        3.8,    // draft cone width
+  DRAFT_BOOST:    44,     // max speed bonus at bumper
+  DRAFT_SLING:    11,     // units/sec draft momentum decays per sec when out of cone
+  PUSH_Z:         5.0,    // bumper-to-bumper push distance
+  PUSH_X:         1.8,    // lateral tolerance for push draft
+  PUSH_BONUS:     22,     // extra speed when physically pushing/being pushed
+  RUBBER_BAND:    20,     // max extra speed for last-place player (tapers to 0 at P1)
+  WRECK_FIRST:    50,     // seconds before first wreck
+  WRECK_MIN:      65,     // min cooldown between wrecks
+  WRECK_MAX:      120,    // max cooldown between wrecks
+  MAX_WRECKS:     2,      // hard cap
+  SPIN_CHANCE:    0.02,   // 2% chance per contact — rubbing is racing
+  BUMP_DEBOUNCE:  0.9,    // min seconds between registering contact from same car
+  CAR_SEP_X:      2.15,   // min x separation before cars push apart
+  CAR_SEP_Z:      4.6,    // min z separation
+  GRID_SPACING:   28,
+  PACE_SPEED:     65,     // rolling start speed (≈65 mph equivalent)
 };
 
 // ─── Public launcher ─────────────────────────────────────────
@@ -517,67 +523,66 @@ class Race3DEngine {
       finished:        false,
       dnf:             false,
       draftBoost:      0,
+      draftMomentum:   0,    // retained draft energy for slingshot
       laneTimer:       Math.random() * 4,
       contactCooldown: 0,    // debounce for collision with player
     };
   }
 
-  // ── Starting sequence ────────────────────────────────────────
-  // Phase 1: "FORMATION LAP" — cars roll slowly in grid formation (3 s)
-  // Phase 2: Cars brake to a halt (1 s)
-  // Phase 3: 3-2-1-GO countdown lights (3 s)
+  // ── Rolling start sequence ───────────────────────────────────
+  // Cars roll at PACE_SPEED the entire time — no stopping.
+  // Phase 1 (3 s): "FORMATION LAP" — field rolls in grid order
+  // Phase 2 (3 s): 3-2-1 countdown while still rolling
+  // Green flag: paceMode ends, racing = true, cars accelerate freely
   _countdown() {
     const el   = document.getElementById('r3d-countdown');
     const hint = document.getElementById('r3d-hint');
 
-    // ── Phase 1: Formation lap ───────────────────────────────
-    this.paceMode = true; // cars roll at PACE_SPEED
-    if (el) {
-      el.textContent   = 'FORMATION LAP';
-      el.style.opacity = '1';
-      el.style.fontSize = '1.4rem';
-      el.style.letterSpacing = '0.12em';
-      el.classList.remove('go');
-    }
+    this.paceMode = true; // cars roll at PACE_SPEED throughout
 
-    // After 3 s, brake to a stop
+    const setMsg = (txt, big = false) => {
+      if (!el) return;
+      el.textContent     = txt;
+      el.style.opacity   = '1';
+      el.style.fontSize  = big ? '1.35rem' : '';
+      el.style.letterSpacing = big ? '0.1em' : '';
+      el.classList.remove('go');
+    };
+
+    setMsg('FORMATION LAP', true);
+
+    // After 3 s, start countdown (cars still rolling)
     setTimeout(() => {
       if (this.done) return;
-      this.paceBraking = true; // signal _updateAI to slow down
-      if (el) el.textContent = 'TO THE LINE…';
-
-      // After 1.2 s, begin 3-2-1 countdown
+      setMsg('3');
       setTimeout(() => {
         if (this.done) return;
-        this.paceMode   = false;
-        this.paceBraking = false;
-        if (el) { el.style.fontSize = ''; el.style.letterSpacing = ''; }
-        let cnt = 3;
-        const tick = () => {
-          if (!el || this.done) return;
-          if (cnt > 0) {
-            el.textContent   = cnt;
-            el.style.opacity = '1';
-            el.classList.remove('go');
-            cnt--;
-            setTimeout(tick, 1000);
-          } else {
-            el.textContent = 'GREEN FLAG!';
-            el.classList.add('go');
-            this.racing = true;
+        setMsg('2');
+        setTimeout(() => {
+          if (this.done) return;
+          setMsg('1');
+          setTimeout(() => {
+            if (this.done) return;
+            if (el) {
+              el.textContent     = 'GREEN FLAG!';
+              el.style.fontSize  = '';
+              el.style.letterSpacing = '';
+              el.classList.add('go');
+            }
+            this.paceMode = false;
+            this.racing   = true;
             if (hint) hint.style.opacity = '0';
             setTimeout(() => { if (el) el.style.opacity = '0'; }, 1100);
-          }
-        };
-        setTimeout(tick, 400);
-      }, 1200);
+          }, 1000);
+        }, 1000);
+      }, 1000);
     }, 3000);
   }
 
   // ── Main update ──────────────────────────────────────────────
   _update(dt) {
-    // During formation lap, roll all cars slowly forward
-    if (this.paceMode || this.paceBraking) {
+    // During rolling start, all cars pace — player can steer
+    if (this.paceMode) {
       this._updatePaceLap(dt);
       this._updateCamera(dt);
       this._updateHUD();
@@ -587,7 +592,8 @@ class Race3DEngine {
 
     this._updatePlayer(dt);
     this._updateAI(dt);
-    this._calcDraft();
+    this._calcDraft(dt);
+    this._separateCars();   // prevent cars clipping through each other
     this._checkCollisions();
     this._checkFinish();
     this._updateCamera(dt);
@@ -605,12 +611,24 @@ class Race3DEngine {
 
   // ── Formation / pace lap movement ────────────────────────────
   _updatePaceLap(dt) {
-    const target = this.paceBraking ? 0 : R3D.PACE_SPEED;
+    const hw = R3D.HALF_W - 1.2;
+    const p  = this.player;
+
+    // Player can steer laterally during formation lap
+    if      (this.keys.a) p.lv += R3D.LAT_ACC * 0.6 * dt;
+    else if (this.keys.d) p.lv -= R3D.LAT_ACC * 0.6 * dt;
+    else                  p.lv *= Math.pow(R3D.LAT_DAMP, dt);
+    p.lv = clamp(p.lv, -R3D.LAT_MAX * 0.6, R3D.LAT_MAX * 0.6);
+    p.x  = clamp(p.x + p.lv * dt, -hw, hw);
+
+    // All cars (including player) roll at PACE_SPEED
     for (const car of this.cars) {
-      car.speed += (target - car.speed) * Math.min(1, dt * 3.5);
+      car.speed += (R3D.PACE_SPEED - car.speed) * Math.min(1, dt * 3.0);
       car.z     += car.speed * dt;
-      car.mesh.position.z = car.z;
+      car.mesh.position.set(car.x, 0, car.z);
     }
+    // Sync player mesh x (already updated above)
+    p.mesh.position.set(p.x, 0, p.z);
   }
 
   _updatePlayer(dt) {
@@ -649,8 +667,14 @@ class Race3DEngine {
     }
 
     // ── Forward speed ─────────────────────────────────────────
+    // Rubber band: player gets speed bonus proportional to how far back they are
+    const activeCount = this.cars.filter(c => !c.dnf && !c.finished).length;
+    const aheadCount  = this.cars.filter(c => !c.dnf && !c.finished && c.z > p.z).length;
+    const posFrac     = activeCount > 1 ? aheadCount / (activeCount - 1) : 0; // 0=P1, 1=last
+    const rubberBand  = posFrac * R3D.RUBBER_BAND;
+
     const tgt = Math.min(
-      R3D.SPEED_BASE * (0.84 + p.power * 0.18) + p.draftBoost,
+      R3D.SPEED_BASE * (0.84 + p.power * 0.18) + p.draftBoost + rubberBand,
       R3D.SPEED_MAX
     );
     if (this.keys.s) {
@@ -718,25 +742,86 @@ class Race3DEngine {
     }
   }
 
-  _calcDraft() {
+  _calcDraft(dt) {
     for (const car of this.cars) {
-      if (car.dnf || car.finished) { car.draftBoost = 0; continue; }
+      if (car.dnf || car.finished) { car.draftBoost = 0; car.draftMomentum = 0; continue; }
 
-      // Find best (closest) car ahead within draft cone
-      let bestIntensity = 0;
+      // ── Live draft intensity from car(s) ahead ─────────────
+      let liveBoost = 0;
+      let pushing   = false;
       for (const other of this.cars) {
         if (other === car || other.dnf || other.finished) continue;
         const dz = other.z - car.z;
-        if (dz <= 0 || dz > R3D.DRAFT_Z) continue;
-        if (Math.abs(other.x - car.x) > R3D.DRAFT_X) continue;
-        // Intensity: 1.0 when right behind, fades to 0 at edge of zone
-        const intensity = 1 - (dz / R3D.DRAFT_Z);
-        if (intensity > bestIntensity) bestIntensity = intensity;
-      }
+        const dx = Math.abs(other.x - car.x);
+        if (dz <= 0) continue;
 
-      // Chain drafting: each car stacked adds diminishing returns
-      car.draftBoost = bestIntensity * R3D.DRAFT_BOOST;
-      if (car.glowMat) car.glowMat.opacity = bestIntensity * 0.28;
+        // Push draft: bumper-to-bumper physical contact zone
+        if (dz < R3D.PUSH_Z && dx < R3D.PUSH_X) {
+          liveBoost = Math.max(liveBoost, R3D.DRAFT_BOOST + R3D.PUSH_BONUS);
+          pushing = true;
+          // Pushed car also benefits (it's being shoved forward)
+          if (!other._pushBoosted) {
+            other._pushBoosted = true;
+            other.draftBoost = Math.max(other.draftBoost || 0, R3D.PUSH_BONUS * 0.7);
+          }
+          continue;
+        }
+
+        // Normal slipstream cone
+        if (dz > R3D.DRAFT_Z || dx > R3D.DRAFT_X) continue;
+        const intensity = 1 - (dz / R3D.DRAFT_Z);
+        liveBoost = Math.max(liveBoost, intensity * R3D.DRAFT_BOOST);
+      }
+      car._pushBoosted = false; // reset for next frame
+
+      // ── Slingshot momentum — builds instantly, decays slowly ─
+      if (liveBoost > car.draftMomentum) {
+        car.draftMomentum = liveBoost;                              // instant pickup
+      } else {
+        car.draftMomentum = Math.max(0,
+          car.draftMomentum - R3D.DRAFT_SLING * dt);               // gradual bleed-off
+      }
+      car.draftBoost = car.draftMomentum;
+
+      // Glow: push = orange, draft = blue; intensity scales with momentum
+      if (car.glowMat) {
+        const frac = car.draftMomentum / (R3D.DRAFT_BOOST + R3D.PUSH_BONUS);
+        car.glowMat.opacity = frac * 0.30;
+        car.glowMat.color.setHex(pushing ? 0xff8800 : 0x44aaff);
+      }
+    }
+  }
+
+  // ── Physical separation — no car can pass through another ────
+  _separateCars() {
+    const active = this.cars.filter(c => !c.finished && !c.dnf && !c.spinning);
+    const hw = R3D.HALF_W - 1.1;
+
+    for (let i = 0; i < active.length; i++) {
+      for (let j = i + 1; j < active.length; j++) {
+        const a = active[i];
+        const b = active[j];
+        const dx = b.x - a.x;
+        const dz = Math.abs(b.z - a.z);
+        if (dz >= R3D.CAR_SEP_Z) continue;          // not overlapping in Z
+        const adx = Math.abs(dx);
+        if (adx >= R3D.CAR_SEP_X) continue;         // not overlapping in X
+
+        // How deep the overlap is, split equally
+        const overlap = (R3D.CAR_SEP_X - adx) * 0.5;
+        const dir = dx >= 0 ? 1 : -1;
+
+        a.x = clamp(a.x - dir * overlap, -hw, hw);
+        b.x = clamp(b.x + dir * overlap, -hw, hw);
+        a.mesh.position.x = a.x;
+        b.mesh.position.x = b.x;
+
+        // Impart a small lateral push to both — feels like a rub
+        if (a.isPlayer) a.lv = clamp(a.lv - dir * 2.5, -R3D.LAT_MAX, R3D.LAT_MAX);
+        else            a.targetX = clamp(a.x - dir * 1.5, -hw, hw);
+        if (b.isPlayer) b.lv = clamp(b.lv + dir * 2.5, -R3D.LAT_MAX, R3D.LAT_MAX);
+        else            b.targetX = clamp(b.x + dir * 1.5, -hw, hw);
+      }
     }
   }
 
@@ -776,13 +861,12 @@ class Race3DEngine {
     p.speed = Math.max(p.speed * 0.96, 80);
     this.camShake = Math.max(this.camShake, 0.2);
 
-    // Small random chance to spin — most contacts are just racing
+    // 2% chance to spin — rubbing and blocking are legal moves
     if (Math.random() < R3D.SPIN_CHANCE) {
       this._spinPlayer(1.6, pushDir, 1.1);
       this._warn('⚠️  SPIN OUT!');
-    } else {
-      this._warn('⚠️  CONTACT!');
     }
+    // (no warning for routine contact — it would be constant noise)
   }
 
   _spinPlayer(duration, dir, shake) {
@@ -876,20 +960,47 @@ class Race3DEngine {
   _updateHUD() {
     const p = this.player;
 
+    // Position
     const ahead = this.cars.filter(c => !c.dnf && !c.finished && c.z > p.z).length;
+    const total = this.cars.filter(c => !c.dnf).length;
+    const pos   = ahead + 1;
     const posEl = document.getElementById('r3d-pos');
-    if (posEl) posEl.textContent = `P${ahead + 1}`;
+    if (posEl) posEl.textContent = `P${pos} / ${total}`;
 
+    // Draft / push badge
     const draftEl = document.getElementById('r3d-draft');
     if (draftEl) {
-      const on = p.draftBoost > 0;
-      draftEl.style.opacity   = on ? '1' : '0.15';
-      draftEl.style.transform = on ? 'scale(1.08)' : 'scale(1)';
+      const momentum = p.draftMomentum || 0;
+      const isPush   = momentum > R3D.DRAFT_BOOST;
+      const frac     = clamp(momentum / (R3D.DRAFT_BOOST + R3D.PUSH_BONUS), 0, 1);
+      if (frac > 0.02) {
+        draftEl.style.opacity   = '1';
+        draftEl.style.transform = `scale(${1 + frac * 0.12})`;
+        draftEl.textContent     = isPush ? '🔥 PUSH DRAFT' : '⚡ SLIPSTREAM';
+        draftEl.style.color     = isPush ? '#ff8800' : '#44aaff';
+      } else {
+        draftEl.style.opacity   = '0.18';
+        draftEl.style.transform = 'scale(1)';
+        draftEl.textContent     = '⚡ SLIPSTREAM';
+        draftEl.style.color     = '';
+      }
     }
 
+    // Speedometer — map internal units to realistic superspeedway mph
+    // SPEED_BASE=175 ≈ 170 mph, SPEED_MAX=275 ≈ 225 mph
+    const mph = Math.round(p.speed * 0.78 + 33);
     const spdEl = document.getElementById('r3d-speed');
-    if (spdEl) spdEl.textContent = `${Math.round(p.speed)} mph`;
+    if (spdEl) {
+      spdEl.textContent = `${mph} mph`;
+      // Color: white → yellow → orange based on speed
+      const frac = clamp((p.speed - R3D.SPEED_BASE) / (R3D.SPEED_MAX - R3D.SPEED_BASE), 0, 1);
+      const r = Math.round(255);
+      const g = Math.round(255 - frac * 120);
+      const b = Math.round(255 - frac * 255);
+      spdEl.style.color = `rgb(${r},${g},${b})`;
+    }
 
+    // Progress bar
     const fill = document.getElementById('r3d-prog-fill');
     if (fill) fill.style.width = clamp(p.z / R3D.TRACK_LEN * 100, 0, 100).toFixed(1) + '%';
   }
