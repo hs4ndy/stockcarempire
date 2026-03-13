@@ -1,22 +1,32 @@
 // ============================================================
-// STOCK CAR EMPIRE — 3D Race Engine (Three.js)
+// STOCK CAR EMPIRE — 3D Race Engine (Three.js r134)
 // Straight-line superspeedway drafting race
 // Controls: A = left, D = right, S = brake, auto-forward
 // ============================================================
 
 const R3D = {
-  TRACK_LEN:   1400,   // units from start to finish
-  TRACK_W:     22,     // total drivable width
-  SPEED_BASE:  85,     // nominal forward speed (units/sec)
-  SPEED_MAX:   128,    // absolute max speed
-  ACCEL:       35,     // speed approach rate
-  BRAKE_FORCE: 80,     // speed loss when braking
-  LAT_RATE:    48,     // lateral movement rate (units/sec)
-  DRAFT_Z:     15,     // draft window: how far behind to feel it
-  DRAFT_X:     2.6,    // draft window: lateral tolerance
-  DRAFT_BOOST: 22,     // speed bonus from drafting
-  WRECK_FIRST: 12,     // seconds until first possible wreck
-  WRECK_NEXT:  [ 7, 16 ], // random range for wreck cooldown after each one
+  TRACK_LEN:    9000,   // 8× longer — no more "end of map" spawning
+  TRACK_W:      22,
+  HALF_W:       11,
+  SPEED_BASE:   165,    // units/sec nominal forward speed
+  SPEED_MAX:    240,    // absolute max
+  ACCEL:        2.5,    // forward accel lerp factor
+  BRAKE_FORCE:  130,    // speed loss when braking (units/sec²)
+  LAT_ACC:      160,    // lateral acceleration (units/sec²)
+  LAT_MAX:      13,     // max lateral speed (units/sec)
+  LAT_DAMP:     0.0005, // damping exponent when no key pressed (near-instant stop)
+  DRAFT_Z:      20,     // how far behind to feel draft
+  DRAFT_X:      3.2,    // lateral tolerance for draft
+  DRAFT_BOOST:  30,     // speed bonus from drafting
+  WRECK_FIRST:  38,     // seconds before first wreck can happen
+  WRECK_MIN:    55,     // min cooldown between wrecks
+  WRECK_MAX:    95,     // max cooldown between wrecks
+  MAX_WRECKS:   2,      // hard cap on total wrecks per race
+  BUMP_TO_SPIN: 4,      // bumps needed before player spins
+  BUMP_WINDOW:  3.0,    // seconds bump counter stays active
+  BUMP_DEBOUNCE:0.7,    // min seconds between registering bumps from same car
+  GRID_COLS:    2,
+  GRID_SPACING: 28,     // row spacing on starting grid
 };
 
 // ─── Public launcher ─────────────────────────────────────────
@@ -24,8 +34,11 @@ function launch3DRace(config, onComplete) {
   const container = document.getElementById('race-3d-container');
   if (!container) { console.error('race-3d-container not found'); return; }
 
+  // Destroy any previous race engine
+  if (window._r3d) { try { window._r3d.destroy(); } catch(_) {} window._r3d = null; }
+
   container.innerHTML = `
-    <canvas id="r3d-canvas"></canvas>
+    <canvas id="r3d-canvas" style="display:block;width:100%;height:100%"></canvas>
     <div id="r3d-hud">
       <div class="r3d-top-bar">
         <div class="r3d-chip" id="r3d-pos">P—</div>
@@ -45,16 +58,20 @@ function launch3DRace(config, onComplete) {
     </div>
   `;
 
-  const canvas    = document.getElementById('r3d-canvas');
-  canvas.width    = container.clientWidth;
-  canvas.height   = container.clientHeight;
+  const canvas = document.getElementById('r3d-canvas');
 
-  const instance  = new Race3DEngine(canvas, config, onComplete);
+  // Wait one animation frame so the container has settled its layout dimensions
+  requestAnimationFrame(() => {
+    const w = container.clientWidth  || window.innerWidth;
+    const h = container.clientHeight || window.innerHeight;
+    canvas.width  = w;
+    canvas.height = h;
+    window._r3d = new Race3DEngine(canvas, config, onComplete);
+  });
 
-  window._r3d         = instance;
-  window._r3dFinish   = (pos) => {
-    instance.destroy();
-    window._r3d = null;
+  // Wire finish button
+  window._r3dFinish = (pos) => {
+    if (window._r3d) { try { window._r3d.destroy(); } catch(_) {} window._r3d = null; }
     onComplete(pos);
   };
 }
@@ -62,64 +79,61 @@ function launch3DRace(config, onComplete) {
 // ─── Race Engine ──────────────────────────────────────────────
 class Race3DEngine {
   constructor(canvas, config, onComplete) {
-    this.canvas     = canvas;
-    this.config     = config;
-    this.onComplete = onComplete;
-    this.keys       = { a: false, d: false, s: false };
-    this.cars       = [];
-    this.player     = null;
-    this.wrecks     = [];          // { x, z, mesh }
+    this.canvas      = canvas;
+    this.config      = config;
+    this.onComplete  = onComplete;
+    this.keys        = { a: false, d: false, s: false };
+    this.cars        = [];
+    this.player      = null;
+    this.wrecks      = [];         // { x, z }
+    this.wreckCount  = 0;
     this.wreckCooldown = R3D.WRECK_FIRST;
-    this.camShake   = 0;
-    this.racing     = false;       // true after countdown
-    this.done       = false;
+    this.camShake    = 0;
+    this.racing      = false;
+    this.done        = false;
     this.finishOrder = [];
-    this._raf       = null;
+    this._raf        = null;
     this._warnTimeout = null;
+    this._dummy      = new THREE.Object3D(); // for InstancedMesh matrix math
 
     this._init();
   }
 
-  // ── Scene setup ─────────────────────────────────────────────
+  // ── Scene setup ──────────────────────────────────────────────
   _init() {
     const c = this.canvas;
-    const w = c.width, h = c.height;
+    const w = c.width  || window.innerWidth;
+    const h = c.height || window.innerHeight;
 
-    // Scene
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x6aa9d8);
-    this.scene.fog = new THREE.FogExp2(0x9abfdb, 0.0018);
+    this.scene.fog = new THREE.FogExp2(0x9abfdb, 0.0012);
 
-    // Camera
-    this.camera = new THREE.PerspectiveCamera(60, w / h, 0.3, 1800);
-    this.camera.position.set(0, 5, -10);
+    this.camera = new THREE.PerspectiveCamera(60, w / h, 0.5, 3000);
+    this.camera.position.set(0, 5, -12);
 
-    // Renderer
     this.renderer = new THREE.WebGLRenderer({ canvas: c, antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.setSize(w, h);
+    this.renderer.setSize(w, h, false);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-    // Lighting
-    const amb = new THREE.AmbientLight(0xffffff, 0.5);
+    const amb = new THREE.AmbientLight(0xffffff, 0.55);
     this.scene.add(amb);
 
     const sun = new THREE.DirectionalLight(0xfff5e0, 1.1);
-    sun.position.set(80, 200, 60);
+    sun.position.set(80, 200, 100);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
-    sun.shadow.camera.left   = -250;
-    sun.shadow.camera.right  =  250;
-    sun.shadow.camera.top    =  250;
-    sun.shadow.camera.bottom = -250;
-    sun.shadow.camera.far    = 1800;
+    sun.shadow.mapSize.set(1024, 1024);
+    sun.shadow.camera.left   = -300;
+    sun.shadow.camera.right  =  300;
+    sun.shadow.camera.top    =  300;
+    sun.shadow.camera.bottom = -300;
+    sun.shadow.camera.far    = 2000;
     this.scene.add(sun);
-    this.sun = sun;
 
     this.scene.add(new THREE.HemisphereLight(0xb0d8ff, 0x4a7a3a, 0.35));
 
-    // World
     this._buildTrack();
     this._buildEnvironment();
     this._buildCars();
@@ -140,37 +154,33 @@ class Race3DEngine {
     document.addEventListener('keydown', this._kd);
     document.addEventListener('keyup',   this._ku);
 
-    // Resize
     this._onResize = () => {
       const el = this.canvas.parentElement;
       if (!el) return;
-      const nw = el.clientWidth, nh = el.clientHeight;
-      this.canvas.width  = nw;
-      this.canvas.height = nh;
-      this.renderer.setSize(nw, nh);
+      const nw = el.clientWidth  || window.innerWidth;
+      const nh = el.clientHeight || window.innerHeight;
+      this.renderer.setSize(nw, nh, false);
       this.camera.aspect = nw / nh;
       this.camera.updateProjectionMatrix();
     };
     window.addEventListener('resize', this._onResize);
 
-    // Clock & loop
     this.clock = new THREE.Clock();
     this._loop();
-
-    // Countdown
     this._countdown();
   }
 
-  // ── Track geometry ───────────────────────────────────────────
+  // ── Track geometry (InstancedMesh for repeated elements) ─────
   _buildTrack() {
-    const s = this.scene;
-    const TL = R3D.TRACK_LEN;
-    const TW = R3D.TRACK_W;
+    const s   = this.scene;
+    const TL  = R3D.TRACK_LEN;
+    const TW  = R3D.TRACK_W;
+    const d   = this._dummy;
 
-    // Asphalt surface
+    // Asphalt — single large plane
     const asphalt = new THREE.Mesh(
-      new THREE.PlaneGeometry(TW, TL + 60),
-      new THREE.MeshLambertMaterial({ color: 0x2c2c2c })
+      new THREE.PlaneGeometry(TW, TL + 80),
+      new THREE.MeshLambertMaterial({ color: 0x2a2a2a })
     );
     asphalt.rotation.x = -Math.PI / 2;
     asphalt.position.set(0, 0, TL / 2);
@@ -180,238 +190,276 @@ class Race3DEngine {
     // Grass either side
     const grassMat = new THREE.MeshLambertMaterial({ color: 0x3d8b47 });
     [-1, 1].forEach(side => {
-      const g = new THREE.Mesh(new THREE.PlaneGeometry(400, TL + 200), grassMat);
+      const g = new THREE.Mesh(new THREE.PlaneGeometry(600, TL + 200), grassMat);
       g.rotation.x = -Math.PI / 2;
-      g.position.set(side * (TW / 2 + 200), -0.02, TL / 2);
+      g.position.set(side * (TW / 2 + 300), -0.02, TL / 2);
       s.add(g);
     });
 
-    // Lane dividers (3 dashed white lines)
-    const dashMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    // ── Lane dashes — InstancedMesh (1 draw call) ──────────────
+    // 3 lanes × floor(TL/24) dashes each
+    const DASH_STEP  = 24;
+    const DASH_COUNT = Math.floor(TL / DASH_STEP); // ~375 per lane
+    const TOTAL_DASHES = 3 * DASH_COUNT;
+    const dashMesh = new THREE.InstancedMesh(
+      new THREE.BoxGeometry(0.22, 0.025, 11),
+      new THREE.MeshLambertMaterial({ color: 0xffffff }),
+      TOTAL_DASHES
+    );
+    dashMesh.receiveShadow = false;
+    let di = 0;
     [-TW / 4, 0, TW / 4].forEach(lx => {
-      for (let z = 10; z < TL - 10; z += 24) {
-        const d = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.025, 11), dashMat);
-        d.position.set(lx, 0.012, z + 5.5);
-        s.add(d);
+      for (let z = 10; z < TL - 10; z += DASH_STEP) {
+        d.position.set(lx, 0.014, z + 5.5);
+        d.rotation.set(0, 0, 0);
+        d.scale.set(1, 1, 1);
+        d.updateMatrix();
+        dashMesh.setMatrixAt(di++, d.matrix);
       }
     });
+    dashMesh.instanceMatrix.needsUpdate = true;
+    s.add(dashMesh);
 
-    // Solid edge lines
+    // Solid edge lines (just two long boxes, cheap)
     const edgeMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
     [-(TW / 2 - 0.35), TW / 2 - 0.35].forEach(lx => {
       const el = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.025, TL), edgeMat);
-      el.position.set(lx, 0.012, TL / 2);
+      el.position.set(lx, 0.013, TL / 2);
       s.add(el);
     });
 
-    // Concrete barriers (ARMCO-style)
-    const barrierMat = new THREE.MeshLambertMaterial({ color: 0xc8c8c8 });
+    // ── Barriers — solid long boxes (2 draw calls) ──────────────
+    const barrierMat = new THREE.MeshLambertMaterial({ color: 0xc0c0c0 });
     [-(TW / 2 + 1.0), TW / 2 + 1.0].forEach(bx => {
-      const bar = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.1, TL + 10), barrierMat);
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.1, TL + 20), barrierMat);
       bar.position.set(bx, 0.55, TL / 2);
-      bar.castShadow = true;
-      bar.receiveShadow = true;
       s.add(bar);
-      // Red/white stripes
-      for (let z = 0; z < TL; z += 10) {
-        const col = (Math.floor(z / 10) % 2 === 0) ? 0xdd2222 : 0xffffff;
-        const stripe = new THREE.Mesh(
-          new THREE.BoxGeometry(1.52, 0.22, 4.5),
-          new THREE.MeshLambertMaterial({ color: col })
-        );
-        stripe.position.set(bx, 0.65, z + 2.25);
-        s.add(stripe);
-      }
     });
 
-    // Finish line (black/white checker, 2 rows)
-    const cols = 14;
-    const cw = TW / cols;
-    for (let row = 0; row < 2; row++) {
-      for (let i = 0; i < cols; i++) {
-        const even = (i + row) % 2 === 0;
-        const ck = new THREE.Mesh(
-          new THREE.BoxGeometry(cw - 0.04, 0.03, 2.8),
-          new THREE.MeshLambertMaterial({ color: even ? 0xffffff : 0x000000 })
-        );
-        ck.position.set(-TW / 2 + cw / 2 + i * cw, 0.015, TL - 4.2 + row * 2.8);
-        s.add(ck);
+    // ── Barrier stripes — InstancedMesh ─────────────────────────
+    const STRIPE_STEP  = 10;
+    const STRIPE_COUNT = Math.floor(TL / STRIPE_STEP);
+    const stripeGeom   = new THREE.BoxGeometry(1.52, 0.22, 4.5);
+
+    [-(TW / 2 + 1.0), TW / 2 + 1.0].forEach((bx, side) => {
+      const redMesh   = new THREE.InstancedMesh(stripeGeom,
+        new THREE.MeshLambertMaterial({ color: 0xdd2222 }), Math.ceil(STRIPE_COUNT / 2));
+      const whiteMesh = new THREE.InstancedMesh(stripeGeom,
+        new THREE.MeshLambertMaterial({ color: 0xffffff }), Math.floor(STRIPE_COUNT / 2));
+      let ri = 0, wi = 0;
+
+      for (let si = 0; si < STRIPE_COUNT; si++) {
+        const z = si * STRIPE_STEP + 2.25;
+        d.position.set(bx, 0.66, z);
+        d.rotation.set(0, 0, 0);
+        d.scale.set(1, 1, 1);
+        d.updateMatrix();
+        if (si % 2 === 0) redMesh.setMatrixAt(ri++, d.matrix);
+        else              whiteMesh.setMatrixAt(wi++, d.matrix);
+      }
+      redMesh.instanceMatrix.needsUpdate   = true;
+      whiteMesh.instanceMatrix.needsUpdate = true;
+      s.add(redMesh);
+      s.add(whiteMesh);
+    });
+
+    // ── Finish line — InstancedMesh checkerboard ─────────────────
+    const COLS = 14;
+    const CW   = TW / COLS;
+    const ROWS = 2;
+    const checkMeshes = [
+      new THREE.InstancedMesh(new THREE.BoxGeometry(CW - 0.04, 0.03, 2.8),
+        new THREE.MeshLambertMaterial({ color: 0xffffff }), COLS * ROWS),
+      new THREE.InstancedMesh(new THREE.BoxGeometry(CW - 0.04, 0.03, 2.8),
+        new THREE.MeshLambertMaterial({ color: 0x000000 }), COLS * ROWS),
+    ];
+    let checkIdx = [0, 0];
+    for (let row = 0; row < ROWS; row++) {
+      for (let col = 0; col < COLS; col++) {
+        const which = (col + row) % 2;
+        d.position.set(-TW / 2 + CW / 2 + col * CW, 0.016, TL - 4.2 + row * 2.8);
+        d.rotation.set(0, 0, 0);
+        d.scale.set(1, 1, 1);
+        d.updateMatrix();
+        checkMeshes[which].setMatrixAt(checkIdx[which]++, d.matrix);
       }
     }
+    checkMeshes.forEach(m => { m.instanceMatrix.needsUpdate = true; s.add(m); });
 
     // Finish gantry
     const postMat = new THREE.MeshLambertMaterial({ color: 0xdddddd });
     [-(TW / 2 + 2), TW / 2 + 2].forEach(px => {
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.5, 10, 0.5), postMat);
-      post.position.set(px, 5, TL - 2.8);
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.5, 12, 0.5), postMat);
+      post.position.set(px, 6, TL - 2.8);
       s.add(post);
     });
-    const gantry = new THREE.Mesh(new THREE.BoxGeometry(TW + 5, 0.5, 0.5), postMat);
-    gantry.position.set(0, 10, TL - 2.8);
+    const gantry = new THREE.Mesh(new THREE.BoxGeometry(TW + 6, 0.5, 0.5), postMat);
+    gantry.position.set(0, 12, TL - 2.8);
     s.add(gantry);
-
-    // "FINISH" banner strip
-    const bannerMat = new THREE.MeshLambertMaterial({ color: 0xff2222 });
-    const banner = new THREE.Mesh(new THREE.BoxGeometry(TW + 4, 1.5, 0.2), bannerMat);
-    banner.position.set(0, 8, TL - 2.8);
+    const banner = new THREE.Mesh(new THREE.BoxGeometry(TW + 5, 1.8, 0.22),
+      new THREE.MeshLambertMaterial({ color: 0xff2222 }));
+    banner.position.set(0, 10, TL - 2.8);
     s.add(banner);
 
-    // Start grid markers
-    const gridMat = new THREE.MeshLambertMaterial({ color: 0xffaa00 });
-    for (let row = 0; row < 14; row++) {
-      const gm = new THREE.Mesh(new THREE.BoxGeometry(TW, 0.025, 0.5), gridMat);
-      gm.position.set(0, 0.012, row * 15 + 0.25);
-      s.add(gm);
+    // ── Starting grid markers — InstancedMesh ───────────────────
+    const GRID_ROWS = 16;
+    const gridMesh  = new THREE.InstancedMesh(
+      new THREE.BoxGeometry(TW, 0.025, 0.5),
+      new THREE.MeshLambertMaterial({ color: 0xffaa00 }),
+      GRID_ROWS
+    );
+    for (let row = 0; row < GRID_ROWS; row++) {
+      d.position.set(0, 0.013, row * R3D.GRID_SPACING + 0.25);
+      d.rotation.set(0, 0, 0);
+      d.scale.set(1, 1, 1);
+      d.updateMatrix();
+      gridMesh.setMatrixAt(row, d.matrix);
     }
+    gridMesh.instanceMatrix.needsUpdate = true;
+    s.add(gridMesh);
   }
 
-  // ── Environment (stands, lights, sky details) ────────────────
+  // ── Environment ──────────────────────────────────────────────
   _buildEnvironment() {
     const s    = this.scene;
     const TL   = R3D.TRACK_LEN;
     const TW   = R3D.TRACK_W;
     const side = TW / 2 + 3;
+    const d    = this._dummy;
 
-    // Grandstands
-    const standColors = [0x8B4513, 0x7B3A00, 0x9a5216, 0x6b3510];
-    const seatPalette = [0xcc2222, 0x2255cc, 0x22aa44, 0xddcc00, 0xaa22cc];
+    // Grandstands — tile every 320 units throughout track
+    const standColors  = [0x8B4513, 0x7B3A00, 0x9a5216, 0x6b3510];
+    const seatPalette  = [0xcc2222, 0x2255cc, 0x22aa44, 0xddcc00, 0xaa22cc];
 
-    for (let z = 120; z < TL - 100; z += 110) {
+    for (let z = 200; z < TL - 100; z += 320) {
       [-1, 1].forEach(sx => {
-        const sw = 85 + Math.random() * 20;
-        const sh = 9 + Math.random() * 7;
+        const sw = 90, sh = 14;
         const stand = new THREE.Mesh(
-          new THREE.BoxGeometry(sw, sh, 95),
-          new THREE.MeshLambertMaterial({ color: pick(standColors) })
+          new THREE.BoxGeometry(sw, sh, 110),
+          new THREE.MeshLambertMaterial({ color: standColors[(z / 320 | 0) % standColors.length] })
         );
         stand.position.set(sx * (side + sw / 2 + 2), sh / 2, z);
         s.add(stand);
-
-        // Coloured seating sections
-        for (let row = 0; row < 7; row++) {
-          const seat = new THREE.Mesh(
-            new THREE.BoxGeometry(sw * 0.92, 0.8, 86),
-            new THREE.MeshLambertMaterial({ color: pick(seatPalette) })
-          );
-          seat.position.set(sx * (side + sw / 2 + 2), 0.9 + row * 1.25, z);
-          s.add(seat);
-        }
-      });
-    }
-
-    // Track-side light poles
-    const poleMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
-    for (let z = 150; z < TL - 100; z += 180) {
-      [-1, 1].forEach(sx => {
-        const pole = new THREE.Mesh(new THREE.BoxGeometry(0.45, 20, 0.45), poleMat);
-        pole.position.set(sx * (side + 8), 10, z);
-        s.add(pole);
-        const arm = new THREE.Mesh(new THREE.BoxGeometry(6, 0.35, 0.35), poleMat);
-        arm.position.set(sx * (side + 5), 20, z);
-        s.add(arm);
-        // Light fixture glow
-        const light = new THREE.Mesh(
-          new THREE.BoxGeometry(5.5, 0.5, 0.5),
-          new THREE.MeshLambertMaterial({ color: 0xfffce0, emissive: 0x888870 })
+        // One colored seating band
+        const seat = new THREE.Mesh(
+          new THREE.BoxGeometry(sw * 0.94, 6, 100),
+          new THREE.MeshLambertMaterial({ color: seatPalette[(z / 320 | 0) % seatPalette.length] })
         );
-        light.position.set(sx * (side + 5), 20.5, z);
-        s.add(light);
+        seat.position.set(sx * (side + sw / 2 + 2), sh * 0.55, z);
+        s.add(seat);
       });
     }
 
-    // Pit wall signage (colourful banners along the barriers)
+    // ── Light poles — InstancedMesh ─────────────────────────────
+    const POLE_STEP  = 180;
+    const POLE_COUNT = Math.floor(TL / POLE_STEP);
+    const poleMesh   = new THREE.InstancedMesh(
+      new THREE.BoxGeometry(0.45, 22, 0.45),
+      new THREE.MeshLambertMaterial({ color: 0x888888 }),
+      POLE_COUNT * 2
+    );
+    const armMesh = new THREE.InstancedMesh(
+      new THREE.BoxGeometry(7, 0.4, 0.4),
+      new THREE.MeshLambertMaterial({ color: 0x888888 }),
+      POLE_COUNT * 2
+    );
+    const lightMesh = new THREE.InstancedMesh(
+      new THREE.BoxGeometry(6.5, 0.6, 0.6),
+      new THREE.MeshLambertMaterial({ color: 0xfffce0, emissive: 0x887860 }),
+      POLE_COUNT * 2
+    );
+    let pi = 0;
+    for (let z = 150; z < TL - 100; z += POLE_STEP) {
+      [-1, 1].forEach(sx => {
+        const px = sx * (side + 9);
+        d.position.set(px, 11, z); d.rotation.set(0,0,0); d.scale.set(1,1,1); d.updateMatrix();
+        poleMesh.setMatrixAt(pi, d.matrix);
+        d.position.set(px - sx * 2.5, 22, z); d.updateMatrix();
+        armMesh.setMatrixAt(pi, d.matrix);
+        d.position.set(px - sx * 2.5, 22.5, z); d.updateMatrix();
+        lightMesh.setMatrixAt(pi, d.matrix);
+        pi++;
+      });
+    }
+    poleMesh.instanceMatrix.needsUpdate  = true;
+    armMesh.instanceMatrix.needsUpdate   = true;
+    lightMesh.instanceMatrix.needsUpdate = true;
+    s.add(poleMesh); s.add(armMesh); s.add(lightMesh);
+
+    // Pit wall banners (left side only, not instanced since few)
     const bannerColors = [0xe8001d, 0x0055ff, 0x00aa44, 0xffaa00, 0xaa00ff];
-    for (let z = 60; z < TL - 60; z += 80) {
-      const col = bannerColors[Math.floor(z / 80) % bannerColors.length];
+    for (let z = 80; z < TL - 80; z += 160) {
       const bm = new THREE.Mesh(
-        new THREE.BoxGeometry(1.6, 0.7, 38),
-        new THREE.MeshLambertMaterial({ color: col })
+        new THREE.BoxGeometry(1.55, 0.75, 60),
+        new THREE.MeshLambertMaterial({ color: bannerColors[(z / 160 | 0) % bannerColors.length] })
       );
       bm.position.set(-(R3D.TRACK_W / 2 + 1.0), 1.15, z);
       s.add(bm);
     }
-
-    // Sky plane (horizon colour fill)
-    const horizon = new THREE.Mesh(
-      new THREE.PlaneGeometry(3000, 400),
-      new THREE.MeshBasicMaterial({ color: 0x87ceeb, side: THREE.DoubleSide })
-    );
-    horizon.position.set(0, 100, TL / 2);
-    s.add(horizon);
   }
 
   // ── Cars ─────────────────────────────────────────────────────
   _buildCars() {
     const { config } = this;
-    const total = 1 + Math.min(config.aiEntries.length, R3D.TRACK_W > 0 ? config.fieldSize - 1 : 20);
+    const fieldSize  = Math.min(config.aiEntries.length + 1, config.fieldSize);
 
-    // Grid slots: 2 wide, 15 units per row
+    // Build 2-wide grid slots
     const slots = [];
-    for (let r = 0; r < Math.ceil(total / 2); r++) {
-      slots.push({ x: -3.8, z: r * 15 });
-      slots.push({ x:  3.8, z: r * 15 });
+    for (let r = 0; r < Math.ceil(fieldSize / 2); r++) {
+      slots.push({ x: -3.5, z: r * R3D.GRID_SPACING });
+      slots.push({ x:  3.5, z: r * R3D.GRID_SPACING });
     }
 
-    // Player grid slot — mid-pack based on power
+    // Player slot: mid-pack based on power
     const playerSlotIdx = clamp(
-      Math.round((1 - config.playerPower) * total * 0.55 + 2),
+      Math.round((1 - config.playerPower) * fieldSize * 0.5 + 2),
       0, slots.length - 1
     );
-
-    const playerSlot = slots[playerSlotIdx];
-    this.player = this._makeCar(playerSlot.x, playerSlot.z, {
-      color:    config.playerColor || '#e8001d',
-      power:    config.playerPower,
+    const ps = slots[playerSlotIdx];
+    this.player = this._makeCar(ps.x, ps.z, {
+      color: config.playerColor || '#e8001d',
+      power: config.playerPower,
       isPlayer: true,
-      label:    'YOU',
+      label: 'YOU',
     });
     this.cars.push(this.player);
 
     // AI cars
     let aiIdx = 0;
-    for (let i = 0; i < total && aiIdx < config.aiEntries.length; i++) {
-      if (i === playerSlotIdx || i === playerSlotIdx + 1) continue;
+    for (let i = 0; i < slots.length && aiIdx < config.aiEntries.length; i++) {
+      if (i === playerSlotIdx) continue;
       const entry = config.aiEntries[aiIdx++];
-      const slot  = slots[i] || slots[slots.length - 1];
-      const car   = this._makeCar(slot.x, slot.z, {
+      const slot  = slots[i];
+      this.cars.push(this._makeCar(slot.x, slot.z, {
         color:    entry.color,
         power:    clamp(entry.power, 0.25, 0.95),
         isPlayer: false,
         label:    entry.name,
-      });
-      this.cars.push(car);
+      }));
     }
   }
 
   _makeCar(x, z, { color, power, isPlayer, label }) {
-    const hexColor = typeof color === 'string'
-      ? parseInt(color.replace('#', ''), 16)
-      : color;
+    const hex = typeof color === 'string' ? parseInt(color.replace('#',''), 16) : color;
+    const g   = new THREE.Group();
 
-    const g = new THREE.Group();
-
-    // Body
-    const bodyMat = new THREE.MeshLambertMaterial({ color: hexColor });
+    const bodyMat = new THREE.MeshLambertMaterial({ color: hex });
     const body    = new THREE.Mesh(new THREE.BoxGeometry(2.15, 0.62, 4.5), bodyMat);
     body.position.y = 0.41;
     body.castShadow = true;
     g.add(body);
 
-    // Roof
-    const darkColor  = Math.max(0, hexColor - 0x3a2a1a);
-    const roofMat = new THREE.MeshLambertMaterial({ color: darkColor });
+    const roofMat = new THREE.MeshLambertMaterial({ color: Math.max(0, hex - 0x3a2a1a) });
     const roof    = new THREE.Mesh(new THREE.BoxGeometry(1.75, 0.38, 1.75), roofMat);
     roof.position.set(0, 0.95, -0.05);
     g.add(roof);
 
-    // Windshield
-    const wsMat = new THREE.MeshLambertMaterial({ color: 0x99c0e8, transparent: true, opacity: 0.8 });
+    const wsMat = new THREE.MeshLambertMaterial({ color: 0x99c0e8, transparent: true, opacity: 0.75 });
     const ws    = new THREE.Mesh(new THREE.BoxGeometry(1.65, 0.36, 0.12), wsMat);
     ws.position.set(0, 0.83, -0.88);
     ws.rotation.x = -0.32;
     g.add(ws);
 
-    // Rear spoiler
     const spMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
     const sp    = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.08, 0.52), spMat);
     sp.position.set(0, 1.06, 2.05);
@@ -422,46 +470,28 @@ class Race3DEngine {
       g.add(strut);
     });
 
-    // Front splitter
     const splitter = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.08, 0.4), spMat);
     splitter.position.set(0, 0.12, -2.3);
     g.add(splitter);
 
-    // Number panel (slightly lighter rectangle on side)
-    const panelMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
-    const panel    = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.3, 1.0), panelMat);
-    panel.position.set(-1.12, 0.55, 0);
-    g.add(panel);
-
-    // Wheels
     const tireMat = new THREE.MeshLambertMaterial({ color: 0x181818 });
     const rimMat  = new THREE.MeshLambertMaterial({ color: 0xbbbbbb });
-    [[-1.18, 0.36, -1.45], [1.18, 0.36, -1.45],
-     [-1.18, 0.36,  1.45], [1.18, 0.36,  1.45]].forEach(([wx, wy, wz]) => {
-      const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.3, 10), tireMat);
-      tire.rotation.z = Math.PI / 2;
-      tire.position.set(wx, wy, wz);
-      tire.castShadow = true;
-      g.add(tire);
-      const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.31, 8), rimMat);
-      rim.rotation.z = Math.PI / 2;
-      rim.position.set(wx, wy, wz);
-      g.add(rim);
+    [[-1.18,0.36,-1.45],[1.18,0.36,-1.45],[-1.18,0.36,1.45],[1.18,0.36,1.45]].forEach(([wx,wy,wz])=>{
+      const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.36,0.36,0.3,10), tireMat);
+      tire.rotation.z = Math.PI/2; tire.position.set(wx,wy,wz); tire.castShadow=true; g.add(tire);
+      const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.2,0.31,8), rimMat);
+      rim.rotation.z = Math.PI/2; rim.position.set(wx,wy,wz); g.add(rim);
     });
 
-    // Player indicator (yellow roof stripe)
     if (isPlayer) {
-      const stripeL = new THREE.MeshLambertMaterial({ color: 0xffee00, emissive: 0x998800 });
-      const stripe  = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.1, 0.12), stripeL);
+      const stripeM = new THREE.MeshLambertMaterial({ color: 0xffee00, emissive: 0x998800 });
+      const stripe  = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.1, 0.12), stripeM);
       stripe.position.set(0, 1.45, 0);
       g.add(stripe);
     }
 
-    // Draft glow mesh (invisible until drafting)
-    const glowMat = new THREE.MeshBasicMaterial({
-      color: 0x44aaff, transparent: true, opacity: 0.0, side: THREE.FrontSide
-    });
-    const glow = new THREE.Mesh(new THREE.BoxGeometry(2.5, 1.2, 5.2), glowMat);
+    const glowMat = new THREE.MeshBasicMaterial({ color: 0x44aaff, transparent: true, opacity: 0 });
+    const glow    = new THREE.Mesh(new THREE.BoxGeometry(2.5, 1.2, 5.5), glowMat);
     glow.position.set(0, 0.5, 0);
     g.add(glow);
 
@@ -469,45 +499,49 @@ class Race3DEngine {
     this.scene.add(g);
 
     return {
-      mesh:      g,
+      mesh:         g,
       glowMat,
       isPlayer,
       power,
       label,
-      hexColor,
+      hex,
       x, z,
-      vx:        0,       // lateral velocity
-      speed:     R3D.SPEED_BASE * (0.8 + power * 0.22),
-      targetX:   x,
-      spinning:  false,
-      spinTimer: 0,
-      spinDir:   1,
-      finished:  false,
-      dnf:       false,
-      draftBoost: 0,
-      laneTimer: Math.random() * 3,
+      lv:           0,       // lateral velocity (units/sec)
+      speed:        R3D.SPEED_BASE * (0.78 + power * 0.22),
+      targetX:      x,
+      spinning:     false,
+      spinTimer:    0,
+      spinDir:      1,
+      finished:     false,
+      dnf:          false,
+      draftBoost:   0,
+      laneTimer:    Math.random() * 4,
+      // Bump tracking (player only, but stored on all for simplicity)
+      bumpCount:    0,
+      bumpTimer:    0,
+      contactCooldown: 0,    // per-car debounce for collision with player
     };
   }
 
   // ── Countdown ────────────────────────────────────────────────
   _countdown() {
-    const el  = document.getElementById('r3d-countdown');
+    const el   = document.getElementById('r3d-countdown');
     const hint = document.getElementById('r3d-hint');
     let cnt = 3;
     const tick = () => {
-      if (!el) { this.racing = true; return; }
+      if (!el || this.done) return;
       if (cnt > 0) {
-        el.textContent  = cnt;
+        el.textContent = cnt;
         el.style.opacity = '1';
         el.classList.remove('go');
         cnt--;
         setTimeout(tick, 1000);
       } else {
-        el.textContent   = 'GO!';
+        el.textContent = 'GO!';
         el.classList.add('go');
         this.racing = true;
         if (hint) hint.style.opacity = '0';
-        setTimeout(() => { el.style.opacity = '0'; }, 900);
+        setTimeout(() => { if (el) el.style.opacity = '0'; }, 900);
       }
     };
     setTimeout(tick, 600);
@@ -525,102 +559,124 @@ class Race3DEngine {
     this._updateCamera(dt);
     this._updateHUD();
 
-    // Wreck timer
-    this.wreckCooldown -= dt;
-    if (this.wreckCooldown <= 0) {
-      this._triggerWreck();
-      this.wreckCooldown = rand(R3D.WRECK_NEXT[0], R3D.WRECK_NEXT[1]);
+    // Wreck scheduling
+    if (this.wreckCount < R3D.MAX_WRECKS) {
+      this.wreckCooldown -= dt;
+      if (this.wreckCooldown <= 0) {
+        this._triggerWreck();
+        this.wreckCooldown = R3D.WRECK_MIN + Math.random() * (R3D.WRECK_MAX - R3D.WRECK_MIN);
+      }
     }
   }
 
   _updatePlayer(dt) {
-    const p   = this.player;
-    const hw  = R3D.TRACK_W / 2 - 1.25;
+    const p  = this.player;
+    const hw = R3D.HALF_W - 1.2;
+
+    // Bump timer countdown
+    if (p.bumpTimer > 0) {
+      p.bumpTimer -= dt;
+      if (p.bumpTimer <= 0) { p.bumpCount = 0; p.bumpTimer = 0; }
+    }
 
     if (p.spinning) {
       p.spinTimer -= dt;
-      p.mesh.rotation.y += p.spinDir * 4.8 * dt;
-      p.speed = Math.max(12, p.speed - 100 * dt);
+      p.mesh.rotation.y += p.spinDir * 4.5 * dt;
+      p.speed = Math.max(15, p.speed - 120 * dt);
       p.z    += p.speed * dt;
       p.mesh.position.z = p.z;
       if (p.spinTimer <= 0) {
         p.spinning = false;
         p.mesh.rotation.y = 0;
+        p.bumpCount = 0;
+        p.bumpTimer = 0;
       }
       return;
     }
 
-    // Lateral steering
-    const lat = R3D.LAT_RATE;
-    if (this.keys.a) p.vx -= lat * dt;
-    if (this.keys.d) p.vx += lat * dt;
-    p.vx *= Math.pow(0.05, dt);   // strong friction
-    p.x  += p.vx * dt * 60;
-    p.x   = clamp(p.x, -hw, hw);
+    // ── Lateral steering ──────────────────────────────────────
+    // Camera is behind car looking forward (+Z). Screen-left = -X world, screen-right = +X world.
+    // A (screen-left) decreases X, D (screen-right) increases X.
+    if      (this.keys.a) p.lv -= R3D.LAT_ACC * dt;
+    else if (this.keys.d) p.lv += R3D.LAT_ACC * dt;
+    else                  p.lv *= Math.pow(R3D.LAT_DAMP, dt); // near-instant stop on release
 
-    // Wall clip
+    p.lv = clamp(p.lv, -R3D.LAT_MAX, R3D.LAT_MAX);
+    p.x  = clamp(p.x + p.lv * dt, -hw, hw);
+
+    // Wall bounce
     if (Math.abs(p.x) >= hw - 0.05) {
-      p.vx = -p.vx * 0.3;
-      p.speed = Math.max(p.speed * 0.6, 20);
-      this.camShake = Math.max(this.camShake, 0.5);
+      p.lv    = -p.lv * 0.25;
+      p.speed = Math.max(p.speed * 0.65, 30);
+      this.camShake = Math.max(this.camShake, 0.55);
+      this._warn('⚠️  WALL HIT!');
     }
 
-    // Forward speed
-    const tgt = Math.min(R3D.SPEED_BASE * (0.85 + p.power * 0.18) + p.draftBoost, R3D.SPEED_MAX);
+    // ── Forward speed ─────────────────────────────────────────
+    const tgt = Math.min(
+      R3D.SPEED_BASE * (0.84 + p.power * 0.18) + p.draftBoost,
+      R3D.SPEED_MAX
+    );
     if (this.keys.s) {
-      p.speed = Math.max(tgt * 0.4, p.speed - R3D.BRAKE_FORCE * dt);
+      p.speed = Math.max(tgt * 0.38, p.speed - R3D.BRAKE_FORCE * dt);
     } else {
-      p.speed += (tgt - p.speed) * Math.min(1, dt * R3D.ACCEL / 60);
+      p.speed += (tgt - p.speed) * Math.min(1, dt * R3D.ACCEL);
     }
 
     p.z += p.speed * dt;
     p.mesh.position.set(p.x, 0, p.z);
 
-    // Subtle body roll on steering
-    const roll = this.keys.a ? 0.055 : this.keys.d ? -0.055 : 0;
-    p.mesh.rotation.z += (roll - p.mesh.rotation.z) * 0.14;
+    // Subtle body roll (visual only)
+    const roll = this.keys.a ? -0.05 : this.keys.d ? 0.05 : 0;
+    p.mesh.rotation.z += (roll - p.mesh.rotation.z) * 0.12;
   }
 
   _updateAI(dt) {
     for (const car of this.cars) {
-      if (car.isPlayer || car.finished) continue;
+      if (car.isPlayer) continue;
+
+      // Update contact cooldown
+      if (car.contactCooldown > 0) car.contactCooldown -= dt;
+
+      if (car.finished) continue;
 
       if (car.dnf) {
-        car.mesh.rotation.y += 0.4 * dt;
+        car.mesh.rotation.y += 0.35 * dt;
         continue;
       }
       if (car.spinning) {
         car.spinTimer -= dt;
-        car.mesh.rotation.y += car.spinDir * 3.8 * dt;
-        car.speed = Math.max(5, car.speed - 75 * dt);
+        car.mesh.rotation.y += car.spinDir * 3.5 * dt;
+        car.speed = Math.max(8, car.speed - 70 * dt);
         car.z    += car.speed * dt;
         car.mesh.position.z = car.z;
         if (car.spinTimer <= 0) {
-          car.dnf = true;
+          car.dnf     = true;
           car.spinning = false;
         }
         continue;
       }
 
-      // Lane decision
+      // Lane decision — every 3–8 seconds (much calmer AI)
       car.laneTimer -= dt;
       if (car.laneTimer <= 0) {
-        car.laneTimer = 1.8 + Math.random() * 3.5;
-        const ahead = this.wrecks.find(w =>
-          w.z > car.z && w.z < car.z + 40 && Math.abs(w.x - car.x) < 5
+        car.laneTimer = 3.0 + Math.random() * 5.0;
+        const nearWreck = this.wrecks.find(w =>
+          w.z > car.z && w.z < car.z + 55 && Math.abs(w.x - car.x) < 5.5
         );
-        if (ahead) {
-          const dir = ahead.x > 0 ? -1 : 1;
-          car.targetX = clamp(ahead.x + dir * 7, -R3D.TRACK_W / 2 + 1.3, R3D.TRACK_W / 2 - 1.3);
+        if (nearWreck) {
+          const dir = nearWreck.x > 0 ? -1 : 1;
+          car.targetX = clamp(nearWreck.x + dir * 8, -R3D.HALF_W + 1.4, R3D.HALF_W - 1.4);
         } else {
-          const drift = (Math.random() - 0.48) * 8;
-          car.targetX = clamp(car.x + drift, -R3D.TRACK_W / 2 + 1.3, R3D.TRACK_W / 2 - 1.3);
+          // Small drift, stay closer to center
+          const drift = (Math.random() - 0.5) * 7;
+          car.targetX = clamp(car.x + drift, -R3D.HALF_W + 1.4, R3D.HALF_W - 1.4);
         }
       }
 
-      const tgt = Math.min(R3D.SPEED_BASE * (0.76 + car.power * 0.3) + car.draftBoost, R3D.SPEED_MAX);
-      car.speed += (tgt - car.speed) * Math.min(1, dt * 1.9);
-      car.x     += (car.targetX - car.x) * Math.min(1, dt * 3.8);
+      const tgt = Math.min(R3D.SPEED_BASE * (0.74 + car.power * 0.32) + car.draftBoost, R3D.SPEED_MAX);
+      car.speed += (tgt - car.speed) * Math.min(1, dt * 1.8);
+      car.x     += (car.targetX - car.x) * Math.min(1, dt * 3.5);
       car.z     += car.speed * dt;
       car.mesh.position.set(car.x, 0, car.z);
     }
@@ -628,37 +684,65 @@ class Race3DEngine {
 
   _calcDraft() {
     for (const car of this.cars) {
-      if (car.dnf) { car.draftBoost = 0; continue; }
-      const drafting = this.cars.some(other =>
-        other !== car &&
-        !other.dnf &&
+      if (car.dnf || car.finished) { car.draftBoost = 0; continue; }
+      const inDraft = this.cars.some(other =>
+        other !== car && !other.dnf && !other.finished &&
         other.z > car.z &&
-        other.z - car.z < R3D.DRAFT_Z &&
+        (other.z - car.z) < R3D.DRAFT_Z &&
         Math.abs(other.x - car.x) < R3D.DRAFT_X
       );
-      car.draftBoost = drafting ? R3D.DRAFT_BOOST : 0;
-      car.glowMat.opacity = drafting ? 0.22 : 0;
+      car.draftBoost = inDraft ? R3D.DRAFT_BOOST : 0;
+      if (car.glowMat) car.glowMat.opacity = inDraft ? 0.2 : 0;
     }
   }
 
   _checkCollisions() {
     const p = this.player;
-    if (p.spinning || p.finished || p.dnf) return;
+    if (p.spinning || p.finished) return;
 
-    // Car-to-car
+    // Car-to-car — bump system (needs BUMP_TO_SPIN hits to spin)
     for (const car of this.cars) {
-      if (car === p || car.finished || car.dnf) continue;
-      if (Math.abs(p.x - car.x) < 1.85 && Math.abs(p.z - car.z) < 3.8) {
-        this._spinPlayer(1.6, car.x < p.x ? 1 : -1, 0.9);
+      if (car === p || car.finished) continue;
+      if (Math.abs(p.x - car.x) < 1.9 && Math.abs(p.z - car.z) < 4.2) {
+        if (car.contactCooldown <= 0) {
+          car.contactCooldown = R3D.BUMP_DEBOUNCE;
+          const pushDir = car.x < p.x ? 1 : -1; // push player away from AI car
+          this._bumpPlayer(pushDir);
+        }
         return;
       }
     }
-    // Wreck debris
+
+    // Wreck debris — immediate spin
     for (const w of this.wrecks) {
-      if (Math.abs(p.x - w.x) < 2.2 && Math.abs(p.z - w.z) < 2.8) {
-        this._spinPlayer(2.2, 1, 1.4);
+      if (Math.abs(p.x - w.x) < 2.4 && Math.abs(p.z - w.z) < 2.8) {
+        this._spinPlayer(2.0, Math.sign(p.lv) || 1, 1.5);
+        this._warn('⚠️  HIT WRECK!');
         return;
       }
+    }
+  }
+
+  _bumpPlayer(pushDir) {
+    const p = this.player;
+    if (p.spinning) return;
+
+    // Lateral push and speed scrub from contact
+    p.lv    = clamp(p.lv + pushDir * 4.5, -R3D.LAT_MAX, R3D.LAT_MAX);
+    p.speed = Math.max(p.speed * 0.93, 60);
+    this.camShake = Math.max(this.camShake, 0.3);
+
+    // Bump counter
+    p.bumpCount++;
+    p.bumpTimer = R3D.BUMP_WINDOW;
+
+    if (p.bumpCount >= R3D.BUMP_TO_SPIN) {
+      p.bumpCount = 0;
+      p.bumpTimer = 0;
+      this._spinPlayer(1.8, pushDir, 1.2);
+      this._warn('⚠️  SPIN OUT!');
+    } else {
+      this._warn(`⚠️  BUMP! (${p.bumpCount}/${R3D.BUMP_TO_SPIN})`);
     }
   }
 
@@ -667,14 +751,15 @@ class Race3DEngine {
     if (p.spinning) return;
     p.spinning  = true;
     p.spinTimer = duration;
-    p.spinDir   = dir;
-    p.speed     = 18;
+    p.spinDir   = dir || 1;
+    p.speed     = 20;
     this.camShake = Math.max(this.camShake, shake);
   }
 
   _checkFinish() {
+    const TL = R3D.TRACK_LEN;
     for (const car of this.cars) {
-      if (!car.finished && car.z >= R3D.TRACK_LEN) {
+      if (!car.finished && car.z >= TL) {
         car.finished = true;
         this.finishOrder.push(car);
         if (car.isPlayer) {
@@ -687,86 +772,85 @@ class Race3DEngine {
 
   _triggerWreck() {
     const pz = this.player.z;
+    // Only wreck cars well ahead of player, not too close to finish
     const cands = this.cars.filter(c =>
       !c.isPlayer && !c.spinning && !c.finished && !c.dnf &&
-      c.z > pz + 60 &&
-      c.z < R3D.TRACK_LEN - 80
+      c.z > pz + 80 &&
+      c.z < R3D.TRACK_LEN - 200
     );
-    if (cands.length === 0) return;
+    if (cands.length < 2) return; // need at least 2 AI cars up there
 
-    const victim   = cands[Math.floor(Math.random() * cands.length)];
+    this.wreckCount++;
+    const victim = cands[Math.floor(Math.random() * cands.length)];
     victim.spinning  = true;
-    victim.spinTimer = 3.8;
+    victim.spinTimer = 4.0;
     victim.spinDir   = Math.random() > 0.5 ? 1 : -1;
 
-    // Drop debris a beat later
+    // Drop debris after brief delay
     setTimeout(() => {
       if (!this.scene) return;
       const wx = victim.x, wz = victim.z;
       this.wrecks.push({ x: wx, z: wz });
 
-      const dbMat = new THREE.MeshLambertMaterial({ color: 0x666666 });
+      const dbMat = new THREE.MeshLambertMaterial({ color: 0x555555 });
       const db    = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.35, 2.8), dbMat);
       db.rotation.y = Math.random() * Math.PI;
       db.position.set(wx, 0.175, wz);
       this.scene.add(db);
 
-      // Smoke puff (simple sphere)
-      const smMat = new THREE.MeshBasicMaterial({ color: 0x999999, transparent: true, opacity: 0.45 });
-      const sm    = new THREE.Mesh(new THREE.SphereGeometry(2.2, 7, 7), smMat);
-      sm.position.set(wx, 1.5, wz);
+      // Smoke
+      const smMat = new THREE.MeshBasicMaterial({ color: 0x909090, transparent: true, opacity: 0.4 });
+      const sm    = new THREE.Mesh(new THREE.SphereGeometry(2.5, 7, 7), smMat);
+      sm.position.set(wx, 1.8, wz);
       this.scene.add(sm);
 
-      if (Math.abs(wz - pz) < 280) {
+      if (Math.abs(wz - pz) < 400) {
         this._warn('⚠️  WRECK AHEAD — STEER CLEAR!');
       }
-    }, 1100);
+    }, 1200);
   }
 
   _updateCamera(dt) {
     const p  = this.player;
     const sk = this.camShake;
-    const noise = sk > 0 ? (Math.random() - 0.5) * sk : 0;
+    const nx = sk > 0 ? (Math.random() - 0.5) * sk : 0;
+    const ny = sk > 0 ? (Math.random() - 0.5) * sk * 0.4 : 0;
 
-    // Dynamic FOV: wider when fast
-    const speedFrac = (p.speed - R3D.SPEED_BASE) / (R3D.SPEED_MAX - R3D.SPEED_BASE);
-    this.camera.fov += (clamp(60 + speedFrac * 12, 58, 74) - this.camera.fov) * 0.08;
+    // Dynamic FOV
+    const spd = clamp((p.speed - R3D.SPEED_BASE) / (R3D.SPEED_MAX - R3D.SPEED_BASE), 0, 1);
+    const fovTarget = 60 + spd * 14;
+    this.camera.fov += (fovTarget - this.camera.fov) * 0.07;
     this.camera.updateProjectionMatrix();
 
-    const tx = p.x * 0.88 + noise * 0.5;
-    const ty = 4.2 + noise * 0.15;
-    const tz = p.z - 9.5 + noise * 0.2;
+    const tx = p.x * 0.85 + nx;
+    const ty = 4.5 + ny;
+    const tz = p.z - 10 + nx * 0.15;
 
-    this.camera.position.x += (tx - this.camera.position.x) * 0.13;
-    this.camera.position.y += (ty - this.camera.position.y) * 0.12;
-    this.camera.position.z += (tz - this.camera.position.z) * 0.13;
+    this.camera.position.x += (tx - this.camera.position.x) * 0.12;
+    this.camera.position.y += (ty - this.camera.position.y) * 0.10;
+    this.camera.position.z += (tz - this.camera.position.z) * 0.12;
 
-    this.camera.lookAt(p.x * 0.6, 1.4, p.z + 24);
-
-    this.camShake = Math.max(0, sk - dt * 2.8);
+    this.camera.lookAt(p.x * 0.55, 1.5, p.z + 26);
+    this.camShake = Math.max(0, sk - dt * 2.5);
   }
 
   _updateHUD() {
     const p = this.player;
 
-    // Position
     const ahead = this.cars.filter(c => !c.dnf && !c.finished && c.z > p.z).length;
     const posEl = document.getElementById('r3d-pos');
     if (posEl) posEl.textContent = `P${ahead + 1}`;
 
-    // Draft
     const draftEl = document.getElementById('r3d-draft');
     if (draftEl) {
       const on = p.draftBoost > 0;
-      draftEl.style.opacity = on ? '1' : '0.15';
+      draftEl.style.opacity   = on ? '1' : '0.15';
       draftEl.style.transform = on ? 'scale(1.08)' : 'scale(1)';
     }
 
-    // Speed
     const spdEl = document.getElementById('r3d-speed');
     if (spdEl) spdEl.textContent = `${Math.round(p.speed)} mph`;
 
-    // Progress
     const fill = document.getElementById('r3d-prog-fill');
     if (fill) fill.style.width = clamp(p.z / R3D.TRACK_LEN * 100, 0, 100).toFixed(1) + '%';
   }
@@ -777,7 +861,7 @@ class Race3DEngine {
     el.textContent = msg;
     el.classList.remove('hidden');
     clearTimeout(this._warnTimeout);
-    this._warnTimeout = setTimeout(() => { el.classList.add('hidden'); }, 3500);
+    this._warnTimeout = setTimeout(() => { if (el) el.classList.add('hidden'); }, 3200);
   }
 
   _showFinish(pos) {
@@ -795,20 +879,26 @@ class Race3DEngine {
     el.style.display = 'flex';
   }
 
-  // ── Animation loop ───────────────────────────────────────────
+  // ── Loop ─────────────────────────────────────────────────────
   _loop() {
     this._raf = requestAnimationFrame(() => this._loop());
-    const dt  = Math.min(this.clock.getDelta(), 0.05);
+    const dt  = Math.min(this.clock.getDelta(), 0.05); // cap at 50ms
     this._update(dt);
-    this.renderer.render(this.scene, this.camera);
+    if (this.renderer && this.scene && this.camera) {
+      this.renderer.render(this.scene, this.camera);
+    }
   }
 
   destroy() {
     cancelAnimationFrame(this._raf);
+    this._raf = null;
+    clearTimeout(this._warnTimeout);
     document.removeEventListener('keydown', this._kd);
     document.removeEventListener('keyup',   this._ku);
     window.removeEventListener('resize',    this._onResize);
-    if (this.renderer) this.renderer.dispose();
-    this.scene = null;
+    if (this.renderer) { this.renderer.dispose(); this.renderer = null; }
+    this.scene  = null;
+    this.camera = null;
+    this.done   = true;
   }
 }

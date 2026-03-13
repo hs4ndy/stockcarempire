@@ -183,7 +183,13 @@ function loadGame() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return false;
-    game = JSON.parse(raw);
+    const loaded = JSON.parse(raw);
+    // Basic validity check — must have core fields
+    if (!loaded || !loaded.teamName || !loaded.cars || !loaded.season) {
+      console.warn('Save file is corrupt or incomplete, ignoring.');
+      return false;
+    }
+    game = loaded;
     return true;
   } catch (e) {
     console.warn('Load failed:', e);

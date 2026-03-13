@@ -25,11 +25,18 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 function enterGame() {
-  showScreen('game');
-  updateHeader();
-  showTab('dashboard');
-  if (game.premierChoicePending) {
-    showPremierChoiceModal();
+  try {
+    showScreen('game');
+    updateHeader();
+    showTab('dashboard');
+    if (game.premierChoicePending) {
+      showPremierChoiceModal();
+    }
+  } catch (e) {
+    console.error('Failed to load game UI:', e);
+    toast('Save file could not be loaded. Starting fresh.', 'error');
+    deleteSave();
+    showScreen('intro');
   }
 }
 
