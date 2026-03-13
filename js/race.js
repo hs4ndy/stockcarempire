@@ -1,0 +1,276 @@
+// ============================================================
+// STOCK CAR EMPIRE - Race Simulation Engine
+// ============================================================
+
+/**
+ * Simulate a full race and return structured results.
+ *
+ * @param {object} opts
+ *   playerCarId   - which of the player's cars is racing (null if manager/hired mode)
+ *   trackId       - the track being raced
+ *   isHiredMode   - true if player drives for an AI team
+ * @returns {object}  { results, events, playerResult }
+ */
+function simulateRace({ playerCarId, trackId, isHiredMode }) {
+  const track = TRACKS.find(t => t.id === trackId);
+  const series = SERIES[game.currentSeries];
+
+  // Build the full entry list
+  const entries = buildEntryList(playerCarId, trackId, isHiredMode);
+
+  // Calculate initial performance scores
+  entries.forEach(e => {
+    e.perfScore = calcPerf(e, track);
+  });
+
+  // --- Run the simulation in 5 phases ---
+  const phases = ['start', 'early', 'mid', 'late', 'finish'];
+  const events  = [];
+
+  // Starting grid (sorted by perf with some qualifying randomness)
+  entries.forEach(e => {
+    e.qualifyScore = e.perfScore + rand(-8, 8);
+  });
+  entries.sort((a, b) => b.qualifyScore - a.qualifyScore);
+  entries.forEach((e, i) => { e.position = i + 1; });
+
+  // Track lead changes
+  let currentLeader = entries[0];
+  let cautionCount  = 0;
+
+  for (const phase of phases) {
+    const phaseEvents = runPhase(entries, phase, track, currentLeader, cautionCount);
+    events.push(...phaseEvents.events);
+    if (phaseEvents.caution) cautionCount++;
+    // Re-sort after phase
+    entries.sort((a, b) => {
+      if (a.dnf && !b.dnf) return 1;
+      if (!a.dnf && b.dnf) return -1;
+      if (a.dnf && b.dnf) return b.dnfLap - a.dnfLap; // later DNF = better
+      return a.position - b.position;
+    });
+    entries.forEach((e, i) => { if (!e.dnf) e.position = i + 1; });
+
+    // Check for new leader
+    const leader = entries.find(e => !e.dnf);
+    if (leader && leader.id !== currentLeader.id) {
+      currentLeader = leader;
+      const tmpl = pick(RACE_EVENTS.leadChange);
+      events.push({
+        phase,
+        type: 'lead_change',
+        text: tmpl.replace('{car}', leader.displayName).replace('{lap}', randInt(20, track.laps - 20)),
+        isPlayer: leader.isPlayer,
+      });
+    }
+  }
+
+  // Final positions
+  entries.sort((a, b) => {
+    if (a.dnf && !b.dnf) return 1;
+    if (!a.dnf && b.dnf) return -1;
+    if (a.dnf && b.dnf) return b.dnfLap - a.dnfLap;
+    return a.perfScore > b.perfScore ? -1 : 1;
+  });
+  entries.forEach((e, i) => { e.position = i + 1; });
+
+  // Build results array
+  const results = entries.map(e => ({
+    entrantId:   e.id,
+    carId:       e.carId || null,
+    displayName: e.displayName,
+    teamName:    e.teamName,
+    teamColor:   e.teamColor,
+    position:    e.position,
+    dnf:         e.dnf,
+    isPlayer:    e.isPlayer,
+    points:      series.points[e.position - 1] || 0,
+    prize:       e.dnf ? Math.round(series.prize[Math.min(e.position - 1, series.prize.length - 1)] * 0.4)
+                       : (series.prize[e.position - 1] || series.prize[series.prize.length - 1]),
+  }));
+
+  const playerResult = results.find(r => r.isPlayer) || null;
+
+  return { results, events, playerResult };
+}
+
+// ─── Build entry list ────────────────────────────────────────
+function buildEntryList(playerCarId, trackId, isHiredMode) {
+  const series  = SERIES[game.currentSeries];
+  const entries = [];
+
+  // Player entry
+  if (!isHiredMode && playerCarId) {
+    const car = game.cars.find(c => c.id === playerCarId);
+    if (car) {
+      entries.push({
+        id:          'player',
+        carId:       car.id,
+        displayName: `${game.teamName} / ${car.name}`,
+        teamName:    game.teamName,
+        teamColor:   '#e8001d',
+        isPlayer:    true,
+        dnf:         false,
+        // Performance inputs
+        speed:       car.speed,
+        handling:    car.handling,
+        reliability: car.reliability,
+        condition:   car.condition,
+        driverSkill: game.playerSkill,
+        hasCrchief:  game.staff.some(s => s.typeId === 'crew_chief'),
+        hasEngineer: game.staff.some(s => s.typeId === 'engineer'),
+      });
+    }
+  }
+
+  if (isHiredMode) {
+    // Player is driving for an AI team — treat like a strong entry
+    const aiTeam = game.season.aiTeams.find(t => t.id === game.hiredTeamId);
+    if (aiTeam) {
+      const power = (aiTeam.cars[0]?.power || 0.55) + game.playerSkill / 100 * 0.2;
+      entries.push({
+        id:          'player',
+        displayName: `${aiTeam.name} / You`,
+        teamName:    aiTeam.name,
+        teamColor:   aiTeam.color,
+        isPlayer:    true,
+        dnf:         false,
+        syntheticPower: clamp(power, 0.3, 0.98),
+      });
+    }
+  }
+
+  // AI team entries
+  game.season.aiTeams.forEach(team => {
+    team.cars.forEach(car => {
+      if (isHiredMode && team.id === game.hiredTeamId) return; // skip — player fills this slot
+      entries.push({
+        id:          car.id,
+        displayName: `${team.name} / ${car.driverName}`,
+        teamName:    team.name,
+        teamColor:   team.color,
+        isPlayer:    false,
+        dnf:         false,
+        syntheticPower: car.power * (car.condition / 100),
+        aggression:  team.aggression,
+      });
+    });
+  });
+
+  // Pad to field size with generic backmarkers
+  while (entries.length < series.fieldSize) {
+    const tmpl = pick(AI_TEAM_TEMPLATES);
+    entries.push({
+      id:          uid(),
+      displayName: `${tmpl.name} / ${pick(AI_DRIVER_NAMES)}`,
+      teamName:    tmpl.name,
+      teamColor:   tmpl.color,
+      isPlayer:    false,
+      dnf:         false,
+      syntheticPower: rand(0.25, 0.45),
+      aggression:  tmpl.aggression,
+    });
+  }
+
+  return entries.slice(0, series.fieldSize);
+}
+
+// ─── Calculate performance score ─────────────────────────────
+function calcPerf(entry, track) {
+  if (entry.syntheticPower !== undefined) {
+    // AI / hired entry: use synthetic power directly
+    const base = entry.syntheticPower * 100;
+    return base + rand(-6, 6);
+  }
+
+  // Player entry with real stats
+  const sw  = track.speedW;
+  const hw  = track.handW;
+  const wt  = sw + hw;
+  const raw = (entry.speed * sw + entry.handling * hw) / wt;
+  const condMod   = entry.condition / 100;
+  const skillMod  = 0.25 + entry.driverSkill / 100 * 0.35; // 0.25–0.60
+  const chiefBonus = entry.hasCrchief ? 2 : 0;
+  const engBonus   = entry.hasEngineer ? 2 : 0;
+  const base = raw * condMod + entry.driverSkill * 0.1 + chiefBonus + engBonus;
+  return clamp(base, 10, 99) + rand(-5, 5);
+}
+
+// ─── Run a single race phase ──────────────────────────────────
+function runPhase(entries, phase, track, currentLeader, cautionCount) {
+  const events  = [];
+  let   caution = false;
+  const liveEntries = entries.filter(e => !e.dnf);
+
+  // --- Position churn ---
+  // Re-evaluate performance with fresh noise
+  liveEntries.forEach(e => {
+    e.phaseScore = e.perfScore + rand(-10, 10);
+    // Reliability check — DNF risk
+    const relRisk = e.reliability !== undefined ? e.reliability : (e.syntheticPower || 0.5) * 80 + 30;
+    const dnfChance = clamp((100 - relRisk) / 1000, 0.005, 0.06);
+    if (Math.random() < dnfChance) {
+      e.dnf    = true;
+      e.dnfLap = randInt(track.laps * 0.2, track.laps * 0.9);
+      events.push({
+        phase,
+        type:     'dnf',
+        text:     pick(RACE_EVENTS.crash).replace('{car}', e.displayName.split(' / ')[0]),
+        isPlayer: e.isPlayer,
+      });
+    }
+  });
+
+  // Sort by phaseScore
+  const active = liveEntries.filter(e => !e.dnf).sort((a, b) => b.phaseScore - a.phaseScore);
+  active.forEach((e, i) => { e.position = i + 1; });
+
+  // --- Caution flag (random, less likely late) ---
+  const cautionChance = phase === 'finish' ? 0.10 : 0.25;
+  if (Math.random() < cautionChance && cautionCount < 4) {
+    caution = true;
+    events.push({
+      phase,
+      type:     'caution',
+      text:     pick(RACE_EVENTS.caution),
+      isPlayer: false,
+    });
+    // Bunch the field up after caution
+    active.forEach((e, i) => {
+      const bunching = rand(0, 3);
+      e.position = clamp(e.position + (Math.random() > 0.5 ? -1 : 1) * Math.floor(bunching), 1, active.length);
+    });
+    // Re-sort
+    active.sort((a, b) => a.position - b.position);
+    active.forEach((e, i) => { e.position = i + 1; });
+  }
+
+  // --- Player-specific event ---
+  const playerEntry = entries.find(e => e.isPlayer && !e.dnf);
+  if (playerEntry && Math.random() < 0.35) {
+    const isGood = Math.random() < 0.55;
+    const eventText = isGood ? pick(RACE_EVENTS.good) : pick(RACE_EVENTS.bad);
+    if (!isGood) {
+      playerEntry.position = clamp(playerEntry.position + randInt(1, 4), 1, active.length);
+    } else {
+      playerEntry.position = clamp(playerEntry.position - randInt(1, 3), 1, active.length);
+    }
+    events.push({
+      phase,
+      type:     isGood ? 'player_good' : 'player_bad',
+      text:     eventText,
+      isPlayer: true,
+    });
+  }
+
+  return { events, caution };
+}
+
+// ─── Build the final results for the race modal ───────────────
+function formatRaceResults(results) {
+  const series = SERIES[game.currentSeries];
+  return results.map(r => {
+    const pts = series.points[r.position - 1] || 0;
+    return { ...r, pts };
+  });
+}

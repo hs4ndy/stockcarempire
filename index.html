@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock Car Empire</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  INTRO SCREEN                                          -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="screen-intro" class="screen">
+  <div class="intro-content">
+    <div class="intro-logo">
+      <span class="logo-flag">🏁</span>
+      <span class="logo-main">Stock Car</span>
+      <span class="logo-sub">Empire</span>
+    </div>
+    <p class="intro-tagline">
+      Start with one car and a dream.<br>
+      Build a dynasty. Conquer the Premier Cup.
+    </p>
+    <div class="intro-buttons">
+      <button class="btn btn-primary btn-lg btn-full" id="btn-start-new">New Career</button>
+      <button class="btn btn-ghost btn-lg btn-full" id="btn-load-game">Continue Career</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  SETUP SCREEN                                          -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="screen-setup" class="screen hidden">
+  <div class="setup-card">
+    <h2>Start Your Career</h2>
+    <p>You're starting from the bottom of the Grassroots Cup with a single car and $50,000. Build your team, win races, and climb to the Premier Cup.</p>
+    <hr class="setup-divider">
+
+    <div class="form-group">
+      <label class="form-label" for="inp-team-name">Team Name</label>
+      <input type="text" id="inp-team-name" placeholder="e.g. Thunder Valley Racing" maxlength="40" autocomplete="off">
+      <span class="form-hint">This is how your team appears in standings and results.</span>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="inp-car-name">Your First Car's Name</label>
+      <input type="text" id="inp-car-name" placeholder="e.g. Old Betsy, The Rocket, #7" maxlength="30" autocomplete="off">
+      <span class="form-hint">Give your ride a name you'll remember when you win your first race.</span>
+    </div>
+
+    <div class="setup-footer">
+      <button class="btn btn-ghost" onclick="showScreen('intro')">Back</button>
+      <button class="btn btn-primary" id="btn-create-team">Start Career →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  MAIN GAME SCREEN                                      -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="screen-game" class="screen hidden">
+
+  <!-- Header bar -->
+  <header class="game-header">
+    <div class="header-logo">Stock Car <span>Empire</span></div>
+    <div class="header-divider"></div>
+    <div class="header-info">
+      <div class="header-chip">
+        <span class="chip-label">Team</span>
+        <span class="chip-value" id="hdr-team">—</span>
+      </div>
+      <div class="header-chip">
+        <span class="chip-label">Cash</span>
+        <span class="chip-value chip-money" id="hdr-money">$0</span>
+      </div>
+      <div class="header-chip">
+        <span class="chip-label">Series</span>
+        <span class="chip-value" id="hdr-series">GRC</span>
+      </div>
+      <div class="header-chip">
+        <span class="chip-label">Progress</span>
+        <span class="chip-value" id="hdr-race">—</span>
+      </div>
+      <div class="header-chip">
+        <span class="chip-label">Year</span>
+        <span class="chip-value" id="hdr-year">1</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-sm btn-ghost" onclick="handleSaveGame()" title="Save (Ctrl+S)">💾 Save</button>
+      <button class="btn btn-sm btn-ghost" onclick="handleNewGamePrompt()" title="New Game">↩ New</button>
+    </div>
+  </header>
+
+  <!-- Navigation tabs -->
+  <nav class="game-nav">
+    <button class="nav-btn active" data-tab="dashboard">
+      <span class="nav-icon">🏠</span> Dashboard
+    </button>
+    <button class="nav-btn" data-tab="garage">
+      <span class="nav-icon">🚗</span> Garage
+    </button>
+    <button class="nav-btn" data-tab="team">
+      <span class="nav-icon">👥</span> Team
+    </button>
+    <button class="nav-btn" data-tab="schedule">
+      <span class="nav-icon">📅</span> Schedule
+    </button>
+    <button class="nav-btn" data-tab="market">
+      <span class="nav-icon">🏪</span> Market
+    </button>
+    <button class="nav-btn" data-tab="standings">
+      <span class="nav-icon">🏆</span> Standings
+    </button>
+  </nav>
+
+  <!-- Dynamic main content -->
+  <main id="main-content">
+    <!-- Rendered by JS -->
+  </main>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  RACE SETUP SCREEN                                     -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="screen-race-setup" class="screen hidden">
+  <div id="race-setup-content">
+    <!-- Rendered by JS -->
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  RACE (LIVE) SCREEN                                    -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="screen-game-race" class="screen hidden">
+  <div id="race-display">
+    <!-- Rendered by JS -->
+  </div>
+</div>
+
+<!-- Toast container (always present) -->
+<div id="toast-container"></div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  Scripts (load order matters: data → game → race → ui → main) -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<script src="js/data.js"></script>
+<script src="js/game.js"></script>
+<script src="js/race.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+
+</body>
+</html>
