@@ -5,28 +5,28 @@
 // ============================================================
 
 const R3D = {
-  TRACK_LEN:    9000,   // 8× longer — no more "end of map" spawning
+  TRACK_LEN:    15000,  // long superspeedway — ~90 sec race
   TRACK_W:      22,
   HALF_W:       11,
-  SPEED_BASE:   165,    // units/sec nominal forward speed
-  SPEED_MAX:    240,    // absolute max
+  SPEED_BASE:   175,    // units/sec nominal forward speed
+  SPEED_MAX:    270,    // absolute max
   ACCEL:        2.5,    // forward accel lerp factor
-  BRAKE_FORCE:  130,    // speed loss when braking (units/sec²)
+  BRAKE_FORCE:  140,    // speed loss when braking (units/sec²)
   LAT_ACC:      160,    // lateral acceleration (units/sec²)
   LAT_MAX:      13,     // max lateral speed (units/sec)
   LAT_DAMP:     0.0005, // damping exponent when no key pressed (near-instant stop)
-  DRAFT_Z:      20,     // how far behind to feel draft
-  DRAFT_X:      3.2,    // lateral tolerance for draft
-  DRAFT_BOOST:  30,     // speed bonus from drafting
-  WRECK_FIRST:  38,     // seconds before first wreck can happen
-  WRECK_MIN:    55,     // min cooldown between wrecks
-  WRECK_MAX:    95,     // max cooldown between wrecks
+  DRAFT_Z:      30,     // draft window depth (how far behind)
+  DRAFT_X:      3.8,    // draft window lateral tolerance
+  DRAFT_BOOST:  42,     // max speed bonus from full draft
+  WRECK_FIRST:  50,     // seconds before first wreck can happen
+  WRECK_MIN:    65,     // min cooldown between wrecks
+  WRECK_MAX:    120,    // max cooldown between wrecks
   MAX_WRECKS:   2,      // hard cap on total wrecks per race
-  BUMP_TO_SPIN: 4,      // bumps needed before player spins
-  BUMP_WINDOW:  3.0,    // seconds bump counter stays active
-  BUMP_DEBOUNCE:0.7,    // min seconds between registering bumps from same car
+  SPIN_CHANCE:  0.07,   // 7% chance of spin per contact event (rubbing is fine)
+  BUMP_DEBOUNCE:0.9,    // min seconds between contact events per car
   GRID_COLS:    2,
   GRID_SPACING: 28,     // row spacing on starting grid
+  PACE_SPEED:   38,     // formation lap rolling speed (units/sec)
 };
 
 // ─── Public launcher ─────────────────────────────────────────
@@ -90,6 +90,8 @@ class Race3DEngine {
     this.wreckCooldown = R3D.WRECK_FIRST;
     this.camShake    = 0;
     this.racing      = false;
+    this.paceMode    = false;
+    this.paceBraking = false;
     this.done        = false;
     this.finishOrder = [];
     this._raf        = null;
@@ -506,49 +508,81 @@ class Race3DEngine {
       label,
       hex,
       x, z,
-      lv:           0,       // lateral velocity (units/sec)
-      speed:        R3D.SPEED_BASE * (0.78 + power * 0.22),
-      targetX:      x,
-      spinning:     false,
-      spinTimer:    0,
-      spinDir:      1,
-      finished:     false,
-      dnf:          false,
-      draftBoost:   0,
-      laneTimer:    Math.random() * 4,
-      // Bump tracking (player only, but stored on all for simplicity)
-      bumpCount:    0,
-      bumpTimer:    0,
-      contactCooldown: 0,    // per-car debounce for collision with player
+      lv:              0,       // lateral velocity (units/sec)
+      speed:           R3D.SPEED_BASE * (0.78 + power * 0.22),
+      targetX:         x,
+      spinning:        false,
+      spinTimer:       0,
+      spinDir:         1,
+      finished:        false,
+      dnf:             false,
+      draftBoost:      0,
+      laneTimer:       Math.random() * 4,
+      contactCooldown: 0,    // debounce for collision with player
     };
   }
 
-  // ── Countdown ────────────────────────────────────────────────
+  // ── Starting sequence ────────────────────────────────────────
+  // Phase 1: "FORMATION LAP" — cars roll slowly in grid formation (3 s)
+  // Phase 2: Cars brake to a halt (1 s)
+  // Phase 3: 3-2-1-GO countdown lights (3 s)
   _countdown() {
     const el   = document.getElementById('r3d-countdown');
     const hint = document.getElementById('r3d-hint');
-    let cnt = 3;
-    const tick = () => {
-      if (!el || this.done) return;
-      if (cnt > 0) {
-        el.textContent = cnt;
-        el.style.opacity = '1';
-        el.classList.remove('go');
-        cnt--;
-        setTimeout(tick, 1000);
-      } else {
-        el.textContent = 'GO!';
-        el.classList.add('go');
-        this.racing = true;
-        if (hint) hint.style.opacity = '0';
-        setTimeout(() => { if (el) el.style.opacity = '0'; }, 900);
-      }
-    };
-    setTimeout(tick, 600);
+
+    // ── Phase 1: Formation lap ───────────────────────────────
+    this.paceMode = true; // cars roll at PACE_SPEED
+    if (el) {
+      el.textContent   = 'FORMATION LAP';
+      el.style.opacity = '1';
+      el.style.fontSize = '1.4rem';
+      el.style.letterSpacing = '0.12em';
+      el.classList.remove('go');
+    }
+
+    // After 3 s, brake to a stop
+    setTimeout(() => {
+      if (this.done) return;
+      this.paceBraking = true; // signal _updateAI to slow down
+      if (el) el.textContent = 'TO THE LINE…';
+
+      // After 1.2 s, begin 3-2-1 countdown
+      setTimeout(() => {
+        if (this.done) return;
+        this.paceMode   = false;
+        this.paceBraking = false;
+        if (el) { el.style.fontSize = ''; el.style.letterSpacing = ''; }
+        let cnt = 3;
+        const tick = () => {
+          if (!el || this.done) return;
+          if (cnt > 0) {
+            el.textContent   = cnt;
+            el.style.opacity = '1';
+            el.classList.remove('go');
+            cnt--;
+            setTimeout(tick, 1000);
+          } else {
+            el.textContent = 'GREEN FLAG!';
+            el.classList.add('go');
+            this.racing = true;
+            if (hint) hint.style.opacity = '0';
+            setTimeout(() => { if (el) el.style.opacity = '0'; }, 1100);
+          }
+        };
+        setTimeout(tick, 400);
+      }, 1200);
+    }, 3000);
   }
 
   // ── Main update ──────────────────────────────────────────────
   _update(dt) {
+    // During formation lap, roll all cars slowly forward
+    if (this.paceMode || this.paceBraking) {
+      this._updatePaceLap(dt);
+      this._updateCamera(dt);
+      this._updateHUD();
+      return;
+    }
     if (!this.racing || this.done) return;
 
     this._updatePlayer(dt);
@@ -569,15 +603,19 @@ class Race3DEngine {
     }
   }
 
+  // ── Formation / pace lap movement ────────────────────────────
+  _updatePaceLap(dt) {
+    const target = this.paceBraking ? 0 : R3D.PACE_SPEED;
+    for (const car of this.cars) {
+      car.speed += (target - car.speed) * Math.min(1, dt * 3.5);
+      car.z     += car.speed * dt;
+      car.mesh.position.z = car.z;
+    }
+  }
+
   _updatePlayer(dt) {
     const p  = this.player;
     const hw = R3D.HALF_W - 1.2;
-
-    // Bump timer countdown
-    if (p.bumpTimer > 0) {
-      p.bumpTimer -= dt;
-      if (p.bumpTimer <= 0) { p.bumpCount = 0; p.bumpTimer = 0; }
-    }
 
     if (p.spinning) {
       p.spinTimer -= dt;
@@ -588,17 +626,15 @@ class Race3DEngine {
       if (p.spinTimer <= 0) {
         p.spinning = false;
         p.mesh.rotation.y = 0;
-        p.bumpCount = 0;
-        p.bumpTimer = 0;
       }
       return;
     }
 
     // ── Lateral steering ──────────────────────────────────────
-    // Camera is behind car looking forward (+Z). Screen-left = -X world, screen-right = +X world.
-    // A (screen-left) decreases X, D (screen-right) increases X.
-    if      (this.keys.a) p.lv -= R3D.LAT_ACC * dt;
-    else if (this.keys.d) p.lv += R3D.LAT_ACC * dt;
+    // Car model nose faces toward camera (-Z), so driver's left = world +X.
+    // A (left) increases X, D (right) decreases X.
+    if      (this.keys.a) p.lv += R3D.LAT_ACC * dt;
+    else if (this.keys.d) p.lv -= R3D.LAT_ACC * dt;
     else                  p.lv *= Math.pow(R3D.LAT_DAMP, dt); // near-instant stop on release
 
     p.lv = clamp(p.lv, -R3D.LAT_MAX, R3D.LAT_MAX);
@@ -626,8 +662,8 @@ class Race3DEngine {
     p.z += p.speed * dt;
     p.mesh.position.set(p.x, 0, p.z);
 
-    // Subtle body roll (visual only)
-    const roll = this.keys.a ? -0.05 : this.keys.d ? 0.05 : 0;
+    // Subtle body roll (visual only — rolls into the turn)
+    const roll = this.keys.a ? 0.05 : this.keys.d ? -0.05 : 0;
     p.mesh.rotation.z += (roll - p.mesh.rotation.z) * 0.12;
   }
 
@@ -685,14 +721,22 @@ class Race3DEngine {
   _calcDraft() {
     for (const car of this.cars) {
       if (car.dnf || car.finished) { car.draftBoost = 0; continue; }
-      const inDraft = this.cars.some(other =>
-        other !== car && !other.dnf && !other.finished &&
-        other.z > car.z &&
-        (other.z - car.z) < R3D.DRAFT_Z &&
-        Math.abs(other.x - car.x) < R3D.DRAFT_X
-      );
-      car.draftBoost = inDraft ? R3D.DRAFT_BOOST : 0;
-      if (car.glowMat) car.glowMat.opacity = inDraft ? 0.2 : 0;
+
+      // Find best (closest) car ahead within draft cone
+      let bestIntensity = 0;
+      for (const other of this.cars) {
+        if (other === car || other.dnf || other.finished) continue;
+        const dz = other.z - car.z;
+        if (dz <= 0 || dz > R3D.DRAFT_Z) continue;
+        if (Math.abs(other.x - car.x) > R3D.DRAFT_X) continue;
+        // Intensity: 1.0 when right behind, fades to 0 at edge of zone
+        const intensity = 1 - (dz / R3D.DRAFT_Z);
+        if (intensity > bestIntensity) bestIntensity = intensity;
+      }
+
+      // Chain drafting: each car stacked adds diminishing returns
+      car.draftBoost = bestIntensity * R3D.DRAFT_BOOST;
+      if (car.glowMat) car.glowMat.opacity = bestIntensity * 0.28;
     }
   }
 
@@ -700,7 +744,7 @@ class Race3DEngine {
     const p = this.player;
     if (p.spinning || p.finished) return;
 
-    // Car-to-car — bump system (needs BUMP_TO_SPIN hits to spin)
+    // Car-to-car — rubbing is racing; small random chance of spin
     for (const car of this.cars) {
       if (car === p || car.finished) continue;
       if (Math.abs(p.x - car.x) < 1.9 && Math.abs(p.z - car.z) < 4.2) {
@@ -727,22 +771,17 @@ class Race3DEngine {
     const p = this.player;
     if (p.spinning) return;
 
-    // Lateral push and speed scrub from contact
-    p.lv    = clamp(p.lv + pushDir * 4.5, -R3D.LAT_MAX, R3D.LAT_MAX);
-    p.speed = Math.max(p.speed * 0.93, 60);
-    this.camShake = Math.max(this.camShake, 0.3);
+    // Light push and minimal speed loss — rubbing/blocking is legal
+    p.lv    = clamp(p.lv + pushDir * 3.5, -R3D.LAT_MAX, R3D.LAT_MAX);
+    p.speed = Math.max(p.speed * 0.96, 80);
+    this.camShake = Math.max(this.camShake, 0.2);
 
-    // Bump counter
-    p.bumpCount++;
-    p.bumpTimer = R3D.BUMP_WINDOW;
-
-    if (p.bumpCount >= R3D.BUMP_TO_SPIN) {
-      p.bumpCount = 0;
-      p.bumpTimer = 0;
-      this._spinPlayer(1.8, pushDir, 1.2);
+    // Small random chance to spin — most contacts are just racing
+    if (Math.random() < R3D.SPIN_CHANCE) {
+      this._spinPlayer(1.6, pushDir, 1.1);
       this._warn('⚠️  SPIN OUT!');
     } else {
-      this._warn(`⚠️  BUMP! (${p.bumpCount}/${R3D.BUMP_TO_SPIN})`);
+      this._warn('⚠️  CONTACT!');
     }
   }
 
