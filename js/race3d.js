@@ -856,53 +856,60 @@ class Race3DEngine {
     }
   }
 
-  // ── Physical separation — no car can pass through another ────
+  // ── Physical separation — hard impenetrable constraints ──────
+  // Two passes: sort front-to-back so z-corrections propagate down the chain
+  // without needing many iterations.
   _separateCars() {
     const active = this.cars.filter(c => !c.finished && !c.dnf && !c.spinning);
     const hw = R3D.HALF_W - 1.1;
 
-    for (let i = 0; i < active.length; i++) {
-      for (let j = i + 1; j < active.length; j++) {
-        const a = active[i];
-        const b = active[j];
-        const dx      = b.x - a.x;
-        const signedDz = b.z - a.z;
-        const dz      = Math.abs(signedDz);
-        if (dz >= R3D.CAR_SEP_Z) continue;          // not overlapping in Z
-        const adx = Math.abs(dx);
-        if (adx >= R3D.CAR_SEP_X) continue;         // not overlapping in X
+    for (let pass = 0; pass < 2; pass++) {
+      // Re-sort each pass so newly-corrected positions propagate correctly
+      active.sort((a, b) => b.z - a.z); // front (highest z) first
 
-        // Push-draft alignment: directly in line, one car behind the other.
-        // Lock bumpers smoothly — speed transfer only, no position snapping (prevents twitching).
-        if (adx < R3D.PUSH_X && dz < R3D.PUSH_Z) {
-          const behind = signedDz >= 0 ? a : b;  // lower Z = behind
-          const ahead  = signedDz >= 0 ? b : a;
-          // Speed transfer: pusher shoves the car ahead — soft lerp avoids jerk
-          const diff = behind.speed - ahead.speed;
+      for (let i = 0; i < active.length; i++) {
+        for (let j = i + 1; j < active.length; j++) {
+          const A = active[i]; // ahead  (higher z)
+          const B = active[j]; // behind (lower z)
+
+          const dz  = A.z - B.z;          // z gap (positive = A ahead)
+          const dx  = B.x - A.x;          // lateral offset B relative to A
+          const adx = Math.abs(dx);
+
+          // Skip if no overlap in both dimensions simultaneously
+          if (dz  >= R3D.CAR_SEP_Z) continue;
+          if (adx >= R3D.CAR_SEP_X) continue;
+
+          // ── Z: hard impenetrable bumper ───────────────────────
+          // B cannot be closer than CAR_SEP_Z behind A — ever.
+          // Hard-set B's position; speed transfer makes the push feel physical.
+          B.z = A.z - R3D.CAR_SEP_Z;
+          B.mesh.position.z = B.z;
+          B._pushLocked = true;
+          A._pushLocked = true;
+
+          // Speed transfer: B shoves A forward; bleed B's speed so it can't re-penetrate
+          const diff = B.speed - A.speed;
           if (diff > 0) {
-            ahead.speed  = Math.min(R3D.SPEED_MAX, ahead.speed  + diff * 0.25);
-            behind.speed = Math.max(0,              behind.speed - diff * 0.05);
+            A.speed = Math.min(R3D.SPEED_MAX, A.speed + diff * 0.30);
+            B.speed = B.speed - diff * 0.08;
           }
-          // Flag as push-locked so AI won't try to change lanes while locked
-          behind._pushLocked = true;
-          ahead._pushLocked  = true;
-          continue; // no lateral or z correction — let physics flow smoothly
+
+          // ── X: push cars apart laterally if side-by-side ─────
+          if (adx > 0.01) {
+            const overlap = (R3D.CAR_SEP_X - adx) * 0.5;
+            const dir = dx > 0 ? 1 : -1; // direction from A toward B
+            A.x = clamp(A.x - dir * overlap, -hw, hw);
+            B.x = clamp(B.x + dir * overlap, -hw, hw);
+            A.mesh.position.x = A.x;
+            B.mesh.position.x = B.x;
+
+            if (A.isPlayer) A.lv = clamp(A.lv - dir * 1.0, -R3D.LAT_MAX, R3D.LAT_MAX);
+            else            A.targetX = clamp(A.x - dir * 1.5, -hw, hw);
+            if (B.isPlayer) B.lv = clamp(B.lv + dir * 1.0, -R3D.LAT_MAX, R3D.LAT_MAX);
+            else            B.targetX = clamp(B.x + dir * 1.5, -hw, hw);
+          }
         }
-
-        // How deep the overlap is, split equally
-        const overlap = (R3D.CAR_SEP_X - adx) * 0.5;
-        const dir = dx >= 0 ? 1 : -1;
-
-        a.x = clamp(a.x - dir * overlap, -hw, hw);
-        b.x = clamp(b.x + dir * overlap, -hw, hw);
-        a.mesh.position.x = a.x;
-        b.mesh.position.x = b.x;
-
-        // Impart a small lateral push to both — feels like a rub
-        if (a.isPlayer) a.lv = clamp(a.lv - dir * 1.0, -R3D.LAT_MAX, R3D.LAT_MAX);
-        else            a.targetX = clamp(a.x - dir * 1.5, -hw, hw);
-        if (b.isPlayer) b.lv = clamp(b.lv + dir * 1.0, -R3D.LAT_MAX, R3D.LAT_MAX);
-        else            b.targetX = clamp(b.x + dir * 1.5, -hw, hw);
       }
     }
   }

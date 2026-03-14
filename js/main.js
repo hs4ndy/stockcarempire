@@ -387,6 +387,55 @@ function handleStartRace() {
   );
 }
 
+// ─── Simulate Race (instant, no 3D) ───────────────────────────
+function handleSimulateRace() {
+  const race   = currentRace();
+  const series = SERIES[game.currentSeries];
+  if (!race) return;
+
+  // Determine player car
+  let playerCarId = null;
+  if (game.driverMode === 'driver') {
+    const radioSelected = document.querySelector('input[name="drive-car"]:checked');
+    playerCarId = radioSelected?.value
+      || (game.cars.find(c => c.assignedDriverId === 'player') || game.cars[0])?.id;
+    game.cars.forEach(c => {
+      if (c.id === playerCarId) c.assignedDriverId = 'player';
+      else if (c.assignedDriverId === 'player') c.assignedDriverId = null;
+    });
+  }
+
+  // Deduct entry fee
+  const entryFee = series.entryFee * Math.max(1, game.cars.length);
+  if (game.money < entryFee) {
+    toast(`Not enough money for entry fee (${fmt$(entryFee)}).`, 'error');
+    return;
+  }
+  game.money -= entryFee;
+
+  // Run full simulation
+  const simResult = simulateRace({ playerCarId, trackId: race.trackId, isHiredMode: game.driverMode === 'hired' });
+  const pr = simResult.playerResult;
+  if (!pr) { toast('Simulation error.', 'error'); return; }
+
+  applyRaceResults(simResult.results);
+  race.status       = 'completed';
+  race.playerResult = pr;
+  race.playerPoints = pr.points;
+  race.earnings     = pr.prize;
+  postRaceUpdate(pr, pr.prize);
+  saveGame();
+
+  showScreen('game');
+  document.body.insertAdjacentHTML('beforeend',
+    renderRaceResultsModal(
+      simResult.results.sort((a, b) => a.position - b.position),
+      simResult.events,
+      pr
+    )
+  );
+}
+
 // ─── Kept for potential future use (unused with 3D mode) ──────
 function handleRaceSkipToEnd() {}
 function handleRaceSpeed() {}

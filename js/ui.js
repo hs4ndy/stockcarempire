@@ -696,7 +696,9 @@ function renderRaceSetup() {
       ${carSection}
     </div>
     <div class="btn-row mt">
-      <button class="btn btn-primary btn-lg" id="btn-start-race" onclick="handleStartRace()">Start Race</button>
+      <button class="btn btn-primary btn-lg" id="btn-start-race" onclick="handleStartRace()">▶ Race</button>
+      <button class="btn btn-ghost btn-lg" onclick="handleSimulateRace()">⚡ Simulate</button>
+      <button class="btn btn-ghost" onclick="handleSkipRace()">Skip</button>
       <button class="btn btn-ghost" onclick="showScreen('game')">Cancel</button>
     </div>
   </div>`;
