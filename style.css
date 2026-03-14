@@ -221,6 +221,16 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     0 2px 0 rgba(0,0,0,0.8);
 }
 
+.logo-beta {
+  font-family: 'Impact', sans-serif;
+  font-size: 0.75rem;
+  letter-spacing: 6px;
+  color: var(--gold);
+  opacity: 0.8;
+  text-transform: uppercase;
+  margin-top: -0.25rem;
+}
+
 .logo-stripe {
   width: 100%;
   max-width: 480px;

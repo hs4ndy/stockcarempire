@@ -22,6 +22,8 @@ const R3D = {
   PUSH_Z:         5.2,    // bumper-to-bumper push distance
   PUSH_X:         1.8,    // lateral tolerance for locked push
   PUSH_BONUS:     7,      // ≈+5 mph when locked bumpers (modest and realistic)
+  CHAIN_PER_CAR:  4,      // extra speed units per additional car in a consecutive chain
+  ENDGAME_FRAC:   0.75,   // fraction of track where AI goes full-attack mode
   RUBBER_BAND:    10,     // max extra speed for last-place player (halved)
   WRECK_FIRST:    50,
   WRECK_MIN:      65,
@@ -571,21 +573,29 @@ class Race3DEngine {
     }
     if (!this.racing || this.done) return;
 
+    // Clear push-lock flags before physics step
+    for (const c of this.cars) c._pushLocked = false;
     this._updatePlayer(dt);
     this._updateAI(dt);
     this._calcDraft(dt);
-    this._separateCars();   // prevent cars clipping through each other
+    this._calcChainBonus();  // chain of N cars drafting = faster for everyone
+    this._separateCars();    // prevent cars clipping through each other
     this._checkCollisions();
     this._checkFinish();
     this._updateCamera(dt);
     this._updateHUD();
 
-    // Wreck scheduling
-    if (this.wreckCount < R3D.MAX_WRECKS) {
+    // Wreck scheduling — more wrecks in endgame from aggressive AI
+    const endgameGlobal = this.player.z / R3D.TRACK_LEN >= R3D.ENDGAME_FRAC;
+    const maxWrecks = endgameGlobal ? R3D.MAX_WRECKS + 2 : R3D.MAX_WRECKS;
+    if (this.wreckCount < maxWrecks) {
       this.wreckCooldown -= dt;
       if (this.wreckCooldown <= 0) {
         this._triggerWreck();
-        this.wreckCooldown = R3D.WRECK_MIN + Math.random() * (R3D.WRECK_MAX - R3D.WRECK_MIN);
+        // Wrecks come faster in endgame
+        const minCD = endgameGlobal ? R3D.WRECK_MIN * 0.5 : R3D.WRECK_MIN;
+        const maxCD = endgameGlobal ? R3D.WRECK_MAX * 0.6 : R3D.WRECK_MAX;
+        this.wreckCooldown = minCD + Math.random() * (maxCD - minCD);
       }
     }
   }
@@ -698,46 +708,65 @@ class Race3DEngine {
         continue;
       }
 
+      // Endgame detection
+      const progress = car.z / R3D.TRACK_LEN;
+      const endgame  = progress >= R3D.ENDGAME_FRAC;
+
       // Lane decision — draft-seek first, otherwise small drift every 2.5–6 sec
+      // Push-locked cars skip lane decisions (prevents twitching while bumper-locked)
       car.laneTimer -= dt;
 
-      // Always try to lock onto draft of nearest car directly ahead
-      let bestDraftX = null;
-      let bestDraftDz = Infinity;
-      for (const other of this.cars) {
-        if (other === car || other.dnf || other.finished) continue;
-        const dz = other.z - car.z;
-        if (dz > 0 && dz < 70 && Math.abs(other.x - car.x) < 5.0) {
-          if (dz < bestDraftDz) { bestDraftDz = dz; bestDraftX = other.x; }
+      if (!car._pushLocked) {
+        // Find best car directly ahead to draft or pass
+        let bestDraftX = null, bestDraftDz = Infinity;
+        let carAhead = null;
+        for (const other of this.cars) {
+          if (other === car || other.dnf || other.finished) continue;
+          const dz = other.z - car.z;
+          if (dz > 0 && dz < 70 && Math.abs(other.x - car.x) < 5.0) {
+            if (dz < bestDraftDz) { bestDraftDz = dz; bestDraftX = other.x; carAhead = other; }
+          }
         }
-      }
 
-      if (car.laneTimer <= 0) {
-        car.laneTimer = 2.5 + Math.random() * 3.5;
-        const nearWreck = this.wrecks.find(w =>
-          w.z > car.z && w.z < car.z + 55 && Math.abs(w.x - car.x) < 5.5
-        );
-        if (nearWreck) {
-          const dir = nearWreck.x > 0 ? -1 : 1;
-          car.targetX = clamp(nearWreck.x + dir * 8, -R3D.HALF_W + 1.4, R3D.HALF_W - 1.4);
-        } else if (bestDraftX !== null && Math.random() < 0.82) {
-          // Seek draft — align X with car ahead (with tiny jitter so they're not identical)
-          car.targetX = clamp(bestDraftX + (Math.random() - 0.5) * 0.8, -R3D.HALF_W + 1.4, R3D.HALF_W - 1.4);
-        } else {
-          // Small random drift to keep things natural
-          const drift = (Math.random() - 0.5) * 3;
-          car.targetX = clamp(car.x + drift, -R3D.HALF_W + 1.4, R3D.HALF_W - 1.4);
+        const laneTimerBase = endgame ? 0.4 + Math.random() * 1.0 : 2.5 + Math.random() * 3.5;
+        const hw = R3D.HALF_W - 1.4;
+
+        if (car.laneTimer <= 0) {
+          car.laneTimer = laneTimerBase;
+          const nearWreck = this.wrecks.find(w =>
+            w.z > car.z && w.z < car.z + 55 && Math.abs(w.x - car.x) < 5.5
+          );
+
+          if (nearWreck) {
+            const dir = nearWreck.x > 0 ? -1 : 1;
+            car.targetX = clamp(nearWreck.x + dir * 8, -hw, hw);
+          } else if (endgame && carAhead !== null && Math.random() < 0.70) {
+            // ENDGAME: attempt to pass — go wide or inside of car ahead
+            const passDir = Math.random() < 0.5 ? 1 : -1;
+            const passX   = carAhead.x + passDir * (R3D.CAR_SEP_X + 0.8 + Math.random() * 1.5);
+            car.targetX   = clamp(passX, -hw, hw);
+          } else if (endgame && Math.random() < 0.35) {
+            // Endgame: wild aggressive lane change to find clear air or block
+            car.targetX = clamp(car.x + (Math.random() - 0.5) * 8, -hw, hw);
+          } else if (bestDraftX !== null && Math.random() < (endgame ? 0.55 : 0.82)) {
+            // Seek draft
+            car.targetX = clamp(bestDraftX + (Math.random() - 0.5) * 0.8, -hw, hw);
+          } else {
+            const drift = endgame ? (Math.random() - 0.5) * 5 : (Math.random() - 0.5) * 3;
+            car.targetX = clamp(car.x + drift, -hw, hw);
+          }
+        } else if (bestDraftX !== null && !endgame) {
+          // Continuously nudge toward draft target during normal racing
+          car.targetX += (bestDraftX - car.targetX) * Math.min(1, dt * 0.9);
+          car.targetX  = clamp(car.targetX, -hw, hw);
         }
-      } else if (bestDraftX !== null) {
-        // Continuously nudge toward draft target — more aggressive closing
-        car.targetX += (bestDraftX - car.targetX) * Math.min(1, dt * 0.9);
-        car.targetX  = clamp(car.targetX, -R3D.HALF_W + 1.4, R3D.HALF_W - 1.4);
       }
 
       // Tighter speed spread so cars stay in a pack; faster alignment to target
       const tgt = Math.min(R3D.SPEED_BASE * (0.79 + car.power * 0.23) + car.draftBoost, R3D.SPEED_MAX);
+      const latSpeed = endgame ? 5.5 : 4.0; // faster lateral movement in endgame
       car.speed += (tgt - car.speed) * Math.min(1, dt * 2.2);
-      car.x     += (car.targetX - car.x) * Math.min(1, dt * 4.0);
+      car.x     += (car.targetX - car.x) * Math.min(1, dt * latSpeed);
       car.z     += car.speed * dt;
       car.mesh.position.set(car.x, 0, car.z);
     }
@@ -793,6 +822,40 @@ class Race3DEngine {
     }
   }
 
+  // ── Chain draft bonus — a line of N cars drafts faster ───────
+  _calcChainBonus() {
+    // Sort active cars front-to-back (highest Z first)
+    const active = this.cars
+      .filter(c => !c.dnf && !c.finished)
+      .sort((a, b) => b.z - a.z);
+
+    if (active.length < 2) return;
+
+    // Walk the sorted list and find consecutive chains
+    let chainStart = 0;
+    for (let i = 0; i <= active.length; i++) {
+      const inChain = i < active.length && i > 0 &&
+        (active[i - 1].z - active[i].z) < R3D.DRAFT_Z &&
+        Math.abs(active[i - 1].x - active[i].x) < R3D.DRAFT_X;
+
+      if (!inChain || i === active.length) {
+        // Chain ended — apply bonus to all cars in this chain segment
+        const len = i - chainStart;
+        if (len >= 2) {
+          // Extra speed per additional car in chain: chain of 9 = +32 over baseline draft
+          const bonus = (len - 1) * R3D.CHAIN_PER_CAR;
+          for (let k = chainStart; k < i; k++) {
+            active[k].draftBoost = Math.min(
+              active[k].draftBoost + bonus,
+              R3D.DRAFT_BOOST + R3D.PUSH_BONUS + (len - 1) * R3D.CHAIN_PER_CAR
+            );
+          }
+        }
+        chainStart = i;
+      }
+    }
+  }
+
   // ── Physical separation — no car can pass through another ────
   _separateCars() {
     const active = this.cars.filter(c => !c.finished && !c.dnf && !c.spinning);
@@ -810,27 +873,20 @@ class Race3DEngine {
         if (adx >= R3D.CAR_SEP_X) continue;         // not overlapping in X
 
         // Push-draft alignment: directly in line, one car behind the other.
-        // Don't push laterally — let them lock bumpers. Instead enforce a
-        // minimum Z gap and transfer speed from pusher to pushed car.
+        // Lock bumpers smoothly — speed transfer only, no position snapping (prevents twitching).
         if (adx < R3D.PUSH_X && dz < R3D.PUSH_Z) {
           const behind = signedDz >= 0 ? a : b;  // lower Z = behind
           const ahead  = signedDz >= 0 ? b : a;
-          // Keep minimum Z gap so they don't clip
-          const zGap = R3D.CAR_SEP_Z * 0.82;
-          if (dz < zGap) {
-            const push = (zGap - dz) * 0.15;
-            behind.z -= push * 0.3;
-            ahead.z  += push * 0.7;   // ahead car gets pushed forward more
-            behind.mesh.position.z = behind.z;
-            ahead.mesh.position.z  = ahead.z;
-          }
-          // Speed transfer: pusher shoves the car ahead
+          // Speed transfer: pusher shoves the car ahead — soft lerp avoids jerk
           const diff = behind.speed - ahead.speed;
           if (diff > 0) {
-            ahead.speed  = Math.min(R3D.SPEED_MAX, ahead.speed  + diff * 0.35);
-            behind.speed = Math.max(0,              behind.speed - diff * 0.08);
+            ahead.speed  = Math.min(R3D.SPEED_MAX, ahead.speed  + diff * 0.25);
+            behind.speed = Math.max(0,              behind.speed - diff * 0.05);
           }
-          continue; // no lateral separation for push-aligned pairs
+          // Flag as push-locked so AI won't try to change lanes while locked
+          behind._pushLocked = true;
+          ahead._pushLocked  = true;
+          continue; // no lateral or z correction — let physics flow smoothly
         }
 
         // How deep the overlap is, split equally
@@ -921,11 +977,14 @@ class Race3DEngine {
 
   _triggerWreck() {
     const pz = this.player.z;
-    // Only wreck cars well ahead of player, not too close to finish
+    const endgame = pz / R3D.TRACK_LEN >= R3D.ENDGAME_FRAC;
+    // In endgame, wrecks can happen anywhere in the pack including near player
+    const aheadMin  = endgame ? 30  : 80;
+    const finishBuf = endgame ? 60  : 200;
     const cands = this.cars.filter(c =>
       !c.isPlayer && !c.spinning && !c.finished && !c.dnf &&
-      c.z > pz + 80 &&
-      c.z < R3D.TRACK_LEN - 200
+      c.z > pz + aheadMin &&
+      c.z < R3D.TRACK_LEN - finishBuf
     );
     if (cands.length < 2) return; // need at least 2 AI cars up there
 
