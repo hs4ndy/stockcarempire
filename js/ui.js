@@ -17,12 +17,13 @@ function showTab(tabName) {
 function renderTab(tabName) {
   const main = document.getElementById('main-content');
   switch (tabName) {
-    case 'dashboard':  main.innerHTML = renderDashboard(); break;
-    case 'garage':     main.innerHTML = renderGarage();    break;
-    case 'team':       main.innerHTML = renderTeam();      break;
-    case 'schedule':   main.innerHTML = renderSchedule();  break;
-    case 'market':     main.innerHTML = renderMarket();    break;
-    case 'standings':  main.innerHTML = renderStandings(); break;
+    case 'dashboard':  main.innerHTML = renderDashboard();   break;
+    case 'garage':     main.innerHTML = renderGarage();      break;
+    case 'team':       main.innerHTML = renderTeam();        break;
+    case 'schedule':   main.innerHTML = renderSchedule();    break;
+    case 'market':     main.innerHTML = renderMarket();      break;
+    case 'standings':  main.innerHTML = renderStandings();   break;
+    case 'carstats':   main.innerHTML = renderCareerStats(); break;
     default:           main.innerHTML = renderDashboard();
   }
   attachTabListeners(tabName);
@@ -300,6 +301,12 @@ function renderGarage() {
         <button class="btn btn-sm btn-primary" onclick="showUpgradeModal('${car.id}')">Upgrades</button>
         <button class="btn btn-sm btn-ghost" onclick="handleRenameCar('${car.id}')">Rename</button>
         ${game.cars.length > 1 ? `<button class="btn btn-sm btn-danger" onclick="handleSellCar('${car.id}')">Sell</button>` : ''}
+      </div>
+      <div class="car-color-row">
+        <span class="stat-label">Car Color</span>
+        ${['#e8001d','#3498db','#2ecc71','#f39c12','#9b59b6','#ffffff','#222222','#ff6600','#00cccc','#ff69b4'].map(c =>
+          `<button class="color-swatch${(car.color||'#e8001d')===c?' active':''}" style="background:${c}" onclick="setCarColor('${car.id}','${c}');renderTab('garage')" title="${c}"></button>`
+        ).join('')}
       </div>
     </div>`;
   }).join('');
@@ -749,10 +756,10 @@ function renderRaceResultsModal(results, events, playerResult) {
   let playerSection = '';
   if (playerResult) {
     const pos = playerResult.position;
-    const emoji = pos === 1 ? '🏆' : pos <= 3 ? '🥈' : pos <= 10 ? '🏁' : '😐';
+    const label = pos === 1 ? 'VICTORY LANE' : pos <= 3 ? 'PODIUM FINISH' : `P${pos} FINISH`;
     playerSection = `
       <div class="player-result-hero">
-        <span class="big-pos-emoji">${emoji}</span>
+        <div class="big-pos-label">${label}</div>
         <div>
           <div class="big-pos">${pos}${ordinal(pos)} place</div>
           <div class="big-prize green">${fmt$(playerResult.prize)} earned</div>
@@ -765,7 +772,7 @@ function renderRaceResultsModal(results, events, playerResult) {
   <div class="modal-overlay" id="results-modal">
     <div class="modal modal-wide">
       <div class="modal-header">
-        <h3>🏁 Race Results</h3>
+        <h3>Race Results</h3>
       </div>
       <div class="modal-body">
         ${playerSection}
@@ -834,6 +841,162 @@ function renderPremierChoiceModal() {
       </div>
       <div class="modal-footer">
         <button class="btn btn-primary" id="btn-confirm-career" onclick="confirmCareerChoice()" disabled>Confirm Choice</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ─── Career Stats ─────────────────────────────────────────────
+function renderCareerStats() {
+  if (!game) return '';
+  const rep = game.reputation || 50;
+  const repLabel = rep >= 80 ? 'Legend' : rep >= 60 ? 'Respected' : rep >= 40 ? 'Known' : rep >= 20 ? 'Rookie' : 'Unknown';
+  const repCls   = rep >= 60 ? 'bar-green' : rep >= 40 ? 'bar-yellow' : 'bar-red';
+
+  const histRows = (game.history || []).map(h => `
+    <div class="result-row">
+      <span class="res-pos">Year ${h.year}</span>
+      <span class="res-name">${h.series}</span>
+      <span class="res-pts">${h.finalPos}${ordinal(h.finalPos)}</span>
+      <span class="res-prize">${h.wins} W</span>
+    </div>`).join('') || '<p class="muted-text">No completed seasons yet.</p>';
+
+  const carRows = game.cars.map(car => `
+    <div class="car-card" style="margin-bottom:1rem">
+      <div class="car-card-header">
+        <span class="car-name">#${car.number || 1} ${car.name}</span>
+        <span class="car-class-badge" style="background:${car.color||'#e8001d'}">&nbsp;</span>
+      </div>
+      <div class="car-meta">
+        <div class="team-stat"><span>Number</span>
+          <span><button class="btn btn-sm btn-ghost" onclick="handleSetCarNumber('${car.id}')">#${car.number || 1} Change</button></span>
+        </div>
+        <div class="team-stat"><span>Color</span>
+          <span>${['#e8001d','#3498db','#2ecc71','#f39c12','#9b59b6','#ffffff','#222222','#ff6600','#00cccc','#ff69b4'].map(c =>
+            `<button class="color-swatch${(car.color||'#e8001d')===c?' active':''}" style="background:${c};margin:1px" onclick="setCarColor('${car.id}','${c}');renderTab('carstats')" title="${c}"></button>`
+          ).join('')}</span>
+        </div>
+        <div class="team-stat"><span>Wins</span><span>${car.wins || 0}</span></div>
+        <div class="team-stat"><span>Races</span><span>${car.races || 0}</span></div>
+        <div class="team-stat"><span>Points</span><span>${car.totalPoints || 0}</span></div>
+      </div>
+    </div>`).join('');
+
+  const sorted = getStandings();
+  const standRows = sorted.map((e, i) => `
+    <div class="result-row ${e.isPlayer ? 'player-result' : ''}">
+      <span class="res-pos ${i < 3 ? 'podium' : ''}">${i + 1}</span>
+      <span class="res-name">${e.name}</span>
+      <span class="res-pts">${e.points} pts</span>
+      <span class="res-prize">${e.wins}W ${e.top5}T5</span>
+    </div>`).join('');
+
+  return `
+  <div class="page-header"><h2>Career Stats</h2></div>
+  <div class="card mb">
+    <div class="card-header">Reputation</div>
+    <div class="card-body">
+      <div class="stat-row">
+        <span class="stat-label">${repLabel}</span>
+        <div class="stat-bar-wrap"><div class="stat-bar ${repCls}" style="width:${rep}%"></div></div>
+        <span class="stat-value">${rep}/100</span>
+      </div>
+    </div>
+  </div>
+  <div class="card mb">
+    <div class="card-header">Car Setup</div>
+    <div class="card-body">${carRows}</div>
+  </div>
+  <div class="card mb">
+    <div class="card-header">Current Season Standings</div>
+    <div class="card-body results-list">${standRows}</div>
+  </div>
+  <div class="card mb">
+    <div class="card-header">Season History</div>
+    <div class="card-body results-list">${histRows}</div>
+  </div>`;
+}
+
+// ─── Save / Load slot modals ──────────────────────────────────
+function renderSaveModal() {
+  const meta = getSaveMeta();
+  const slots = meta.map((m, i) => {
+    const filled = m !== null;
+    const info = filled
+      ? `<strong>${m.teamName}</strong><br>${m.series} · Year ${m.year} · ${m.wins} wins<br><span class="muted-text">${new Date(m.savedAt).toLocaleString()}</span>`
+      : '<span class="muted-text">Empty</span>';
+    return `
+    <div class="save-slot">
+      <div class="save-slot-info">${info}</div>
+      <div class="save-slot-actions">
+        <button class="btn btn-sm btn-primary" onclick="handleSaveToSlot(${i})">Save Here</button>
+        ${filled ? `<button class="btn btn-sm btn-danger" onclick="handleDeleteSlot(${i})">Delete</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="modal-overlay" id="save-slot-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Save Game</h3>
+        <button class="modal-close" onclick="closeSaveModal()">✕</button>
+      </div>
+      <div class="modal-body save-slots">${slots}</div>
+    </div>
+  </div>`;
+}
+
+function renderLoadModal() {
+  const meta = getSaveMeta();
+  const hasAnySave = meta.some(m => m !== null);
+
+  const slots = meta.map((m, i) => {
+    const filled = m !== null;
+    const info = filled
+      ? `<strong>${m.teamName}</strong><br>${m.series} · Year ${m.year} · ${m.wins} wins<br><span class="muted-text">${new Date(m.savedAt).toLocaleString()}</span>`
+      : '<span class="muted-text">Empty</span>';
+    return `
+    <div class="save-slot ${!filled ? 'save-slot-empty' : ''}">
+      <div class="save-slot-info">${info}</div>
+      <div class="save-slot-actions">
+        ${filled ? `
+          <button class="btn btn-sm btn-primary" onclick="handleLoadFromSlot(${i})">Load</button>
+          <button class="btn btn-sm btn-danger" onclick="handleDeleteSlot(${i})">Delete</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="modal-overlay" id="save-slot-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Load a Game</h3>
+        <button class="modal-close" onclick="closeSaveModal()">✕</button>
+      </div>
+      <div class="modal-body save-slots">
+        ${!hasAnySave ? '<p class="muted-text">No saved games found.</p>' : slots}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ─── Quick Race modal ─────────────────────────────────────────
+function renderQuickRaceModal() {
+  return `
+  <div class="modal-overlay" id="quick-race-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Quick Race</h3>
+        <button class="modal-close" onclick="document.getElementById('quick-race-modal')?.remove()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>Jump straight into a superspeedway race — no career consequences.</p>
+        <div class="career-choices" style="flex-direction:column;gap:0.75rem">
+          <button class="btn btn-primary" onclick="handleStartQuickRace(12)">Small Field (12 cars)</button>
+          <button class="btn btn-primary" onclick="handleStartQuickRace(20)">Full Field (20 cars)</button>
+          <button class="btn btn-primary" onclick="handleStartQuickRace(30)">Big Pack (30 cars)</button>
+        </div>
       </div>
     </div>
   </div>`;

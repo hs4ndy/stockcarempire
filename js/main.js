@@ -17,11 +17,7 @@ let selectedCareerPath = null;
 
 // ─── Startup ─────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
-  if (loadGame()) {
-    enterGame();
-  } else {
-    showScreen('intro');
-  }
+  showScreen('intro');
 });
 
 function enterGame() {
@@ -46,11 +42,11 @@ document.getElementById('btn-start-new')?.addEventListener('click', () => {
 });
 
 document.getElementById('btn-load-game')?.addEventListener('click', () => {
-  if (loadGame()) {
-    enterGame();
-  } else {
-    toast('No save file found.', 'error');
-  }
+  showLoadModal();
+});
+
+document.getElementById('btn-quick-race')?.addEventListener('click', () => {
+  showQuickRaceScreen();
 });
 
 document.getElementById('btn-create-team')?.addEventListener('click', () => {
@@ -76,6 +72,44 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
     updateHeader();
   });
 });
+
+// ─── Quick Race ───────────────────────────────────────────────
+function showQuickRaceScreen() {
+  document.body.insertAdjacentHTML('beforeend', renderQuickRaceModal());
+}
+
+function handleStartQuickRace(fieldSize) {
+  document.getElementById('quick-race-modal')?.remove();
+  const AI_COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#c0392b','#16a085','#8e44ad','#2980b9','#27ae60'];
+  const aiEntries = [];
+  for (let i = 0; i < fieldSize - 1; i++) {
+    const tmpl = AI_TEAM_TEMPLATES[i % AI_TEAM_TEMPLATES.length];
+    aiEntries.push({ name: tmpl.name.split(' ')[0], color: AI_COLORS[i % AI_COLORS.length], number: i + 2, power: rand(0.35, 0.80) });
+  }
+  showScreen('game-race');
+  launch3DRace(
+    { playerColor: '#e8001d', playerNumber: 1, playerPower: 0.60, fieldSize, aiEntries },
+    (pos) => {
+      showScreen('intro');
+      toast(`Quick Race finished — you placed ${pos}${ordinal(pos)}!`, pos <= 3 ? 'success' : 'info');
+    }
+  );
+}
+
+// ─── Career Stats ─────────────────────────────────────────────
+function handleSetCarColor(carId, color) {
+  setCarColor(carId, color);
+  renderTab('carstats');
+}
+
+function handleSetCarNumber(carId) {
+  const car = game.cars.find(c => c.id === carId);
+  if (!car) return;
+  const val = prompt(`Enter car number (1–99):`, car.number || 1);
+  if (!val) return;
+  setCarNumber(carId, val);
+  renderTab('carstats');
+}
 
 // ─── Dashboard handlers ───────────────────────────────────────
 function handleOpenRaceWeekend() {
@@ -270,20 +304,24 @@ function handleStartRace() {
 
   // Build AI entry list for 3D race
   const aiEntries = [];
+  const usedNums = new Set([pCar?.number || 1]);
   game.season.aiTeams.forEach(team => {
     team.cars.forEach(car => {
       if (isHiredMode && team.id === game.hiredTeamId) return;
+      const n = car.number || (() => { let x; do { x = randInt(2,99); } while(usedNums.has(x)); usedNums.add(x); return x; })();
       aiEntries.push({
-        name:  team.name.split(' ')[0],
-        color: team.color,
-        power: clamp(car.power * (car.condition / 100), 0.25, 0.95),
+        name:   team.name.split(' ')[0],
+        color:  car.color || team.color,
+        number: n,
+        power:  clamp(car.power * (car.condition / 100), 0.25, 0.95),
       });
     });
   });
   // Pad with generic backmarkers to fill field
   while (aiEntries.length < series.fieldSize - 1) {
     const tmpl = pick(AI_TEAM_TEMPLATES);
-    aiEntries.push({ name: tmpl.name.split(' ')[0], color: tmpl.color, power: rand(0.28, 0.48) });
+    let n; do { n = randInt(2,99); } while(usedNums.has(n)); usedNums.add(n);
+    aiEntries.push({ name: tmpl.name.split(' ')[0], color: tmpl.color, number: n, power: rand(0.28, 0.48) });
   }
 
   // Player power based on their car + skill
@@ -296,7 +334,8 @@ function handleStartRace() {
 
   launch3DRace(
     {
-      playerColor: '#e8001d',
+      playerColor:  pCar?.color  || '#e8001d',
+      playerNumber: pCar?.number || 1,
       playerPower,
       fieldSize:   series.fieldSize,
       aiEntries:   aiEntries.slice(0, series.fieldSize - 1),
@@ -468,8 +507,41 @@ function confirmCareerChoice() {
 
 // ─── Settings / save ─────────────────────────────────────────
 function handleSaveGame() {
-  saveGame();
-  toast('Game saved!', 'success');
+  showSaveModal();
+}
+
+function showSaveModal() {
+  document.body.insertAdjacentHTML('beforeend', renderSaveModal());
+}
+
+function showLoadModal() {
+  document.body.insertAdjacentHTML('beforeend', renderLoadModal());
+}
+
+function handleSaveToSlot(slot) {
+  saveToSlot(slot);
+  document.getElementById('save-slot-modal')?.remove();
+  toast(`Saved to Slot ${slot + 1}!`, 'success');
+}
+
+function handleLoadFromSlot(slot) {
+  if (loadFromSlot(slot)) {
+    document.getElementById('save-slot-modal')?.remove();
+    enterGame();
+  } else {
+    toast('Could not load save.', 'error');
+  }
+}
+
+function handleDeleteSlot(slot) {
+  if (!confirm(`Delete save in Slot ${slot + 1}?`)) return;
+  deleteSlot(slot);
+  document.getElementById('save-slot-modal')?.remove();
+  showLoadModal();
+}
+
+function closeSaveModal() {
+  document.getElementById('save-slot-modal')?.remove();
 }
 
 function handleNewGamePrompt() {

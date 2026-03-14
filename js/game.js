@@ -2,7 +2,55 @@
 // STOCK CAR EMPIRE - Core Game State & Logic
 // ============================================================
 
-const SAVE_KEY = 'stockCarEmpire_v1';
+// ─── Multi-slot save system ──────────────────────────────────
+const NUM_SLOTS   = 5;
+const SLOT_PREFIX = 'sce_slot_';
+const META_KEY    = 'sce_meta';
+let currentSlot   = null;  // which slot is currently loaded
+
+function getSaveMeta() {
+  try {
+    const raw = localStorage.getItem(META_KEY);
+    return raw ? JSON.parse(raw) : Array(NUM_SLOTS).fill(null);
+  } catch(e) { return Array(NUM_SLOTS).fill(null); }
+}
+
+function saveToSlot(slot) {
+  if (slot === null || slot === undefined) slot = 0;
+  currentSlot = slot;
+  try {
+    localStorage.setItem(SLOT_PREFIX + slot, JSON.stringify(game));
+    const meta = getSaveMeta();
+    meta[slot] = {
+      teamName: game.teamName,
+      series: SERIES[game.currentSeries]?.name || '—',
+      year: game.season.year,
+      wins: game.cars.reduce((s, c) => s + (c.wins || 0), 0),
+      savedAt: Date.now(),
+    };
+    localStorage.setItem(META_KEY, JSON.stringify(meta));
+    return true;
+  } catch(e) { console.warn('Save failed:', e); return false; }
+}
+
+function loadFromSlot(slot) {
+  try {
+    const raw = localStorage.getItem(SLOT_PREFIX + slot);
+    if (!raw) return false;
+    const loaded = JSON.parse(raw);
+    if (!loaded || !loaded.teamName || !loaded.cars || !loaded.season) return false;
+    game = loaded;
+    currentSlot = slot;
+    return true;
+  } catch(e) { console.warn('Load failed:', e); return false; }
+}
+
+function deleteSlot(slot) {
+  localStorage.removeItem(SLOT_PREFIX + slot);
+  const meta = getSaveMeta();
+  meta[slot] = null;
+  localStorage.setItem(META_KEY, JSON.stringify(meta));
+}
 
 let game = null;   // The live game state object
 
@@ -32,7 +80,7 @@ function fmt$( n ) {
 }
 
 // ─── Car factory ────────────────────────────────────────────
-function makeCar(name, classId, overrideStats) {
+function makeCar(name, classId, overrideStats, opts = {}) {
   const cls = CAR_CLASSES[classId];
   const base = { ...cls.baseStats };
   const stats = { ...base, ...(overrideStats || {}) };
@@ -40,6 +88,8 @@ function makeCar(name, classId, overrideStats) {
     id: uid(),
     name,
     classId,
+    color:       opts.color  || '#e8001d',
+    number:      opts.number !== undefined ? opts.number : 1,
     speed:       stats.speed,
     handling:    stats.handling,
     reliability: stats.reliability,
@@ -50,6 +100,22 @@ function makeCar(name, classId, overrideStats) {
     races: 0,
     totalPoints: 0,
   };
+}
+
+function setCarColor(carId, color) {
+  const car = game.cars.find(c => c.id === carId);
+  if (!car) return;
+  car.color = color;
+  saveGame();
+}
+
+function setCarNumber(carId, num) {
+  const car = game.cars.find(c => c.id === carId);
+  if (!car) return;
+  const n = parseInt(num, 10);
+  if (isNaN(n) || n < 1 || n > 99) return;
+  car.number = n;
+  saveGame();
 }
 
 // ─── AI Team factory ────────────────────────────────────────
@@ -68,6 +134,8 @@ function makeAITeam(template, seriesLevel) {
       driverName: pick(AI_DRIVER_NAMES),
       power,        // composite 0–1 score used in simulation
       condition: 100,
+      number: 0,    // assigned by generateAITeams
+      color: template.color,
     });
   }
 
@@ -129,19 +197,32 @@ function generateAITeams(seriesLevel) {
     teams.push(team);
     carCount += team.cars.length;
   }
+
+  // Assign unique car numbers (2–99; 1 is reserved for player)
+  const usedNums = new Set([1]);
+  for (const team of teams) {
+    for (const car of team.cars) {
+      let n;
+      do { n = randInt(2, 99); } while (usedNums.has(n));
+      usedNums.add(n);
+      car.number = n;
+    }
+  }
+
   return teams;
 }
 
 // ─── New Game ────────────────────────────────────────────────
 function newGame(teamName, firstCarName) {
-  const firstCar = makeCar(firstCarName, 'stock');
+  const firstCar = makeCar(firstCarName, 'stock', null, { color: '#e8001d', number: 1 });
   firstCar.assignedDriverId = 'player'; // player drives this car
 
   game = {
-    version: '1.0',
+    version: '1.1',
     teamName,
     money: 50000,
     playerSkill: 60,     // 0–100, improves slowly
+    reputation: 50,      // 0–100; affected by race behavior
     currentSeries: 0,
     driverMode: 'driver', // 'driver' | 'manager' | 'hired' (Premier Cup choice)
     hiredTeamId: null,    // if 'hired', which AI team
@@ -170,35 +251,17 @@ function newGame(teamName, firstCarName) {
   return game;
 }
 
-// ─── Load / Save ─────────────────────────────────────────────
+// ─── Load / Save (slot wrappers) ─────────────────────────────
 function saveGame() {
-  try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(game));
-  } catch (e) {
-    console.warn('Save failed:', e);
-  }
+  saveToSlot(currentSlot !== null ? currentSlot : 0);
 }
 
 function loadGame() {
-  try {
-    const raw = localStorage.getItem(SAVE_KEY);
-    if (!raw) return false;
-    const loaded = JSON.parse(raw);
-    // Basic validity check — must have core fields
-    if (!loaded || !loaded.teamName || !loaded.cars || !loaded.season) {
-      console.warn('Save file is corrupt or incomplete, ignoring.');
-      return false;
-    }
-    game = loaded;
-    return true;
-  } catch (e) {
-    console.warn('Load failed:', e);
-    return false;
-  }
+  return false; // No auto-load; use loadFromSlot() explicitly
 }
 
 function deleteSave() {
-  localStorage.removeItem(SAVE_KEY);
+  if (currentSlot !== null) deleteSlot(currentSlot);
   game = null;
 }
 
@@ -277,6 +340,13 @@ function postRaceUpdate(playerResult, earnings) {
   const pos    = playerResult.position;
   const relPerf = 1 - (pos - 1) / field;  // 1.0 = win, 0 = last
   game.playerSkill = clamp(game.playerSkill + relPerf * 0.4 + 0.1, 0, 98);
+
+  // Reputation: improves with good finishes, degrades slightly on bad ones
+  if (!game.reputation) game.reputation = 50;
+  if (pos === 1) game.reputation = clamp(game.reputation + 5, 0, 100);
+  else if (pos <= 3) game.reputation = clamp(game.reputation + 2, 0, 100);
+  else if (pos <= 10) game.reputation = clamp(game.reputation + 1, 0, 100);
+  else game.reputation = clamp(game.reputation - 1, 0, 100);
 
   // Car condition degrades
   game.cars.forEach(car => {

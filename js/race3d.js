@@ -12,7 +12,7 @@ const R3D = {
   SPEED_MAX:      268,    // absolute max
   ACCEL:          1.6,    // forward accel lerp — lower = smoother speed changes
   BRAKE_FORCE:    140,    // speed loss when braking (units/sec²)
-  LAT_ACC:        160,    // lateral acceleration (units/sec²)
+  LAT_ACC:        80,     // lateral acceleration (units/sec²)
   LAT_MAX:        13,     // max lateral speed (units/sec)
   LAT_DAMP:       0.0005, // damping when key released
   DRAFT_Z:        48,     // draft cone depth — extended so cars pack up earlier
@@ -477,12 +477,6 @@ class Race3DEngine {
       rim.rotation.z = Math.PI/2; rim.position.set(wx,wy,wz); g.add(rim);
     });
 
-    if (isPlayer) {
-      const stripeM = new THREE.MeshLambertMaterial({ color: 0xffee00, emissive: 0x998800 });
-      const stripe  = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.1, 0.12), stripeM);
-      stripe.position.set(0, 1.45, 0);
-      g.add(stripe);
-    }
 
     const glowMat = new THREE.MeshBasicMaterial({ color: 0x44aaff, transparent: true, opacity: 0 });
     const glow    = new THREE.Mesh(new THREE.BoxGeometry(2.5, 1.2, 5.5), glowMat);
@@ -602,9 +596,9 @@ class Race3DEngine {
     const p  = this.player;
 
     // Player can steer laterally during formation lap
-    // A = left = -X, D = right = +X
-    if      (this.keys.a) p.lv -= R3D.LAT_ACC * 0.6 * dt;
-    else if (this.keys.d) p.lv += R3D.LAT_ACC * 0.6 * dt;
+    // A = left = +X (world), D = right = -X (world) — camera is looking in +Z so world +X = screen left
+    if      (this.keys.a) p.lv += R3D.LAT_ACC * 0.6 * dt;
+    else if (this.keys.d) p.lv -= R3D.LAT_ACC * 0.6 * dt;
     else                  p.lv *= Math.pow(R3D.LAT_DAMP, dt);
     p.lv = clamp(p.lv, -R3D.LAT_MAX * 0.6, R3D.LAT_MAX * 0.6);
     p.x  = clamp(p.x + p.lv * dt, -hw, hw);
@@ -637,9 +631,9 @@ class Race3DEngine {
     }
 
     // ── Lateral steering ──────────────────────────────────────
-    // A = left = -X, D = right = +X
-    if      (this.keys.a) p.lv -= R3D.LAT_ACC * dt;
-    else if (this.keys.d) p.lv += R3D.LAT_ACC * dt;
+    // A = left = +X (world), D = right = -X (world) — camera looks in +Z so world +X = screen left
+    if      (this.keys.a) p.lv += R3D.LAT_ACC * dt;
+    else if (this.keys.d) p.lv -= R3D.LAT_ACC * dt;
     else                  p.lv *= Math.pow(R3D.LAT_DAMP, dt);
 
     p.lv = clamp(p.lv, -R3D.LAT_MAX, R3D.LAT_MAX);
@@ -673,8 +667,8 @@ class Race3DEngine {
     p.z += p.speed * dt;
     p.mesh.position.set(p.x, 0, p.z);
 
-    // Body roll: turning left (A/-X) → lean right; turning right (D/+X) → lean left
-    const roll = this.keys.a ? 0.05 : this.keys.d ? -0.05 : 0;
+    // Body roll: turning left (A/+X world) → lean left; turning right (D/-X world) → lean right
+    const roll = this.keys.a ? -0.05 : this.keys.d ? 0.05 : 0;
     p.mesh.rotation.z += (roll - p.mesh.rotation.z) * 0.12;
   }
 
@@ -824,7 +818,7 @@ class Race3DEngine {
           // Keep minimum Z gap so they don't clip
           const zGap = R3D.CAR_SEP_Z * 0.82;
           if (dz < zGap) {
-            const push = (zGap - dz) * 0.55;
+            const push = (zGap - dz) * 0.15;
             behind.z -= push * 0.3;
             ahead.z  += push * 0.7;   // ahead car gets pushed forward more
             behind.mesh.position.z = behind.z;
@@ -849,9 +843,9 @@ class Race3DEngine {
         b.mesh.position.x = b.x;
 
         // Impart a small lateral push to both — feels like a rub
-        if (a.isPlayer) a.lv = clamp(a.lv - dir * 2.5, -R3D.LAT_MAX, R3D.LAT_MAX);
+        if (a.isPlayer) a.lv = clamp(a.lv - dir * 1.0, -R3D.LAT_MAX, R3D.LAT_MAX);
         else            a.targetX = clamp(a.x - dir * 1.5, -hw, hw);
-        if (b.isPlayer) b.lv = clamp(b.lv + dir * 2.5, -R3D.LAT_MAX, R3D.LAT_MAX);
+        if (b.isPlayer) b.lv = clamp(b.lv + dir * 1.0, -R3D.LAT_MAX, R3D.LAT_MAX);
         else            b.targetX = clamp(b.x + dir * 1.5, -hw, hw);
       }
     }
@@ -1086,11 +1080,9 @@ class Race3DEngine {
   _showFinish(pos) {
     const el = document.getElementById('r3d-finish');
     if (!el) return;
-    const emoji = pos === 1 ? '🏆' : pos <= 3 ? '🥈' : pos <= 10 ? '🏁' : '🚗';
-    const msg   = pos === 1 ? 'Victory Lane!' : pos <= 3 ? 'Podium Finish!' : `P${pos} Finish`;
+    const msg = pos === 1 ? 'Victory Lane!' : pos <= 3 ? 'Podium Finish!' : `P${pos} Finish`;
     el.innerHTML = `
       <div class="r3d-finish-box">
-        <div class="r3d-finish-emoji">${emoji}</div>
         <div class="r3d-finish-pos">${pos}${ordinal(pos)} Place</div>
         <div class="r3d-finish-msg">${msg}</div>
         <button class="btn btn-primary btn-lg" onclick="window._r3dFinish(${pos})">Continue →</button>
