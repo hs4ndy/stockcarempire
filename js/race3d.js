@@ -52,6 +52,13 @@ function launch3DRace(config, onComplete) {
         <div class="r3d-chip" id="r3d-pos">P—</div>
         <div class="r3d-draft-badge" id="r3d-draft">⚡ SLIPSTREAM</div>
         <div class="r3d-chip" id="r3d-speed">— mph</div>
+        <button class="r3d-pause-btn" id="r3d-pause-btn" title="Pause (Esc)">⏸</button>
+      </div>
+      <div id="r3d-pause-overlay">
+        <div class="r3d-pause-panel">
+          <div class="r3d-pause-title">PAUSED</div>
+          <button class="r3d-pause-resume" id="r3d-pause-resume">▶ RESUME</button>
+        </div>
       </div>
       <div id="r3d-mirror-wrap">
         <div class="r3d-mirror-label">◀ REAR VIEW ▶</div>
@@ -94,6 +101,7 @@ class Race3DEngine {
     this.config      = config;
     this.onComplete  = onComplete;
     this.keys        = { a: false, d: false, s: false };
+    this.paused      = false;
     this.cars        = [];
     this.player      = null;
     this.wrecks      = [];         // { x, z }
@@ -161,6 +169,7 @@ class Race3DEngine {
       if (k === 'a') this.keys.a = true;
       if (k === 'd') this.keys.d = true;
       if (k === 's') this.keys.s = true;
+      if (e.key === 'Escape') this._togglePause();
     };
     this._ku = e => {
       const k = e.key.toLowerCase();
@@ -170,6 +179,12 @@ class Race3DEngine {
     };
     document.addEventListener('keydown', this._kd);
     document.addEventListener('keyup',   this._ku);
+
+    // Pause button / resume button
+    const pauseBtn   = document.getElementById('r3d-pause-btn');
+    const resumeBtn  = document.getElementById('r3d-pause-resume');
+    if (pauseBtn)  pauseBtn.addEventListener('click',  () => this._togglePause());
+    if (resumeBtn) resumeBtn.addEventListener('click', () => this._togglePause());
 
     this._onResize = () => {
       const el = this.canvas.parentElement;
@@ -195,9 +210,11 @@ class Race3DEngine {
     const d   = this._dummy;
 
     // Asphalt — single large plane
+    // DoubleSide: mirror camera uses a flipped projection matrix which reverses
+    // winding order, causing single-sided planes to be culled. DoubleSide fixes it.
     const asphalt = new THREE.Mesh(
       new THREE.PlaneGeometry(TW, TL + 80),
-      new THREE.MeshLambertMaterial({ color: 0x2a2a2a })
+      new THREE.MeshLambertMaterial({ color: 0x2a2a2a, side: THREE.DoubleSide })
     );
     asphalt.rotation.x = -Math.PI / 2;
     asphalt.position.set(0, 0, TL / 2);
@@ -205,7 +222,7 @@ class Race3DEngine {
     s.add(asphalt);
 
     // Grass either side
-    const grassMat = new THREE.MeshLambertMaterial({ color: 0x3d8b47 });
+    const grassMat = new THREE.MeshLambertMaterial({ color: 0x3d8b47, side: THREE.DoubleSide });
     [-1, 1].forEach(side => {
       const g = new THREE.Mesh(new THREE.PlaneGeometry(600, TL + 200), grassMat);
       g.rotation.x = -Math.PI / 2;
@@ -406,10 +423,9 @@ class Race3DEngine {
       slots.push({ x:  3.5, z: r * R3D.GRID_SPACING });
     }
 
-    // Player slot: D20 roll (1–20), clamped to actual field size
-    const d20Roll      = Math.floor(Math.random() * 20) + 1; // 1–20
-    const playerSlotIdx = clamp(d20Roll - 1, 0, slots.length - 1);
-    this._startingPos  = playerSlotIdx + 1; // store for display
+    // Player slot: random position in the field
+    const playerSlotIdx = Math.floor(Math.random() * slots.length);
+    this._startingPos   = playerSlotIdx + 1; // store for display
     const ps = slots[playerSlotIdx];
     this.player = this._makeCar(ps.x, ps.z, {
       color: config.playerColor || '#e8001d',
@@ -563,6 +579,8 @@ class Race3DEngine {
 
   // ── Main update ──────────────────────────────────────────────
   _update(dt) {
+    if (this.paused) return;
+
     // During rolling start, all cars pace — player can steer
     if (this.paceMode) {
       this._updatePaceLap(dt);
@@ -952,7 +970,8 @@ class Race3DEngine {
     if (p.spinning) return;
 
     // Light push and minimal speed loss — rubbing/blocking is legal
-    p.lv    = clamp(p.lv + pushDir * 3.5, -R3D.LAT_MAX, R3D.LAT_MAX);
+    // 1.5 nudge (was 3.5) so side contact feels like a rub, not a bounce
+    p.lv    = clamp(p.lv + pushDir * 1.5, -R3D.LAT_MAX, R3D.LAT_MAX);
     p.speed = Math.max(p.speed * 0.96, 80);
     this.camShake = Math.max(this.camShake, 0.2);
 
@@ -972,6 +991,18 @@ class Race3DEngine {
     p.spinDir   = dir || 1;
     p.speed     = 20;
     this.camShake = Math.max(this.camShake, shake);
+  }
+
+  _togglePause() {
+    // Only allow pause during an active race or formation lap
+    if (this.done) return;
+    this.paused = !this.paused;
+    const overlay  = document.getElementById('r3d-pause-overlay');
+    const pauseBtn = document.getElementById('r3d-pause-btn');
+    if (overlay)  overlay.classList.toggle('active', this.paused);
+    if (pauseBtn) pauseBtn.textContent = this.paused ? '▶' : '⏸';
+    // Reset clock so dt doesn't spike on resume
+    if (!this.paused && this.clock) this.clock.getDelta();
   }
 
   _checkFinish() {
