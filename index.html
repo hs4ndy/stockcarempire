@@ -12,47 +12,94 @@
 <!--  INTRO SCREEN                                          -->
 <!-- ═══════════════════════════════════════════════════════ -->
 <div id="screen-intro" class="screen">
-  <div class="intro-content">
-    <div class="intro-logo">
-      <span class="logo-flag">🏁</span>
-      <span class="logo-main">Stock Car</span>
-      <span class="logo-sub">Empire</span>
+  <div class="intro-checker-strip top"></div>
+  <div class="intro-bg-lines"></div>
+
+  <div class="intro-layout">
+    <div class="intro-deco-num">#01</div>
+
+    <div class="intro-center">
+      <div class="intro-logo">
+        <div class="intro-flag-row">
+          <span class="intro-flag-icon">🏁</span>
+          <span class="intro-flag-icon">🏁</span>
+        </div>
+        <div class="logo-main-wrap">
+          <span class="logo-main">Stock Car</span>
+          <span class="logo-empire">Empire</span>
+        </div>
+        <div class="logo-stripe"></div>
+      </div>
+
+      <p class="intro-tagline">
+        Start with one car and a dream &mdash; build a dynasty &amp; conquer the Premier Cup.
+      </p>
+
+      <div class="intro-buttons">
+        <button class="btn-game btn-game-primary" id="btn-start-new">
+          <span class="btn-game-chevron">▶</span>
+          <span>New Career</span>
+        </button>
+        <button class="btn-game btn-game-ghost" id="btn-load-game">
+          <span>Continue Career</span>
+        </button>
+      </div>
+
+      <div class="intro-series-strip">
+        <span>GRASSROOTS CUP</span>
+        <span class="intro-series-dot">◆</span>
+        <span>REGIONAL SERIES</span>
+        <span class="intro-series-dot">◆</span>
+        <span>PREMIER CUP</span>
+      </div>
     </div>
-    <p class="intro-tagline">
-      Start with one car and a dream.<br>
-      Build a dynasty. Conquer the Premier Cup.
-    </p>
-    <div class="intro-buttons">
-      <button class="btn btn-primary btn-lg btn-full" id="btn-start-new">New Career</button>
-      <button class="btn btn-ghost btn-lg btn-full" id="btn-load-game">Continue Career</button>
+
+    <div class="intro-deco-side">
+      <div class="intro-deco-stat"><span class="deco-num">40+</span><span class="deco-lbl">TRACKS</span></div>
+      <div class="intro-deco-stat"><span class="deco-num">3</span><span class="deco-lbl">SERIES</span></div>
+      <div class="intro-deco-stat"><span class="deco-num">∞</span><span class="deco-lbl">SEASONS</span></div>
     </div>
   </div>
+
+  <div class="intro-checker-strip bottom"></div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
 <!--  SETUP SCREEN                                          -->
 <!-- ═══════════════════════════════════════════════════════ -->
 <div id="screen-setup" class="screen hidden">
-  <div class="setup-card">
-    <h2>Start Your Career</h2>
-    <p>You're starting from the bottom of the Grassroots Cup with a single car and $50,000. Build your team, win races, and climb to the Premier Cup.</p>
-    <hr class="setup-divider">
-
-    <div class="form-group">
-      <label class="form-label" for="inp-team-name">Team Name</label>
-      <input type="text" id="inp-team-name" placeholder="e.g. Thunder Valley Racing" maxlength="40" autocomplete="off">
-      <span class="form-hint">This is how your team appears in standings and results.</span>
+  <div class="setup-bg-lines"></div>
+  <div class="setup-panel">
+    <div class="setup-panel-header">
+      <div class="setup-panel-title-row">
+        <span class="setup-panel-number">01</span>
+        <div>
+          <div class="setup-panel-title">START YOUR CAREER</div>
+          <div class="setup-panel-sub">Grassroots Cup · Season 1 · $50,000 starting budget</div>
+        </div>
+      </div>
     </div>
 
-    <div class="form-group">
-      <label class="form-label" for="inp-car-name">Your First Car's Name</label>
-      <input type="text" id="inp-car-name" placeholder="e.g. Old Betsy, The Rocket, #7" maxlength="30" autocomplete="off">
-      <span class="form-hint">Give your ride a name you'll remember when you win your first race.</span>
+    <div class="setup-panel-body">
+      <div class="form-group">
+        <label class="form-label" for="inp-team-name">Team Name</label>
+        <input type="text" id="inp-team-name" placeholder="e.g. Thunder Valley Racing" maxlength="40" autocomplete="off">
+        <span class="form-hint">How your team appears in standings and race results.</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="inp-car-name">First Car's Name</label>
+        <input type="text" id="inp-car-name" placeholder="e.g. Old Betsy, The Rocket, #7" maxlength="30" autocomplete="off">
+        <span class="form-hint">Name your ride — you'll remember it when you win your first race.</span>
+      </div>
     </div>
 
-    <div class="setup-footer">
-      <button class="btn btn-ghost" onclick="showScreen('intro')">Back</button>
-      <button class="btn btn-primary" id="btn-create-team">Start Career →</button>
+    <div class="setup-panel-footer">
+      <button class="btn-game btn-game-ghost" onclick="showScreen('intro')">← Back</button>
+      <button class="btn-game btn-game-primary" id="btn-create-team">
+        <span class="btn-game-chevron">▶</span>
+        <span>Start Career</span>
+      </button>
     </div>
   </div>
 </div>
@@ -62,58 +109,73 @@
 <!-- ═══════════════════════════════════════════════════════ -->
 <div id="screen-game" class="screen hidden">
 
-  <!-- Header bar -->
+  <!-- Header bar — pit wall command center -->
   <header class="game-header">
-    <div class="header-logo">Stock Car <span>Empire</span></div>
-    <div class="header-divider"></div>
-    <div class="header-info">
-      <div class="header-chip">
-        <span class="chip-label">Team</span>
-        <span class="chip-value" id="hdr-team">—</span>
-      </div>
-      <div class="header-chip">
-        <span class="chip-label">Cash</span>
-        <span class="chip-value chip-money" id="hdr-money">$0</span>
-      </div>
-      <div class="header-chip">
-        <span class="chip-label">Series</span>
-        <span class="chip-value" id="hdr-series">GRC</span>
-      </div>
-      <div class="header-chip">
-        <span class="chip-label">Progress</span>
-        <span class="chip-value" id="hdr-race">—</span>
-      </div>
-      <div class="header-chip">
-        <span class="chip-label">Year</span>
-        <span class="chip-value" id="hdr-year">1</span>
+    <div class="header-brand">
+      <span class="header-brand-flag">🏁</span>
+      <div class="header-brand-text">
+        <span class="header-brand-main">Stock Car</span>
+        <span class="header-brand-sub">Empire</span>
       </div>
     </div>
+
+    <div class="header-telemetry">
+      <div class="telem-cell">
+        <span class="telem-label">TEAM</span>
+        <span class="telem-value" id="hdr-team">—</span>
+      </div>
+      <div class="telem-cell telem-money">
+        <span class="telem-label">CASH</span>
+        <span class="telem-value" id="hdr-money">$0</span>
+      </div>
+      <div class="telem-cell">
+        <span class="telem-label">SERIES</span>
+        <span class="telem-value" id="hdr-series">GRC</span>
+      </div>
+      <div class="telem-cell">
+        <span class="telem-label">RACE</span>
+        <span class="telem-value" id="hdr-race">—</span>
+      </div>
+      <div class="telem-cell">
+        <span class="telem-label">SEASON</span>
+        <span class="telem-value" id="hdr-year">1</span>
+      </div>
+    </div>
+
     <div class="header-actions">
       <button class="btn btn-sm btn-ghost" onclick="handleSaveGame()" title="Save (Ctrl+S)">💾 Save</button>
       <button class="btn btn-sm btn-ghost" onclick="handleNewGamePrompt()" title="New Game">↩ New</button>
     </div>
   </header>
 
-  <!-- Navigation tabs -->
+  <!-- Navigation — race program tab strip -->
   <nav class="game-nav">
+    <div class="nav-flag-accent"></div>
     <button class="nav-btn active" data-tab="dashboard">
-      <span class="nav-icon">🏠</span> Dashboard
+      <span class="nav-icon">◈</span>
+      <span class="nav-label">Dashboard</span>
     </button>
     <button class="nav-btn" data-tab="garage">
-      <span class="nav-icon">🚗</span> Garage
+      <span class="nav-icon">⬡</span>
+      <span class="nav-label">Garage</span>
     </button>
     <button class="nav-btn" data-tab="team">
-      <span class="nav-icon">👥</span> Team
+      <span class="nav-icon">◉</span>
+      <span class="nav-label">Team</span>
     </button>
     <button class="nav-btn" data-tab="schedule">
-      <span class="nav-icon">📅</span> Schedule
+      <span class="nav-icon">◷</span>
+      <span class="nav-label">Schedule</span>
     </button>
     <button class="nav-btn" data-tab="market">
-      <span class="nav-icon">🏪</span> Market
+      <span class="nav-icon">◈</span>
+      <span class="nav-label">Market</span>
     </button>
     <button class="nav-btn" data-tab="standings">
-      <span class="nav-icon">🏆</span> Standings
+      <span class="nav-icon">◆</span>
+      <span class="nav-label">Standings</span>
     </button>
+    <div class="nav-end-cap"></div>
   </nav>
 
   <!-- Dynamic main content -->

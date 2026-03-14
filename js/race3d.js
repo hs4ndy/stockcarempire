@@ -15,10 +15,10 @@ const R3D = {
   LAT_ACC:        160,    // lateral acceleration (units/sec²)
   LAT_MAX:        13,     // max lateral speed (units/sec)
   LAT_DAMP:       0.0005, // damping when key released
-  DRAFT_Z:        32,     // draft cone depth
-  DRAFT_X:        3.8,    // draft cone width
-  DRAFT_BOOST:    32,     // max speed bonus at bumper (reduced)
-  DRAFT_SLING:    6.5,    // momentum decay/sec — 32/6.5 ≈ 5 sec slingshot window
+  DRAFT_Z:        48,     // draft cone depth — extended so cars pack up earlier
+  DRAFT_X:        4.2,    // draft cone width
+  DRAFT_BOOST:    36,     // max speed bonus at bumper
+  DRAFT_SLING:    5.5,    // momentum decay/sec — slightly slower bleed for tighter packs
   PUSH_Z:         5.2,    // bumper-to-bumper push distance
   PUSH_X:         1.8,    // lateral tolerance for locked push
   PUSH_BONUS:     7,      // ≈+5 mph when locked bumpers (modest and realistic)
@@ -602,6 +602,7 @@ class Race3DEngine {
     const p  = this.player;
 
     // Player can steer laterally during formation lap
+    // A = left = -X, D = right = +X
     if      (this.keys.a) p.lv -= R3D.LAT_ACC * 0.6 * dt;
     else if (this.keys.d) p.lv += R3D.LAT_ACC * 0.6 * dt;
     else                  p.lv *= Math.pow(R3D.LAT_DAMP, dt);
@@ -636,8 +637,7 @@ class Race3DEngine {
     }
 
     // ── Lateral steering ──────────────────────────────────────
-    // Car now faces +Z (direction of travel), camera is behind it.
-    // Screen-left = -X world. A (left) decreases X, D (right) increases X.
+    // A = left = -X, D = right = +X
     if      (this.keys.a) p.lv -= R3D.LAT_ACC * dt;
     else if (this.keys.d) p.lv += R3D.LAT_ACC * dt;
     else                  p.lv *= Math.pow(R3D.LAT_DAMP, dt);
@@ -673,8 +673,8 @@ class Race3DEngine {
     p.z += p.speed * dt;
     p.mesh.position.set(p.x, 0, p.z);
 
-    // Body roll: turning left → body rolls right (rotation.z negative from behind)
-    const roll = this.keys.a ? -0.05 : this.keys.d ? 0.05 : 0;
+    // Body roll: turning left (A/-X) → lean right; turning right (D/+X) → lean left
+    const roll = this.keys.a ? 0.05 : this.keys.d ? -0.05 : 0;
     p.mesh.rotation.z += (roll - p.mesh.rotation.z) * 0.12;
   }
 
@@ -704,26 +704,46 @@ class Race3DEngine {
         continue;
       }
 
-      // Lane decision — every 3–8 seconds (much calmer AI)
+      // Lane decision — draft-seek first, otherwise small drift every 2.5–6 sec
       car.laneTimer -= dt;
+
+      // Always try to lock onto draft of nearest car directly ahead
+      let bestDraftX = null;
+      let bestDraftDz = Infinity;
+      for (const other of this.cars) {
+        if (other === car || other.dnf || other.finished) continue;
+        const dz = other.z - car.z;
+        if (dz > 0 && dz < 70 && Math.abs(other.x - car.x) < 5.0) {
+          if (dz < bestDraftDz) { bestDraftDz = dz; bestDraftX = other.x; }
+        }
+      }
+
       if (car.laneTimer <= 0) {
-        car.laneTimer = 3.0 + Math.random() * 5.0;
+        car.laneTimer = 2.5 + Math.random() * 3.5;
         const nearWreck = this.wrecks.find(w =>
           w.z > car.z && w.z < car.z + 55 && Math.abs(w.x - car.x) < 5.5
         );
         if (nearWreck) {
           const dir = nearWreck.x > 0 ? -1 : 1;
           car.targetX = clamp(nearWreck.x + dir * 8, -R3D.HALF_W + 1.4, R3D.HALF_W - 1.4);
+        } else if (bestDraftX !== null && Math.random() < 0.82) {
+          // Seek draft — align X with car ahead (with tiny jitter so they're not identical)
+          car.targetX = clamp(bestDraftX + (Math.random() - 0.5) * 0.8, -R3D.HALF_W + 1.4, R3D.HALF_W - 1.4);
         } else {
-          // Small drift, stay closer to center
-          const drift = (Math.random() - 0.5) * 7;
+          // Small random drift to keep things natural
+          const drift = (Math.random() - 0.5) * 3;
           car.targetX = clamp(car.x + drift, -R3D.HALF_W + 1.4, R3D.HALF_W - 1.4);
         }
+      } else if (bestDraftX !== null) {
+        // Continuously nudge toward draft target — more aggressive closing
+        car.targetX += (bestDraftX - car.targetX) * Math.min(1, dt * 0.9);
+        car.targetX  = clamp(car.targetX, -R3D.HALF_W + 1.4, R3D.HALF_W - 1.4);
       }
 
-      const tgt = Math.min(R3D.SPEED_BASE * (0.74 + car.power * 0.32) + car.draftBoost, R3D.SPEED_MAX);
-      car.speed += (tgt - car.speed) * Math.min(1, dt * 1.8);
-      car.x     += (car.targetX - car.x) * Math.min(1, dt * 3.5);
+      // Tighter speed spread so cars stay in a pack; faster alignment to target
+      const tgt = Math.min(R3D.SPEED_BASE * (0.79 + car.power * 0.23) + car.draftBoost, R3D.SPEED_MAX);
+      car.speed += (tgt - car.speed) * Math.min(1, dt * 2.2);
+      car.x     += (car.targetX - car.x) * Math.min(1, dt * 4.0);
       car.z     += car.speed * dt;
       car.mesh.position.set(car.x, 0, car.z);
     }
@@ -1000,6 +1020,7 @@ class Race3DEngine {
     r.setScissorTest(true);
     r.setScissor(mx, glY, mw, mh);
     r.setViewport(mx, glY, mw, mh);
+    r.clear(true, true, false); // clear color + depth in mirror region only
     r.render(this.scene, this.mirrorCam);
     r.setScissorTest(false);
     r.setViewport(0, 0, sz.x, sz.y);
@@ -1083,8 +1104,11 @@ class Race3DEngine {
     const dt  = Math.min(this.clock.getDelta(), 0.05); // cap at 50ms
     this._update(dt);
     if (this.renderer && this.scene && this.camera) {
-      this._renderMirror();                          // mirror first (scissor)
-      this.renderer.render(this.scene, this.camera); // main view
+      this.renderer.autoClear = true;
+      this.renderer.render(this.scene, this.camera); // main view first
+      this.renderer.autoClear = false;
+      this._renderMirror();                          // mirror on top (no clear)
+      this.renderer.autoClear = true;
     }
   }
 
