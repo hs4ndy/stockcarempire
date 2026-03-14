@@ -406,11 +406,10 @@ class Race3DEngine {
       slots.push({ x:  3.5, z: r * R3D.GRID_SPACING });
     }
 
-    // Player slot: mid-pack based on power
-    const playerSlotIdx = clamp(
-      Math.round((1 - config.playerPower) * fieldSize * 0.5 + 2),
-      0, slots.length - 1
-    );
+    // Player slot: D20 roll (1–20), clamped to actual field size
+    const d20Roll      = Math.floor(Math.random() * 20) + 1; // 1–20
+    const playerSlotIdx = clamp(d20Roll - 1, 0, slots.length - 1);
+    this._startingPos  = playerSlotIdx + 1; // store for display
     const ps = slots[playerSlotIdx];
     this.player = this._makeCar(ps.x, ps.z, {
       color: config.playerColor || '#e8001d',
@@ -532,7 +531,7 @@ class Race3DEngine {
       el.classList.remove('go');
     };
 
-    setMsg('FORMATION LAP', true);
+    setMsg(`FORMATION LAP  —  P${this._startingPos} START`, true);
 
     // After 3 s, start countdown (cars still rolling)
     setTimeout(() => {
@@ -1075,6 +1074,8 @@ class Race3DEngine {
 
     this.mirrorCam.aspect = mw / mh;
     this.mirrorCam.updateProjectionMatrix();
+    // Flip horizontally — mirrors reverse left/right
+    this.mirrorCam.projectionMatrix.elements[0] *= -1;
 
     const r = this.renderer;
     r.setScissorTest(true);
