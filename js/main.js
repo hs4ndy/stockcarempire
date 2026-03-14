@@ -302,6 +302,11 @@ function handleStartRace() {
   }
   game.money -= entryFee;
 
+  // Player power based on their car + skill
+  const pCar = game.cars.find(c => c.assignedDriverId === 'player') || game.cars[0];
+  const carScore  = pCar ? (pCar.speed + pCar.handling + pCar.reliability) / 300 : 0.5;
+  const playerPower = clamp(carScore * 0.65 + game.playerSkill / 100 * 0.35, 0.3, 0.95);
+
   // Build AI entry list for 3D race
   const aiEntries = [];
   const usedNums = new Set([pCar?.number || 1]);
@@ -323,11 +328,6 @@ function handleStartRace() {
     let n; do { n = randInt(2,99); } while(usedNums.has(n)); usedNums.add(n);
     aiEntries.push({ name: tmpl.name.split(' ')[0], color: tmpl.color, number: n, power: rand(0.28, 0.48) });
   }
-
-  // Player power based on their car + skill
-  const pCar = game.cars.find(c => c.assignedDriverId === 'player') || game.cars[0];
-  const carScore  = pCar ? (pCar.speed + pCar.handling + pCar.reliability) / 300 : 0.5;
-  const playerPower = clamp(carScore * 0.65 + game.playerSkill / 100 * 0.35, 0.3, 0.95);
 
   // Switch to race screen and launch 3D
   showScreen('game-race');
