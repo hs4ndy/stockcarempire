@@ -29,7 +29,7 @@ const R3D = {
   WRECK_MIN:      65,
   WRECK_MAX:      120,
   MAX_WRECKS:     2,
-  SPIN_CHANCE:    0.02,   // 2% — rubbing is racing
+  SPIN_CHANCE:    0.003,  // 0.3% — player spins are very rare
   BUMP_DEBOUNCE:  0.9,
   CAR_SEP_X:      2.15,   // minimum lateral gap between cars
   CAR_SEP_Z:      4.6,    // minimum z gap
@@ -586,14 +586,14 @@ class Race3DEngine {
 
     // Wreck scheduling — more wrecks in endgame from aggressive AI
     const endgameGlobal = this.player.z / R3D.TRACK_LEN >= R3D.ENDGAME_FRAC;
-    const maxWrecks = endgameGlobal ? R3D.MAX_WRECKS + 2 : R3D.MAX_WRECKS;
+    const maxWrecks = endgameGlobal ? R3D.MAX_WRECKS + 3 : R3D.MAX_WRECKS;
     if (this.wreckCount < maxWrecks) {
       this.wreckCooldown -= dt;
       if (this.wreckCooldown <= 0) {
         this._triggerWreck();
         // Wrecks come faster in endgame
-        const minCD = endgameGlobal ? R3D.WRECK_MIN * 0.5 : R3D.WRECK_MIN;
-        const maxCD = endgameGlobal ? R3D.WRECK_MAX * 0.6 : R3D.WRECK_MAX;
+        const minCD = endgameGlobal ? R3D.WRECK_MIN * 0.40 : R3D.WRECK_MIN;
+        const maxCD = endgameGlobal ? R3D.WRECK_MAX * 0.50 : R3D.WRECK_MAX;
         this.wreckCooldown = minCD + Math.random() * (maxCD - minCD);
       }
     }
@@ -894,8 +894,10 @@ class Race3DEngine {
             B.speed = B.speed - diff * 0.08;
           }
 
-          // ── X: push cars apart laterally if side-by-side ─────
-          if (adx > 0.01) {
+          // ── X: push cars apart laterally — only for side rubbing ─
+          // Skip lateral nudge when contact is nearly bumper-to-bumper
+          // (adx < 40% of CAR_SEP_X means they're basically inline — just push).
+          if (adx > R3D.CAR_SEP_X * 0.4) {
             const overlap = (R3D.CAR_SEP_X - adx) * 0.5;
             const dir = dx > 0 ? 1 : -1; // direction from A toward B
             A.x = clamp(A.x - dir * overlap, -hw, hw);
@@ -917,13 +919,18 @@ class Race3DEngine {
     const p = this.player;
     if (p.spinning || p.finished) return;
 
-    // Car-to-car — rubbing is racing; small random chance of spin
+    // Car-to-car — rubbing is racing; only bump for SIDE contact, not bumper push
     for (const car of this.cars) {
       if (car === p || car.finished) continue;
-      if (Math.abs(p.x - car.x) < 1.9 && Math.abs(p.z - car.z) < 4.2) {
-        if (car.contactCooldown <= 0) {
+      const adx = Math.abs(p.x - car.x);
+      const adz = Math.abs(p.z - car.z);
+      if (adx < 1.9 && adz < 4.2) {
+        // Pure bumper push: player is directly behind the car (adz >> adx).
+        // Hard constraint already handles position; don't deflect the player sideways.
+        const isBumperPush = p.z < car.z && adz > adx * 1.5;
+        if (!isBumperPush && car.contactCooldown <= 0) {
           car.contactCooldown = R3D.BUMP_DEBOUNCE;
-          const pushDir = car.x < p.x ? 1 : -1; // push player away from AI car
+          const pushDir = car.x < p.x ? 1 : -1;
           this._bumpPlayer(pushDir);
         }
         return;
