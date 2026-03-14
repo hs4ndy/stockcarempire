@@ -109,108 +109,139 @@ function renderDashboard() {
 
   const racesCompleted = game.season.calendar.filter(r => r.status === 'completed').length;
 
-  return `
-  <div class="dashboard-grid">
+  const net = income - expenses;
+  const nextRaceLabel = seasonOver ? '—' : `${race.raceNum} / ${game.season.calendar.length}`;
 
-    <!-- Team Overview -->
-    <div class="card">
-      <div class="card-header">Team Overview</div>
-      <div class="team-stat"><span>Series</span><span style="color:${series.color}">${series.name}</span></div>
-      <div class="team-stat"><span>Championship Pos.</span><span class="highlight">${pos}${ordinal(pos)} / ${totalEntrants}</span></div>
-      <div class="team-stat"><span>Points</span><span>${playerEntry?.points || 0}</span></div>
-      <div class="team-stat"><span>Wins This Season</span><span>${playerEntry?.wins || 0}</span></div>
-      <div class="team-stat"><span>Cars Owned</span><span>${game.cars.length}</span></div>
-      <div class="team-stat"><span>Season Year</span><span>${game.season.year}</span></div>
+  return `
+  <!-- Command Strip -->
+  <div class="cmd-strip">
+    <div class="cmd-cell">
+      <span class="cmd-label">Championship</span>
+      <span class="cmd-value gold">${pos}${ordinal(pos)}</span>
+      <span class="cmd-sub">of ${totalEntrants} teams</span>
     </div>
+    <div class="cmd-cell">
+      <span class="cmd-label">Points</span>
+      <span class="cmd-value">${playerEntry?.points || 0}</span>
+      <span class="cmd-sub">${playerEntry?.wins || 0} wins this season</span>
+    </div>
+    <div class="cmd-cell">
+      <span class="cmd-label">Cash</span>
+      <span class="cmd-value gold">${fmt$(game.money)}</span>
+      <span class="cmd-sub ${net >= 0 ? 'green' : 'red'}">${net >= 0 ? '+' : ''}${fmt$(net)} / race</span>
+    </div>
+    <div class="cmd-cell">
+      <span class="cmd-label">Series</span>
+      <span class="cmd-value" style="color:${series.color};font-size:1.1rem">${series.name}</span>
+      <span class="cmd-sub">Year ${game.season.year}</span>
+    </div>
+    <div class="cmd-cell">
+      <span class="cmd-label">Race</span>
+      <span class="cmd-value">${nextRaceLabel}</span>
+      <span class="cmd-sub">${seasonOver ? 'Season complete' : (track?.name || '—')}</span>
+    </div>
+  </div>
+
+  <div class="dashboard-grid">
 
     <!-- Next Race / Season End -->
     <div class="card">
-      <div class="card-header">
-        ${seasonOver ? 'Season Complete' : `Next Race — ${race.raceNum}/${game.season.calendar.length}`}
-      </div>
+      <div class="card-header">${seasonOver ? 'Season Complete' : 'Next Race'}</div>
       ${seasonOver ? `
-        <p class="muted-text">The ${series.name} season is over. Review your results and begin the next season.</p>
-        <div class="race-info-box">
-          <span class="race-track-name">Final Standing: ${pos}${ordinal(pos)}</span>
-          ${pos <= series.promotionSpots && series.level < 2
-            ? `<span class="badge badge-green">PROMOTION ELIGIBLE</span>` : ''}
-          ${series.relegationSpots > 0 && pos > totalEntrants - series.relegationSpots
-            ? `<span class="badge badge-red">RELEGATION ZONE</span>` : ''}
+        <div class="race-spotlight">
+          <span class="race-spotlight-name">Final Standing: ${pos}${ordinal(pos)}</span>
+          <span class="race-spotlight-meta">${series.name} · Year ${game.season.year}</span>
         </div>
-        <button class="btn btn-primary mt" onclick="handleEndSeason()">Begin Off-Season</button>
+        ${pos <= series.promotionSpots && series.level < 2
+          ? `<div style="margin-bottom:.75rem"><span class="badge badge-green">↑ PROMOTION ELIGIBLE</span></div>` : ''}
+        ${series.relegationSpots > 0 && pos > totalEntrants - series.relegationSpots
+          ? `<div style="margin-bottom:.75rem"><span class="badge badge-red">↓ RELEGATION ZONE</span></div>` : ''}
+        <button class="btn btn-primary" onclick="handleEndSeason()">Begin Off-Season →</button>
       ` : `
-        <div class="race-info-box">
-          <span class="race-track-name">${track?.name || 'TBD'}</span>
-          <span class="badge badge-${trackTypeBadge(track?.type)}">${formatTrackType(track?.type)}</span>
+        <div class="race-spotlight">
+          <span class="race-spotlight-name">${track?.name || 'TBD'}</span>
+          <span class="race-spotlight-meta">${formatTrackType(track?.type)} · ${track?.length} mi · ${track?.laps} laps</span>
         </div>
-        <div class="team-stat"><span>Track Length</span><span>${track?.length} miles</span></div>
-        <div class="team-stat"><span>Scheduled Laps</span><span>${track?.laps}</span></div>
-        <div class="team-stat"><span>Entry Fee</span><span>${fmt$(series.entryFee)}</span></div>
+        <div class="team-stat"><span>Entry Fee</span><span class="red">${fmt$(series.entryFee)}</span></div>
+        <div class="team-stat"><span>1st Prize</span><span class="green">${fmt$(series.prize[0])}</span></div>
         <div class="btn-row mt">
-          <button class="btn btn-primary" onclick="handleOpenRaceWeekend()">Race Weekend</button>
-          <button class="btn btn-ghost" onclick="handleSkipRace()">Skip Race</button>
+          <button class="btn btn-primary" onclick="handleOpenRaceWeekend()">Race Weekend →</button>
+          <button class="btn btn-ghost" onclick="handleSkipRace()">Skip</button>
         </div>
       `}
+    </div>
+
+    <!-- Championship Standings -->
+    <div class="card">
+      <div class="card-header">Championship Standings</div>
+      <div class="season-progress-bar-wrap">
+        <div class="season-progress-bar" style="width:${Math.round(racesCompleted / game.season.calendar.length * 100)}%"></div>
+      </div>
+      <p class="muted-text small" style="margin-bottom:.75rem">${racesCompleted} / ${game.season.calendar.length} races complete</p>
+      <div class="standings-mini">${topStandings}</div>
+      ${sorted.length > 8 ? `<p class="muted-text small mt"><a class="link" onclick="showTab('standings')">Full standings →</a></p>` : ''}
     </div>
 
     <!-- Finances -->
     <div class="card">
       <div class="card-header">Finances</div>
       <div class="team-stat"><span>Cash</span><span class="highlight">${fmt$(game.money)}</span></div>
-      <div class="team-stat"><span>Weekly Sponsor Income</span><span class="green">${fmt$(income)}</span></div>
-      <div class="team-stat"><span>Weekly Staff Costs</span><span class="red">${fmt$(expenses)}</span></div>
-      <div class="team-stat"><span>Net per Race</span><span class="${income - expenses >= 0 ? 'green' : 'red'}">${fmt$(income - expenses)}</span></div>
-      <div class="team-stat"><span>Active Sponsors</span><span>${game.activeSponsors.length}</span></div>
-      <div class="team-stat"><span>Staff on Payroll</span><span>${game.staff.length + game.hiredDrivers.length}</span></div>
+      <div class="team-stat"><span>Sponsor Income</span><span class="green">+${fmt$(income)}/race</span></div>
+      <div class="team-stat"><span>Staff Costs</span><span class="red">-${fmt$(expenses)}/race</span></div>
+      <div class="team-stat"><span>Net</span><span class="${net >= 0 ? 'green' : 'red'}">${net >= 0 ? '+' : ''}${fmt$(net)}/race</span></div>
+      <div class="team-stat"><span>Sponsors</span><span>${game.activeSponsors.length} active</span></div>
+      <div class="team-stat"><span>Staff</span><span>${game.staff.length + game.hiredDrivers.length} on payroll</span></div>
     </div>
 
-    <!-- Season progress -->
-    <div class="card">
-      <div class="card-header">Season Progress</div>
-      <div class="season-progress-bar-wrap">
-        <div class="season-progress-bar" style="width:${Math.round(racesCompleted / game.season.calendar.length * 100)}%"></div>
-      </div>
-      <p class="muted-text small">${racesCompleted} of ${game.season.calendar.length} races completed</p>
-      <div class="card-header" style="margin-top:1rem">Championship Standings</div>
-      <div class="standings-mini">${topStandings}</div>
-      ${sorted.length > 8 ? `<p class="muted-text small mt">...and ${sorted.length - 8} more. <a class="link" onclick="showTab('standings')">Full standings →</a></p>` : ''}
-    </div>
-
-    <!-- Cars summary -->
+    <!-- Garage -->
     <div class="card">
       <div class="card-header">Your Garage</div>
       ${game.cars.map(car => {
         const score = effectiveCarScore(car);
+        const condPct = Math.round(car.condition);
+        const condColor = condPct >= 70 ? 'var(--green)' : condPct >= 40 ? 'var(--gold)' : 'var(--red)';
         return `<div class="car-mini-row">
           <span class="car-mini-name">${car.name}</span>
-          <div class="car-mini-bars">
-            ${condBar(car.condition)}
+          <div style="flex:1;height:4px;background:#1a1a1a;border-radius:0;overflow:hidden">
+            <div style="width:${condPct}%;height:100%;background:${condColor}"></div>
           </div>
-          <span class="car-mini-score">Score: ${score}</span>
+          <span class="car-mini-score">${condPct}%</span>
         </div>`;
       }).join('')}
-      <a class="link mt" onclick="showTab('garage')">Manage Garage →</a>
+      <a class="link mt" onclick="showTab('garage')">Manage →</a>
     </div>
 
-    <!-- Driver skill -->
+    <!-- Driver Profile -->
     <div class="card">
       <div class="card-header">Driver Profile</div>
       ${game.driverMode === 'hired' ? `
-        <p class="muted-text">You are driving for <strong>${game.season.aiTeams.find(t=>t.id===game.hiredTeamId)?.name || 'a team'}</strong>.</p>
-        <div class="team-stat"><span>Weekly Salary</span><span class="green">${fmt$(game.hiredSalary || 0)}</span></div>
+        <div class="team-stat"><span>Team</span><span>${game.season.aiTeams.find(t=>t.id===game.hiredTeamId)?.name || '—'}</span></div>
+        <div class="team-stat"><span>Salary</span><span class="green">${fmt$(game.hiredSalary || 0)}/week</span></div>
       ` : game.driverMode === 'manager' ? `
-        <p class="muted-text">You manage the team from the pit wall.</p>
-      ` : `<p class="muted-text">You drive one of your team's cars each race.</p>`}
+        <div class="team-stat"><span>Role</span><span>Team Manager</span></div>
+      ` : `<div class="team-stat"><span>Role</span><span>Driver / Owner</span></div>`}
       ${statBar('Driver Skill', Math.round(game.playerSkill))}
-      <div class="team-stat mt"><span>Career Races</span><span>${game.history.length > 0 ? game.history.reduce((s,h) => s, 0) : 0} seasons</span></div>
-      ${game.history.length > 0 ? `
-        <div class="card-header" style="margin-top:1rem">Career History</div>
-        ${game.history.slice(-3).map(h => `
-          <div class="team-stat">
-            <span>Year ${h.year} – ${h.series.split(' ')[0]}</span>
-            <span>${h.finalPos}${ordinal(h.finalPos)}, ${h.wins}W</span>
-          </div>`).join('')}
-      ` : ''}
+      <div class="team-stat" style="margin-top:.5rem"><span>Seasons Raced</span><span>${game.history.length}</span></div>
+      ${game.history.length > 0 ? game.history.slice(-3).map(h => `
+        <div class="team-stat">
+          <span>Yr ${h.year} ${h.series.split(' ')[0]}</span>
+          <span>${h.finalPos}${ordinal(h.finalPos)} · ${h.wins}W</span>
+        </div>`).join('') : ''}
+    </div>
+
+    <!-- Season Calendar snapshot -->
+    <div class="card">
+      <div class="card-header">Recent Results</div>
+      ${game.season.calendar.filter(r => r.status === 'completed').slice(-5).reverse().map(r => {
+        const t = TRACKS.find(tr => tr.id === r.trackId);
+        const pos2 = r.playerResult?.position;
+        const posStr = pos2 ? `P${pos2}` : 'Skipped';
+        const col = pos2 === 1 ? 'var(--gold)' : pos2 <= 5 ? 'var(--green)' : pos2 ? 'var(--text)' : '#555';
+        return `<div class="team-stat">
+          <span>Race ${r.raceNum} · ${t?.name || '?'}</span>
+          <span style="color:${col};font-weight:700">${posStr}${pos2 ? ' · ' + fmt$(r.earnings) : ''}</span>
+        </div>`;
+      }).join('') || '<p class="muted-text small">No races completed yet.</p>'}
     </div>
 
   </div>`;
