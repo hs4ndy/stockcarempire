@@ -213,13 +213,14 @@ function generateAITeams(seriesLevel) {
 }
 
 // ─── New Game ────────────────────────────────────────────────
-function newGame(teamName, firstCarName) {
+function newGame(teamName, driverName, firstCarName) {
   const firstCar = makeCar(firstCarName, 'stock', null, { color: '#e8001d', number: 1 });
   firstCar.assignedDriverId = 'player'; // player drives this car
 
   game = {
     version: '1.1',
     teamName,
+    driverName: driverName || teamName,
     money: 50000,
     playerSkill: 60,     // 0–100, improves slowly
     reputation: 50,      // 0–100; affected by race behavior

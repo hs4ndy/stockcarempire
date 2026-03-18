@@ -50,12 +50,14 @@ document.getElementById('btn-quick-race')?.addEventListener('click', () => {
 });
 
 document.getElementById('btn-create-team')?.addEventListener('click', () => {
-  const teamName = document.getElementById('inp-team-name').value.trim();
-  const carName  = document.getElementById('inp-car-name').value.trim();
-  if (!teamName) { toast('Please enter a team name.', 'warning'); return; }
-  if (!carName)  { toast('Please name your first car.', 'warning'); return; }
-  newGame(teamName, carName);
-  toast(`Welcome to Stock Car Empire, ${teamName}!`, 'success');
+  const teamName   = document.getElementById('inp-team-name').value.trim();
+  const driverName = document.getElementById('inp-driver-name').value.trim();
+  const carName    = document.getElementById('inp-car-name').value.trim();
+  if (!teamName)   { toast('Please enter a team name.', 'warning'); return; }
+  if (!driverName) { toast('Please enter a driver name.', 'warning'); return; }
+  if (!carName)    { toast('Please name your first car.', 'warning'); return; }
+  newGame(teamName, driverName, carName);
+  toast(`Welcome to Stock Car Empire, ${driverName}!`, 'success');
   enterGame();
 });
 
@@ -310,6 +312,20 @@ function handleStartRace() {
   // Build AI entry list for 3D race
   const aiEntries = [];
   const usedNums = new Set([pCar?.number || 1]);
+
+  // Player's own teammate cars (other cars in game.cars not driven by player)
+  game.cars.forEach(car => {
+    if (car.id === pCar?.id) return; // skip the car the player is driving
+    const n = car.number || (() => { let x; do { x = randInt(2,99); } while(usedNums.has(x)); usedNums.add(x); return x; })();
+    aiEntries.push({
+      name:       game.driverName ? `${car.name || game.teamName}` : game.teamName,
+      color:      car.color || pCar?.color || '#e8001d',
+      number:     n,
+      power:      clamp((car.speed + car.handling + car.reliability) / 300 * 0.8 + 0.2, 0.25, 0.95),
+      isTeammate: true,
+    });
+  });
+
   game.season.aiTeams.forEach(team => {
     team.cars.forEach(car => {
       if (isHiredMode && team.id === game.hiredTeamId) return;
@@ -337,8 +353,9 @@ function handleStartRace() {
       playerColor:  pCar?.color  || '#e8001d',
       playerNumber: pCar?.number || 1,
       playerPower,
-      fieldSize:   series.fieldSize,
-      aiEntries:   aiEntries.slice(0, series.fieldSize - 1),
+      playerName:   game.driverName || game.teamName,
+      fieldSize:    series.fieldSize,
+      aiEntries:    aiEntries.slice(0, series.fieldSize - 1),
     },
     (playerPosition) => {
       // 3D race complete — playerPosition is 1-indexed finish position

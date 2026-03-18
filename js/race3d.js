@@ -15,14 +15,14 @@ const R3D = {
   LAT_ACC:        80,     // lateral acceleration (units/sec²)
   LAT_MAX:        13,     // max lateral speed (units/sec)
   LAT_DAMP:       0.0005, // damping when key released
-  DRAFT_Z:        48,     // draft cone depth — extended so cars pack up earlier
+  DRAFT_Z:        52,     // draft cone depth — wider so cars stay packed in a train
   DRAFT_X:        4.2,    // draft cone width
-  DRAFT_BOOST:    36,     // max speed bonus at bumper
-  DRAFT_SLING:    5.5,    // momentum decay/sec — slightly slower bleed for tighter packs
+  DRAFT_BOOST:    28,     // max speed bonus at bumper (reduced — less explosive pull)
+  DRAFT_SLING:    11,     // momentum decay/sec — faster bleed keeps start slingshot short
   PUSH_Z:         5.2,    // bumper-to-bumper push distance
   PUSH_X:         1.8,    // lateral tolerance for locked push
-  PUSH_BONUS:     7,      // ≈+5 mph when locked bumpers (modest and realistic)
-  CHAIN_PER_CAR:  4,      // extra speed units per additional car in a consecutive chain
+  PUSH_BONUS:     6,      // ≈+5 mph when locked bumpers
+  CHAIN_PER_CAR:  2,      // extra speed per car in chain (was 4 — halved to curb start surge)
   ENDGAME_FRAC:   0.75,   // fraction of track where AI goes full-attack mode
   RUBBER_BAND:    10,     // max extra speed for last-place player (halved)
   WRECK_FIRST:    50,
@@ -428,10 +428,11 @@ class Race3DEngine {
     this._startingPos   = playerSlotIdx + 1; // store for display
     const ps = slots[playerSlotIdx];
     this.player = this._makeCar(ps.x, ps.z, {
-      color: config.playerColor || '#e8001d',
-      power: config.playerPower,
-      isPlayer: true,
-      label: 'YOU',
+      color:      config.playerColor || '#e8001d',
+      power:      config.playerPower,
+      isPlayer:   true,
+      isTeammate: false,
+      label:      config.playerName || 'YOU',
     });
     this.cars.push(this.player);
 
@@ -442,15 +443,16 @@ class Race3DEngine {
       const entry = config.aiEntries[aiIdx++];
       const slot  = slots[i];
       this.cars.push(this._makeCar(slot.x, slot.z, {
-        color:    entry.color,
-        power:    clamp(entry.power, 0.25, 0.95),
-        isPlayer: false,
-        label:    entry.name,
+        color:      entry.color,
+        power:      clamp(entry.power, 0.25, 0.95),
+        isPlayer:   false,
+        isTeammate: !!entry.isTeammate,
+        label:      entry.name,
       }));
     }
   }
 
-  _makeCar(x, z, { color, power, isPlayer, label }) {
+  _makeCar(x, z, { color, power, isPlayer, isTeammate, label }) {
     const hex = typeof color === 'string' ? parseInt(color.replace('#',''), 16) : color;
     const g   = new THREE.Group();
 
@@ -499,6 +501,33 @@ class Race3DEngine {
     const glow    = new THREE.Mesh(new THREE.BoxGeometry(2.5, 1.2, 5.5), glowMat);
     glow.position.set(0, 0.5, 0);
     g.add(glow);
+
+    // Teammate indicator — small floating diamond above the car
+    if (isTeammate) {
+      const tmCanvas = document.createElement('canvas');
+      tmCanvas.width  = 128;
+      tmCanvas.height = 64;
+      const ctx = tmCanvas.getContext('2d');
+      ctx.fillStyle = 'rgba(0,0,0,0)';
+      ctx.fillRect(0, 0, 128, 64);
+      // Yellow pill background
+      ctx.fillStyle = '#ffe000';
+      ctx.beginPath();
+      ctx.roundRect(4, 8, 120, 48, 20);
+      ctx.fill();
+      // Text
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 26px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('TEAMMATE', 64, 32);
+      const tmTex  = new THREE.CanvasTexture(tmCanvas);
+      const tmMat  = new THREE.SpriteMaterial({ map: tmTex, transparent: true, depthTest: false });
+      const tmSprite = new THREE.Sprite(tmMat);
+      tmSprite.scale.set(3.0, 1.2, 1);
+      tmSprite.position.set(0, 2.6, 0);
+      g.add(tmSprite);
+    }
 
     g.position.set(x, 0, z);
     g.rotation.y = Math.PI; // nose faces +Z (direction of travel); spoiler faces camera
