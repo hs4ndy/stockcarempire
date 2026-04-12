@@ -510,10 +510,20 @@ class Race3DEngine {
       const ctx = tmCanvas.getContext('2d');
       ctx.fillStyle = 'rgba(0,0,0,0)';
       ctx.fillRect(0, 0, 128, 64);
-      // Yellow pill background
+      // Yellow pill background (arc-based rounded rect for broad browser support)
       ctx.fillStyle = '#ffe000';
       ctx.beginPath();
-      ctx.roundRect(4, 8, 120, 48, 20);
+      const rx = 4, ry = 8, rw = 120, rh = 48, rr = 20;
+      ctx.moveTo(rx + rr, ry);
+      ctx.lineTo(rx + rw - rr, ry);
+      ctx.arcTo(rx + rw, ry, rx + rw, ry + rr, rr);
+      ctx.lineTo(rx + rw, ry + rh - rr);
+      ctx.arcTo(rx + rw, ry + rh, rx + rw - rr, ry + rh, rr);
+      ctx.lineTo(rx + rr, ry + rh);
+      ctx.arcTo(rx, ry + rh, rx, ry + rh - rr, rr);
+      ctx.lineTo(rx, ry + rr);
+      ctx.arcTo(rx, ry, rx + rr, ry, rr);
+      ctx.closePath();
       ctx.fill();
       // Text
       ctx.fillStyle = '#000';
