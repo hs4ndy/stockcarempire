@@ -519,7 +519,7 @@ function finishRacePlayback() {
   if (log) {
     const el = document.createElement('div');
     el.className = 'race-event evt-finish';
-    el.textContent = '🏁 Checkered flag! Race complete.';
+    el.textContent = 'Checkered flag — race complete.';
     log.prepend(el);
   }
 

@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Stock Car Empire Beta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -32,7 +35,6 @@
 
       <div class="intro-buttons">
         <button class="btn-game btn-game-primary" id="btn-start-new">
-          <span class="btn-game-chevron">▶</span>
           <span>New Career</span>
         </button>
         <button class="btn-game btn-game-ghost" id="btn-load-game">
@@ -45,9 +47,9 @@
 
       <div class="intro-series-strip">
         <span>GRASSROOTS CUP</span>
-        <span class="intro-series-dot">◆</span>
+        <span class="intro-series-dot"></span>
         <span>REGIONAL SERIES</span>
-        <span class="intro-series-dot">◆</span>
+        <span class="intro-series-dot"></span>
         <span>PREMIER CUP</span>
       </div>
     </div>
@@ -93,9 +95,8 @@
     </div>
 
     <div class="setup-panel-footer">
-      <button class="btn-game btn-game-ghost" onclick="showScreen('intro')">← Back</button>
+      <button class="btn-game btn-game-ghost" onclick="showScreen('intro')">Back</button>
       <button class="btn-game btn-game-primary" id="btn-create-team">
-        <span class="btn-game-chevron">▶</span>
         <span>Start Career</span>
       </button>
     </div>
@@ -110,7 +111,7 @@
   <!-- Header bar — pit wall command center -->
   <header class="game-header">
     <div class="header-brand">
-      <span class="header-brand-flag">🏁</span>
+      <span class="header-brand-flag"></span>
       <div class="header-brand-text">
         <span class="header-brand-main">Stock Car</span>
         <span class="header-brand-sub">Empire</span>
@@ -141,8 +142,8 @@
     </div>
 
     <div class="header-actions">
-      <button class="btn btn-sm btn-ghost" onclick="handleSaveGame()" title="Save (Ctrl+S)">💾 Save</button>
-      <button class="btn btn-sm btn-ghost" onclick="handleNewGamePrompt()" title="New Game">↩ New</button>
+      <button class="btn btn-sm btn-ghost" onclick="handleSaveGame()" title="Save (Ctrl+S)">Save</button>
+      <button class="btn btn-sm btn-ghost" onclick="handleNewGamePrompt()" title="New Game">New</button>
     </div>
   </header>
 
@@ -150,31 +151,31 @@
   <nav class="game-nav">
     <div class="nav-flag-accent"></div>
     <button class="nav-btn active" data-tab="dashboard">
-      <span class="nav-icon">◈</span>
+      <span class="nav-idx">01</span>
       <span class="nav-label">Dashboard</span>
     </button>
     <button class="nav-btn" data-tab="garage">
-      <span class="nav-icon">⬡</span>
+      <span class="nav-idx">02</span>
       <span class="nav-label">Garage</span>
     </button>
     <button class="nav-btn" data-tab="team">
-      <span class="nav-icon">◉</span>
+      <span class="nav-idx">03</span>
       <span class="nav-label">Team</span>
     </button>
     <button class="nav-btn" data-tab="schedule">
-      <span class="nav-icon">◷</span>
+      <span class="nav-idx">04</span>
       <span class="nav-label">Schedule</span>
     </button>
     <button class="nav-btn" data-tab="market">
-      <span class="nav-icon">◈</span>
+      <span class="nav-idx">05</span>
       <span class="nav-label">Market</span>
     </button>
     <button class="nav-btn" data-tab="standings">
-      <span class="nav-icon">◆</span>
+      <span class="nav-idx">06</span>
       <span class="nav-label">Standings</span>
     </button>
     <button class="nav-btn" data-tab="carstats">
-      <span class="nav-icon">★</span>
+      <span class="nav-idx">07</span>
       <span class="nav-label">Career</span>
     </button>
     <div class="nav-end-cap"></div>

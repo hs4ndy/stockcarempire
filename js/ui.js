@@ -103,7 +103,7 @@ function renderDashboard() {
     const cls = e.isPlayer ? 'standing-row player-row' : 'standing-row';
     return `<div class="${cls}">
       <span class="pos-num">${i + 1}</span>
-      <span class="entry-name">${e.isPlayer ? '⭐ ' + game.teamName : e.name}</span>
+      <span class="entry-name">${e.isPlayer ? game.teamName : e.name}</span>
       <span class="pts-val">${e.points} pts</span>
     </div>`;
   }).join('');
@@ -154,10 +154,10 @@ function renderDashboard() {
           <span class="race-spotlight-meta">${series.name} · Year ${game.season.year}</span>
         </div>
         ${pos <= series.promotionSpots && series.level < 2
-          ? `<div style="margin-bottom:.75rem"><span class="badge badge-green">↑ PROMOTION ELIGIBLE</span></div>` : ''}
+          ? `<div style="margin-bottom:.75rem"><span class="badge badge-green">PROMOTION ELIGIBLE</span></div>` : ''}
         ${series.relegationSpots > 0 && pos > totalEntrants - series.relegationSpots
-          ? `<div style="margin-bottom:.75rem"><span class="badge badge-red">↓ RELEGATION ZONE</span></div>` : ''}
-        <button class="btn btn-primary" onclick="handleEndSeason()">Begin Off-Season →</button>
+          ? `<div style="margin-bottom:.75rem"><span class="badge badge-red">RELEGATION ZONE</span></div>` : ''}
+        <button class="btn btn-primary" onclick="handleEndSeason()">Begin Off-Season</button>
       ` : `
         <div class="race-spotlight">
           <span class="race-spotlight-name">${track?.name || 'TBD'}</span>
@@ -166,7 +166,7 @@ function renderDashboard() {
         <div class="team-stat"><span>Entry Fee</span><span class="red">${fmt$(series.entryFee)}</span></div>
         <div class="team-stat"><span>1st Prize</span><span class="green">${fmt$(series.prize[0])}</span></div>
         <div class="btn-row mt">
-          <button class="btn btn-primary" onclick="handleOpenRaceWeekend()">Race Weekend →</button>
+          <button class="btn btn-primary" onclick="handleOpenRaceWeekend()">Race Weekend</button>
           <button class="btn btn-ghost" onclick="handleSkipRace()">Skip</button>
         </div>
       `}
@@ -180,7 +180,7 @@ function renderDashboard() {
       </div>
       <p class="muted-text small" style="margin-bottom:.75rem">${racesCompleted} / ${game.season.calendar.length} races complete</p>
       <div class="standings-mini">${topStandings}</div>
-      ${sorted.length > 8 ? `<p class="muted-text small mt"><a class="link" onclick="showTab('standings')">Full standings →</a></p>` : ''}
+      ${sorted.length > 8 ? `<p class="muted-text small mt"><a class="link" onclick="showTab('standings')">Full standings</a></p>` : ''}
     </div>
 
     <!-- Finances -->
@@ -209,7 +209,7 @@ function renderDashboard() {
           <span class="car-mini-score">${condPct}%</span>
         </div>`;
       }).join('')}
-      <a class="link mt" onclick="showTab('garage')">Manage →</a>
+      <a class="link mt" onclick="showTab('garage')">Manage</a>
     </div>
 
     <!-- Driver Profile -->
@@ -354,7 +354,7 @@ function renderUpgradeModal(carId) {
     <div class="modal" onclick="event.stopPropagation()">
       <div class="modal-header">
         <h3>Upgrades — ${car.name}</h3>
-        <button class="modal-close" onclick="closeUpgradeModal()">✕</button>
+        <button class="modal-close" onclick="closeUpgradeModal()">Close</button>
       </div>
       <div class="modal-body upgrade-list">${rows}</div>
     </div>
@@ -383,7 +383,7 @@ function renderTeam() {
     const type = STAFF_TYPES.find(t => t.id === s.typeId);
     return `<div class="staff-row">
       <div class="staff-info">
-        <span class="staff-name">${type?.icon || ''} ${s.name}</span>
+        <span class="staff-name">${s.name}</span>
         <div class="staff-meta">${type?.bonus || ''} • ${fmt$(s.weeklyCost)}/week</div>
       </div>
       <button class="btn btn-sm btn-danger" onclick="handleFireStaff('${s.id}')">Fire</button>
@@ -417,7 +417,7 @@ function renderTeam() {
     const canHire = current < type.max && game.money >= sigFee;
     return `<div class="staff-row">
       <div class="staff-info">
-        <span class="staff-name">${type.icon} ${type.name}</span>
+        <span class="staff-name">${type.name}</span>
         <div class="staff-meta">${type.description}</div>
         <div class="staff-meta muted-text">${fmt$(cost)}/week • Signing fee: ${fmt$(sigFee)} • Hired: ${current}/${type.max}</div>
       </div>
@@ -464,7 +464,7 @@ function renderHireDriverModal(driverId) {
   if (freeCars.length === 0) {
     return `<div class="modal-overlay" id="hire-modal" onclick="closeHireModal(event)">
       <div class="modal" onclick="event.stopPropagation()">
-        <div class="modal-header"><h3>Hire ${d.name}</h3><button class="modal-close" onclick="closeHireModal()">✕</button></div>
+        <div class="modal-header"><h3>Hire ${d.name}</h3><button class="modal-close" onclick="closeHireModal()">Close</button></div>
         <div class="modal-body"><p>No free cars available. Buy more cars or release an existing driver first.</p></div>
       </div>
     </div>`;
@@ -472,7 +472,7 @@ function renderHireDriverModal(driverId) {
   const carOpts = freeCars.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
   return `<div class="modal-overlay" id="hire-modal" onclick="closeHireModal(event)">
     <div class="modal" onclick="event.stopPropagation()">
-      <div class="modal-header"><h3>Hire ${d.name}</h3><button class="modal-close" onclick="closeHireModal()">✕</button></div>
+      <div class="modal-header"><h3>Hire ${d.name}</h3><button class="modal-close" onclick="closeHireModal()">Close</button></div>
       <div class="modal-body">
         <p>Skill: ${d.skill} | Aggression: ${d.aggression}</p>
         <p>${fmt$(d.weeklyCost)}/week | Signing fee: ${fmt$(d.weeklyCost*4)}</p>
@@ -548,7 +548,7 @@ function renderMarket() {
   const sponsorRows = availableSponsors.map(d => `
     <div class="staff-row">
       <div class="staff-info">
-        <span class="staff-name">${d.icon} ${d.name}</span>
+        <span class="staff-name">${d.name}</span>
         <div class="staff-meta">Base: ${fmt$(d.weekly)}/race · Bonus: ${fmt$(d.bonus)} if ${d.cond}</div>
       </div>
       ${game.activeSponsors.length < 3
@@ -561,7 +561,7 @@ function renderMarket() {
     if (!d) return '';
     return `<div class="staff-row">
       <div class="staff-info">
-        <span class="staff-name">${d.icon} ${d.name}</span>
+        <span class="staff-name">${d.name}</span>
         <div class="staff-meta">Base: ${fmt$(d.weekly)}/race · Bonus: ${fmt$(d.bonus)} if ${d.cond}</div>
       </div>
       <button class="btn btn-sm btn-danger" onclick="handleDropSponsor('${d.id}')">Drop</button>
@@ -611,13 +611,13 @@ function renderStandings() {
     const cls     = e.isPlayer ? 'standings-row player-standing' : 'standings-row';
     return `<div class="${cls}">
       <span class="st-pos ${isPromo ? 'promo-pos' : isRele ? 'rele-pos' : ''}">${pos}</span>
-      <span class="st-name">${e.isPlayer ? `⭐ ${game.teamName}` : e.name}</span>
+      <span class="st-name">${e.isPlayer ? game.teamName : e.name}</span>
       <span class="st-races">${e.races}</span>
       <span class="st-wins">${e.wins}</span>
       <span class="st-top5">${e.top5}</span>
       <span class="st-pts">${e.points}</span>
-      ${isPromo ? `<span class="badge badge-green">↑</span>` : ''}
-      ${isRele  ? `<span class="badge badge-red">↓</span>` : ''}
+      ${isPromo ? `<span class="badge badge-green">PROMO</span>` : ''}
+      ${isRele  ? `<span class="badge badge-red">REL</span>` : ''}
     </div>`;
   }).join('');
 
@@ -634,8 +634,8 @@ function renderStandings() {
     </div>
     ${rows}
   </div>
-  ${series.promotionSpots > 0 ? `<p class="muted-text small mt">↑ Top ${series.promotionSpots} earn promotion to ${SERIES[series.level+1]?.name}</p>` : ''}
-  ${series.relegationSpots > 0 ? `<p class="muted-text small">↓ Bottom ${series.relegationSpots} may be relegated</p>` : ''}`;
+  ${series.promotionSpots > 0 ? `<p class="muted-text small mt">Top ${series.promotionSpots} earn promotion to ${SERIES[series.level+1]?.name}</p>` : ''}
+  ${series.relegationSpots > 0 ? `<p class="muted-text small">Bottom ${series.relegationSpots} may be relegated</p>` : ''}`;
 }
 
 // ─── Race Weekend ────────────────────────────────────────────
@@ -696,8 +696,8 @@ function renderRaceSetup() {
       ${carSection}
     </div>
     <div class="btn-row mt">
-      <button class="btn btn-primary btn-lg" id="btn-start-race" onclick="handleStartRace()">▶ Race</button>
-      <button class="btn btn-ghost btn-lg" onclick="handleSimulateRace()">⚡ Simulate</button>
+      <button class="btn btn-primary btn-lg" id="btn-start-race" onclick="handleStartRace()">Race</button>
+      <button class="btn btn-ghost btn-lg" onclick="handleSimulateRace()">Simulate</button>
       <button class="btn btn-ghost" onclick="handleSkipRace()">Skip</button>
       <button class="btn btn-ghost" onclick="showScreen('game')">Cancel</button>
     </div>
@@ -709,7 +709,7 @@ function renderRaceScreen(trackName) {
   return `
   <div class="race-screen">
     <div class="race-header">
-      <h2 id="race-title">🏁 ${trackName}</h2>
+      <h2 id="race-title">${trackName}</h2>
       <div id="race-phase-label" class="race-phase">Pre-Race</div>
     </div>
     <div class="race-main">
@@ -728,7 +728,7 @@ function renderRaceScreen(trackName) {
     </div>
     <div class="race-footer">
       <button class="btn btn-primary" id="btn-race-skip" onclick="handleRaceSkipToEnd()">Skip to End</button>
-      <button class="btn btn-ghost" id="btn-race-speed" onclick="handleRaceSpeed()">⚡ Speed Up</button>
+      <button class="btn btn-ghost" id="btn-race-speed" onclick="handleRaceSpeed()">Speed Up</button>
     </div>
   </div>`;
 }
@@ -738,7 +738,7 @@ function renderLeaderboard(results, highlightPlayer) {
     <div class="lb-row ${r.isPlayer ? 'lb-player' : ''}">
       <span class="lb-pos">${r.position}</span>
       <div class="lb-dot" style="background:${r.teamColor}"></div>
-      <span class="lb-name">${r.isPlayer ? '⭐ ' : ''}${r.displayName.split(' / ').pop()}</span>
+      <span class="lb-name">${r.displayName.split(' / ').pop()}</span>
       ${r.dnf ? '<span class="badge badge-red lb-badge">DNF</span>' : ''}
     </div>`).join('');
 }
@@ -749,7 +749,7 @@ function renderRaceResultsModal(results, events, playerResult) {
   const topRows = results.slice(0, 10).map(r => `
     <div class="result-row ${r.isPlayer ? 'player-result' : ''}">
       <span class="res-pos ${r.position <= 3 ? 'podium' : ''}">${r.position}</span>
-      <span class="res-name">${r.isPlayer ? '⭐ ' : ''}${r.displayName}</span>
+      <span class="res-name">${r.displayName}</span>
       <span class="res-pts">${r.points}pts</span>
       <span class="res-prize green">${fmt$(r.prize)}</span>
       ${r.dnf ? '<span class="badge badge-red">DNF</span>' : ''}
@@ -797,8 +797,8 @@ function renderEndSeasonModal(info) {
       <div class="modal-header"><h3>Season Over</h3></div>
       <div class="modal-body">
         <p class="highlight">${info.message}</p>
-        ${info.promoted ? `<div class="achievement-badge">🎉 PROMOTED!</div>` : ''}
-        ${info.relegated ? `<div class="achievement-badge rele">⬇ Relegated</div>` : ''}
+        ${info.promoted ? `<div class="achievement-badge">PROMOTED</div>` : ''}
+        ${info.relegated ? `<div class="achievement-badge rele">RELEGATED</div>` : ''}
       </div>
       <div class="modal-footer">
         <button class="btn btn-primary" onclick="handleDismissEndSeason()">Start Next Season</button>
@@ -816,22 +816,22 @@ function renderPremierChoiceModal() {
   return `
   <div class="modal-overlay" id="premier-choice-modal">
     <div class="modal modal-wide">
-      <div class="modal-header"><h3>🏆 Welcome to the Premier Cup!</h3></div>
+      <div class="modal-header"><h3>Welcome to the Premier Cup</h3></div>
       <div class="modal-body">
         <p>You've reached the top tier of stock car racing. How do you want to continue your career?</p>
         <div class="career-choices">
           <div class="career-card" onclick="selectCareerChoice('driver')">
-            <div class="career-icon">🏎️</div>
+            <div class="career-icon">01</div>
             <div class="career-title">Stay as Driver</div>
             <div class="career-desc">Drive one of your own cars each race. Compete for the championship yourself.</div>
           </div>
           <div class="career-card" onclick="selectCareerChoice('manager')">
-            <div class="career-icon">📋</div>
+            <div class="career-icon">02</div>
             <div class="career-title">Become a Manager</div>
             <div class="career-desc">Step back from driving. Run the team from the pit wall. Hire drivers for all your cars.</div>
           </div>
           <div class="career-card" onclick="selectCareerChoice('hired')">
-            <div class="career-icon">🤝</div>
+            <div class="career-icon">03</div>
             <div class="career-title">Drive for Another Team</div>
             <div class="career-desc">Join an established team, collect a weekly salary, and leave the management headaches behind.</div>
           </div>
@@ -942,7 +942,7 @@ function renderSaveModal() {
     <div class="modal">
       <div class="modal-header">
         <h3>Save Game</h3>
-        <button class="modal-close" onclick="closeSaveModal()">✕</button>
+        <button class="modal-close" onclick="closeSaveModal()">Close</button>
       </div>
       <div class="modal-body save-slots">${slots}</div>
     </div>
@@ -974,7 +974,7 @@ function renderLoadModal() {
     <div class="modal">
       <div class="modal-header">
         <h3>Load a Game</h3>
-        <button class="modal-close" onclick="closeSaveModal()">✕</button>
+        <button class="modal-close" onclick="closeSaveModal()">Close</button>
       </div>
       <div class="modal-body save-slots">
         ${!hasAnySave ? '<p class="muted-text">No saved games found.</p>' : slots}
@@ -990,7 +990,7 @@ function renderQuickRaceModal() {
     <div class="modal">
       <div class="modal-header">
         <h3>Quick Race</h3>
-        <button class="modal-close" onclick="document.getElementById('quick-race-modal')?.remove()">✕</button>
+        <button class="modal-close" onclick="document.getElementById('quick-race-modal')?.remove()">Close</button>
       </div>
       <div class="modal-body">
         <p>Jump straight into a superspeedway race — no career consequences.</p>

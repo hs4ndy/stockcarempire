@@ -50,18 +50,18 @@ function launch3DRace(config, onComplete) {
     <div id="r3d-hud">
       <div class="r3d-top-bar">
         <div class="r3d-chip" id="r3d-pos">P—</div>
-        <div class="r3d-draft-badge" id="r3d-draft">⚡ SLIPSTREAM</div>
+        <div class="r3d-draft-badge" id="r3d-draft">SLIPSTREAM</div>
         <div class="r3d-chip" id="r3d-speed">— mph</div>
-        <button class="r3d-pause-btn" id="r3d-pause-btn" title="Pause (Esc)">⏸</button>
+        <button class="r3d-pause-btn" id="r3d-pause-btn" title="Pause (Esc)">PAUSE</button>
       </div>
       <div id="r3d-pause-overlay">
         <div class="r3d-pause-panel">
           <div class="r3d-pause-title">PAUSED</div>
-          <button class="r3d-pause-resume" id="r3d-pause-resume">▶ RESUME</button>
+          <button class="r3d-pause-resume" id="r3d-pause-resume">RESUME</button>
         </div>
       </div>
       <div id="r3d-mirror-wrap">
-        <div class="r3d-mirror-label">◀ REAR VIEW ▶</div>
+        <div class="r3d-mirror-label">REAR VIEW</div>
       </div>
       <div class="r3d-progress-wrap">
         <div class="r3d-progress-fill" id="r3d-prog-fill"></div>
@@ -1039,7 +1039,7 @@ class Race3DEngine {
     const overlay  = document.getElementById('r3d-pause-overlay');
     const pauseBtn = document.getElementById('r3d-pause-btn');
     if (overlay)  overlay.classList.toggle('active', this.paused);
-    if (pauseBtn) pauseBtn.textContent = this.paused ? '▶' : '⏸';
+    if (pauseBtn) pauseBtn.textContent = this.paused ? 'RESUME' : 'PAUSE';
     // Reset clock so dt doesn't spike on resume
     if (!this.paused && this.clock) this.clock.getDelta();
   }
@@ -1183,13 +1183,15 @@ class Race3DEngine {
       if (frac > 0.02) {
         draftEl.style.opacity   = '1';
         draftEl.style.transform = `scale(${1 + frac * 0.12})`;
-        draftEl.textContent     = isPush ? '🔥 PUSH DRAFT' : '⚡ SLIPSTREAM';
-        draftEl.style.color     = isPush ? '#ff8800' : '#44aaff';
+        draftEl.textContent     = isPush ? 'PUSH DRAFT' : 'SLIPSTREAM';
+        draftEl.style.borderColor = isPush ? 'var(--warn)' : 'var(--accent)';
+        draftEl.style.color       = isPush ? 'var(--warn)' : 'var(--accent)';
       } else {
         draftEl.style.opacity   = '0.18';
         draftEl.style.transform = 'scale(1)';
-        draftEl.textContent     = '⚡ SLIPSTREAM';
-        draftEl.style.color     = '';
+        draftEl.textContent     = 'SLIPSTREAM';
+        draftEl.style.borderColor = 'var(--accent)';
+        draftEl.style.color       = 'var(--accent)';
       }
     }
 
@@ -1229,7 +1231,7 @@ class Race3DEngine {
       <div class="r3d-finish-box">
         <div class="r3d-finish-pos">${pos}${ordinal(pos)} Place</div>
         <div class="r3d-finish-msg">${msg}</div>
-        <button class="btn btn-primary btn-lg" onclick="window._r3dFinish(${pos})">Continue →</button>
+        <button class="btn btn-primary btn-lg" onclick="window._r3dFinish(${pos})">Continue</button>
       </div>`;
     el.style.display = 'flex';
   }
