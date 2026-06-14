@@ -1066,38 +1066,12 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   pointer-events: none;
   font-family: var(--font);
 }
-.r3d-top-bar {
+.r3d-pause-btn {
   position: absolute;
   top: 18px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: .75rem;
-}
-.r3d-chip {
-  padding: 8px 16px;
-  background: rgba(13, 13, 15, 0.82);
-  border: 1px solid var(--line-2);
-  font-size: 16px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  color: var(--text);
-}
-.r3d-draft-badge {
-  padding: 8px 16px;
-  background: rgba(13, 13, 15, 0.82);
-  border: 1px solid var(--accent);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--accent);
-  transition: opacity var(--t) linear, transform var(--t) ease-out;
-}
-.r3d-pause-btn {
+  right: 18px;
   pointer-events: auto;
-  padding: 8px 12px;
+  padding: 8px 14px;
   background: rgba(13, 13, 15, 0.82);
   border: 1px solid var(--line-2);
   font-size: 11px;
@@ -1108,6 +1082,114 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   transition: border-color var(--t) linear, color var(--t) linear;
 }
 .r3d-pause-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Running-order tower (top-left) */
+.r3d-order {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  width: 210px;
+  background: rgba(13, 13, 15, 0.82);
+  border: 1px solid var(--line-2);
+  border-left: 3px solid var(--accent);
+}
+.r3d-order-row {
+  display: grid;
+  grid-template-columns: 22px 8px 34px 1fr;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 10px;
+  border-bottom: 1px solid rgba(42, 42, 51, 0.7);
+  font-size: 12px;
+}
+.r3d-order-row:last-child { border-bottom: none; }
+.r3d-order-row.is-player { background: rgba(228, 0, 43, 0.16); }
+.r3d-order-pos { font-weight: 800; color: var(--text-dim); text-align: right; font-variant-numeric: tabular-nums; }
+.r3d-order-row.is-player .r3d-order-pos { color: var(--accent); }
+.r3d-order-chip { width: 8px; height: 14px; }
+.r3d-order-num { font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+.r3d-order-name {
+  color: var(--text-dim);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.r3d-order-row.is-player .r3d-order-name { color: var(--text); font-weight: 700; }
+
+/* Field minimap (right edge, vertical) */
+.r3d-map {
+  position: absolute;
+  top: 50%;
+  right: 18px;
+  transform: translateY(-50%);
+  width: 60px;
+  background: rgba(13, 13, 15, 0.82);
+  border: 1px solid var(--line-2);
+  padding: 8px 0;
+}
+.r3d-map-head {
+  text-align: center;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+.r3d-map-track {
+  position: relative;
+  width: 26px;
+  height: 320px;
+  margin: 0 auto;
+  background: var(--panel-2);
+  border-left: 1px solid var(--line-2);
+  border-right: 1px solid var(--line-2);
+}
+.r3d-map-finish {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--accent);
+}
+.r3d-map-dot {
+  position: absolute;
+  width: 6px; height: 6px;
+  margin: -3px 0 0 -3px;
+  background: var(--text-dim);
+  border-radius: 50%;
+}
+.r3d-map-dot.is-player {
+  width: 9px; height: 9px;
+  margin: -4.5px 0 0 -4.5px;
+  background: var(--accent);
+  border: 1px solid #fff;
+  z-index: 2;
+}
+
+/* Telemetry cluster (bottom-left) */
+.r3d-telemetry {
+  position: absolute;
+  left: 18px;
+  bottom: 18px;
+  width: 220px;
+  background: rgba(13, 13, 15, 0.82);
+  border: 1px solid var(--line-2);
+  border-left: 3px solid var(--accent);
+  padding: 12px 14px;
+}
+.r3d-tele-pos { display: flex; align-items: baseline; gap: 6px; }
+.r3d-tele-pos-num { font-size: 2.4rem; font-weight: 800; line-height: 1; color: var(--text); font-variant-numeric: tabular-nums; }
+.r3d-tele-pos-of { font-size: 12px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.r3d-tele-speed { display: flex; align-items: baseline; gap: 5px; margin: 6px 0 10px; }
+.r3d-tele-speed > span:first-child { font-size: 1.6rem; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+.r3d-tele-unit { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; color: var(--text-dim); }
+.r3d-draft-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  margin-bottom: 4px;
+}
+.r3d-draft-meter { height: 6px; background: var(--panel-3); overflow: hidden; }
+.r3d-draft-fill { height: 100%; width: 0; background: var(--accent); transition: width 0.12s linear; }
 
 #r3d-pause-overlay {
   position: absolute;
@@ -1220,6 +1302,7 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   font-weight: 800;
   color: var(--text);
 }
+.r3d-countdown.go { color: var(--good); font-size: 4rem; letter-spacing: 0.1em; }
 
 .r3d-finish {
   position: absolute;
