@@ -79,6 +79,59 @@ const TRACKS = [
   { id: 't20', name: 'Sunset Superspeedway',      type: 'superspeedway', length: 2.5,  series: [2],     speedW: 1.35,handW: 0.75,laps: 200 },
 ];
 
+// ─── Upgrades ────────────────────────────────────────────────
+// Three tiers, and you may fit at most MAX_PER_TIER parts from each one.
+// A tier only opens once the tier below it is full, so every purchase is a
+// real choice instead of a checklist you eventually buy out.
+const MAX_PER_TIER = 3;
+
+const UPGRADE_TIERS = [
+  { tier: 1, name: 'Foundation',  blurb: 'Bolt-on basics. Cheap gains to get the car competitive.' },
+  { tier: 2, name: 'Performance', blurb: 'Serious hardware. Bigger gains, bigger invoices.' },
+  { tier: 3, name: 'Elite',       blurb: 'Factory-level programmes reserved for front-running teams.' },
+];
+
+// base = price for the entry-level Stock Car; higher classes scale it up.
+const UPGRADE_POOL = [
+  // Tier 1 — pick 3 of 4
+  { id: 'engine_tune', tier: 1, name: 'Engine Tune',         base: 3500, effect: { speed: 8 } },
+  { id: 'susp_kit',    tier: 1, name: 'Suspension Kit',       base: 2800, effect: { handling: 9 } },
+  { id: 'rel_package', tier: 1, name: 'Reliability Package',  base: 2200, effect: { reliability: 12 } },
+  { id: 'race_brakes', tier: 1, name: 'Racing Brakes',        base: 3200, effect: { handling: 7, reliability: 5 } },
+  // Tier 2 — pick 3 of 4
+  { id: 'perf_engine', tier: 2, name: 'Performance Engine',   base: 9500, effect: { speed: 14 } },
+  { id: 'aero_pkg',    tier: 2, name: 'Aero Package',         base: 6800, effect: { speed: 5, handling: 6 } },
+  { id: 'data_sys',    tier: 2, name: 'Data Analytics',       base: 7400, effect: { speed: 4, handling: 4, reliability: 4 } },
+  { id: 'gearbox',     tier: 2, name: 'Close-Ratio Gearbox',  base: 6200, effect: { speed: 7, handling: 3 } },
+  // Tier 3 — pick 3 of 4
+  { id: 'wind_tunnel', tier: 3, name: 'Wind Tunnel Program',  base: 16000, effect: { speed: 9, handling: 6 } },
+  { id: 'chassis_jig', tier: 3, name: 'Chassis Jig',          base: 14000, effect: { handling: 11, reliability: 4 } },
+  { id: 'sim_program', tier: 3, name: 'Simulator Program',    base: 15000, effect: { speed: 6, handling: 6, reliability: 5 } },
+  { id: 'pit_package', tier: 3, name: 'Pit Crew Package',     base: 12000, effect: { reliability: 14 } },
+];
+
+function buildUpgrades(mult) {
+  return UPGRADE_POOL.map(u => ({
+    id: u.id, tier: u.tier, name: u.name, effect: u.effect,
+    cost: Math.round(u.base * mult / 100) * 100,
+  }));
+}
+
+// How many parts from a given tier are fitted to this car
+function tierInstalled(car, tier, cls) {
+  const list = (cls || CAR_CLASSES[car.classId]).upgrades;
+  return (car.appliedUpgrades || []).filter(id => {
+    const u = list.find(x => x.id === id);
+    return u && u.tier === tier;
+  }).length;
+}
+
+// A tier is available once the one below it is full
+function tierUnlocked(car, tier, cls) {
+  if (tier <= 1) return true;
+  return tierInstalled(car, tier - 1, cls) >= MAX_PER_TIER;
+}
+
 const CAR_CLASSES = {
   stock: {
     name: 'Stock Car',
@@ -87,14 +140,7 @@ const CAR_CLASSES = {
     sellValue: 9000,
     repairCostPerPoint: 80,
     baseStats: { speed: 42, handling: 45, reliability: 58 },
-    upgrades: [
-      { id: 'engine_tune',   name: 'Engine Tune',          cost: 3500,  effect: { speed: 8 },                prereq: null },
-      { id: 'susp_kit',      name: 'Suspension Kit',        cost: 2800,  effect: { handling: 9 },             prereq: null },
-      { id: 'rel_package',   name: 'Reliability Package',   cost: 2200,  effect: { reliability: 12 },         prereq: null },
-      { id: 'perf_engine',   name: 'Performance Engine',    cost: 9500,  effect: { speed: 14 },               prereq: 'engine_tune' },
-      { id: 'aero_pkg',      name: 'Aero Package',          cost: 5500,  effect: { speed: 5, handling: 6 },   prereq: null },
-      { id: 'race_brakes',   name: 'Racing Brakes',         cost: 3200,  effect: { handling: 7, reliability: 5 }, prereq: null },
-    ]
+    upgrades: buildUpgrades(1)
   },
   modified: {
     name: 'Modified Car',
@@ -103,15 +149,7 @@ const CAR_CLASSES = {
     sellValue: 35000,
     repairCostPerPoint: 300,
     baseStats: { speed: 62, handling: 62, reliability: 58 },
-    upgrades: [
-      { id: 'engine_tune',   name: 'Engine Tune',          cost: 12000, effect: { speed: 8 },                prereq: null },
-      { id: 'susp_kit',      name: 'Suspension Kit',        cost: 10000, effect: { handling: 9 },             prereq: null },
-      { id: 'rel_package',   name: 'Reliability Package',   cost: 8500,  effect: { reliability: 12 },         prereq: null },
-      { id: 'perf_engine',   name: 'Performance Engine',    cost: 30000, effect: { speed: 14 },               prereq: 'engine_tune' },
-      { id: 'aero_pkg',      name: 'Aero Package',          cost: 18000, effect: { speed: 5, handling: 6 },   prereq: null },
-      { id: 'race_brakes',   name: 'Racing Brakes',         cost: 13000, effect: { handling: 7, reliability: 5 }, prereq: null },
-      { id: 'data_sys',      name: 'Data Analytics System', cost: 22000, effect: { speed: 4, handling: 4, reliability: 4 }, prereq: null },
-    ]
+    upgrades: buildUpgrades(3.4)
   },
   premier: {
     name: 'Premier Car',
@@ -120,16 +158,7 @@ const CAR_CLASSES = {
     sellValue: 190000,
     repairCostPerPoint: 1500,
     baseStats: { speed: 80, handling: 80, reliability: 65 },
-    upgrades: [
-      { id: 'engine_tune',   name: 'Engine Tune',          cost: 55000, effect: { speed: 8 },                prereq: null },
-      { id: 'susp_kit',      name: 'Suspension Kit',        cost: 48000, effect: { handling: 9 },             prereq: null },
-      { id: 'rel_package',   name: 'Reliability Package',   cost: 42000, effect: { reliability: 12 },         prereq: null },
-      { id: 'perf_engine',   name: 'Performance Engine',    cost: 130000,effect: { speed: 14 },               prereq: 'engine_tune' },
-      { id: 'aero_pkg',      name: 'Aero Package',          cost: 85000, effect: { speed: 5, handling: 6 },   prereq: null },
-      { id: 'race_brakes',   name: 'Racing Brakes',         cost: 65000, effect: { handling: 7, reliability: 5 }, prereq: null },
-      { id: 'data_sys',      name: 'Advanced Analytics',    cost: 95000, effect: { speed: 4, handling: 4, reliability: 6 }, prereq: null },
-      { id: 'wind_tunnel',   name: 'Wind Tunnel Testing',   cost: 160000,effect: { speed: 9, handling: 6 },   prereq: 'aero_pkg' },
-    ]
+    upgrades: buildUpgrades(15)
   }
 };
 
@@ -229,6 +258,23 @@ const AI_DRIVER_NAMES = [
   'Brady Grant','Evan Pierce','Zack Powell','Nate Gray','Troy Bell',
   'Lance Dunn','Kyle Steele','Dale Sutton','Rex Chambers','Ray Norris',
 ];
+
+// ─── Bank ────────────────────────────────────────────────────
+// Borrow now, repay within `term` races. Miss the deadline and the balance
+// starts compounding at LATE_RATE every race until it is cleared.
+const LOAN_LATE_RATE = 0.09;   // per race, applied only after the term expires
+
+const LOAN_OFFERS = [
+  { id: 'ln_short', name: 'Short-Term Note', term: 4,  rate: 0.08, mult: 0.6,
+    blurb: 'Small and quick. Cheapest interest, tightest deadline.' },
+  { id: 'ln_std',   name: 'Standard Loan',   term: 8,  rate: 0.15, mult: 1.0,
+    blurb: 'The usual deal. Reasonable size, reasonable window.' },
+  { id: 'ln_long',  name: 'Long-Term Credit',term: 14, rate: 0.26, mult: 1.6,
+    blurb: 'Biggest cheque and the most breathing room — you pay for both.' },
+];
+
+// Base borrowing power per series; reputation scales it up
+const LOAN_BASE = [40000, 180000, 700000];
 
 const SPONSOR_DEALS = [
   { id: 'sp01', name: 'QuickLube Oil',        icon: '🛢️', weekly: 400,   bonus: 150,  cond: 'top10', level: 0 },

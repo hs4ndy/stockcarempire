@@ -70,6 +70,29 @@ function toast(msg, type = 'info', duration = 4000) {
   }, duration);
 }
 
+// ─── Standings name ───────────────────────────────────────────
+// Championship tables are driver standings, so always lead with the driver's
+// name and keep the team as the secondary label.
+function standingName(entry) {
+  if (entry.isPlayer) {
+    const drv = game.driverName || 'You';
+    return `<strong>${drv}</strong> <span class="st-team">${game.teamName}</span>`;
+  }
+  // AI entries are stored as "Team Name (Driver Name)"
+  const m = /^(.*?)\s*\(([^)]+)\)\s*$/.exec(entry.name || '');
+  if (m) return `${m[2]} <span class="st-team">${m[1]}</span>`;
+  return entry.name || '';
+}
+
+// Race results / leaderboards store "Team / Driver" — show the driver first.
+function resultName(r) {
+  const parts = String(r.displayName || '').split(' / ');
+  if (parts.length >= 2) {
+    return `${parts[parts.length - 1]} <span class="st-team">${parts[0]}</span>`;
+  }
+  return r.displayName || '';
+}
+
 // ─── Stat bar HTML ────────────────────────────────────────────
 function statBar(label, value, max = 100, color = '') {
   const pct = Math.round((value / max) * 100);
@@ -116,7 +139,7 @@ function renderDashboard() {
               : 'standing-row';
     return `<div class="${cls}">
       <span class="pos-num">${i + 1}</span>
-      <span class="entry-name">${e.isPlayer ? game.teamName : e.name}</span>
+      <span class="entry-name">${standingName(e)}</span>
       <span class="pts-val">${e.points} pts</span>
     </div>`;
   }).join('');
@@ -205,6 +228,10 @@ function renderDashboard() {
       <div class="team-stat"><span>Net</span><span class="${net >= 0 ? 'green' : 'red'}">${net >= 0 ? '+' : ''}${fmt$(net)}/race</span></div>
       <div class="team-stat"><span>Sponsors</span><span>${game.activeSponsors.length} active</span></div>
       <div class="team-stat"><span>Staff</span><span>${game.staff.length + game.hiredDrivers.length} on payroll</span></div>
+      ${totalDebt() > 0 ? `
+        <div class="team-stat"><span>Bank Debt</span><span class="red">${fmt$(totalDebt())}</span></div>
+        <a class="link mt" onclick="showTab('market')">Manage loans</a>`
+      : game.money < 0 ? `<a class="link mt" onclick="showTab('market')">Visit the bank</a>` : ''}
     </div>
 
     <!-- Garage -->
@@ -280,11 +307,9 @@ function renderGarage() {
   const series = SERIES[game.currentSeries];
   const cls    = CAR_CLASSES[series.carClass];
 
+  const maxUpgrades = UPGRADE_TIERS.length * MAX_PER_TIER;
+
   const carCards = game.cars.map(car => {
-    const upgAvail = cls.upgrades.filter(u =>
-      !car.appliedUpgrades.includes(u.id) &&
-      (!u.prereq || car.appliedUpgrades.includes(u.prereq))
-    );
     const repairCost = Math.round((100 - car.condition) * cls.repairCostPerPoint * (game.staff.some(s=>s.typeId==='mechanic') ? 0.75 : 1));
     // Who is actually in this car: you, a hired driver, or nobody.
     const seat = (game.hiredDrivers || []).find(h => h.carId === car.id);
@@ -316,7 +341,7 @@ function renderGarage() {
         <div class="team-stat"><span>Driver</span><span class="${noDriver ? 'red' : ''}">${driverName}</span></div>
         <div class="team-stat"><span>Races</span><span>${car.races}</span></div>
         <div class="team-stat"><span>Wins</span><span>${car.wins}</span></div>
-        <div class="team-stat"><span>Upgrades</span><span>${car.appliedUpgrades.length}/${cls.upgrades.length}</span></div>
+        <div class="team-stat"><span>Upgrades</span><span>${car.appliedUpgrades.length}/${maxUpgrades}</span></div>
       </div>
       <div class="car-actions">
         ${car.condition < 100 ? `<button class="btn btn-sm btn-warning" onclick="handleRepair('${car.id}', ${repairCost})">Repair (${fmt$(repairCost)})</button>` : `<button class="btn btn-sm" disabled>Perfect Condition</button>`}
@@ -338,8 +363,7 @@ function renderGarage() {
     <h2>Garage</h2>
     <button class="btn btn-primary" onclick="showTab('market')">Buy New Car (${fmt$(cls.buyCost)})</button>
   </div>
-  <div class="car-grid">${carCards}</div>
-  <div id="upgrade-modal-container"></div>`;
+  <div class="car-grid">${carCards}</div>`;
 }
 
 function renderUpgradeModal(carId) {
@@ -348,37 +372,66 @@ function renderUpgradeModal(carId) {
   const series = SERIES[game.currentSeries];
   const cls    = CAR_CLASSES[car.classId];
 
-  const rows = cls.upgrades.map(upg => {
-    const installed = car.appliedUpgrades.includes(upg.id);
-    const prereqMet = !upg.prereq || car.appliedUpgrades.includes(upg.prereq);
-    const canBuy    = !installed && prereqMet && game.money >= upg.cost;
-    const effectStr = Object.entries(upg.effect).map(([k,v]) => `+${v} ${k}`).join(', ');
+  const sections = UPGRADE_TIERS.map(t => {
+    const parts    = cls.upgrades.filter(u => u.tier === t.tier);
+    const fitted   = tierInstalled(car, t.tier, cls);
+    const unlocked = tierUnlocked(car, t.tier, cls);
+    const full     = fitted >= MAX_PER_TIER;
 
-    return `<div class="upgrade-row ${installed ? 'installed' : ''}">
-      <div class="upgrade-info">
-        <span class="upgrade-name">${upg.name}</span>
-        <span class="upgrade-effect">${effectStr}</span>
-        ${upg.prereq ? `<span class="upgrade-prereq muted-text">Requires: ${cls.upgrades.find(u=>u.id===upg.prereq)?.name}</span>` : ''}
-      </div>
-      <div class="upgrade-action">
-        ${installed
-          ? `<span class="badge badge-green">Installed</span>`
-          : canBuy
-            ? `<button class="btn btn-sm btn-primary" onclick="handleUpgrade('${carId}','${upg.id}')">${fmt$(upg.cost)}</button>`
-            : `<button class="btn btn-sm" disabled>${fmt$(upg.cost)}</button>`
-        }
-      </div>
-    </div>`;
+    const rows = parts.map(upg => {
+      const installed = car.appliedUpgrades.includes(upg.id);
+      const affordable = game.money >= upg.cost;
+      const canBuy = !installed && unlocked && !full && affordable;
+      const effectStr = Object.entries(upg.effect)
+        .map(([k, v]) => `+${v} ${k.charAt(0).toUpperCase() + k.slice(1)}`).join(' · ');
+
+      let action;
+      if (installed)       action = `<span class="badge badge-green">Fitted</span>`;
+      else if (!unlocked)  action = `<span class="badge badge-gray">Locked</span>`;
+      else if (full)       action = `<span class="badge badge-gray">Tier Full</span>`;
+      else if (!affordable)action = `<button class="btn btn-sm" disabled title="Not enough money">${fmt$(upg.cost)}</button>`;
+      else                 action = `<button class="btn btn-sm btn-primary" onclick="handleUpgrade('${carId}','${upg.id}')">${fmt$(upg.cost)}</button>`;
+
+      return `<div class="upgrade-row${installed ? ' installed' : ''}${!unlocked ? ' locked' : ''}">
+        <div class="upgrade-info">
+          <span class="upgrade-name">${upg.name}</span>
+          <span class="upgrade-effect">${effectStr}</span>
+        </div>
+        <div class="upgrade-action">${action}</div>
+      </div>`;
+    }).join('');
+
+    return `
+      <div class="upgrade-tier${!unlocked ? ' is-locked' : ''}">
+        <div class="upgrade-tier-head">
+          <div>
+            <span class="upgrade-tier-name">Tier ${t.tier} — ${t.name}</span>
+            <span class="upgrade-tier-blurb">${unlocked ? t.blurb : `Fit ${MAX_PER_TIER} Tier ${t.tier - 1} parts to unlock.`}</span>
+          </div>
+          <span class="upgrade-tier-count${full ? ' is-full' : ''}">${fitted}/${MAX_PER_TIER}</span>
+        </div>
+        ${rows}
+      </div>`;
   }).join('');
 
+  const totalFitted = (car.appliedUpgrades || []).length;
   return `
   <div class="modal-overlay" id="upgrade-modal" onclick="closeUpgradeModal(event)">
-    <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal modal-wide" onclick="event.stopPropagation()">
       <div class="modal-header">
-        <h3>Upgrades — ${car.name}</h3>
+        <h3>Upgrades — #${car.number || 1} ${car.name}</h3>
         <button class="modal-close" onclick="closeUpgradeModal()">Close</button>
       </div>
-      <div class="modal-body upgrade-list">${rows}</div>
+      <div class="modal-body">
+        <div class="upgrade-summary">
+          <div><span class="upgrade-sum-label">Fitted</span><span class="upgrade-sum-val">${totalFitted} / ${UPGRADE_TIERS.length * MAX_PER_TIER}</span></div>
+          <div><span class="upgrade-sum-label">Speed</span><span class="upgrade-sum-val">${car.speed}</span></div>
+          <div><span class="upgrade-sum-label">Handling</span><span class="upgrade-sum-val">${car.handling}</span></div>
+          <div><span class="upgrade-sum-label">Reliability</span><span class="upgrade-sum-val">${car.reliability}</span></div>
+          <div><span class="upgrade-sum-label">Budget</span><span class="upgrade-sum-val gold">${fmt$(game.money)}</span></div>
+        </div>
+        ${sections}
+      </div>
     </div>
   </div>`;
 }
@@ -476,8 +529,7 @@ function renderTeam() {
         ${staffHireRows}
       </div>
     </div>
-  </div>
-  <div id="hire-driver-modal-container"></div>`;
+  </div>`;
 }
 
 function renderHireDriverModal(driverId) {
@@ -591,6 +643,69 @@ function renderMarket() {
     </div>`;
   }).join('') || '<p class="muted-text">No active sponsors.</p>';
 
+  // ── Bank ────────────────────────────────────────────────
+  const loans = getLoans();
+  const debt  = totalDebt();
+  const limit = creditLimit();
+  const avail = creditAvailable();
+
+  const loanRows = loans.map(l => {
+    const late = l.racesLeft <= 0;
+    return `<div class="loan-row${late ? ' is-late' : ''}">
+      <div class="loan-info">
+        <span class="loan-name">${l.name}${late ? ' — OVERDUE' : ''}</span>
+        <div class="staff-meta">Owed ${fmt$(l.balance)} · borrowed ${fmt$(l.principal)}</div>
+        <div class="staff-meta ${late ? 'red' : 'muted-text'}">
+          ${late ? `Accruing ${Math.round(LOAN_LATE_RATE * 100)}% interest every race`
+                 : `${l.racesLeft} race${l.racesLeft === 1 ? '' : 's'} left to repay`}
+        </div>
+      </div>
+      <div class="loan-actions">
+        <button class="btn btn-sm btn-primary" onclick="handleRepayLoan('${l.id}')"
+          ${game.money <= 0 ? 'disabled' : ''}>Repay All</button>
+        <button class="btn btn-sm btn-ghost" onclick="handleRepayLoan('${l.id}', ${Math.max(500, Math.round(l.balance / 2))})"
+          ${game.money <= 0 ? 'disabled' : ''}>Pay Half</button>
+      </div>
+    </div>`;
+  }).join('') || '<p class="muted-text">No outstanding loans.</p>';
+
+  const offerRows = LOAN_OFFERS.map(o => {
+    const principal = loanPrincipal(o);
+    const owed = Math.round(principal * (1 + o.rate));
+    const canTake = principal >= 500 && loans.length < 3;
+    return `<div class="staff-row">
+      <div class="staff-info">
+        <span class="staff-name">${o.name}</span>
+        <div class="staff-meta">Borrow ${fmt$(principal)} · repay ${fmt$(owed)} within ${o.term} races</div>
+        <div class="staff-meta muted-text">${o.blurb}</div>
+      </div>
+      ${canTake
+        ? `<button class="btn btn-sm btn-primary" onclick="handleTakeLoan('${o.id}')">Borrow</button>`
+        : `<button class="btn btn-sm" disabled>${loans.length >= 3 ? 'Max loans' : 'No credit'}</button>`}
+    </div>`;
+  }).join('');
+
+  const creditPct = limit > 0 ? Math.round((debt / limit) * 100) : 0;
+  const bankCard = `
+    <div class="card mt">
+      <div class="card-header">Bank</div>
+      ${game.money < 0 ? `<p class="form-warning">You are in the red. Borrowing now buys time, but the balance must be cleared before the term runs out.</p>` : ''}
+      <div class="team-stat"><span>Cash</span><span class="${game.money < 0 ? 'red' : 'highlight'}">${fmt$(game.money)}</span></div>
+      <div class="team-stat"><span>Total Debt</span><span class="${debt > 0 ? 'red' : ''}">${fmt$(debt)}</span></div>
+      <div class="team-stat"><span>Credit Limit</span><span>${fmt$(limit)}</span></div>
+      <div class="team-stat"><span>Available</span><span class="green">${fmt$(avail)}</span></div>
+      <div class="stat-row mt">
+        <span class="stat-label">Credit Used</span>
+        <div class="stat-bar-wrap"><div class="stat-bar ${creditPct >= 80 ? 'bar-red' : creditPct >= 50 ? 'bar-yellow' : 'bar-green'}" style="width:${clamp(creditPct,0,100)}%"></div></div>
+        <span class="stat-value">${creditPct}%</span>
+      </div>
+      <div class="card-header mt">Your Loans</div>
+      ${loanRows}
+      <div class="card-header mt">Available Credit</div>
+      <p class="muted-text small">Repay within the term or the balance starts compounding at ${Math.round(LOAN_LATE_RATE * 100)}% per race. Credit grows with your reputation.</p>
+      ${offerRows}
+    </div>`;
+
   return `
   <div class="page-header"><h2>Market</h2></div>
   <div class="two-col-grid">
@@ -607,6 +722,7 @@ function renderMarket() {
           ? `<button class="btn btn-primary mt" onclick="handleBuyCar()">Buy Car (${fmt$(cls.buyCost)})</button>`
           : `<button class="btn mt" disabled>Not enough money (need ${fmt$(cls.buyCost)})</button>`}
       </div>
+      ${bankCard}
     </div>
     <div>
       <div class="card">
@@ -629,20 +745,16 @@ function renderStandings() {
 
   const rows = sorted.map((e, i) => {
     const pos = i + 1;
-    const isPromo = pos <= series.promotionSpots && series.level < 2;
-    const isRele  = series.relegationSpots > 0 && pos > sorted.length - series.relegationSpots;
     const cls = e.isPlayer ? 'standings-row player-standing'
               : e.isTeamCar ? 'standings-row team-standing'
               : 'standings-row';
     return `<div class="${cls}">
-      <span class="st-pos ${isPromo ? 'promo-pos' : isRele ? 'rele-pos' : ''}">${pos}</span>
-      <span class="st-name">${e.isPlayer ? game.teamName : e.name}</span>
+      <span class="st-pos">${pos}</span>
+      <span class="st-name">${standingName(e)}</span>
       <span class="st-races">${e.races}</span>
       <span class="st-wins">${e.wins}</span>
       <span class="st-top5">${e.top5}</span>
       <span class="st-pts">${e.points}</span>
-      ${isPromo ? `<span class="badge badge-green">PROMO</span>` : ''}
-      ${isRele  ? `<span class="badge badge-red">REL</span>` : ''}
     </div>`;
   }).join('');
 
@@ -790,7 +902,7 @@ function renderRaceResultsModal(results, events, playerResult) {
   const topRows = results.slice(0, 10).map(r => `
     <div class="result-row ${r.isPlayer ? 'player-result' : ''}">
       <span class="res-pos ${r.position <= 3 ? 'podium' : ''}">${r.position}</span>
-      <span class="res-name">${r.displayName}</span>
+      <span class="res-name">${resultName(r)}</span>
       <span class="res-pts">${r.points}pts</span>
       <span class="res-prize green">${fmt$(r.prize)}</span>
       ${r.dnf ? '<span class="badge badge-red">DNF</span>' : ''}
@@ -929,7 +1041,7 @@ function renderCareerStats() {
   const standRows = sorted.map((e, i) => `
     <div class="result-row ${e.isPlayer ? 'player-result' : ''}">
       <span class="res-pos ${i < 3 ? 'podium' : ''}">${i + 1}</span>
-      <span class="res-name">${e.name}</span>
+      <span class="res-name">${standingName(e)}</span>
       <span class="res-pts">${e.points} pts</span>
       <span class="res-prize">${e.wins}W ${e.top5}T5</span>
     </div>`).join('');

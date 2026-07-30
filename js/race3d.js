@@ -32,6 +32,9 @@ const R3D = {
   PUSH_X:         1.8,    // lateral tolerance for locked push
   PUSH_BONUS:     6,      // ≈+5 mph when locked bumpers
   CHAIN_PER_CAR:  2,      // extra speed per car in a draft chain
+  TEAM_HELP_Z:    60,     // range at which a teammate starts working with you
+  TEAM_PUSH_BONUS: 4,     // extra shove when you and a teammate are locked up
+  MIRROR_HFOV:    88,     // mirror HORIZONTAL field of view, degrees
 
   // ── AI / race director ─────────────────────────────────────
   // Aggression ramps smoothly from CALM_FRAC to ENDGAME_FRAC: early laps are
@@ -977,7 +980,26 @@ class Race3DEngine {
       const endgame = progress >= R3D.ENDGAME_FRAC;
       car.laneTimer -= dt;
 
-      if (!car._pushLocked) {
+      // ── Teammates work with you ────────────────────────────
+      // If a teammate is close behind you they line up to push; if they are
+      // just ahead they hold their lane so you can push them. Either way they
+      // never try to pass you.
+      if (car.isTeammate && !car._pushLocked) {
+        const p  = this.player;
+        const dz = p.z - car.z;                    // >0 = player is ahead
+        if (!p.dnf && !p.finished && !p.spinning && Math.abs(dz) < R3D.TEAM_HELP_Z) {
+          const hw = R3D.HALF_W - 1.4;
+          car.targetX  = clamp(p.x, -hw, hw);      // line up bumper to bumper
+          car.laneTimer = 0.5;                     // hold this, skip random drift
+          car._helping  = true;
+          // Behind you: close the gap. Ahead of you: ease so you can catch up.
+          car.speed += (dz > 0 ? 14 : -6) * dt;
+        } else {
+          car._helping = false;
+        }
+      }
+
+      if (!car._pushLocked && !car._helping) {
         let bestDraftX = null, bestDraftDz = Infinity, carAhead = null;
         for (const other of this.cars) {
           if (other === car || other.dnf || other.finished) continue;
@@ -986,6 +1008,8 @@ class Race3DEngine {
             if (dz < bestDraftDz) { bestDraftDz = dz; bestDraftX = other.x; carAhead = other; }
           }
         }
+        // Never line up a passing move on your own team-mate
+        if (carAhead && carAhead.isPlayer && car.isTeammate) carAhead = null;
 
         // Early: commit to a lane for several seconds. Late: react constantly.
         const laneTimerBase = mix(4.0, 0.7) + Math.random() * mix(4.5, 1.1);
@@ -1044,11 +1068,14 @@ class Race3DEngine {
         if (dz <= 0) continue;
 
         if (dz < R3D.PUSH_Z && dx < R3D.PUSH_X) {
-          liveBoost = Math.max(liveBoost, R3D.DRAFT_BOOST + R3D.PUSH_BONUS);
+          // A team-mate pushes harder than a stranger, and takes the shove too
+          const teamLink = (car.isTeammate && other.isPlayer) || (car.isPlayer && other.isTeammate);
+          const bonus = R3D.PUSH_BONUS + (teamLink ? R3D.TEAM_PUSH_BONUS : 0);
+          liveBoost = Math.max(liveBoost, R3D.DRAFT_BOOST + bonus);
           pushing = true;
           if (!other._pushBoosted) {
             other._pushBoosted = true;
-            other.draftBoost = Math.max(other.draftBoost || 0, R3D.PUSH_BONUS * 0.7);
+            other.draftBoost = Math.max(other.draftBoost || 0, bonus * (teamLink ? 1.0 : 0.7));
           }
           continue;
         }
@@ -1256,8 +1283,10 @@ class Race3DEngine {
     this.camera.lookAt(p.x * 0.55, 1.5, p.z + 26);
     this.camShake = Math.max(0, sk - dt * 2.5);
 
-    this.mirrorCam.position.set(p.x * 0.7, 3.8, p.z + 3);
-    this.mirrorCam.lookAt(p.x * 0.3, 1.0, p.z - 40);
+    // Sit just above and behind the roofline, aimed level down the track so
+    // cars behind sit in the middle of the glass rather than at the top edge.
+    this.mirrorCam.position.set(p.x, 2.5, p.z + 1.2);
+    this.mirrorCam.lookAt(p.x, 1.8, p.z - 60);
   }
 
   // Rear-view mirror.
@@ -1318,7 +1347,15 @@ class Race3DEngine {
     r.getSize(sz);
 
     // Pass 1 — rear view into the offscreen target, unflipped.
-    this.mirrorCam.aspect = mw / mh;
+    // The mirror is a wide letterbox. Driving it with a fixed VERTICAL fov
+    // meant the horizontal fov ballooned with the aspect ratio (~154° at
+    // 620x104) and everything looked fisheyed. Derive the vertical fov from a
+    // fixed HORIZONTAL fov instead, so the view stays natural at any size.
+    const aspect = mw / mh;
+    const hFov   = R3D.MIRROR_HFOV * Math.PI / 180;
+    const vFov   = 2 * Math.atan(Math.tan(hFov / 2) / aspect);
+    this.mirrorCam.aspect = aspect;
+    this.mirrorCam.fov    = clamp(vFov * 180 / Math.PI, 12, 70);
     this.mirrorCam.updateProjectionMatrix();
     r.setRenderTarget(this.mirrorRT);
     r.setViewport(0, 0, rtW, rtH);

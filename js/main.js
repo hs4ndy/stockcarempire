@@ -186,13 +186,13 @@ function handleRepair(carId, cost) {
 function handleUpgrade(carId, upgradeId) {
   const result = upgradeCar(carId, upgradeId);
   if (!result.ok) { toast(result.msg, 'error'); return; }
-  const series = SERIES[game.currentSeries];
-  const cls    = CAR_CLASSES[series.carClass];
-  const upg    = cls.upgrades.find(u => u.id === upgradeId);
-  toast(`${upg?.name} installed!`, 'success');
+  const car = game.cars.find(c => c.id === carId);
+  const upg = CAR_CLASSES[car.classId].upgrades.find(u => u.id === upgradeId);
+  toast(`${upg?.name} fitted.`, 'success');
   updateHeader();
-  // Re-render upgrade modal and garage
-  document.getElementById('upgrade-modal-container').innerHTML = renderUpgradeModal(carId);
+  // Refresh the modal (tier counts move) and the garage behind it
+  showUpgradeModal(carId);
+  renderTab(activeTab());
 }
 
 function handleRenameCar(carId) {
@@ -291,6 +291,23 @@ function handleBuyCar() {
   const result = buyCar(name.trim());
   if (!result.ok) { toast(result.msg, 'error'); return; }
   toast(`${name} added to your garage!`, 'success');
+  updateHeader();
+  renderTab('market');
+}
+
+// ─── Bank ─────────────────────────────────────────────────────
+function handleTakeLoan(offerId) {
+  const res = takeLoan(offerId);
+  if (!res.ok) { toast(res.msg, 'error'); return; }
+  toast(`${res.loan.name}: ${fmt$(res.loan.principal)} received. Repay ${fmt$(res.loan.balance)} within ${res.loan.term} races.`, 'success', 6000);
+  updateHeader();
+  renderTab('market');
+}
+
+function handleRepayLoan(loanId, amount) {
+  const res = repayLoan(loanId, amount);
+  if (!res.ok) { toast(res.msg, 'error'); return; }
+  toast(res.cleared ? `Loan cleared — ${fmt$(res.paid)} paid.` : `${fmt$(res.paid)} paid off.`, 'success');
   updateHeader();
   renderTab('market');
 }
@@ -600,11 +617,19 @@ function finishRacePlayback() {
   }, 800);
 }
 
+// Surface anything the bank did during the race weekend
+function reportLoanNotes() {
+  (game.lastLoanNotes || []).forEach((n, i) =>
+    setTimeout(() => toast(n, n.includes('overdue') ? 'error' : 'info', 6000), 400 + i * 600));
+  game.lastLoanNotes = [];
+}
+
 function handleCloseResults() {
   document.getElementById('results-modal')?.remove();
   showScreen('game');
   updateHeader();
   renderTab('dashboard');
+  reportLoanNotes();
 }
 
 // ─── Premier Cup career choice ────────────────────────────────

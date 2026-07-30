@@ -204,12 +204,22 @@ function generateAITeams(seriesLevel) {
 
   // Assign unique car numbers (2–99; 1 is reserved for player)
   const usedNums = new Set([1]);
+  // ...and unique driver names, so no two entries share a name in the standings
+  const usedNames = new Set();
+  const freeNames = [...AI_DRIVER_NAMES].sort(() => Math.random() - 0.5);
+
   for (const team of teams) {
     for (const car of team.cars) {
       let n;
       do { n = randInt(2, 99); } while (usedNums.has(n));
       usedNums.add(n);
       car.number = n;
+
+      if (!car.driverName || usedNames.has(car.driverName)) {
+        const next = freeNames.find(nm => !usedNames.has(nm));
+        car.driverName = next || `${pick(AI_DRIVER_NAMES).split(' ')[1]} ${usedNames.size}`;
+      }
+      usedNames.add(car.driverName);
     }
   }
 
@@ -236,6 +246,7 @@ function newGame(teamName, driverName, firstCarName) {
     hiredDrivers: [],    // { driverId, carId }
     staff: [],           // { staffType, name, weeklyCost }
     activeSponsors: [],  // sponsor deal ids
+    loans: [],           // bank loans currently outstanding
 
     season: {
       year: 1,
@@ -432,6 +443,9 @@ function postRaceUpdate(playerResult, earnings, allResults) {
   });
   game.money += sponsorPay;
 
+  // Bank: count down loan terms, charge interest on anything overdue
+  game.lastLoanNotes = tickLoans();
+
   // Advance race index
   game.season.raceIndex += 1;
 }
@@ -441,6 +455,7 @@ function skipRace() {
   const race = currentRace();
   if (!race) return;
   race.status = 'skipped';
+  game.lastLoanNotes = tickLoans();
   game.season.raceIndex += 1;
   // Weekly costs still apply
   const weeklyStaff = game.staff.reduce((s, st) => s + st.weeklyCost, 0);
@@ -586,6 +601,105 @@ function repairCar(carId) {
   return { ok: true, cost };
 }
 
+// ═══════════════════════════════════════════════════════════
+//  BANK — loans
+// ═══════════════════════════════════════════════════════════
+function getLoans() {
+  if (!game.loans) game.loans = [];
+  return game.loans;
+}
+
+function totalDebt() {
+  return getLoans().reduce((s, l) => s + l.balance, 0);
+}
+
+// Reputation buys you credit; existing debt eats into it.
+function creditLimit() {
+  const base = LOAN_BASE[game.currentSeries] || LOAN_BASE[0];
+  const rep  = (game.reputation != null ? game.reputation : 50) / 100;
+  return Math.round(base * (0.5 + rep));
+}
+
+function creditAvailable() {
+  return Math.max(0, creditLimit() - totalDebt());
+}
+
+// Principal an offer would advance right now
+function loanPrincipal(offer) {
+  const raw = Math.round(creditLimit() * offer.mult * 0.5 / 500) * 500;
+  return Math.min(raw, creditAvailable());
+}
+
+function takeLoan(offerId) {
+  const offer = LOAN_OFFERS.find(o => o.id === offerId);
+  if (!offer) return { ok: false, msg: 'Unknown loan.' };
+  if (getLoans().length >= 3) return { ok: false, msg: 'You already carry three loans.' };
+
+  const principal = loanPrincipal(offer);
+  if (principal < 500) {
+    return { ok: false, msg: 'No credit available — repay existing debt first.' };
+  }
+
+  const loan = {
+    id: uid(),
+    name: offer.name,
+    principal,
+    balance: Math.round(principal * (1 + offer.rate)),
+    term: offer.term,
+    racesLeft: offer.term,
+    rate: offer.rate,
+    overdue: false,
+  };
+  getLoans().push(loan);
+  game.money += principal;
+  saveGame();
+  return { ok: true, loan };
+}
+
+function repayLoan(loanId, amount) {
+  const loan = getLoans().find(l => l.id === loanId);
+  if (!loan) return { ok: false, msg: 'Loan not found.' };
+  const pay = Math.min(Math.round(amount || loan.balance), loan.balance, game.money);
+  if (pay <= 0) return { ok: false, msg: 'Not enough cash to make a payment.' };
+
+  game.money   -= pay;
+  loan.balance -= pay;
+  let cleared = false;
+  if (loan.balance <= 0) {
+    game.loans = getLoans().filter(l => l.id !== loan.id);
+    cleared = true;
+  }
+  saveGame();
+  return { ok: true, paid: pay, cleared };
+}
+
+// Called once per race weekend. Counts down terms and compounds overdue debt.
+function tickLoans() {
+  const notes = [];
+  getLoans().forEach(loan => {
+    if (loan.racesLeft > 0) {
+      loan.racesLeft -= 1;
+      if (loan.racesLeft === 1) notes.push(`${loan.name}: 1 race left to repay ${fmt$(loan.balance)}.`);
+    }
+    if (loan.racesLeft <= 0) {
+      // Term is up — try to settle automatically, then charge interest on the rest
+      if (game.money >= loan.balance) {
+        game.money  -= loan.balance;
+        loan.balance = 0;
+        notes.push(`${loan.name} settled in full.`);
+      } else {
+        if (game.money > 0) { loan.balance -= game.money; game.money = 0; }
+        const interest = Math.round(loan.balance * LOAN_LATE_RATE);
+        loan.balance += interest;
+        loan.overdue  = true;
+        notes.push(`${loan.name} is overdue — ${fmt$(interest)} interest added.`);
+      }
+    }
+  });
+  game.loans = getLoans().filter(l => l.balance > 0);
+  return notes;
+}
+
 function upgradeCar(carId, upgradeId) {
   const car = game.cars.find(c => c.id === carId);
   if (!car) return { ok: false, msg: 'Car not found.' };
@@ -594,8 +708,11 @@ function upgradeCar(carId, upgradeId) {
   const upgrade = cls.upgrades.find(u => u.id === upgradeId);
   if (!upgrade) return { ok: false, msg: 'Upgrade not found.' };
   if (car.appliedUpgrades.includes(upgradeId)) return { ok: false, msg: 'Already installed.' };
-  if (upgrade.prereq && !car.appliedUpgrades.includes(upgrade.prereq)) {
-    return { ok: false, msg: `Requires ${cls.upgrades.find(u=>u.id===upgrade.prereq)?.name} first.` };
+  if (!tierUnlocked(car, upgrade.tier, cls)) {
+    return { ok: false, msg: `Fit ${MAX_PER_TIER} Tier ${upgrade.tier - 1} parts before Tier ${upgrade.tier} opens.` };
+  }
+  if (tierInstalled(car, upgrade.tier, cls) >= MAX_PER_TIER) {
+    return { ok: false, msg: `Tier ${upgrade.tier} is full — ${MAX_PER_TIER} parts is the limit.` };
   }
   if (game.money < upgrade.cost) return { ok: false, msg: 'Not enough money.' };
 
