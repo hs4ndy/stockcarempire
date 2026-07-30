@@ -63,9 +63,12 @@ function r3dTex(w, h, draw) {
 }
 const r3dHex = v => '#' + (v & 0xffffff).toString(16).padStart(6, '0');
 
-// Painted door/roof number roundel — white disc, dark number (reads on any livery)
+// Painted door/roof number roundel — white disc, dark number (reads on any livery).
+// Cached per number so a 30-car field doesn't allocate 30 identical canvases.
+const _r3dRoundelCache = new Map();
 function r3dRoundelTex(num) {
-  return r3dTex(128, 128, (ctx) => {
+  if (_r3dRoundelCache.has(num)) return _r3dRoundelCache.get(num);
+  const tex = r3dTex(128, 128, (ctx) => {
     ctx.clearRect(0, 0, 128, 128);
     ctx.fillStyle = '#f4f4f4';
     ctx.beginPath(); ctx.arc(64, 64, 54, 0, Math.PI * 2); ctx.fill();
@@ -75,28 +78,8 @@ function r3dRoundelTex(num) {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(String(num), 64, 70);
   });
-}
-
-// Floating broadcast tag above each car — dark plate, team-color chip, "#NN"
-function r3dTagTex(num, hexInt, isTeammate) {
-  return r3dTex(180, 84, (ctx, w, h) => {
-    ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = 'rgba(13,13,15,0.92)';
-    ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = isTeammate ? '#E0A800' : 'rgba(140,140,153,0.6)';
-    ctx.lineWidth = 3; ctx.strokeRect(1.5, 1.5, w - 3, h - 3);
-    ctx.fillStyle = isTeammate ? '#E0A800' : r3dHex(hexInt);
-    ctx.fillRect(0, 0, 16, h);
-    ctx.fillStyle = '#ececef';
-    ctx.font = 'bold 50px Arial, sans-serif';
-    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.fillText('#' + num, 30, isTeammate ? 32 : 44);
-    if (isTeammate) {
-      ctx.fillStyle = '#E0A800';
-      ctx.font = 'bold 20px Arial, sans-serif';
-      ctx.fillText('TEAMMATE', 30, 66);
-    }
-  });
+  _r3dRoundelCache.set(num, tex);
+  return tex;
 }
 
 // Asphalt — flat dark base with aggregate speckle
@@ -747,22 +730,23 @@ class Race3DEngine {
     const glow = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.3, 5.4), glowMat);
     glow.position.set(0, 0.6, 0); g.add(glow);
 
-    // Floating broadcast tag (AI only — your own car needs no tag)
-    let tag = null;
-    if (!isPlayer) {
-      const tagMat = new THREE.SpriteMaterial({ map: r3dTagTex(number, hex, isTeammate), transparent: true, depthWrite: false });
-      tag = new THREE.Sprite(tagMat);
-      tag.scale.set(2.6, 1.2, 1);
-      tag.position.set(0, 3.0, 0);
-      tag.visible = false;
-      g.add(tag);
+    // Teammate marker — flat gold trim painted on the car itself.
+    // (No floating banner: keeps the field readable at speed.)
+    if (isTeammate) {
+      const tmMat = new THREE.MeshLambertMaterial({ color: 0xe0a800 });
+      const roofBand = new THREE.Mesh(new THREE.BoxGeometry(1.64, 0.05, 0.3), tmMat);
+      roofBand.position.set(0, 1.14, 0.6); g.add(roofBand);
+      [-1.10, 1.10].forEach(sx => {
+        const rocker = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.13, 3.4), tmMat);
+        rocker.position.set(sx, 0.22, 0); g.add(rocker);
+      });
     }
 
     g.position.set(x, 0, z);
     this.scene.add(g);
 
     return {
-      mesh: g, glowMat, wheels, tag,
+      mesh: g, glowMat, wheels, isTeammate,
       isPlayer, power, label, hex, number, x, z,
       lv: 0,
       speed: R3D.SPEED_BASE * (0.78 + power * 0.22),
@@ -1158,15 +1142,12 @@ class Race3DEngine {
     this.camShake = Math.max(this.camShake, shake);
   }
 
-  // Visual-only: roll wheels, fade in/out broadcast tags near the player
+  // Visual-only: roll the wheels at road speed
   _animateCars(dt) {
-    const pz = this.player.z;
     for (const car of this.cars) {
-      if (car.wheels) {
-        const droll = car.speed * dt / R3D.WHEEL_R;
-        for (const w of car.wheels) w.rotation.x -= droll;
-      }
-      if (car.tag) car.tag.visible = !car.dnf && Math.abs(car.z - pz) < 95;
+      if (!car.wheels) continue;
+      const droll = car.speed * dt / R3D.WHEEL_R;
+      for (const w of car.wheels) w.rotation.x -= droll;
     }
   }
 
@@ -1350,7 +1331,8 @@ class Race3DEngine {
     const rows = ranked.slice(start, start + 7).map((c, k) => {
       const place = start + k + 1;
       const nm = (c.label || '').split(' / ').pop();
-      return `<div class="r3d-order-row${c.isPlayer ? ' is-player' : ''}">
+      const cls = c.isPlayer ? ' is-player' : c.isTeammate ? ' is-teammate' : '';
+      return `<div class="r3d-order-row${cls}">
         <span class="r3d-order-pos">${place}</span>
         <span class="r3d-order-chip" style="background:${r3dHex(c.hex)}"></span>
         <span class="r3d-order-num">#${c.number}</span>
@@ -1402,9 +1384,30 @@ class Race3DEngine {
     document.removeEventListener('keydown', this._kd);
     document.removeEventListener('keyup',   this._ku);
     window.removeEventListener('resize',    this._onResize);
+
+    // Release GPU resources — without this, every race leaks its track,
+    // car geometry and canvas textures for the life of the page.
+    if (this.scene && this.scene.traverse) {
+      const shared = new Set(_r3dRoundelCache.values()); // reused across races — keep
+      const seen = new Set();
+      this.scene.traverse(obj => {
+        if (obj.geometry && !seen.has(obj.geometry)) {
+          seen.add(obj.geometry);
+          obj.geometry.dispose && obj.geometry.dispose();
+        }
+        const mats = Array.isArray(obj.material) ? obj.material : (obj.material ? [obj.material] : []);
+        for (const m of mats) {
+          if (!m || seen.has(m)) continue;
+          seen.add(m);
+          if (m.map && m.map.dispose && !shared.has(m.map)) m.map.dispose();
+          m.dispose && m.dispose();
+        }
+      });
+    }
     if (this.renderer) { this.renderer.dispose(); this.renderer = null; }
-    this.scene = null;
+    this.scene  = null;
     this.camera = null;
-    this.done = true;
+    this.cars   = [];
+    this.done   = true;
   }
 }

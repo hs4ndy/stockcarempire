@@ -84,9 +84,11 @@ function handleStartQuickRace(fieldSize) {
   document.getElementById('quick-race-modal')?.remove();
   const AI_COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#c0392b','#16a085','#8e44ad','#2980b9','#27ae60'];
   const aiEntries = [];
+  // Unique human driver names for the field
+  const namePool = [...AI_DRIVER_NAMES].sort(() => Math.random() - 0.5);
   for (let i = 0; i < fieldSize - 1; i++) {
-    const tmpl = AI_TEAM_TEMPLATES[i % AI_TEAM_TEMPLATES.length];
-    aiEntries.push({ name: tmpl.name.split(' ')[0], color: AI_COLORS[i % AI_COLORS.length], number: i + 2, power: rand(0.35, 0.80) });
+    const nm = namePool[i % namePool.length] + (i >= namePool.length ? ' Jr.' : '');
+    aiEntries.push({ name: nm, color: AI_COLORS[i % AI_COLORS.length], number: i + 2, power: rand(0.35, 0.80) });
   }
   showScreen('game-race');
   launch3DRace(
@@ -311,16 +313,34 @@ function handleStartRace() {
 
   // Build AI entry list for 3D race
   const aiEntries = [];
-  const usedNums = new Set([pCar?.number || 1]);
+  const usedNums  = new Set([pCar?.number || 1]);
+  const usedNames = new Set([game.driverName || game.teamName]);
+
+  const nextNum = (preferred) => {
+    let n = preferred;
+    if (!n || usedNums.has(n)) { do { n = randInt(2, 99); } while (usedNums.has(n)); }
+    usedNums.add(n);
+    return n;
+  };
+  // Drivers are people — always show a human name in the race, never a team word.
+  const nextDriverName = (preferred) => {
+    if (preferred && !usedNames.has(preferred)) { usedNames.add(preferred); return preferred; }
+    const free = AI_DRIVER_NAMES.filter(n => !usedNames.has(n));
+    const nm = free.length ? pick(free) : `${pick(AI_DRIVER_NAMES).split(' ')[1]} #${usedNames.size}`;
+    usedNames.add(nm);
+    return nm;
+  };
 
   // Player's own teammate cars (other cars in game.cars not driven by player)
   game.cars.forEach(car => {
     if (car.id === pCar?.id) return; // skip the car the player is driving
-    const n = car.number || (() => { let x; do { x = randInt(2,99); } while(usedNums.has(x)); usedNums.add(x); return x; })();
+    const hired     = (game.hiredDrivers || []).find(h => h.carId === car.id);
+    const hiredName = hired ? HIREABLE_DRIVERS.find(d => d.id === hired.driverId)?.name : null;
+    if (!car.driverName) car.driverName = nextDriverName();
     aiEntries.push({
-      name:       game.driverName ? `${car.name || game.teamName}` : game.teamName,
+      name:       nextDriverName(hiredName || car.driverName),
       color:      car.color || pCar?.color || '#e8001d',
-      number:     n,
+      number:     nextNum(car.number),
       power:      clamp((car.speed + car.handling + car.reliability) / 300 * 0.8 + 0.2, 0.25, 0.95),
       isTeammate: true,
     });
@@ -329,11 +349,10 @@ function handleStartRace() {
   game.season.aiTeams.forEach(team => {
     team.cars.forEach(car => {
       if (isHiredMode && team.id === game.hiredTeamId) return;
-      const n = car.number || (() => { let x; do { x = randInt(2,99); } while(usedNums.has(x)); usedNums.add(x); return x; })();
       aiEntries.push({
-        name:   team.name.split(' ')[0],
+        name:   nextDriverName(car.driverName),
         color:  car.color || team.color,
-        number: n,
+        number: nextNum(car.number),
         power:  clamp(car.power * (car.condition / 100), 0.25, 0.95),
       });
     });
@@ -341,8 +360,7 @@ function handleStartRace() {
   // Pad with generic backmarkers to fill field
   while (aiEntries.length < series.fieldSize - 1) {
     const tmpl = pick(AI_TEAM_TEMPLATES);
-    let n; do { n = randInt(2,99); } while(usedNums.has(n)); usedNums.add(n);
-    aiEntries.push({ name: tmpl.name.split(' ')[0], color: tmpl.color, number: n, power: rand(0.28, 0.48) });
+    aiEntries.push({ name: nextDriverName(), color: tmpl.color, number: nextNum(), power: rand(0.28, 0.48) });
   }
 
   // Switch to race screen and launch 3D

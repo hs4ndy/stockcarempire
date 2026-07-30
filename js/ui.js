@@ -43,6 +43,17 @@ function updateHeader() {
     : 'Season End';
   document.getElementById('hdr-race').textContent = raceLabel;
   document.getElementById('hdr-year').textContent = `Year ${game.season.year}`;
+
+  // Flag an unsaved career — auto-save only runs once a slot is chosen.
+  const saveBtn = document.getElementById('btn-hdr-save');
+  if (saveBtn) {
+    const unsaved = (typeof currentSlot === 'undefined' || currentSlot === null);
+    saveBtn.textContent = unsaved ? 'Save *' : 'Save';
+    saveBtn.title = unsaved
+      ? 'Not saved yet — choose a slot to enable auto-save (Ctrl+S)'
+      : `Auto-saving to Slot ${currentSlot + 1} (Ctrl+S)`;
+    saveBtn.classList.toggle('btn-unsaved', unsaved);
+  }
 }
 
 // ─── Notifications / toasts ──────────────────────────────────
@@ -215,6 +226,7 @@ function renderDashboard() {
     <!-- Driver Profile -->
     <div class="card">
       <div class="card-header">Driver Profile</div>
+      <div class="team-stat"><span>Driver</span><span class="highlight">${game.driverName || game.teamName}</span></div>
       ${game.driverMode === 'hired' ? `
         <div class="team-stat"><span>Team</span><span>${game.season.aiTeams.find(t=>t.id===game.hiredTeamId)?.name || '—'}</span></div>
         <div class="team-stat"><span>Salary</span><span class="green">${fmt$(game.hiredSalary || 0)}/week</span></div>

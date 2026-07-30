@@ -253,8 +253,13 @@ function newGame(teamName, driverName, firstCarName) {
 }
 
 // ─── Load / Save (slot wrappers) ─────────────────────────────
+// Auto-save (called after most game actions). Only writes once the player has
+// actually chosen a slot — otherwise a brand-new career would silently
+// overwrite whatever save already lives in slot 0.
 function saveGame() {
-  saveToSlot(currentSlot !== null ? currentSlot : 0);
+  if (currentSlot === null || currentSlot === undefined) return false;
+  saveToSlot(currentSlot);
+  return true;
 }
 
 function loadGame() {
@@ -503,7 +508,8 @@ function buyCar(name) {
   const cls = CAR_CLASSES[classId];
   if (game.money < cls.buyCost) return { ok: false, msg: 'Not enough money.' };
   game.money -= cls.buyCost;
-  const car = makeCar(name, classId);
+  const carName = (name && String(name).trim()) || `Car ${game.cars.length + 1}`;
+  const car = makeCar(carName, classId);
   game.cars.push(car);
   saveGame();
   return { ok: true, car };

@@ -384,6 +384,7 @@ input[type="text"]::placeholder { color: var(--text-mute); }
 .telem-money .telem-value { color: var(--warn); }
 
 .header-actions { display: flex; gap: .5rem; }
+.btn.btn-unsaved { color: var(--warn); border-color: var(--warn); }
 
 /* ============================================================
    GAME SHELL — NAV
@@ -1057,8 +1058,9 @@ input[type="text"]::placeholder { color: var(--text-mute); }
 /* ============================================================
    3D RACE — CONTAINER + HUD
    ============================================================ */
-#screen-game-race { min-height: 100vh; background: #000; }
-#race-3d-container { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+/* 100vw would include the scrollbar and force horizontal overflow — use 100%. */
+#screen-game-race { height: 100vh; width: 100%; background: #000; overflow: hidden; }
+#race-3d-container { position: relative; width: 100%; height: 100%; overflow: hidden; }
 
 #r3d-hud {
   position: absolute;
@@ -1088,7 +1090,7 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   position: absolute;
   top: 18px;
   left: 18px;
-  width: 210px;
+  width: 236px;
   background: rgba(13, 13, 15, 0.82);
   border: 1px solid var(--line-2);
   border-left: 3px solid var(--accent);
@@ -1104,6 +1106,7 @@ input[type="text"]::placeholder { color: var(--text-mute); }
 }
 .r3d-order-row:last-child { border-bottom: none; }
 .r3d-order-row.is-player { background: rgba(228, 0, 43, 0.16); }
+.r3d-order-row.is-teammate .r3d-order-name { color: var(--warn); }
 .r3d-order-pos { font-weight: 800; color: var(--text-dim); text-align: right; font-variant-numeric: tabular-nums; }
 .r3d-order-row.is-player .r3d-order-pos { color: var(--accent); }
 .r3d-order-chip { width: 8px; height: 14px; }
@@ -1136,7 +1139,7 @@ input[type="text"]::placeholder { color: var(--text-mute); }
 .r3d-map-track {
   position: relative;
   width: 26px;
-  height: 320px;
+  height: min(320px, 42vh);
   margin: 0 auto;
   background: var(--panel-2);
   border-left: 1px solid var(--line-2);
@@ -1235,9 +1238,8 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   top: 18px;
   left: 50%;
   transform: translateX(-50%);
-  margin-top: 62px;
-  width: 320px;
-  height: 96px;
+  width: min(620px, 44vw);
+  height: 104px;
   border: 1px solid var(--line-2);
   background: rgba(0,0,0,0.4);
 }
@@ -1261,7 +1263,8 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   left: 50%;
   bottom: 64px;
   transform: translateX(-50%);
-  width: min(560px, 80vw);
+  /* calc keeps the bar clear of the telemetry panel on the left */
+  width: min(560px, calc(100vw - 470px));
   height: 6px;
   background: rgba(255,255,255,0.12);
   border: 1px solid var(--line-2);
@@ -1296,13 +1299,16 @@ input[type="text"]::placeholder { color: var(--text-mute); }
 .r3d-countdown {
   position: absolute;
   top: 38%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  left: 0;
+  right: 0;
+  text-align: center;
+  transform: translateY(-50%);
+  white-space: nowrap;          /* "GREEN FLAG" must never wrap */
   font-size: 7rem;
   font-weight: 800;
   color: var(--text);
 }
-.r3d-countdown.go { color: var(--good); font-size: 4rem; letter-spacing: 0.1em; }
+.r3d-countdown.go { color: var(--good); font-size: min(4rem, 8vw); letter-spacing: 0.1em; }
 
 .r3d-finish {
   position: absolute;
@@ -1360,12 +1366,36 @@ input[type="text"]::placeholder { color: var(--text-mute); }
 /* ============================================================
    RESPONSIVE
    ============================================================ */
+/* Shell pieces must be allowed to shrink before they overflow */
+.game-header, .game-nav { max-width: 100%; }
+.header-brand, .header-actions { flex: none; }
+.header-telemetry { min-width: 0; overflow: hidden; }
+.telem-cell { min-width: 0; }
+.telem-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---- Desktop → laptop: shed the least critical telemetry first ---- */
+@media (max-width: 1180px) {
+  .telem-cell:nth-child(5) { display: none; }   /* SEASON */
+  #main-content { padding: 1.5rem 1.15rem 2.5rem; }
+}
+@media (max-width: 1040px) {
+  .telem-cell:nth-child(4) { display: none; }   /* RACE */
+}
 @media (max-width: 920px) {
   .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
   .cmd-strip { grid-template-columns: repeat(2, 1fr); }
   .cmd-cell:nth-child(2n) { border-right: none; }
   .race-main { grid-template-columns: 1fr; }
+  .telem-cell:nth-child(3) { display: none; }   /* SERIES */
+  .header-brand-text { display: none; }
+  .game-header { gap: .9rem; padding: 0 1rem; }
+  .game-nav { padding: 0 1rem; }
+  .nav-btn { padding: 0 .8rem; }
+}
+@media (max-width: 760px) {
   .header-telemetry { display: none; }
+  .header-actions { margin-left: auto; }   /* keep actions right-aligned */
+  .page-header h2 { font-size: 1.25rem; }
 }
 @media (max-width: 640px) {
   .dashboard-grid,
@@ -1377,4 +1407,63 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   .standings-row .st-races,
   .standings-row .st-wins,
   .standings-row .st-top5 { display: none; }
+  .car-grid { grid-template-columns: 1fr; }
+  .schedule-row { grid-template-columns: 32px 1fr auto; }
+  .schedule-row .race-result { display: none; }
+  .result-row { grid-template-columns: 34px 1fr auto auto; }
+  .result-row .res-pts { display: none; }
+  .intro-buttons { width: 100%; max-width: 300px; }
+  .logo-empire { font-size: 3rem; }
+  .setup-panel-footer { flex-direction: column-reverse; }
+  .setup-panel-footer .btn-game { width: 100%; }
+  #toast-container { left: 1rem; right: 1rem; }
+  .toast { max-width: none; }
+}
+
+/* ============================================================
+   RESPONSIVE — IN-RACE HUD
+   Scales with the viewport so nothing overlaps at any window size.
+   ============================================================ */
+@media (max-width: 1240px) {
+  .r3d-order { width: 208px; }
+  .r3d-telemetry { width: 196px; }
+}
+/* Below here the mirror is width-limited by calc() so it can never grow into
+   the running-order tower on the left or the pause button on the right. */
+@media (max-width: 1040px) {
+  .r3d-map { display: none; }               /* mirror + tower matter more */
+  #r3d-mirror-wrap { width: min(460px, calc(100vw - 500px)); height: 92px; }
+}
+@media (max-width: 860px) {
+  .r3d-order { width: 178px; font-size: 11px; }
+  .r3d-order-row { grid-template-columns: 18px 6px 30px 1fr; gap: 5px; padding: 4px 8px; }
+  .r3d-telemetry { width: 168px; padding: 10px 11px; }
+  .r3d-tele-pos-num { font-size: 1.9rem; }
+  .r3d-tele-speed > span:first-child { font-size: 1.3rem; }
+  #r3d-mirror-wrap { width: min(420px, calc(100vw - 430px)); height: 82px; }
+}
+@media (max-width: 680px) {
+  .r3d-order { display: none; }             /* telemetry carries position */
+  #r3d-mirror-wrap { width: 62vw; height: 74px; }
+  /* Telemetry becomes a bottom bar; the progress bar sits above it. */
+  .r3d-telemetry {
+    left: 12px; right: 12px; bottom: 12px; width: auto;
+    display: flex; align-items: center; gap: 14px; padding: 9px 12px;
+  }
+  .r3d-tele-speed { margin: 0; }
+  .r3d-draft { flex: 1; min-width: 70px; }
+  .r3d-progress-wrap { width: calc(100vw - 24px); bottom: 92px; }
+  .r3d-controls-hint { display: none; }
+}
+@media (max-width: 520px) {
+  /* Keep the centered mirror clear of the pause button in the corner */
+  #r3d-mirror-wrap { width: min(62vw, calc(100vw - 210px)); height: 64px; }
+  .r3d-pause-btn { padding: 6px 10px; font-size: 10px; }
+}
+/* Short windows: keep the mirror and progress bar clear of each other */
+@media (max-height: 620px) {
+  #r3d-mirror-wrap { height: 74px; }
+  .r3d-map-track { height: 200px; }
+  .r3d-order-row:nth-child(n+6) { display: none; }
+  .r3d-countdown { font-size: 4.5rem; }
 }
