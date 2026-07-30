@@ -315,6 +315,14 @@ h1, h2, h3, h4, p { margin: 0; }
 .form-group { display: flex; flex-direction: column; gap: .4rem; }
 .form-label { display: block; }
 .form-hint { font-size: 12px; color: var(--text-mute); }
+.form-warning {
+  font-size: 12px;
+  color: var(--warn);
+  border-left: 3px solid var(--warn);
+  background: var(--panel-2);
+  padding: 8px 10px;
+  margin: .5rem 0 .75rem;
+}
 input[type="text"], .form-select {
   width: 100%;
   padding: 11px 12px;
@@ -611,6 +619,11 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   background: var(--panel-2);
   border-left: 3px solid var(--accent);
 }
+/* Your other cars, run by hired drivers */
+.standings-row.team-standing { border-left: 3px solid var(--warn); }
+.standings-row.team-standing .st-name { color: var(--warn); }
+.standing-row.team-row .entry-name { color: var(--warn); }
+.car-num { color: var(--text-dim); }
 .st-pos { text-align: center; font-weight: 700; color: var(--text-dim); }
 .st-pos.promo-pos { color: var(--good); }
 .st-pos.rele-pos { color: var(--accent); }

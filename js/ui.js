@@ -111,7 +111,9 @@ function renderDashboard() {
   const income       = weeklySponsorIncome();
 
   const topStandings = sorted.slice(0, 8).map((e, i) => {
-    const cls = e.isPlayer ? 'standing-row player-row' : 'standing-row';
+    const cls = e.isPlayer ? 'standing-row player-row'
+              : e.isTeamCar ? 'standing-row team-row'
+              : 'standing-row';
     return `<div class="${cls}">
       <span class="pos-num">${i + 1}</span>
       <span class="entry-name">${e.isPlayer ? game.teamName : e.name}</span>
@@ -148,7 +150,7 @@ function renderDashboard() {
       <span class="cmd-sub">Year ${game.season.year}</span>
     </div>
     <div class="cmd-cell">
-      <span class="cmd-label">Race</span>
+      <span class="cmd-label">Next Race</span>
       <span class="cmd-value">${nextRaceLabel}</span>
       <span class="cmd-sub">${seasonOver ? 'Season complete' : (track?.name || '—')}</span>
     </div>
@@ -284,17 +286,25 @@ function renderGarage() {
       (!u.prereq || car.appliedUpgrades.includes(u.prereq))
     );
     const repairCost = Math.round((100 - car.condition) * cls.repairCostPerPoint * (game.staff.some(s=>s.typeId==='mechanic') ? 0.75 : 1));
-    const driverName = car.assignedDriverId === 'player'
-      ? `You (Skill ${Math.round(game.playerSkill)})`
-      : car.assignedDriverId
-        ? HIREABLE_DRIVERS.find(d => d.id === car.assignedDriverId)?.name || 'Unknown'
-        : 'No Driver';
+    // Who is actually in this car: you, a hired driver, or nobody.
+    const seat = (game.hiredDrivers || []).find(h => h.carId === car.id);
+    const seatDrv = seat ? HIREABLE_DRIVERS.find(d => d.id === seat.driverId) : null;
+    const driverName = seatDrv
+      ? `${seatDrv.name} (Skill ${seatDrv.skill})`
+      : car.assignedDriverId === 'player'
+        ? `${game.driverName || 'You'} (Skill ${Math.round(game.playerSkill)})`
+        : 'No driver assigned';
+    const noDriver = !seatDrv && car.assignedDriverId !== 'player';
 
     return `
     <div class="car-card" id="car-${car.id}">
       <div class="car-card-header">
-        <span class="car-name">${car.name}</span>
+        <span class="car-name"><span class="car-num">#${car.number || 1}</span> ${car.name}</span>
         <span class="car-class-badge">${cls.name}</span>
+      </div>
+      <div class="team-stat">
+        <span>Car Number</span>
+        <span><button class="btn btn-sm btn-ghost" onclick="handleSetCarNumber('${car.id}')">#${car.number || 1} — Change</button></span>
       </div>
       <div class="car-stats">
         ${statBar('Speed', car.speed)}
@@ -303,7 +313,7 @@ function renderGarage() {
         ${condBar(car.condition)}
       </div>
       <div class="car-meta">
-        <div class="team-stat"><span>Driver</span><span>${driverName}</span></div>
+        <div class="team-stat"><span>Driver</span><span class="${noDriver ? 'red' : ''}">${driverName}</span></div>
         <div class="team-stat"><span>Races</span><span>${car.races}</span></div>
         <div class="team-stat"><span>Wins</span><span>${car.wins}</span></div>
         <div class="team-stat"><span>Upgrades</span><span>${car.appliedUpgrades.length}/${cls.upgrades.length}</span></div>
@@ -403,13 +413,16 @@ function renderTeam() {
   }).join('') || '<p class="muted-text">No support staff hired.</p>';
 
   const availableDrivers = HIREABLE_DRIVERS.filter(d => !hiredIds.has(d.id));
+  const openSeats = freeCarsForHire().length;
+  const seatWarning = game.cars.length === 0
+    ? `<p class="form-warning">No car — buy a car before hiring a driver.</p>`
+    : openSeats === 0
+      ? `<p class="form-warning">No free car — every car already has a driver. Buy another car to hire more.</p>`
+      : '';
+
   const driverRows = availableDrivers.map(d => {
     const signingFee = d.weeklyCost * 4;
     const canAfford  = game.money >= signingFee;
-    // Only show hire button if there are cars without drivers
-    const freeCar = game.cars.find(c => !game.hiredDrivers.find(h => h.carId === c.id) && c.assignedDriverId !== 'player');
-    // If player is driving one car, look for cars available
-    const hasFreeSlot = game.cars.length > 1;
 
     return `<div class="staff-row">
       <div class="staff-info">
@@ -455,6 +468,7 @@ function renderTeam() {
       <div class="card">
         <div class="card-header">Hire Drivers</div>
         <p class="muted-text small">Hire drivers for your extra cars. Signing fee = 4 weeks' salary.</p>
+        ${seatWarning}
         ${driverRows}
       </div>
       <div class="card mt">
@@ -469,19 +483,16 @@ function renderTeam() {
 function renderHireDriverModal(driverId) {
   const d = HIREABLE_DRIVERS.find(dr => dr.id === driverId);
   if (!d) return '';
-  const freeCars = game.cars.filter(c => {
-    if (c.assignedDriverId === 'player') return false;
-    return !game.hiredDrivers.find(h => h.carId === c.id);
-  });
+  const freeCars = freeCarsForHire();
   if (freeCars.length === 0) {
     return `<div class="modal-overlay" id="hire-modal" onclick="closeHireModal(event)">
       <div class="modal" onclick="event.stopPropagation()">
         <div class="modal-header"><h3>Hire ${d.name}</h3><button class="modal-close" onclick="closeHireModal()">Close</button></div>
-        <div class="modal-body"><p>No free cars available. Buy more cars or release an existing driver first.</p></div>
+        <div class="modal-body"><p>No free cars available. Buy another car or release an existing driver first.</p></div>
       </div>
     </div>`;
   }
-  const carOpts = freeCars.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  const carOpts = freeCars.map(c => `<option value="${c.id}">#${c.number || 1} ${c.name}</option>`).join('');
   return `<div class="modal-overlay" id="hire-modal" onclick="closeHireModal(event)">
     <div class="modal" onclick="event.stopPropagation()">
       <div class="modal-header"><h3>Hire ${d.name}</h3><button class="modal-close" onclick="closeHireModal()">Close</button></div>
@@ -620,7 +631,9 @@ function renderStandings() {
     const pos = i + 1;
     const isPromo = pos <= series.promotionSpots && series.level < 2;
     const isRele  = series.relegationSpots > 0 && pos > sorted.length - series.relegationSpots;
-    const cls     = e.isPlayer ? 'standings-row player-standing' : 'standings-row';
+    const cls = e.isPlayer ? 'standings-row player-standing'
+              : e.isTeamCar ? 'standings-row team-standing'
+              : 'standings-row';
     return `<div class="${cls}">
       <span class="st-pos ${isPromo ? 'promo-pos' : isRele ? 'rele-pos' : ''}">${pos}</span>
       <span class="st-name">${e.isPlayer ? game.teamName : e.name}</span>
@@ -674,15 +687,31 @@ function renderRaceSetup() {
       return `<div class="team-stat"><span>${c.name}</span><span>${d || 'Needs driver'}</span></div>`;
     }).join('')}`;
   } else {
-    // Player drives one car
-    const driverCar = cars.find(c => c.assignedDriverId === 'player') || cars[0];
+    // A car with a hired driver in it is not available for you to drive.
+    const taken = new Map();
+    (game.hiredDrivers || []).forEach(h => {
+      const drv = HIREABLE_DRIVERS.find(d => d.id === h.driverId);
+      if (drv) taken.set(h.carId, drv.name);
+    });
+    const openCars = cars.filter(c => !taken.has(c.id));
+    const idleCars = cars.filter(c => taken.has(c.id) === false && c.assignedDriverId !== 'player');
+
+    const driverCar = openCars.find(c => c.assignedDriverId === 'player') || openCars[0];
     carSection = `
       <p class="muted-text">Select which car you will drive:</p>
-      ${cars.map(c => `
+      ${openCars.map(c => `
         <label class="radio-row">
           <input type="radio" name="drive-car" value="${c.id}" ${c === driverCar ? 'checked' : ''}>
-          <span>${c.name} — Speed ${c.speed}, Handling ${c.handling}, Condition ${Math.round(c.condition)}%</span>
-        </label>`).join('')}
+          <span>#${c.number || 1} ${c.name} — Speed ${c.speed}, Handling ${c.handling}, Condition ${Math.round(c.condition)}%</span>
+        </label>`).join('') || '<p class="form-warning">Every car has a hired driver in it — release a driver to drive one yourself.</p>'}
+      ${taken.size ? `
+        <div class="card-header mt">Entered By Your Drivers</div>
+        ${[...taken.entries()].map(([carId, nm]) => {
+          const c = game.cars.find(x => x.id === carId);
+          return `<div class="team-stat"><span>#${c?.number || 1} ${c?.name || 'Car'}</span><span>${nm}</span></div>`;
+        }).join('')}` : ''}
+      ${idleCars.length > 1 || (idleCars.length === 1 && idleCars[0] !== driverCar) ? `
+        <p class="form-warning">Some cars have no driver assigned and will not be entered. Assign a driver in the Team tab.</p>` : ''}
     `;
   }
 
@@ -883,7 +912,7 @@ function renderCareerStats() {
       </div>
       <div class="car-meta">
         <div class="team-stat"><span>Number</span>
-          <span><button class="btn btn-sm btn-ghost" onclick="handleSetCarNumber('${car.id}')">#${car.number || 1} Change</button></span>
+          <span><button class="btn btn-sm btn-ghost" onclick="handleSetCarNumber('${car.id}')">#${car.number || 1} — Change</button></span>
         </div>
         <div class="team-stat"><span>Color</span>
           <span>${['#e8001d','#3498db','#2ecc71','#f39c12','#9b59b6','#ffffff','#222222','#ff6600','#00cccc','#ff69b4'].map(c =>

@@ -109,10 +109,17 @@ function handleSetCarColor(carId, color) {
 function handleSetCarNumber(carId) {
   const car = game.cars.find(c => c.id === carId);
   if (!car) return;
-  const val = prompt(`Enter car number (1–99):`, car.number || 1);
-  if (!val) return;
-  setCarNumber(carId, val);
-  renderTab('carstats');
+  const val = prompt(`Car number for "${car.name}" (1–99):`, car.number || 1);
+  if (val === null) return;                       // cancelled
+  const res = setCarNumber(carId, val);
+  if (!res.ok) { toast(res.msg, 'error'); return; }
+  toast(`${car.name} is now #${res.number}.`, 'success');
+  renderTab(activeTab());                          // stay on the tab you're on
+}
+
+// Which career tab is currently showing
+function activeTab() {
+  return document.querySelector('.nav-btn.active')?.dataset.tab || 'dashboard';
 }
 
 // ─── Dashboard handlers ───────────────────────────────────────
@@ -154,8 +161,13 @@ function handleDismissEndSeason() {
 }
 
 // ─── Garage handlers ─────────────────────────────────────────
+// Modals must be children of <body>. Rendering them inside #main-content puts
+// them under an element whose entry animation leaves a transform behind, which
+// makes position:fixed resolve against that element — the overlay ends up at
+// the bottom of the page instead of centred on screen.
 function showUpgradeModal(carId) {
-  document.getElementById('upgrade-modal-container').innerHTML = renderUpgradeModal(carId);
+  document.getElementById('upgrade-modal')?.remove();
+  document.body.insertAdjacentHTML('beforeend', renderUpgradeModal(carId));
 }
 
 function closeUpgradeModal(event) {
@@ -223,8 +235,27 @@ function handleFireStaff(staffId) {
   renderTab('team');
 }
 
+// Cars a hired driver could actually take: not the one you drive, and not
+// already occupied by another hired driver.
+function freeCarsForHire() {
+  return (game.cars || []).filter(c =>
+    c.assignedDriverId !== 'player' &&
+    !(game.hiredDrivers || []).find(h => h.carId === c.id)
+  );
+}
+
 function openHireDriverModal(driverId) {
-  document.getElementById('hire-driver-modal-container').innerHTML = renderHireDriverModal(driverId);
+  // You need a car before you can put a driver in one.
+  if (!game.cars || game.cars.length === 0) {
+    toast('No car — you must buy a car before hiring a driver.', 'error');
+    return;
+  }
+  if (freeCarsForHire().length === 0) {
+    toast('No free car — every car already has a driver. Buy another car first.', 'error');
+    return;
+  }
+  document.getElementById('hire-modal')?.remove();
+  document.body.insertAdjacentHTML('beforeend', renderHireDriverModal(driverId));
 }
 
 function closeHireModal(event) {
@@ -281,6 +312,23 @@ function handleDropSponsor(sponsorId) {
 }
 
 // ─── Race Weekend ─────────────────────────────────────────────
+// Every car you own must have someone in it before the team can enter.
+// Returns an error string, or null when the entry is legal.
+function validateRaceEntry(playerCarId) {
+  if (!game.cars || game.cars.length === 0) {
+    return 'No car — you must buy a car before you can race.';
+  }
+  if (game.driverMode === 'hired') return null;   // you drive for another team
+  const undriven = game.cars.filter(c =>
+    c.id !== playerCarId && !(game.hiredDrivers || []).find(h => h.carId === c.id)
+  );
+  if (undriven.length) {
+    const names = undriven.map(c => `#${c.number || 1} ${c.name}`).join(', ');
+    return `Error: assign a driver to ${names} before racing — hire one in the Team tab, or sell the car.`;
+  }
+  return null;
+}
+
 function handleStartRace() {
   const race   = currentRace();
   const series = SERIES[game.currentSeries];
@@ -297,6 +345,10 @@ function handleStartRace() {
       else if (c.assignedDriverId === 'player') c.assignedDriverId = null;
     });
   }
+
+  // Every owned car needs a driver before the team can enter
+  const entryError = validateRaceEntry(playerCarId);
+  if (entryError) { toast(entryError, 'error', 6000); return; }
 
   // Deduct entry fee
   const entryFee = series.entryFee * Math.max(1, game.cars.length);
@@ -380,24 +432,24 @@ function handleStartRace() {
       // Run background sim to get AI standings (player result will be overridden)
       const simResult = simulateRace({ playerCarId, trackId: race.trackId, isHiredMode });
 
-      // Override player result with actual 3D finish
-      const prize  = series.prize[playerPosition - 1] || series.prize[series.prize.length - 1] || 0;
-      const pts    = series.points[playerPosition - 1] || 0;
-      const pr = {
+      // Slot the player's real 3D finish into the field, shifting everyone
+      // else so every position stays unique.
+      const stub = {
         entrantId:   'player',
         carId:       playerCarId,
-        displayName: game.teamName,
+        displayName: `${game.teamName} / ${game.driverName || 'You'}`,
         teamName:    game.teamName,
-        teamColor:   '#e8001d',
-        position:    playerPosition,
+        teamColor:   pCar?.color || '#e8001d',
         isPlayer:    true,
-        points:      pts,
-        prize,
         dnf:         false,
+        position:    playerPosition,
       };
+      const merged     = simResult.results.map(r => (r.isPlayer ? stub : r));
+      const allResults = reRankWithPlayerAt(merged, playerPosition);
+      const pr         = allResults.find(r => r.isPlayer);
+      const prize      = pr.prize;
+      const pts        = pr.points;
 
-      // Apply all results (AI from sim, player from 3D)
-      const allResults = simResult.results.map(r => r.isPlayer ? pr : r);
       applyRaceResults(allResults);
 
       // Persist race state
@@ -406,17 +458,13 @@ function handleStartRace() {
       race.playerPoints = pts;
       race.earnings     = prize;
 
-      postRaceUpdate(pr, prize);
+      postRaceUpdate(pr, prize, allResults);
       saveGame();
 
       // Show results modal over the now-blank race screen
       showScreen('game');
       document.body.insertAdjacentHTML('beforeend',
-        renderRaceResultsModal(
-          allResults.sort((a, b) => a.position - b.position),
-          [],
-          pr
-        )
+        renderRaceResultsModal(allResults, [], pr)
       );
     }
   );
@@ -440,6 +488,9 @@ function handleSimulateRace() {
     });
   }
 
+  const entryError = validateRaceEntry(playerCarId);
+  if (entryError) { toast(entryError, 'error', 6000); return; }
+
   // Deduct entry fee
   const entryFee = series.entryFee * Math.max(1, game.cars.length);
   if (game.money < entryFee) {
@@ -458,7 +509,7 @@ function handleSimulateRace() {
   race.playerResult = pr;
   race.playerPoints = pr.points;
   race.earnings     = pr.prize;
-  postRaceUpdate(pr, pr.prize);
+  postRaceUpdate(pr, pr.prize, simResult.results);
   saveGame();
 
   showScreen('game');

@@ -34,7 +34,10 @@ const R3D = {
   CHAIN_PER_CAR:  2,      // extra speed per car in a draft chain
 
   // ── AI / race director ─────────────────────────────────────
-  ENDGAME_FRAC:   0.75,   // fraction of track where AI goes full-attack
+  // Aggression ramps smoothly from CALM_FRAC to ENDGAME_FRAC: early laps are
+  // a settled pack, the closing stage is a full-attack scramble.
+  CALM_FRAC:      0.45,   // fully calm before this point
+  ENDGAME_FRAC:   0.75,   // fully aggressive from here to the flag
   RUBBER_BAND:    10,     // max extra speed for last-place player
   WRECK_FIRST:    50,
   WRECK_MIN:      65,
@@ -131,9 +134,11 @@ function r3dFenceTex() {
   });
 }
 
-// Sponsor wall boards — alternating flat color blocks with faux logos
+// Sponsor wall boards — alternating flat color blocks with faux logos.
+// Dimensions must be powers of two: a NPOT texture with RepeatWrapping loses
+// mipmaps/tiling and renders as a smeared mess.
 function r3dWallAdTex() {
-  return r3dTex(256, 48, (ctx, w, h) => {
+  return r3dTex(256, 64, (ctx, w, h) => {
     const cols = ['#e4002b', '#1f6fc0', '#2f9a52', '#e0a800', '#6a4ea0', '#cfcfd4'];
     const seg = 64;
     for (let x = 0, i = 0; x < w; x += seg, i++) {
@@ -274,7 +279,9 @@ class Race3DEngine {
     this.camera = new THREE.PerspectiveCamera(62, w / h, 0.5, 4000);
     this.camera.position.set(0, 5, -12);
 
-    this.mirrorCam = new THREE.PerspectiveCamera(76, 3.5, 0.5, 1400);
+    // Far plane matches the main camera so the track doesn't visibly end
+    // partway down the mirror.
+    this.mirrorCam = new THREE.PerspectiveCamera(72, 3.5, 0.5, 4000);
     this.mirrorCam.position.set(0, 4, 0);
 
     this.renderer = new THREE.WebGLRenderer({ canvas: c, antialias: true });
@@ -295,11 +302,23 @@ class Race3DEngine {
     sun.shadow.camera.far = 2400;
     this.scene.add(sun);
 
+    // Max anisotropy keeps the heavily-tiled asphalt/grass sharp at distance
+    // instead of shimmering — most visible in the mirror.
+    this._maxAniso = this.renderer.capabilities?.getMaxAnisotropy?.() || 4;
+
     this._initGeometries();
     this._buildTrack();
     this._buildEnvironment();
     this._buildCars();
     this._buildMinimap();
+
+    // Apply the real anisotropy limit to every texture now in the scene
+    this.scene.traverse(o => {
+      const mats = Array.isArray(o.material) ? o.material : (o.material ? [o.material] : []);
+      for (const m of mats) {
+        if (m && m.map) { m.map.anisotropy = this._maxAniso; m.map.needsUpdate = true; }
+      }
+    });
 
     // Input
     this._kd = e => {
@@ -601,14 +620,20 @@ class Race3DEngine {
     const { config } = this;
     const fieldSize  = Math.min(config.aiEntries.length + 1, config.fieldSize);
 
+    // Grid slots ordered POLE FIRST. +Z is the direction of travel, so row 0
+    // must sit at the highest z — building them the other way round made the
+    // announced starting position the exact inverse of the real one.
     const slots = [];
-    for (let r = 0; r < Math.ceil(fieldSize / 2); r++) {
-      slots.push({ x: -3.5, z: r * R3D.GRID_SPACING });
-      slots.push({ x:  3.5, z: r * R3D.GRID_SPACING });
+    const rows  = Math.ceil(fieldSize / 2);
+    for (let r = 0; r < rows; r++) {
+      const baseZ = (rows - 1 - r) * R3D.GRID_SPACING;
+      slots.push({ x: -3.5, z: baseZ });         // inside line
+      slots.push({ x:  3.5, z: baseZ - 1.6 });   // outside line, staggered back
     }
+    slots.length = fieldSize;                    // never draw a slot past the field
 
     const playerSlotIdx = Math.floor(Math.random() * slots.length);
-    this._startingPos   = playerSlotIdx + 1;
+    this._startingPos   = playerSlotIdx + 1;     // now genuinely 1 = pole
     const ps = slots[playerSlotIdx];
     this.player = this._makeCar(ps.x, ps.z, {
       color:      config.playerColor || '#e8001d',
@@ -944,8 +969,12 @@ class Race3DEngine {
         continue;
       }
 
+      // Continuous aggression ramp — no sudden switch from calm to chaos.
       const progress = car.z / R3D.TRACK_LEN;
-      const endgame  = progress >= R3D.ENDGAME_FRAC;
+      const aggro = clamp(
+        (progress - R3D.CALM_FRAC) / Math.max(0.01, R3D.ENDGAME_FRAC - R3D.CALM_FRAC), 0, 1);
+      const mix = (calm, wild) => calm + (wild - calm) * aggro;
+      const endgame = progress >= R3D.ENDGAME_FRAC;
       car.laneTimer -= dt;
 
       if (!car._pushLocked) {
@@ -958,7 +987,8 @@ class Race3DEngine {
           }
         }
 
-        const laneTimerBase = endgame ? 0.4 + Math.random() * 1.0 : 2.5 + Math.random() * 3.5;
+        // Early: commit to a lane for several seconds. Late: react constantly.
+        const laneTimerBase = mix(4.0, 0.7) + Math.random() * mix(4.5, 1.1);
         const hw = R3D.HALF_W - 1.4;
 
         if (car.laneTimer <= 0) {
@@ -969,28 +999,31 @@ class Race3DEngine {
           if (nearWreck) {
             const dir = nearWreck.x > 0 ? -1 : 1;
             car.targetX = clamp(nearWreck.x + dir * 8, -hw, hw);
-          } else if (endgame && carAhead !== null && Math.random() < 0.70) {
+          } else if (carAhead !== null && Math.random() < mix(0.10, 0.70)) {
+            // Try a pass — rare early, the default move at the end
             const passDir = Math.random() < 0.5 ? 1 : -1;
             car.targetX = clamp(carAhead.x + passDir * (R3D.CAR_SEP_X + 0.8 + Math.random() * 1.5), -hw, hw);
-          } else if (endgame && Math.random() < 0.35) {
-            car.targetX = clamp(car.x + (Math.random() - 0.5) * 8, -hw, hw);
-          } else if (bestDraftX !== null && Math.random() < (endgame ? 0.55 : 0.82)) {
+          } else if (Math.random() < mix(0.02, 0.35)) {
+            car.targetX = clamp(car.x + (Math.random() - 0.5) * mix(2, 8), -hw, hw);
+          } else if (bestDraftX !== null && Math.random() < mix(0.88, 0.55)) {
+            // Settle into the draft line
             car.targetX = clamp(bestDraftX + (Math.random() - 0.5) * 0.8, -hw, hw);
           } else {
-            const drift = endgame ? (Math.random() - 0.5) * 5 : (Math.random() - 0.5) * 3;
-            car.targetX = clamp(car.x + drift, -hw, hw);
+            car.targetX = clamp(car.x + (Math.random() - 0.5) * mix(1.2, 5.0), -hw, hw);
           }
-        } else if (bestDraftX !== null && !endgame) {
+        } else if (bestDraftX !== null && aggro < 0.5) {
           car.targetX += (bestDraftX - car.targetX) * Math.min(1, dt * 0.9);
           car.targetX = clamp(car.targetX, -hw, hw);
         }
       }
 
       const tgt = Math.min(R3D.SPEED_BASE * (0.79 + car.power * 0.23) + car.draftBoost, R3D.SPEED_MAX);
-      const latSpeed = endgame ? 5.5 : 4.0;
+      const latSpeed = mix(2.4, 5.2);
+      const maxLat   = mix(2.2, 6.0);   // hard cap on darting (units/sec)
       const prevX = car.x;
       car.speed += (tgt - car.speed) * Math.min(1, dt * 2.2);
-      car.x += (car.targetX - car.x) * Math.min(1, dt * latSpeed);
+      const step = clamp((car.targetX - car.x) * Math.min(1, dt * latSpeed), -maxLat * dt, maxLat * dt);
+      car.x += step;
       car.z += car.speed * dt;
       car.mesh.position.set(car.x, 0, car.z);
       // Subtle AI body roll based on lateral movement
@@ -1088,10 +1121,11 @@ class Race3DEngine {
             A.x = clamp(A.x - dir * overlap, -hw, hw);
             B.x = clamp(B.x + dir * overlap, -hw, hw);
             A.mesh.position.x = A.x; B.mesh.position.x = B.x;
+            // Gentle target nudge — a large one makes packed cars twitch.
             if (A.isPlayer) A.lv = clamp(A.lv - dir * 1.0, -R3D.LAT_MAX, R3D.LAT_MAX);
-            else            A.targetX = clamp(A.x - dir * 1.5, -hw, hw);
+            else            A.targetX = clamp(A.x - dir * 0.7, -hw, hw);
             if (B.isPlayer) B.lv = clamp(B.lv + dir * 1.0, -R3D.LAT_MAX, R3D.LAT_MAX);
-            else            B.targetX = clamp(B.x + dir * 1.5, -hw, hw);
+            else            B.targetX = clamp(B.x + dir * 0.7, -hw, hw);
           }
         }
       }
@@ -1226,29 +1260,80 @@ class Race3DEngine {
     this.mirrorCam.lookAt(p.x * 0.3, 1.0, p.z - 40);
   }
 
+  // Rear-view mirror.
+  //
+  // The old approach negated projectionMatrix.elements[0] to flip left/right.
+  // That also reverses triangle winding, so every front face was drawn as a
+  // back face — surfaces looked hollow and textures read wrong. Instead we
+  // render the rear view normally into an offscreen target (correct winding,
+  // correct lighting) and then blit it through a quad with mirrored UVs.
+  _initMirrorTarget(w, h) {
+    if (this.mirrorRT) this.mirrorRT.dispose();
+    this.mirrorRT = new THREE.WebGLRenderTarget(Math.max(2, w), Math.max(2, h), {
+      minFilter: THREE.LinearFilter,
+      magFilter: THREE.LinearFilter,
+      format:    THREE.RGBAFormat,
+    });
+    this.mirrorRTSize = { w, h };
+
+    if (!this.mirrorScene) {
+      this.mirrorScene = new THREE.Scene();
+      this.mirrorQuadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+      // depthTest off: the main scene has already written depth into this
+      // region of the canvas and would otherwise reject the quad.
+      this.mirrorQuadMat = new THREE.MeshBasicMaterial({
+        map: this.mirrorRT.texture, depthTest: false, depthWrite: false,
+      });
+      const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.mirrorQuadMat);
+      this.mirrorScene.add(quad);
+    } else {
+      this.mirrorQuadMat.map = this.mirrorRT.texture;
+      this.mirrorQuadMat.needsUpdate = true;
+    }
+    // Horizontal flip — this is what makes it read as a mirror.
+    const t = this.mirrorRT.texture;
+    t.wrapS = THREE.RepeatWrapping;
+    t.repeat.x = -1;
+    t.offset.x = 1;
+  }
+
   _renderMirror() {
     const wrap = document.getElementById('r3d-mirror-wrap');
-    if (!wrap || !this.scene || !this.mirrorCam) return;
+    if (!wrap || !this.scene || !this.mirrorCam || !this.renderer) return;
     const rect = wrap.getBoundingClientRect();
     const cr   = this.canvas.getBoundingClientRect();
-    const mx = Math.round(rect.left - cr.left);
-    const my = Math.round(rect.top  - cr.top);
     const mw = Math.round(rect.width);
     const mh = Math.round(rect.height);
-    const sz = new THREE.Vector2();
-    this.renderer.getSize(sz);
-    const glY = Math.round(sz.y - my - mh);
+    if (mw < 2 || mh < 2) return;
 
-    this.mirrorCam.aspect = mw / mh;
-    this.mirrorCam.updateProjectionMatrix();
-    this.mirrorCam.projectionMatrix.elements[0] *= -1; // mirror flips L/R
+    const dpr = this.renderer.getPixelRatio();
+    const rtW = Math.round(mw * dpr);
+    const rtH = Math.round(mh * dpr);
+    if (!this.mirrorRT || this.mirrorRTSize.w !== rtW || this.mirrorRTSize.h !== rtH) {
+      this._initMirrorTarget(rtW, rtH);
+    }
 
     const r = this.renderer;
+    const sz = new THREE.Vector2();
+    r.getSize(sz);
+
+    // Pass 1 — rear view into the offscreen target, unflipped.
+    this.mirrorCam.aspect = mw / mh;
+    this.mirrorCam.updateProjectionMatrix();
+    r.setRenderTarget(this.mirrorRT);
+    r.setViewport(0, 0, rtW, rtH);
+    r.clear(true, true, true);
+    r.render(this.scene, this.mirrorCam);
+    r.setRenderTarget(null);
+
+    // Pass 2 — blit it into the mirror rectangle with mirrored UVs.
+    const mx  = Math.round(rect.left - cr.left);
+    const my  = Math.round(rect.top  - cr.top);
+    const glY = Math.round(sz.y - my - mh);
     r.setScissorTest(true);
     r.setScissor(mx, glY, mw, mh);
     r.setViewport(mx, glY, mw, mh);
-    r.clear(true, true, false);
-    r.render(this.scene, this.mirrorCam);
+    r.render(this.mirrorScene, this.mirrorQuadCam);
     r.setScissorTest(false);
     r.setViewport(0, 0, sz.x, sz.y);
   }
@@ -1404,6 +1489,9 @@ class Race3DEngine {
         }
       });
     }
+    if (this.mirrorRT) { this.mirrorRT.dispose(); this.mirrorRT = null; }
+    if (this.mirrorQuadMat) { this.mirrorQuadMat.dispose(); this.mirrorQuadMat = null; }
+    this.mirrorScene = null;
     if (this.renderer) { this.renderer.dispose(); this.renderer = null; }
     this.scene  = null;
     this.camera = null;

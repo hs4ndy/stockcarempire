@@ -111,11 +111,15 @@ function setCarColor(carId, color) {
 
 function setCarNumber(carId, num) {
   const car = game.cars.find(c => c.id === carId);
-  if (!car) return;
+  if (!car) return { ok: false, msg: 'Car not found.' };
   const n = parseInt(num, 10);
-  if (isNaN(n) || n < 1 || n > 99) return;
+  if (isNaN(n) || n < 1 || n > 99) return { ok: false, msg: 'Pick a number from 1 to 99.' };
+  if (game.cars.some(c => c.id !== carId && (c.number || 1) === n)) {
+    return { ok: false, msg: `#${n} is already on another of your cars.` };
+  }
   car.number = n;
   saveGame();
+  return { ok: true, number: n };
 }
 
 // ─── AI Team factory ────────────────────────────────────────
@@ -288,6 +292,21 @@ function rebuildStandings() {
     races: 0,
   });
 
+  // Your other cars run by hired drivers — they score their own championship
+  // points, so they need their own standings entry.
+  (game.cars || []).forEach(car => {
+    const hire = (game.hiredDrivers || []).find(h => h.carId === car.id);
+    if (!hire) return;
+    const drv = HIREABLE_DRIVERS.find(d => d.id === hire.driverId);
+    entries.push({
+      id: car.id,
+      name: `${game.teamName} (${drv ? drv.name : 'Driver'})`,
+      isPlayer: false,
+      isTeamCar: true,
+      points: 0, wins: 0, top5: 0, top10: 0, races: 0,
+    });
+  });
+
   // AI entries
   game.season.aiTeams.forEach(team => {
     // One standing entry per car
@@ -325,7 +344,18 @@ function applyRaceResults(results) {
     const pos = r.position;
     const pts = series.points[pos - 1] || 0;
 
-    const entry = game.season.standings.find(e => e.id === r.entrantId);
+    let entry = game.season.standings.find(e => e.id === r.entrantId);
+    // A car hired a driver mid-season — give it a standings entry on the fly
+    // so its results are never silently dropped.
+    if (!entry && r.carId && game.cars.some(c => c.id === r.carId)) {
+      entry = {
+        id: r.entrantId,
+        name: r.displayName || `${game.teamName} (Driver)`,
+        isPlayer: false, isTeamCar: true,
+        points: 0, wins: 0, top5: 0, top10: 0, races: 0,
+      };
+      game.season.standings.push(entry);
+    }
     if (!entry) return;
     entry.points += pts;
     entry.races += 1;
@@ -336,7 +366,7 @@ function applyRaceResults(results) {
 }
 
 // ─── Post-race: update player & cars ─────────────────────────
-function postRaceUpdate(playerResult, earnings) {
+function postRaceUpdate(playerResult, earnings, allResults) {
   // Money
   game.money += earnings;
 
@@ -348,19 +378,29 @@ function postRaceUpdate(playerResult, earnings) {
   game.playerSkill = clamp(game.playerSkill + relPerf * 0.4 + 0.1, 0, 98);
 
   // Reputation: improves with good finishes, degrades slightly on bad ones
+  // Winning is a big deal — it moves reputation far more than anything else.
+  // Gains taper as reputation climbs so it still takes a career to reach Legend.
   if (!game.reputation) game.reputation = 50;
-  if (pos === 1) game.reputation = clamp(game.reputation + 5, 0, 100);
-  else if (pos <= 3) game.reputation = clamp(game.reputation + 2, 0, 100);
-  else if (pos <= 10) game.reputation = clamp(game.reputation + 1, 0, 100);
-  else game.reputation = clamp(game.reputation - 1, 0, 100);
+  const headroom = (100 - game.reputation) / 100;   // 1.0 unknown → 0.0 maxed
+  let repDelta;
+  if      (pos === 1)  repDelta =  6 + 14 * headroom;   // +20 early, +6 at the top
+  else if (pos <= 3)   repDelta =  2 +  6 * headroom;
+  else if (pos <= 5)   repDelta =  1 +  3 * headroom;
+  else if (pos <= 10)  repDelta =  0.5 + 1 * headroom;
+  else if (pos <= 20)  repDelta = -0.5;
+  else                 repDelta = -1.5;
+  game.reputation = clamp(Math.round((game.reputation + repDelta) * 10) / 10, 0, 100);
 
-  // Car condition degrades
+  // Car condition degrades. Cars run by hired drivers race too, so they take
+  // real race wear and bank their own stats.
+  const byCar = new Map((allResults || []).filter(r => r.carId).map(r => [r.carId, r]));
   game.cars.forEach(car => {
-    if (car.id === playerResult.carId) {
+    const res = car.id === playerResult.carId ? playerResult : byCar.get(car.id);
+    if (res) {
       car.condition = clamp(car.condition - randInt(8, 18), 0, 100);
       car.races += 1;
-      if (pos === 1) car.wins += 1;
-      car.totalPoints += series.points[pos - 1] || 0;
+      if (res.position === 1) car.wins += 1;
+      car.totalPoints += series.points[res.position - 1] || 0;
     } else {
       // Cars not in this race lose a little condition anyway (idle wear)
       car.condition = clamp(car.condition - randInt(0, 3), 0, 100);

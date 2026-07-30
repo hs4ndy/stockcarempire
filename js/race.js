@@ -140,6 +140,30 @@ function buildEntryList(playerCarId, trackId, isHiredMode) {
     }
   }
 
+  // Your other cars, driven by hired drivers. These are real entries: they
+  // race, score points and appear in the standings under their driver's name.
+  game.cars.forEach(car => {
+    if (car.id === playerCarId) return;                 // that's the one you drive
+    const hire = (game.hiredDrivers || []).find(h => h.carId === car.id);
+    if (!hire) return;                                  // no driver = not entered
+    const drv = HIREABLE_DRIVERS.find(d => d.id === hire.driverId);
+    if (!drv) return;
+    const carScore = (car.speed + car.handling + car.reliability) / 300;
+    const power    = clamp(carScore * 0.72 + (drv.skill / 100) * 0.28, 0.25, 0.98);
+    entries.push({
+      id:          car.id,
+      carId:       car.id,
+      displayName: `${game.teamName} / ${drv.name}`,
+      teamName:    game.teamName,
+      teamColor:   car.color || '#e8001d',
+      isPlayer:    false,
+      isTeammate:  true,
+      dnf:         false,
+      syntheticPower: power * (car.condition / 100),
+      aggression:  (drv.aggression || 50) / 100,
+    });
+  });
+
   // AI team entries
   game.season.aiTeams.forEach(team => {
     team.cars.forEach(car => {
@@ -173,6 +197,39 @@ function buildEntryList(playerCarId, trackId, isHiredMode) {
   }
 
   return entries.slice(0, series.fieldSize);
+}
+
+// ─── Merge a real 3D finish into simulated results ───────────
+// The player's actual on-track finish replaces their simulated one. Everyone
+// else has to shift around them, otherwise two cars share a position and one
+// position goes missing (the "duplicate positions in the Top 10" bug).
+function reRankWithPlayerAt(results, playerPosition) {
+  const series  = SERIES[game.currentSeries];
+  const player  = results.find(r => r.isPlayer);
+  const others  = results.filter(r => !r.isPlayer)
+                         .sort((a, b) => a.position - b.position);
+
+  // Finishers first, DNFs always at the back
+  const running = others.filter(r => !r.dnf);
+  const retired = others.filter(r => r.dnf);
+
+  const idx = clamp(playerPosition - 1, 0, running.length);
+  if (player) running.splice(idx, 0, player);
+
+  const ordered = [...running, ...retired];
+  return ordered.map((r, i) => {
+    const pos = i + 1;
+    const prizeTable = series.prize;
+    const basePrize  = prizeTable[pos - 1] !== undefined
+      ? prizeTable[pos - 1]
+      : prizeTable[prizeTable.length - 1];
+    return {
+      ...r,
+      position: pos,
+      points:   r.dnf ? 0 : (series.points[pos - 1] || 0),
+      prize:    r.dnf ? Math.round(basePrize * 0.4) : basePrize,
+    };
+  });
 }
 
 // ─── Calculate performance score ─────────────────────────────
