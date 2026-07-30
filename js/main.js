@@ -403,14 +403,17 @@ function handleStartRace() {
   // Player's own teammate cars (other cars in game.cars not driven by player)
   game.cars.forEach(car => {
     if (car.id === pCar?.id) return; // skip the car the player is driving
-    const hired     = (game.hiredDrivers || []).find(h => h.carId === car.id);
+    const hired     = hireForCar(car.id);
     const hiredName = hired ? HIREABLE_DRIVERS.find(d => d.id === hired.driverId)?.name : null;
     if (!car.driverName) car.driverName = nextDriverName();
+    // Teammate pace reflects both the car and how good the driver has become
+    const carScore = (car.speed + car.handling + car.reliability) / 300;
+    const skill    = hired ? hiredDriverSkill(hired) / 100 : 0.5;
     aiEntries.push({
       name:       nextDriverName(hiredName || car.driverName),
       color:      car.color || pCar?.color || '#e8001d',
       number:     nextNum(car.number),
-      power:      clamp((car.speed + car.handling + car.reliability) / 300 * 0.8 + 0.2, 0.25, 0.95),
+      power:      clamp(carScore * 0.68 + skill * 0.27, 0.25, 0.95),
       isTeammate: true,
     });
   });
@@ -617,11 +620,15 @@ function finishRacePlayback() {
   }, 800);
 }
 
-// Surface anything the bank did during the race weekend
+// Surface what happened off-track during the race weekend
 function reportLoanNotes() {
-  (game.lastLoanNotes || []).forEach((n, i) =>
-    setTimeout(() => toast(n, n.includes('overdue') ? 'error' : 'info', 6000), 400 + i * 600));
-  game.lastLoanNotes = [];
+  const notes = [
+    ...(game.lastDriverNotes || []).map(t => ({ t, type: 'success' })),
+    ...(game.lastLoanNotes   || []).map(t => ({ t, type: t.includes('overdue') ? 'error' : 'info' })),
+  ];
+  notes.forEach((n, i) => setTimeout(() => toast(n.t, n.type, 6000), 400 + i * 600));
+  game.lastDriverNotes = [];
+  game.lastLoanNotes   = [];
 }
 
 function handleCloseResults() {

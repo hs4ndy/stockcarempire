@@ -443,6 +443,9 @@ function postRaceUpdate(playerResult, earnings, allResults) {
   });
   game.money += sponsorPay;
 
+  // Your hired drivers gain experience from the race they just ran
+  game.lastDriverNotes = developHiredDrivers(allResults, field);
+
   // Bank: count down loan terms, charge interest on anything overdue
   game.lastLoanNotes = tickLoans();
 
@@ -564,7 +567,12 @@ function buyCar(name) {
   if (game.money < cls.buyCost) return { ok: false, msg: 'Not enough money.' };
   game.money -= cls.buyCost;
   const carName = (name && String(name).trim()) || `Car ${game.cars.length + 1}`;
-  const car = makeCar(carName, classId);
+  // Give it the lowest free number so a new car never collides with an
+  // existing one (they are painted on the cars and shown in the standings).
+  const taken = new Set(game.cars.map(c => c.number || 1));
+  let num = 1;
+  while (taken.has(num) && num < 99) num++;
+  const car = makeCar(carName, classId, null, { number: num });
   game.cars.push(car);
   saveGame();
   return { ok: true, car };
@@ -775,9 +783,69 @@ function hireDriver(driverId, carId) {
   const car = game.cars.find(c => c.id === carId);
   if (car) car.assignedDriverId = driverId;
 
-  game.hiredDrivers.push({ driverId, carId, weeklyCost: driver.weeklyCost });
+  // Skill lives on the hire record, not on HIREABLE_DRIVERS — that list is a
+  // shared constant, so mutating it would leak between save slots.
+  // Each driver has a ceiling, so a cheap rookie can develop but a journeyman
+  // will not turn into a superstar.
+  game.hiredDrivers.push({
+    driverId, carId,
+    weeklyCost: driver.weeklyCost,
+    skill:      driver.skill,
+    startSkill: driver.skill,
+    potential:  clamp(driver.skill + randInt(6, 20), 0, 99),
+    racesRun:   0,
+  });
   saveGame();
   return { ok: true };
+}
+
+// Live skill for a hired driver (falls back to the base value on old saves)
+function hiredDriverSkill(hire) {
+  if (!hire) return 0;
+  if (hire.skill != null) return hire.skill;
+  return HIREABLE_DRIVERS.find(d => d.id === hire.driverId)?.skill || 0;
+}
+
+// Find the hire record driving a given car
+function hireForCar(carId) {
+  return (game.hiredDrivers || []).find(h => h.carId === carId) || null;
+}
+
+// Drivers get better with seat time. Growth is biggest for strong runs and
+// tapers as they approach their personal ceiling.
+function developHiredDrivers(allResults, fieldSize) {
+  const byCar = new Map((allResults || []).filter(r => r.carId).map(r => [r.carId, r]));
+  const grown = [];
+
+  (game.hiredDrivers || []).forEach(h => {
+    const res = byCar.get(h.carId);
+    if (!res) return;                       // that car did not run
+
+    if (h.skill == null) {                  // migrate an older save
+      const base = HIREABLE_DRIVERS.find(d => d.id === h.driverId);
+      h.skill = h.startSkill = base ? base.skill : 50;
+      h.potential = clamp(h.skill + randInt(6, 20), 0, 99);
+      h.racesRun = 0;
+    }
+
+    h.racesRun = (h.racesRun || 0) + 1;
+    const before  = h.skill;
+    const relPerf = clamp(1 - (res.position - 1) / Math.max(1, fieldSize), 0, 1);
+    // Taper on the remaining GAP, not the ratio: a driver well short of their
+    // ceiling develops quickly, and progress slows as they close on it.
+    const room    = clamp((h.potential - h.skill) / 20, 0, 1);
+    // The floor means even a bad day is still seat time; a strong run is worth
+    // roughly six times as much.
+    const gain    = (0.15 + relPerf * 0.85) * room;
+    h.skill = clamp(Math.round((h.skill + gain) * 10) / 10, 0, h.potential);
+
+    if (Math.floor(h.skill) > Math.floor(before)) {
+      const drv = HIREABLE_DRIVERS.find(d => d.id === h.driverId);
+      grown.push(`${drv ? drv.name : 'Your driver'} improved to skill ${Math.floor(h.skill)}.`);
+    }
+  });
+
+  return grown;
 }
 
 function fireDriver(driverId) {

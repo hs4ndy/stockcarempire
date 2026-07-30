@@ -149,7 +149,8 @@ function buildEntryList(playerCarId, trackId, isHiredMode) {
     const drv = HIREABLE_DRIVERS.find(d => d.id === hire.driverId);
     if (!drv) return;
     const carScore = (car.speed + car.handling + car.reliability) / 300;
-    const power    = clamp(carScore * 0.72 + (drv.skill / 100) * 0.28, 0.25, 0.98);
+    const skill    = hiredDriverSkill(hire);   // live, improves over the season
+    const power    = clamp(carScore * 0.72 + (skill / 100) * 0.28, 0.25, 0.98);
     entries.push({
       id:          car.id,
       carId:       car.id,

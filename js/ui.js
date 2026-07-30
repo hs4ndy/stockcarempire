@@ -312,10 +312,10 @@ function renderGarage() {
   const carCards = game.cars.map(car => {
     const repairCost = Math.round((100 - car.condition) * cls.repairCostPerPoint * (game.staff.some(s=>s.typeId==='mechanic') ? 0.75 : 1));
     // Who is actually in this car: you, a hired driver, or nobody.
-    const seat = (game.hiredDrivers || []).find(h => h.carId === car.id);
+    const seat = hireForCar(car.id);
     const seatDrv = seat ? HIREABLE_DRIVERS.find(d => d.id === seat.driverId) : null;
     const driverName = seatDrv
-      ? `${seatDrv.name} (Skill ${seatDrv.skill})`
+      ? `${seatDrv.name} (Skill ${Math.floor(hiredDriverSkill(seat))})`
       : car.assignedDriverId === 'player'
         ? `${game.driverName || 'You'} (Skill ${Math.round(game.playerSkill)})`
         : 'No driver assigned';
@@ -444,11 +444,24 @@ function renderTeam() {
     const d   = HIREABLE_DRIVERS.find(dr => dr.id === h.driverId);
     const car = game.cars.find(c => c.id === h.carId);
     if (!d) return '';
+    const skill = hiredDriverSkill(h);
+    const start = h.startSkill != null ? h.startSkill : d.skill;
+    const gained = Math.floor(skill) - Math.floor(start);
+    const ceiling = h.potential != null ? h.potential : d.skill;
+    const pct = Math.round((skill / Math.max(1, ceiling)) * 100);
     return `<div class="staff-row">
       <div class="staff-info">
         <span class="staff-name">${d.name}</span>
-        <div class="staff-meta">Skill ${d.skill} • Aggression ${d.aggression} • ${fmt$(h.weeklyCost)}/week</div>
-        <div class="staff-meta muted-text">Driving: ${car ? car.name : 'Unassigned'}</div>
+        <div class="staff-meta">
+          Skill ${Math.floor(skill)}${gained > 0 ? ` <span class="green">+${gained}</span>` : ''}
+          • Aggression ${d.aggression} • ${fmt$(h.weeklyCost)}/week
+        </div>
+        <div class="staff-meta muted-text">
+          Driving: ${car ? `#${car.number || 1} ${car.name}` : 'Unassigned'}
+          • ${h.racesRun || 0} race${(h.racesRun || 0) === 1 ? '' : 's'}
+          • potential ${ceiling}
+        </div>
+        <div class="driver-growth"><div class="driver-growth-fill" style="width:${clamp(pct,0,100)}%"></div></div>
       </div>
       <button class="btn btn-sm btn-danger" onclick="handleFireDriver('${d.id}')">Release</button>
     </div>`;
