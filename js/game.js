@@ -239,7 +239,7 @@ function newGame(teamName, driverName, firstCarName) {
     playerSkill: 60,     // 0–100, improves slowly
     reputation: 50,      // 0–100; affected by race behavior
     currentSeries: 0,
-    driverMode: 'driver', // 'driver' | 'manager' | 'hired' (Premier Series choice)
+    driverMode: 'driver', // 'driver' | 'manager' | 'hired' (Premier Cup Series choice)
     hiredTeamId: null,    // if 'hired', which AI team
 
     cars: [firstCar],
@@ -482,7 +482,10 @@ function skipRace() {
 // anyone else's — winning the title should be the payday of the year.
 function seasonPayout(seriesLevel, pos, total) {
   const series = SERIES[seriesLevel];
-  const purse  = series.prize[0] * 8;          // the champion's share
+  // The purse grows sharply with the series — a Premier Cup Series title is a
+  // life-changing payday, a Grassroots title is a good year.
+  const PURSE_MULT = [8, 14, 22];
+  const purse = series.prize[0] * (PURSE_MULT[seriesLevel] || 8);
   let f;
   if      (pos === 1) f = 1.00;
   else if (pos === 2) f = 0.55;
@@ -921,7 +924,12 @@ function fireDriver(driverId) {
 // ─── Sponsor management ──────────────────────────────────────
 function signSponsor(sponsorId) {
   if (game.activeSponsors.includes(sponsorId)) return { ok: false, msg: 'Already signed.' };
-  if (game.activeSponsors.length >= 3) return { ok: false, msg: 'Max 3 sponsors at a time.' };
+  const slots = sponsorSlots();
+  if (game.activeSponsors.length >= slots) {
+    const more = slots < MAX_SPONSOR_SLOTS
+      ? ' Hire a Commercial Director to open more.' : '';
+    return { ok: false, msg: `You can run ${slots} sponsor deals at a time.${more}` };
+  }
   const deal = SPONSOR_DEALS.find(d => d.id === sponsorId);
   if (!deal) return { ok: false, msg: 'Deal not found.' };
   if (deal.level > game.currentSeries) return { ok: false, msg: 'Not eligible yet.' };
@@ -980,7 +988,7 @@ function ordinal(n) {
   return (s[(v-20)%10] || s[v] || s[0]);
 }
 
-// ─── Premier Series career choice ───────────────────────────────
+// ─── Premier Cup Series career choice ───────────────────────────────
 function chooseCareerPath(path, aiTeamId) {
   // path: 'driver' | 'manager' | 'hired'
   game.driverMode = path;

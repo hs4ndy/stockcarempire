@@ -24,8 +24,8 @@ const R3D = {
   STEER_FALLOFF:  0.35,   // how much steering authority is lost at top speed (0..1)
 
   // ── Drafting (TUNED — preserved feel) ──────────────────────
-  DRAFT_Z:        52,     // draft cone depth
-  DRAFT_X:        4.2,    // draft cone width
+  DRAFT_Z:        78,     // draft cone depth — long tow behind each car
+  DRAFT_X:        4.6,    // draft cone width
   DRAFT_BOOST:    28,     // max speed bonus at bumper
   DRAFT_SLING:    11,     // momentum decay/sec
   PUSH_Z:         5.2,    // bumper-to-bumper push distance
@@ -49,7 +49,26 @@ const R3D = {
   SPIN_CHANCE:    0.003,
   BUMP_DEBOUNCE:  0.9,
 
+  // ── AI lateral model ───────────────────────────────────────
+  // Cars steer by accelerating a lateral velocity, never by snapping position.
+  AI_LAT_ACC:     5.0,    // lateral acceleration (units/sec²) — low = smooth arcs
+  AI_LAT_MAX:     2.6,    // top lateral speed (units/sec)
+  AI_LAT_DAMP:    0.02,   // velocity damping base (per second)
+  AI_STEER_GAIN:  0.9,    // desired lateral speed per unit of error
+  LANE_STEP:      2.4,    // spacing of candidate lanes
+  LANE_WIDTH:     2.6,    // how wide a "lane" is when scoring traffic
+  LANE_COMMIT:    3.2,    // seconds a car holds a line before reconsidering
+  LANE_GAIN_MIN:  0.14,   // a lane must beat the current one by this to move
+  LANE_INERTIA:   0.13,   // bonus for staying put — kills weaving
+  TACTIC_COMMIT:  2.6,    // seconds a driver sticks with a tow/block decision
+  BLOCK_Z:        20,     // how close behind before a driver starts defending
+  BLOCK_MAX:      1.6,    // furthest a defender will shade across — no chopping
+
   // ── Physical separation ────────────────────────────────────
+  // Contact is resolved with impulses and gentle correction, not teleports.
+  SEP_Z_RATE:     34,     // max z correction per second (units/sec)
+  SEP_X_RATE:     6,      // max x correction per second (units/sec)
+  CONTACT_IMPULSE: 0.9,   // lateral velocity change from a rub (units/sec)
   CAR_SEP_X:      2.15,
   CAR_SEP_Z:      4.6,
   GRID_SPACING:   28,
@@ -200,7 +219,7 @@ function launch3DRace(config, onComplete) {
           <span id="r3d-speed">0</span><span class="r3d-tele-unit">MPH</span>
         </div>
         <div class="r3d-draft">
-          <div class="r3d-draft-label" id="r3d-draft">SLIPSTREAM</div>
+          <div class="r3d-draft-label" id="r3d-draft">DRAFT</div>
           <div class="r3d-draft-meter"><div class="r3d-draft-fill" id="r3d-draft-fill"></div></div>
         </div>
       </div>
@@ -773,10 +792,7 @@ class Race3DEngine {
       door.position.set(sx, 0.5, -0.1); door.rotation.y = ry; g.add(door);
     });
 
-    // Slipstream glow box (kept subtle; flat color, low opacity)
-    const glowMat = new THREE.MeshBasicMaterial({ color: 0x46b0ff, transparent: true, opacity: 0 });
-    const glow = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.3, 5.4), glowMat);
-    glow.position.set(0, 0.6, 0); g.add(glow);
+    // (No draft box around the car — the HUD draft meter carries that info.)
 
     // Teammate marker — flat gold trim painted on the car itself.
     // (No floating banner: keeps the field readable at speed.)
@@ -794,9 +810,10 @@ class Race3DEngine {
     this.scene.add(g);
 
     return {
-      mesh: g, glowMat, wheels, isTeammate, carId,
+      mesh: g, wheels, isTeammate, carId,
       isPlayer, power, label, hex, number, x, z,
       lv: 0,
+      lvx: 0,          // AI lateral velocity (inertia)
       speed: R3D.SPEED_BASE * (0.78 + power * 0.22),
       targetX: x,
       spinning: false, spinTimer: 0, spinDir: 1,
@@ -877,12 +894,15 @@ class Race3DEngine {
     }
     if (!this.racing || this.done) return;
 
-    for (const c of this.cars) c._pushLocked = false;
+    // NOTE: _pushLocked is cleared inside _separateCars, not here. It is set
+    // by the contact solver which runs AFTER _updateAI, so clearing it here
+    // meant _updateAI always saw false and cars in a pack kept making lane
+    // decisions while locked bumper-to-bumper — a big source of the twitching.
     this._updatePlayer(dt);
     this._updateAI(dt);
     this._calcDraft(dt);
     this._calcChainBonus();
-    this._separateCars();
+    this._separateCars(dt);
     this._checkCollisions();
     this._checkFinish();
     this._animateCars(dt);
@@ -1014,7 +1034,9 @@ class Race3DEngine {
         const dz = p.z - car.z;                    // >0 = player is ahead
         if (!p.dnf && !p.finished && !p.spinning && Math.abs(dz) < R3D.TEAM_HELP_Z) {
           const hw = R3D.HALF_W - 1.4;
-          car.targetX  = clamp(p.x, -hw, hw);      // line up bumper to bumper
+          car.followX  = car.followX == null ? car.x : car.followX;
+          car.followX += (p.x - car.followX) * (1 - Math.exp(-2.2 * dt));
+          car.targetX  = clamp(car.followX, -hw, hw);   // ease onto their line
           car.laneTimer = 0.5;                     // hold this, skip random drift
           car._helping  = true;
           // Behind you: close the gap. Ahead of you: ease so you can catch up.
@@ -1035,67 +1057,83 @@ class Race3DEngine {
         const p  = this.player;
         const hw = R3D.HALF_W - 1.4;
         if (!p.dnf && !p.finished && !p.spinning) {
-          const dz = p.z - car.z;                      // >0 you are ahead
+          const dz    = p.z - car.z;                 // >0 you are ahead of them
+          const dx    = Math.abs(p.x - car.x);
+          const closing = p.speed - car.speed;       // >0 you are catching them
+
           car.tacticTimer = (car.tacticTimer || 0) - dt;
           if (car.tacticTimer <= 0) {
-            car.tacticTimer = 1.3 + Math.random() * 1.7;
+            // Decide on the situation, then COMMIT — a driver who re-decides
+            // every frame is exactly what reads as erratic.
+            car.tacticTimer = R3D.TACTIC_COMMIT;
+            const prev = car._tactic;
             car._tactic = null;
-            if (dz > 5 && dz < R3D.DRAFT_Z && Math.random() < craft) {
-              car._tactic = 'tow';                     // fallen back — use the draft
-            } else if (dz < -2 && dz > -22 && Math.random() < craft * 0.6) {
-              car._tactic = 'defend';                  // you are on their bumper — hold the lane
+
+            if (dz > R3D.PUSH_Z && dz < R3D.DRAFT_Z && dx < R3D.LANE_WIDTH * 2) {
+              // They have lost ground and you are within tow range — hook on.
+              // Worth doing whenever they are not slower than you.
+              if (closing > -6 && Math.random() < craft) car._tactic = 'tow';
+            } else if (dz < -1.5 && dz > -R3D.BLOCK_Z && closing > 1.5) {
+              // You are on their bumper and coming. Defend the line — but only
+              // if they still have somewhere legal to be.
+              if (Math.random() < craft * 0.8) car._tactic = 'defend';
+            }
+
+            // Lock in the defensive line once, so they hold it instead of
+            // sliding across the track frame by frame.
+            if (car._tactic === 'defend' && prev !== 'defend') {
+              const shade = clamp(p.x - car.x, -R3D.BLOCK_MAX, R3D.BLOCK_MAX);
+              car._blockX = clamp(car.x + shade, -hw, hw);
             }
           }
+
           if (car._tactic === 'tow') {
-            car.targetX = clamp(p.x, -hw, hw);
+            car.followX = car.followX == null ? car.x : car.followX;
+            car.followX += (p.x - car.followX) * (1 - Math.exp(-2.0 * dt));
+            car.targetX = clamp(car.followX, -hw, hw);   // ease into the tow
           } else if (car._tactic === 'defend') {
-            // Shade across, never a full block — this stays sporting
-            car.targetX = clamp(car.x + (p.x - car.x) * 0.55, -hw, hw);
+            car.targetX = clamp(car._blockX != null ? car._blockX : car.x, -hw, hw);
           }
         } else {
           car._tactic = null;
         }
       }
 
+      // ── Lane choice by judgement, not coin flip ────────────
+      // Lanes are scored on what is actually there: clear air, a tow to latch
+      // onto, room from the wall, and whether anyone is alongside. A car only
+      // moves if a lane is clearly better AND it has held its current line
+      // long enough — that commitment is what stops the weaving.
       if (!car._pushLocked && !car._helping && !car._tactic) {
-        let bestDraftX = null, bestDraftDz = Infinity, carAhead = null;
-        for (const other of this.cars) {
-          if (other === car || other.dnf || other.finished) continue;
-          const dz = other.z - car.z;
-          if (dz > 0 && dz < 70 && Math.abs(other.x - car.x) < 5.0) {
-            if (dz < bestDraftDz) { bestDraftDz = dz; bestDraftX = other.x; carAhead = other; }
-          }
-        }
-        // Never line up a passing move on your own team-mate
-        if (carAhead && carAhead.isPlayer && car.isTeammate) carAhead = null;
-
-        // Early: commit to a lane for several seconds. Late: react constantly.
-        const laneTimerBase = mix(4.0, 0.7) + Math.random() * mix(4.5, 1.1);
         const hw = R3D.HALF_W - 1.4;
 
-        if (car.laneTimer <= 0) {
-          car.laneTimer = laneTimerBase;
-          const nearWreck = this.wrecks.find(w =>
-            w.z > car.z && w.z < car.z + 55 && Math.abs(w.x - car.x) < 5.5);
+        const nearWreck = this.wrecks.find(w =>
+          w.z > car.z && w.z < car.z + 60 && Math.abs(w.x - car.x) < 6);
 
-          if (nearWreck) {
-            const dir = nearWreck.x > 0 ? -1 : 1;
-            car.targetX = clamp(nearWreck.x + dir * 8, -hw, hw);
-          } else if (carAhead !== null && Math.random() < mix(0.10, 0.70)) {
-            // Try a pass — rare early, the default move at the end
-            const passDir = Math.random() < 0.5 ? 1 : -1;
-            car.targetX = clamp(carAhead.x + passDir * (R3D.CAR_SEP_X + 0.8 + Math.random() * 1.5), -hw, hw);
-          } else if (Math.random() < mix(0.02, 0.35)) {
-            car.targetX = clamp(car.x + (Math.random() - 0.5) * mix(2, 8), -hw, hw);
-          } else if (bestDraftX !== null && Math.random() < mix(0.88, 0.55)) {
-            // Settle into the draft line
-            car.targetX = clamp(bestDraftX + (Math.random() - 0.5) * 0.8, -hw, hw);
-          } else {
-            car.targetX = clamp(car.x + (Math.random() - 0.5) * mix(1.2, 5.0), -hw, hw);
+        if (nearWreck) {
+          // Avoiding a wreck overrides everything else
+          const dir = nearWreck.x > 0 ? -1 : 1;
+          car.targetX  = clamp(nearWreck.x + dir * 8, -hw, hw);
+          car.laneTimer = 1.2;
+        } else if (car.laneTimer <= 0) {
+          const step = R3D.LANE_STEP;
+          const options = [car.x, car.x - step, car.x + step, car.x - step * 2, car.x + step * 2]
+            .map(x => clamp(x, -hw, hw));
+          let bestX = car.x;
+          let bestScore = this._scoreLane(car, car.x, aggro);
+          const stay = bestScore;
+          for (let i = 1; i < options.length; i++) {
+            const s = this._scoreLane(car, options[i], aggro);
+            if (s > bestScore) { bestScore = s; bestX = options[i]; }
           }
-        } else if (bestDraftX !== null && aggro < 0.5) {
-          car.targetX += (bestDraftX - car.targetX) * Math.min(1, dt * 0.9);
-          car.targetX = clamp(car.targetX, -hw, hw);
+          // Only commit to a move that is meaningfully better
+          if (bestScore > stay + R3D.LANE_GAIN_MIN) {
+            car.targetX = bestX;
+            car.laneTimer = mix(R3D.LANE_COMMIT, R3D.LANE_COMMIT * 0.55);
+          } else {
+            car.targetX = car.x;                       // hold the line
+            car.laneTimer = mix(R3D.LANE_COMMIT * 1.4, R3D.LANE_COMMIT * 0.7);
+          }
         }
       }
 
@@ -1104,18 +1142,81 @@ class Race3DEngine {
       const tgt = Math.min(
         (R3D.SPEED_BASE * (0.79 + car.power * 0.23)) * dSpd + car.draftBoost,
         R3D.SPEED_MAX * dSpd);
-      const latSpeed = mix(2.4, 5.2) * aggroMul;
-      const maxLat   = mix(2.2, 6.0) * aggroMul;   // hard cap on darting (units/sec)
-      const prevX = car.x;
-      car.speed += (tgt - car.speed) * Math.min(1, dt * 2.2);
-      const step = clamp((car.targetX - car.x) * Math.min(1, dt * latSpeed), -maxLat * dt, maxLat * dt);
-      car.x += step;
+      car.speed += (tgt - car.speed) * (1 - Math.exp(-2.2 * dt));   // frame-rate independent
+
+      // ── Lateral motion with inertia ─────────────────────────
+      // A stock car has mass: it cannot reverse direction instantly. Steering
+      // sets a DESIRED lateral velocity, and real velocity is accelerated
+      // toward it under a hard limit, so every line change is a smooth arc and
+      // a bump is absorbed rather than teleporting the car sideways.
+      const maxLat  = mix(R3D.AI_LAT_MAX * 0.75, R3D.AI_LAT_MAX) * aggroMul;
+      const latAcc  = mix(R3D.AI_LAT_ACC * 0.7, R3D.AI_LAT_ACC) * aggroMul;
+      const err     = car.targetX - car.x;
+      // Ease into the target so cars settle instead of overshooting and hunting
+      const desired = clamp(err * R3D.AI_STEER_GAIN, -maxLat, maxLat);
+      const edge = R3D.HALF_W - 1.2;
+      car.lvx = car.lvx || 0;
+      car.lvx += clamp(desired - car.lvx, -latAcc * dt, latAcc * dt);
+      car.lvx *= Math.pow(R3D.AI_LAT_DAMP, dt);
+      car.x = clamp(car.x + car.lvx * dt, -edge, edge);
+      if (Math.abs(car.x) >= edge - 0.001) car.lvx *= 0.3;   // scrub along the wall
       car.z += car.speed * dt;
       car.mesh.position.set(car.x, 0, car.z);
       // Subtle AI body roll based on lateral movement
-      const aiRoll = clamp((car.x - prevX) * 6, -0.05, 0.05);
-      car.mesh.rotation.z += (aiRoll - car.mesh.rotation.z) * 0.1;
+      const aiRoll = clamp((car.lvx / R3D.AI_LAT_MAX) * 0.055, -0.055, 0.055);
+      car.mesh.rotation.z += (aiRoll - car.mesh.rotation.z) * (1 - Math.exp(-6 * dt));
     }
+  }
+
+  // ── Lane judgement ───────────────────────────────────────────
+  // Score how good a piece of track would be for this car right now. Higher is
+  // better. This is what gives the AI race IQ: it moves for a reason (clear
+  // air, a tow, avoiding someone alongside) instead of drifting at random.
+  _scoreLane(car, laneX, aggro) {
+    const hw = R3D.HALF_W - 1.4;
+    if (Math.abs(laneX) > hw) return -100;
+
+    let score      = 0;
+    let nearestAhead = Infinity;   // gap to the next car in this lane
+    let towGap     = Infinity;     // gap to a car close enough to tow off
+    let blocked    = false;        // someone occupying that space right now
+
+    for (const other of this.cars) {
+      if (other === car || other.dnf || other.finished) continue;
+      const dz  = other.z - car.z;
+      const adx = Math.abs(other.x - laneX);
+      if (adx > R3D.LANE_WIDTH) continue;
+
+      // Anyone level with us there makes the move unsafe
+      if (Math.abs(dz) < R3D.CAR_SEP_Z * 1.6 && adx < R3D.CAR_SEP_X * 1.25) blocked = true;
+
+      if (dz > 0) {
+        if (dz < nearestAhead) nearestAhead = dz;
+        if (dz > R3D.PUSH_Z && dz < R3D.DRAFT_Z && dz < towGap) towGap = dz;
+      }
+    }
+
+    // Clear air ahead is worth a lot — this is what makes a car pull out of a
+    // queue and go, rather than sitting in dirty air forever.
+    score += Math.min(nearestAhead, 140) / 140 * 1.0;
+
+    // A tow is worth more than clear air when it is close: this is a
+    // superspeedway, you go faster hooked to someone than alone.
+    if (towGap < Infinity) {
+      const towQuality = 1 - (towGap / R3D.DRAFT_Z);       // closer = stronger
+      score += towQuality * 1.25;
+    }
+
+    // Never move into a car
+    if (blocked) score -= 3.0;
+
+    // Prefer to keep off the wall
+    score -= Math.pow(Math.abs(laneX) / hw, 3) * 0.5;
+
+    // Sticking to your current line has value; late in the race, less so
+    if (Math.abs(laneX - car.x) < 0.05) score += R3D.LANE_INERTIA * (1 - aggro * 0.6);
+
+    return score;
   }
 
   _calcDraft(dt) {
@@ -1154,11 +1255,6 @@ class Race3DEngine {
       else car.draftMomentum = Math.max(0, car.draftMomentum - R3D.DRAFT_SLING * dt);
       car.draftBoost = car.draftMomentum;
 
-      if (car.glowMat) {
-        const frac = car.draftMomentum / (R3D.DRAFT_BOOST + R3D.PUSH_BONUS);
-        car.glowMat.opacity = frac * 0.26;
-        car.glowMat.color.setHex(pushing ? 0xe0a800 : 0x46b0ff);
-      }
     }
   }
 
@@ -1185,39 +1281,62 @@ class Race3DEngine {
     }
   }
 
-  _separateCars() {
+  // ── Contact resolution ───────────────────────────────────────
+  // Cars are pushed apart at a bounded RATE and nudged with velocity impulses,
+  // never snapped to a new position. That is the difference between a stock car
+  // leaning on another one and a car teleporting sideways when you touch it.
+  _separateCars(dt) {
+    const step = Math.max(dt || 0.016, 0.001);
     const active = this.cars.filter(c => !c.finished && !c.dnf && !c.spinning);
     const hw = R3D.HALF_W - 1.1;
+    // Cleared here so _updateAI (which runs first) reads last frame's value
+    for (const c of this.cars) c._pushLocked = false;
+
+    // Two passes so a shunt propagates down a queue in the same frame
     for (let pass = 0; pass < 2; pass++) {
       active.sort((a, b) => b.z - a.z);
       for (let i = 0; i < active.length; i++) {
         for (let j = i + 1; j < active.length; j++) {
-          const A = active[i], B = active[j];
+          const A = active[i], B = active[j];      // A ahead, B behind
           const dz = A.z - B.z, dx = B.x - A.x, adx = Math.abs(dx);
-          if (dz >= R3D.CAR_SEP_Z) continue;
-          if (adx >= R3D.CAR_SEP_X) continue;
+          if (dz >= R3D.CAR_SEP_Z || adx >= R3D.CAR_SEP_X) continue;
 
-          B.z = A.z - R3D.CAR_SEP_Z;
+          A._pushLocked = true; B._pushLocked = true;
+
+          // ── Longitudinal: ease B back, hard stop only if truly inside A ──
+          const overlapZ = R3D.CAR_SEP_Z - dz;
+          const maxCorr  = R3D.SEP_Z_RATE * step;
+          B.z -= Math.min(overlapZ, maxCorr);
+          const floorZ = A.z - R3D.CAR_SEP_Z * 0.82;   // never visually interpenetrate
+          if (B.z > floorZ) B.z = floorZ;
           B.mesh.position.z = B.z;
-          B._pushLocked = true; A._pushLocked = true;
 
+          // Momentum transfer, applied smoothly rather than as a step change
           const diff = B.speed - A.speed;
           if (diff > 0) {
-            A.speed = Math.min(R3D.SPEED_MAX, A.speed + diff * 0.30);
-            B.speed = B.speed - diff * 0.08;
+            const give = Math.min(diff, 60) * step * 6;      // ~0.1 of the delta per frame
+            A.speed = Math.min(R3D.SPEED_MAX * 1.05, A.speed + give);
+            B.speed = Math.max(40, B.speed - give * 0.35);
           }
 
-          if (adx > R3D.CAR_SEP_X * 0.4) {
-            const overlap = (R3D.CAR_SEP_X - adx) * 0.5;
-            const dir = dx > 0 ? 1 : -1;
-            A.x = clamp(A.x - dir * overlap, -hw, hw);
-            B.x = clamp(B.x + dir * overlap, -hw, hw);
+          // ── Lateral: only when genuinely side by side ──────────────
+          // Pure bumper contact gets NO sideways force at all, which is what
+          // makes pushing feel planted instead of squirrelly.
+          if (adx > R3D.CAR_SEP_X * 0.45) {
+            const overlapX = (R3D.CAR_SEP_X - adx) * 0.5;
+            const dir  = dx > 0 ? 1 : -1;                     // from A toward B
+            const corr = Math.min(overlapX, R3D.SEP_X_RATE * step);
+            A.x = clamp(A.x - dir * corr, -hw, hw);
+            B.x = clamp(B.x + dir * corr, -hw, hw);
             A.mesh.position.x = A.x; B.mesh.position.x = B.x;
-            // Gentle target nudge — a large one makes packed cars twitch.
-            if (A.isPlayer) A.lv = clamp(A.lv - dir * 1.0, -R3D.LAT_MAX, R3D.LAT_MAX);
-            else            A.targetX = clamp(A.x - dir * 0.7, -hw, hw);
-            if (B.isPlayer) B.lv = clamp(B.lv + dir * 1.0, -R3D.LAT_MAX, R3D.LAT_MAX);
-            else            B.targetX = clamp(B.x + dir * 0.7, -hw, hw);
+
+            // Impulse, not a teleport: the cars lean off each other and the
+            // AI's own steering recovers the line over the next second.
+            const imp = R3D.CONTACT_IMPULSE;
+            if (A.isPlayer) A.lv  = clamp(A.lv - dir * imp, -R3D.LAT_MAX, R3D.LAT_MAX);
+            else            A.lvx = clamp((A.lvx || 0) - dir * imp, -R3D.AI_LAT_MAX * 1.5, R3D.AI_LAT_MAX * 1.5);
+            if (B.isPlayer) B.lv  = clamp(B.lv + dir * imp, -R3D.LAT_MAX, R3D.LAT_MAX);
+            else            B.lvx = clamp((B.lvx || 0) + dir * imp, -R3D.AI_LAT_MAX * 1.5, R3D.AI_LAT_MAX * 1.5);
           }
         }
       }
@@ -1487,7 +1606,7 @@ class Race3DEngine {
     const fillEl  = document.getElementById('r3d-draft-fill');
     if (draftEl) {
       const on = frac > 0.04;
-      draftEl.textContent = isPush ? 'PUSH DRAFT' : 'SLIPSTREAM';
+      draftEl.textContent = isPush ? 'PUSH DRAFT' : 'DRAFT';
       draftEl.style.color = !on ? 'var(--text-mute)' : isPush ? 'var(--warn)' : 'var(--accent)';
     }
     if (fillEl) {

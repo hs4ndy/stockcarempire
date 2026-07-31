@@ -225,7 +225,7 @@ function renderDashboard() {
       <div class="team-stat"><span>Sponsor Income</span><span class="green">+${fmt$(income)}/race</span></div>
       <div class="team-stat"><span>Staff Costs</span><span class="red">-${fmt$(expenses)}/race</span></div>
       <div class="team-stat"><span>Net</span><span class="${net >= 0 ? 'green' : 'red'}">${net >= 0 ? '+' : ''}${fmt$(net)}/race</span></div>
-      <div class="team-stat"><span>Sponsors</span><span>${game.activeSponsors.length} active</span></div>
+      <div class="team-stat"><span>Sponsors</span><span>${game.activeSponsors.length} / ${sponsorSlots()}</span></div>
       <div class="team-stat"><span>Staff</span><span>${game.staff.length + game.hiredDrivers.length} on payroll</span></div>
       ${totalDebt() > 0 ? `
         <div class="team-stat"><span>Bank Debt</span><span class="red">${fmt$(totalDebt())}</span></div>
@@ -645,7 +645,7 @@ function renderMarket() {
         <span class="staff-name">${d.name}</span>
         <div class="staff-meta">Base: ${fmt$(d.weekly)}/race · Bonus: ${fmt$(d.bonus)} if ${d.cond}</div>
       </div>
-      ${game.activeSponsors.length < 3
+      ${game.activeSponsors.length < sponsorSlots()
         ? `<button class="btn btn-sm btn-primary" onclick="handleSignSponsor('${d.id}')">Sign Deal</button>`
         : `<button class="btn btn-sm" disabled>Max sponsors</button>`}
     </div>`).join('') || '<p class="muted-text">No new sponsors available right now.</p>';
@@ -1041,7 +1041,7 @@ function renderPremierChoiceModal() {
   return `
   <div class="modal-overlay" id="premier-choice-modal">
     <div class="modal modal-wide">
-      <div class="modal-header"><h3>Welcome to the Premier Series</h3></div>
+      <div class="modal-header"><h3>Welcome to the Premier Cup Series</h3></div>
       <div class="modal-body">
         <p>You've reached the top tier of stock car racing. How do you want to continue your career?</p>
         <div class="career-choices">

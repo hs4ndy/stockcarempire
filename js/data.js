@@ -37,8 +37,8 @@ const SERIES = [
   },
   {
     id: 'premier',
-    name: 'Premier Series',
-    shortName: 'PS',
+    name: 'Premier Cup Series',
+    shortName: 'PCS',
     level: 2,
     racesPerSeason: 36,
     carClass: 'premier',
@@ -159,7 +159,7 @@ const CAR_CLASSES = {
   },
   premier: {
     name: 'Premier Car',
-    description: 'Top-of-the-line cars for the Premier Series',
+    description: 'Top-of-the-line cars for the Premier Cup Series',
     buyCost: 380000,
     sellValue: 190000,
     repairCostPerPoint: 1500,
@@ -204,8 +204,36 @@ const STAFF_TYPES = [
     weeklyCost: [1600, 3200, 6400],
     bonus: 'Stronger qualifying, plus one extra upgrade slot per tier',
     max: 2
+  },
+  {
+    id: 'commercial_director',
+    name: 'Commercial Director',
+    icon: '🤝',
+    description: 'Works the paddock and the boardroom, opening room on the car for more backers than you could land alone.',
+    weeklyCost: [2200, 4400, 8800],
+    bonus: '+2 sponsor slots each (up to 7 deals in total)',
+    max: 2
   }
 ];
+
+// ── Commercial Director effects ─────────────────────────────
+const BASE_SPONSOR_SLOTS = 3;
+const SLOTS_PER_DIRECTOR = 2;
+const MAX_SPONSOR_SLOTS  = 7;
+
+function commercialDirectorCount() {
+  return (typeof game !== 'undefined' && game && game.staff)
+    ? game.staff.filter(s => s.typeId === 'commercial_director').length
+    : 0;
+}
+
+// How many sponsor deals you may run at once
+function sponsorSlots() {
+  return Math.min(
+    MAX_SPONSOR_SLOTS,
+    BASE_SPONSOR_SLOTS + commercialDirectorCount() * SLOTS_PER_DIRECTOR
+  );
+}
 
 // ── Data Analyst effects ────────────────────────────────────
 // Each analyst sharpens qualifying and opens another slot in every upgrade
