@@ -1273,11 +1273,6 @@ function renderSettings() {
                onclick="handleSetDifficulty('${d.id}')">
             <span class="difficulty-name">${d.name}</span>
             <span class="difficulty-blurb">${d.blurb}</span>
-            <div class="difficulty-meta">
-              <span>AI pace <strong>${Math.round((d.aiSpeed - 1) * 100)}%</strong></span>
-              <span>Your tow <strong>${Math.round(d.playerDraft * 100)}%</strong></span>
-              <span>Racecraft <strong>${d.racecraft === 0 ? 'off' : Math.round(d.racecraft * 100) + '%'}</strong></span>
-            </div>
           </div>`).join('')}
       </div>
     </div>
