@@ -994,8 +994,11 @@ class Race3DEngine {
 
       // Continuous aggression ramp — no sudden switch from calm to chaos.
       const progress = car.z / R3D.TRACK_LEN;
+      // Team-mates are working with you — they never inherit the difficulty
+      // aggression bump, which is what made them twitchy on Pro.
+      const aggroMul = car.isTeammate ? 1 : this.diff.aiAggro;
       // Harder settings start racing hard sooner
-      const calmFrac = R3D.CALM_FRAC / Math.max(0.5, this.diff.aiAggro);
+      const calmFrac = R3D.CALM_FRAC / Math.max(0.5, aggroMul);
       const aggro = clamp(
         (progress - calmFrac) / Math.max(0.01, R3D.ENDGAME_FRAC - calmFrac), 0, 1);
       const mix = (calm, wild) => calm + (wild - calm) * aggro;
@@ -1021,7 +1024,40 @@ class Race3DEngine {
         }
       }
 
-      if (!car._pushLocked && !car._helping) {
+      // ── Racecraft (Amateur and above) ──────────────────────
+      // A rival that has dropped back tucks into your tow to reel you in
+      // rather than wandering across the track, and one you are catching
+      // shades over to defend its line. Both are committed to for a beat so
+      // it reads as racecraft, not twitching.
+      const craft = this.diff.racecraft || 0;
+      car._tactic = car._tactic || null;
+      if (craft > 0 && !car.isTeammate && !car._pushLocked) {
+        const p  = this.player;
+        const hw = R3D.HALF_W - 1.4;
+        if (!p.dnf && !p.finished && !p.spinning) {
+          const dz = p.z - car.z;                      // >0 you are ahead
+          car.tacticTimer = (car.tacticTimer || 0) - dt;
+          if (car.tacticTimer <= 0) {
+            car.tacticTimer = 1.3 + Math.random() * 1.7;
+            car._tactic = null;
+            if (dz > 5 && dz < R3D.DRAFT_Z && Math.random() < craft) {
+              car._tactic = 'tow';                     // fallen back — use the draft
+            } else if (dz < -2 && dz > -22 && Math.random() < craft * 0.6) {
+              car._tactic = 'defend';                  // you are on their bumper — hold the lane
+            }
+          }
+          if (car._tactic === 'tow') {
+            car.targetX = clamp(p.x, -hw, hw);
+          } else if (car._tactic === 'defend') {
+            // Shade across, never a full block — this stays sporting
+            car.targetX = clamp(car.x + (p.x - car.x) * 0.55, -hw, hw);
+          }
+        } else {
+          car._tactic = null;
+        }
+      }
+
+      if (!car._pushLocked && !car._helping && !car._tactic) {
         let bestDraftX = null, bestDraftDz = Infinity, carAhead = null;
         for (const other of this.cars) {
           if (other === car || other.dnf || other.finished) continue;
@@ -1068,7 +1104,6 @@ class Race3DEngine {
       const tgt = Math.min(
         (R3D.SPEED_BASE * (0.79 + car.power * 0.23)) * dSpd + car.draftBoost,
         R3D.SPEED_MAX * dSpd);
-      const aggroMul = this.diff.aiAggro;
       const latSpeed = mix(2.4, 5.2) * aggroMul;
       const maxLat   = mix(2.2, 6.0) * aggroMul;   // hard cap on darting (units/sec)
       const prevX = car.x;

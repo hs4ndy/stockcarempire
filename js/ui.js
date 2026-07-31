@@ -962,14 +962,68 @@ function renderRaceResultsModal(results, events, playerResult) {
 
 // ─── End of Season / Premier Choice ─────────────────────────
 function renderEndSeasonModal(info) {
+  const purse = (info.playerPayout || 0) + (info.teamPayout || 0);
+
+  const payoutRows = (info.payouts || []).map(p => `
+    <div class="result-row ${p.isPlayer ? 'player-result' : p.isTeamCar ? 'team-standing' : ''}">
+      <span class="res-pos ${p.pos <= 3 ? 'podium' : ''}">${p.pos}</span>
+      <span class="res-name">${p.isPlayer ? `<strong>${info.driver}</strong>` : p.name}</span>
+      <span class="res-prize green">${fmt$(p.amount)}</span>
+    </div>`).join('');
+
+  // ── Champion: the big one ────────────────────────────────
+  if (info.champion) {
+    return `
+    <div class="modal-overlay" id="end-season-modal">
+      <div class="modal modal-wide champ-modal">
+        <div class="champ-banner">
+          <div class="champ-checker"></div>
+          <div class="champ-eyebrow">${info.seriesName} · Season ${info.year}</div>
+          <div class="champ-title">CHAMPION</div>
+          <div class="champ-driver">${info.driver}</div>
+          <div class="champ-checker"></div>
+        </div>
+        <div class="modal-body">
+          <div class="champ-stats">
+            <div><span class="champ-stat-num">${info.wins}</span><span class="champ-stat-label">Wins</span></div>
+            <div><span class="champ-stat-num">${info.top5}</span><span class="champ-stat-label">Top 5</span></div>
+            <div><span class="champ-stat-num">${info.points}</span><span class="champ-stat-label">Points</span></div>
+            <div><span class="champ-stat-num">${info.races}</span><span class="champ-stat-label">Races</span></div>
+            <div><span class="champ-stat-num">${info.titles}</span><span class="champ-stat-label">${info.titles === 1 ? 'Title' : 'Titles'}</span></div>
+          </div>
+          <div class="champ-purse">
+            <span class="champ-purse-label">Championship Purse</span>
+            <span class="champ-purse-val">${fmt$(purse)}</span>
+          </div>
+          <p class="highlight">${info.message}</p>
+          ${info.promoted ? `<div class="achievement-badge">PROMOTED</div>` : ''}
+          <div class="card-header mt">Season Payouts</div>
+          <div class="results-list">${payoutRows}</div>
+          ${info.totalEntrants > 10 ? `<p class="muted-text small">Every one of the ${info.totalEntrants} drivers is paid on final position.</p>` : ''}
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary btn-lg" onclick="handleDismissEndSeason()">Start Next Season</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Everyone else ────────────────────────────────────────
   return `
   <div class="modal-overlay" id="end-season-modal">
-    <div class="modal">
-      <div class="modal-header"><h3>Season Over</h3></div>
+    <div class="modal modal-wide">
+      <div class="modal-header"><h3>Season Over — ${info.seriesName}</h3></div>
       <div class="modal-body">
         <p class="highlight">${info.message}</p>
         ${info.promoted ? `<div class="achievement-badge">PROMOTED</div>` : ''}
         ${info.relegated ? `<div class="achievement-badge rele">RELEGATED</div>` : ''}
+        <div class="champ-purse mt">
+          <span class="champ-purse-label">Season Payout</span>
+          <span class="champ-purse-val">${fmt$(purse)}</span>
+        </div>
+        <div class="card-header mt">Season Payouts</div>
+        <div class="results-list">${payoutRows}</div>
+        ${info.totalEntrants > 10 ? `<p class="muted-text small">Every one of the ${info.totalEntrants} drivers is paid on final position.</p>` : ''}
       </div>
       <div class="modal-footer">
         <button class="btn btn-primary" onclick="handleDismissEndSeason()">Start Next Season</button>
@@ -987,7 +1041,7 @@ function renderPremierChoiceModal() {
   return `
   <div class="modal-overlay" id="premier-choice-modal">
     <div class="modal modal-wide">
-      <div class="modal-header"><h3>Welcome to the Premier Cup</h3></div>
+      <div class="modal-header"><h3>Welcome to the Premier Series</h3></div>
       <div class="modal-body">
         <p>You've reached the top tier of stock car racing. How do you want to continue your career?</p>
         <div class="career-choices">
@@ -1190,11 +1244,13 @@ function renderQuickRaceModal() {
               <span class="difficulty-blurb">${d.blurb}</span>
             </div>`).join('')}
         </div>
-        <div class="card-header mt">Field Size</div>
-        <div class="career-choices" style="flex-direction:column;gap:0.75rem">
-          <button class="btn btn-primary" onclick="handleStartQuickRace(12)">Small Field (12 cars)</button>
-          <button class="btn btn-primary" onclick="handleStartQuickRace(20)">Full Field (20 cars)</button>
-          <button class="btn btn-primary" onclick="handleStartQuickRace(30)">Big Pack (30 cars)</button>
+        <div class="card-header mt">Series</div>
+        <div class="quick-series">
+          ${SERIES.map(s => `
+            <button class="quick-series-btn" onclick="handleStartQuickRace(${s.fieldSize})">
+              <span class="quick-series-name" style="color:${s.color}">${s.name}</span>
+              <span class="quick-series-meta">${s.fieldSize}-car field · ${s.description}</span>
+            </button>`).join('')}
         </div>
       </div>
     </div>

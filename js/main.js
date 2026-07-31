@@ -718,7 +718,7 @@ function handleCloseResults() {
   checkSaveReminder();     // back in the lobby — nudge if nothing is saved
 }
 
-// ─── Premier Cup career choice ────────────────────────────────
+// ─── Premier Series career choice ────────────────────────────────
 function showPremierChoiceModal() {
   document.body.insertAdjacentHTML('beforeend', renderPremierChoiceModal());
 }
@@ -746,7 +746,7 @@ function confirmCareerChoice() {
   }
   chooseCareerPath(selectedCareerPath, aiTeamId);
   document.getElementById('premier-choice-modal')?.remove();
-  toast('Career path set! Good luck in the Premier Cup.', 'success');
+  toast('Career path set! Good luck in the Premier Series.', 'success');
   updateHeader();
   renderTab('dashboard');
 }

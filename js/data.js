@@ -37,8 +37,8 @@ const SERIES = [
   },
   {
     id: 'premier',
-    name: 'Premier Cup',
-    shortName: 'PC',
+    name: 'Premier Series',
+    shortName: 'PS',
     level: 2,
     racesPerSeason: 36,
     carClass: 'premier',
@@ -159,7 +159,7 @@ const CAR_CLASSES = {
   },
   premier: {
     name: 'Premier Car',
-    description: 'Top-of-the-line cars for the Premier Cup',
+    description: 'Top-of-the-line cars for the Premier Series',
     buyCost: 380000,
     sellValue: 190000,
     repairCostPerPoint: 1500,
@@ -298,16 +298,16 @@ const AI_DRIVER_NAMES = [
 const DIFFICULTIES = [
   { id: 'beginner', name: 'Beginner',
     blurb: 'Relaxed. Draft a team-mate and the win takes care of itself.',
-    aiSpeed: 1.00, aiPower: 1.00, aiAggro: 1.00, playerDraft: 1.00 },
+    aiSpeed: 1.00, aiPower: 1.00, aiAggro: 1.00, playerDraft: 1.00, racecraft: 0 },
   { id: 'amateur',  name: 'Amateur',
     blurb: 'The field keeps you honest. You have to work the draft.',
-    aiSpeed: 1.035, aiPower: 1.06, aiAggro: 1.15, playerDraft: 0.94 },
+    aiSpeed: 1.035, aiPower: 1.06, aiAggro: 1.12, playerDraft: 0.94, racecraft: 0.30 },
   { id: 'semipro',  name: 'Semi-Pro',
-    blurb: 'Quick, committed racers. Mistakes cost you positions.',
-    aiSpeed: 1.065, aiPower: 1.12, aiAggro: 1.35, playerDraft: 0.88 },
+    blurb: 'Racers who use the draft to recover and defend their line.',
+    aiSpeed: 1.065, aiPower: 1.12, aiAggro: 1.22, playerDraft: 0.88, racecraft: 0.65 },
   { id: 'pro',      name: 'Pro',
-    blurb: 'Everyone is fast and nobody lifts. Wins have to be earned.',
-    aiSpeed: 1.09,  aiPower: 1.18, aiAggro: 1.55, playerDraft: 0.82 },
+    blurb: 'Everyone is fast, works the tow and holds their ground.',
+    aiSpeed: 1.09,  aiPower: 1.18, aiAggro: 1.30, playerDraft: 0.82, racecraft: 1.00 },
 ];
 
 const DEFAULT_DIFFICULTY = 'beginner';

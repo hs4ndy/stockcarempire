@@ -1053,6 +1053,79 @@ input[type="text"]::placeholder { color: var(--text-mute); }
 /* ============================================================
    END SEASON / CAREER CHOICE
    ============================================================ */
+/* ── Championship celebration ───────────────────────────── */
+.champ-modal { border-top-color: var(--warn); }
+.champ-banner {
+  padding: 1.6rem 1.35rem 1.3rem;
+  text-align: center;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--line);
+}
+.champ-checker {
+  height: 8px;
+  background-image:
+    linear-gradient(45deg, var(--text) 25%, transparent 25%, transparent 75%, var(--text) 75%),
+    linear-gradient(45deg, var(--text) 25%, transparent 25%, transparent 75%, var(--text) 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 8px 8px;
+  background-color: var(--bg);
+  opacity: .85;
+}
+.champ-eyebrow {
+  margin-top: 1rem;
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.24em; text-transform: uppercase;
+  color: var(--text-dim);
+}
+.champ-title {
+  font-size: 3.2rem; font-weight: 800; line-height: 1;
+  letter-spacing: 0.1em;
+  color: var(--warn);
+  margin: .4rem 0 .3rem;
+}
+.champ-driver {
+  font-size: 1.15rem; font-weight: 800;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+.champ-stats {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  margin-bottom: 1rem;
+}
+.champ-stats > div {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: .75rem .4rem;
+  border-right: 1px solid var(--line);
+}
+.champ-stats > div:last-child { border-right: none; }
+.champ-stat-num { font-size: 1.5rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.champ-stat-label {
+  font-size: 9px; font-weight: 600;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim);
+}
+.champ-purse {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: .9rem 1rem;
+  background: var(--panel-2);
+  border-left: 4px solid var(--warn);
+  margin-bottom: 1rem;
+}
+.champ-purse-label {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-dim);
+}
+.champ-purse-val {
+  font-size: 1.5rem; font-weight: 800;
+  color: var(--warn); font-variant-numeric: tabular-nums;
+}
+@media (max-width: 560px) {
+  .champ-stats { grid-template-columns: repeat(3, 1fr); }
+  .champ-title { font-size: 2.4rem; }
+}
+
 .achievement-badge {
   display: inline-block;
   margin-top: .75rem;
@@ -1093,6 +1166,24 @@ input[type="text"]::placeholder { color: var(--text-mute); }
 .difficulty-card.selected .difficulty-name { color: var(--accent); }
 .difficulty-blurb { font-size: 11px; color: var(--text-dim); line-height: 1.4; }
 @media (max-width: 560px) { .difficulty-grid { grid-template-columns: 1fr; } }
+
+/* Quick Race series picker */
+.quick-series { display: flex; flex-direction: column; gap: .6rem; margin-top: .5rem; }
+.quick-series-btn {
+  display: flex; flex-direction: column; gap: .2rem;
+  padding: .85rem .9rem;
+  text-align: left;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line-2);
+  transition: border-color var(--t) linear, background-color var(--t) linear;
+}
+.quick-series-btn:hover { border-left-color: var(--accent); background: var(--panel-3); }
+.quick-series-name {
+  font-size: 13px; font-weight: 800;
+  letter-spacing: 0.06em; text-transform: uppercase;
+}
+.quick-series-meta { font-size: 11px; color: var(--text-dim); }
 
 .career-choices { display: flex; flex-direction: column; gap: .75rem; margin-top: 1rem; }
 .career-card {

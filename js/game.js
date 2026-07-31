@@ -239,7 +239,7 @@ function newGame(teamName, driverName, firstCarName) {
     playerSkill: 60,     // 0–100, improves slowly
     reputation: 50,      // 0–100; affected by race behavior
     currentSeries: 0,
-    driverMode: 'driver', // 'driver' | 'manager' | 'hired' (Premier Cup choice)
+    driverMode: 'driver', // 'driver' | 'manager' | 'hired' (Premier Series choice)
     hiredTeamId: null,    // if 'hired', which AI team
 
     cars: [firstCar],
@@ -477,19 +477,56 @@ function skipRace() {
 }
 
 // ─── End of season ───────────────────────────────────────────
+// End-of-season prize money. Every driver who ran the season is paid on final
+// championship position, and the champion takes a purse far bigger than
+// anyone else's — winning the title should be the payday of the year.
+function seasonPayout(seriesLevel, pos, total) {
+  const series = SERIES[seriesLevel];
+  const purse  = series.prize[0] * 8;          // the champion's share
+  let f;
+  if      (pos === 1) f = 1.00;
+  else if (pos === 2) f = 0.55;
+  else if (pos === 3) f = 0.40;
+  else {
+    const span = Math.max(1, total - 3);
+    const t = clamp((pos - 3) / span, 0, 1);
+    f = 0.30 * Math.pow(1 - t, 1.6) + 0.03;    // everyone still collects something
+  }
+  return Math.round(purse * f / 100) * 100;
+}
+
 function endSeason() {
   const series = SERIES[game.currentSeries];
   const sorted = getStandings();
   const playerPos = sorted.findIndex(e => e.id === 'player') + 1;
   const totalEntrants = sorted.length;
+  const isChampion = playerPos === 1;
+
+  // ── Season purse ────────────────────────────────────────
+  const payouts = sorted.map((e, i) => ({
+    pos:      i + 1,
+    name:     e.name,
+    isPlayer: !!e.isPlayer,
+    isTeamCar:!!e.isTeamCar,
+    amount:   seasonPayout(game.currentSeries, i + 1, totalEntrants),
+  }));
+  // You collect for your own entry and for every car your drivers ran
+  const playerPayout = payouts.find(p => p.isPlayer)?.amount || 0;
+  const teamPayout   = payouts.filter(p => p.isTeamCar).reduce((s, p) => s + p.amount, 0);
+  game.money += playerPayout + teamPayout;
+
+  const playerEntry = sorted.find(e => e.id === 'player');
 
   // Record history
   game.history.push({
     year: game.season.year,
     series: series.name,
     finalPos: playerPos,
-    wins: sorted.find(e => e.id === 'player')?.wins || 0,
+    wins: playerEntry?.wins || 0,
+    champion: isChampion,
+    payout: playerPayout + teamPayout,
   });
+  if (isChampion) game.titles = (game.titles || 0) + 1;
 
   // Promotion / relegation
   let promoted = false;
@@ -500,7 +537,9 @@ function endSeason() {
     game.currentSeries += 1;
     promoted = true;
     const newSeries = SERIES[game.currentSeries];
-    message = `You finished ${playerPos}${ordinal(playerPos)} and earned promotion to the ${newSeries.name}!`;
+    message = isChampion
+      ? `You are the ${series.name} champion, and you move up to the ${newSeries.name}.`
+      : `You finished ${playerPos}${ordinal(playerPos)} and earned promotion to the ${newSeries.name}!`;
 
     // If promoted to Premier, trigger special choice (handled in UI)
     if (game.currentSeries === 2) {
@@ -517,6 +556,8 @@ function endSeason() {
     const newSeries = SERIES[game.currentSeries];
     message = `You finished ${playerPos}${ordinal(playerPos)} and were relegated to the ${newSeries.name}.`;
     relegateCarClass();
+  } else if (isChampion) {
+    message = `You are the ${series.name} champion. There is nowhere higher to go — now defend it.`;
   } else {
     message = `You finished ${playerPos}${ordinal(playerPos)} in the ${series.name}. Gearing up for another season!`;
   }
@@ -538,7 +579,21 @@ function endSeason() {
   });
 
   saveGame();
-  return { promoted, relegated, playerPos, message };
+  return {
+    promoted, relegated, playerPos, message,
+    champion:   isChampion,
+    titles:     game.titles || 0,
+    seriesName: series.name,
+    year:       game.season.year - 1,
+    driver:     game.driverName || game.teamName,
+    wins:       playerEntry?.wins || 0,
+    top5:       playerEntry?.top5 || 0,
+    points:     playerEntry?.points || 0,
+    races:      playerEntry?.races || 0,
+    playerPayout, teamPayout,
+    totalEntrants,
+    payouts:    payouts.slice(0, 10),
+  };
 }
 
 // ─── Promote cars to new class ───────────────────────────────
@@ -925,7 +980,7 @@ function ordinal(n) {
   return (s[(v-20)%10] || s[v] || s[0]);
 }
 
-// ─── Premier Cup career choice ───────────────────────────────
+// ─── Premier Series career choice ───────────────────────────────
 function chooseCareerPath(path, aiTeamId) {
   // path: 'driver' | 'manager' | 'hired'
   game.driverMode = path;
