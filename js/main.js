@@ -25,9 +25,6 @@ function enterGame() {
     showScreen('game');
     updateHeader();
     showTab('dashboard');
-    if (game.premierChoicePending) {
-      showPremierChoiceModal();
-    }
   } catch (e) {
     console.error('Failed to load game UI:', e);
     toast('Save file could not be loaded. Starting fresh.', 'error');
@@ -201,17 +198,10 @@ function handleEndSeason() {
   const info = endSeason();
   // Show result modal
   document.body.insertAdjacentHTML('beforeend', renderEndSeasonModal(info));
-  if (game.premierChoicePending) {
-    // Will show after dismissing end-season modal
-  }
 }
 
 function handleDismissEndSeason() {
   document.getElementById('end-season-modal')?.remove();
-  if (game.premierChoicePending) {
-    showPremierChoiceModal();
-    return;
-  }
   updateHeader();
   renderTab('dashboard');
 }
@@ -539,7 +529,11 @@ function handleStartRace() {
       // Your team-mates raced on track alongside you, so their real finishing
       // order has to carry over too — otherwise the car you pushed to the win
       // shows up somewhere else entirely in the results.
-      const teamOrder = (trackOrder || []).filter(o => o.carId);
+      // The FULL on-track order, every car — not just ours. Filtering this to
+      // our own cars made the merge treat those few entries as the whole
+      // field, handing them the top positions regardless of where they really
+      // finished.
+      const teamOrder = trackOrder || [];
 
       // Slot the player's real 3D finish into the field, shifting everyone
       // else so every position stays unique.

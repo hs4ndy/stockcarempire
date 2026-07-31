@@ -1638,8 +1638,11 @@ class Race3DEngine {
   _updateHUD(dt) {
     const p = this.player;
 
+    // Cars that have already taken the flag are still ahead of you. Excluding
+    // them made your displayed position climb as the leaders finished, so you
+    // could be shown P1 while running last.
     const active = this.cars.filter(c => !c.dnf);
-    const ahead  = active.filter(c => !c.finished && c.z > p.z).length;
+    const ahead  = active.filter(c => c !== p && (c.finished || c.z > p.z)).length;
     const pos    = ahead + 1;
     const total  = active.length;
 

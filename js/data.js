@@ -344,6 +344,11 @@ function difficultyById(id) {
   return DIFFICULTIES.find(d => d.id === id) || DIFFICULTIES[0];
 }
 
+// ─── Team size limits ────────────────────────────────────────
+// A four-car operation is the biggest anyone fields.
+const MAX_TEAM_CARS    = 4;
+const MAX_HIRED_DRIVERS = 4;
+
 // ─── Charity ─────────────────────────────────────────────────
 // Giving back buys goodwill. Cost scales with the series you race in, the
 // reputation gained tapers as you become well known, and you can only give

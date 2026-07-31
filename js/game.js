@@ -544,10 +544,8 @@ function endSeason() {
       ? `You are the ${series.name} champion, and you move up to the ${newSeries.name}.`
       : `You finished ${playerPos}${ordinal(playerPos)} and earned promotion to the ${newSeries.name}!`;
 
-    // If promoted to Premier, trigger special choice (handled in UI)
-    if (game.currentSeries === 2) {
-      game.premierChoicePending = true;
-    }
+    // You reach the Premier Cup Series as what you have always been: the
+    // driver who owns the team. No career-path choice is offered.
 
     // Upgrade cars to new class on promotion
     promoteCarClass();
@@ -625,6 +623,9 @@ function relegateCarClass() {
 function buyCar(name) {
   const classId = SERIES[game.currentSeries].carClass;
   const cls = CAR_CLASSES[classId];
+  if (game.cars.length >= MAX_TEAM_CARS) {
+    return { ok: false, msg: `${MAX_TEAM_CARS} cars is the most any team runs.` };
+  }
   if (game.money < cls.buyCost) return { ok: false, msg: 'Not enough money.' };
   game.money -= cls.buyCost;
   const carName = (name && String(name).trim()) || `Car ${game.cars.length + 1}`;
@@ -863,6 +864,8 @@ function fireStaff(staffId) {
 
 // ─── Driver management ───────────────────────────────────────
 function hireDriver(driverId, carId) {
+  if (game.hiredDrivers.length >= MAX_HIRED_DRIVERS)
+    return { ok: false, msg: `${MAX_HIRED_DRIVERS} drivers is the most you can carry.` };
   if (game.hiredDrivers.find(h => h.driverId === driverId))
     return { ok: false, msg: 'Already hired.' };
   if (game.hiredDrivers.find(h => h.carId === carId))

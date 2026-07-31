@@ -540,7 +540,7 @@ function renderTeam() {
     <div>
       <div class="card">
         <div class="card-header">Hire Drivers</div>
-        <p class="muted-text small">Hire drivers for your extra cars. Signing fee = 4 weeks' salary.</p>
+        <p class="muted-text small">Hire drivers for your extra cars. Signing fee = 4 weeks' salary. You can carry ${MAX_HIRED_DRIVERS} drivers (${game.hiredDrivers.length} signed).</p>
         ${seatWarning}
         ${driverRows}
       </div>
@@ -771,9 +771,12 @@ function renderMarket() {
         <div class="team-stat"><span>Base Speed</span><span>${cls.baseStats.speed}</span></div>
         <div class="team-stat"><span>Base Handling</span><span>${cls.baseStats.handling}</span></div>
         <div class="team-stat"><span>Base Reliability</span><span>${cls.baseStats.reliability}</span></div>
-        ${canBuy
-          ? `<button class="btn btn-primary mt" onclick="handleBuyCar()">Buy Car (${fmt$(cls.buyCost)})</button>`
-          : `<button class="btn mt" disabled>Not enough money (need ${fmt$(cls.buyCost)})</button>`}
+        <div class="team-stat"><span>Your Cars</span><span>${game.cars.length} / ${MAX_TEAM_CARS}</span></div>
+        ${game.cars.length >= MAX_TEAM_CARS
+          ? `<button class="btn mt" disabled>Team full (${MAX_TEAM_CARS} cars)</button>`
+          : canBuy
+            ? `<button class="btn btn-primary mt" onclick="handleBuyCar()">Buy Car (${fmt$(cls.buyCost)})</button>`
+            : `<button class="btn mt" disabled>Not enough money (need ${fmt$(cls.buyCost)})</button>`}
       </div>
       ${bankCard}
     </div>
