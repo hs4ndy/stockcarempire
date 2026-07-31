@@ -1066,6 +1066,34 @@ input[type="text"]::placeholder { color: var(--text-mute); }
 }
 .achievement-badge.rele { color: var(--accent); border-color: var(--accent); }
 
+/* Difficulty picker */
+.difficulty-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: .6rem;
+  margin-top: .5rem;
+}
+.difficulty-card {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+  padding: .8rem .9rem;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line-2);
+  cursor: pointer;
+  transition: border-color var(--t) linear, background-color var(--t) linear;
+}
+.difficulty-card:hover { border-left-color: var(--text-dim); }
+.difficulty-card.selected { border-left-color: var(--accent); background: var(--panel-3); }
+.difficulty-name {
+  font-size: 12px; font-weight: 800;
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+.difficulty-card.selected .difficulty-name { color: var(--accent); }
+.difficulty-blurb { font-size: 11px; color: var(--text-dim); line-height: 1.4; }
+@media (max-width: 560px) { .difficulty-grid { grid-template-columns: 1fr; } }
+
 .career-choices { display: flex; flex-direction: column; gap: .75rem; margin-top: 1rem; }
 .career-card {
   display: flex;

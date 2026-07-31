@@ -65,12 +65,16 @@ function simulateRace({ playerCarId, trackId, isHiredMode }) {
     }
   }
 
-  // Final positions
+  // Final positions.
+  // These MUST come from the running order the phases produced — the closing
+  // phase decides the race. Re-sorting on the pre-race perfScore here threw
+  // the whole race away and handed the win to whoever qualified strongest,
+  // so the car reported leading at the flag could still lose.
   entries.sort((a, b) => {
     if (a.dnf && !b.dnf) return 1;
     if (!a.dnf && b.dnf) return -1;
     if (a.dnf && b.dnf) return b.dnfLap - a.dnfLap;
-    return a.perfScore > b.perfScore ? -1 : 1;
+    return a.position - b.position;
   });
   entries.forEach((e, i) => { e.position = i + 1; });
 
@@ -233,11 +237,69 @@ function reRankWithPlayerAt(results, playerPosition) {
   });
 }
 
+// ─── Merge the whole team's real 3D finish into simulated results ────
+// Every car of yours that ran on track (you and any team-mates) is placed in
+// the order they actually finished, relative to each other. The simulated
+// field then fills in around them, keeping every position unique.
+//
+// Without this only the player's result was real, so a team-mate you shoved to
+// the win could still be shown mid-pack.
+function reRankWithTeamOrder(results, playerPosition, trackOrder) {
+  const series = SERIES[game.currentSeries];
+  const order  = (trackOrder || []).filter(o => o.carId || o.isPlayer);
+  if (!order.length) return reRankWithPlayerAt(results, playerPosition);
+
+  // Results for our own cars, keyed so we can look them up by carId
+  const isOurs = r => r.isPlayer || order.some(o => o.carId && o.carId === r.carId);
+  const ours   = results.filter(isOurs);
+  const rest   = results.filter(r => !isOurs(r)).sort((a, b) => a.position - b.position);
+
+  // Sort our cars by where they really finished on track
+  const trackPos = r => {
+    const hit = order.find(o => (r.isPlayer && o.isPlayer) || (o.carId && o.carId === r.carId));
+    return hit ? hit.position : Infinity;
+  };
+  ours.sort((a, b) => trackPos(a) - trackPos(b));
+
+  // The player's on-track position anchors the team in the overall field;
+  // team-mates that beat them slot in ahead, the rest just behind.
+  const running = rest.filter(r => !r.dnf);
+  const retired = rest.filter(r => r.dnf);
+  const ourRunning = ours.filter(r => !r.dnf);
+  const ourRetired = ours.filter(r => r.dnf);
+
+  const playerIdxInTeam = Math.max(0, ourRunning.findIndex(r => r.isPlayer));
+  const anchor = clamp(playerPosition - 1 - playerIdxInTeam, 0, running.length);
+
+  const ordered = [
+    ...running.slice(0, anchor),
+    ...ourRunning,
+    ...running.slice(anchor),
+    ...ourRetired,
+    ...retired,
+  ];
+
+  return ordered.map((r, i) => {
+    const pos = i + 1;
+    const table = series.prize;
+    const base  = table[pos - 1] !== undefined ? table[pos - 1] : table[table.length - 1];
+    return {
+      ...r,
+      position: pos,
+      points:   r.dnf ? 0 : (series.points[pos - 1] || 0),
+      prize:    r.dnf ? Math.round(base * 0.4) : base,
+    };
+  });
+}
+
 // ─── Calculate performance score ─────────────────────────────
 function calcPerf(entry, track) {
   if (entry.syntheticPower !== undefined) {
-    // AI / hired entry: use synthetic power directly
-    const base = entry.syntheticPower * 100;
+    // AI / hired entry: use synthetic power directly.
+    // Rival teams get a difficulty bump; your own cars do not.
+    const diff = difficultyById(game.difficulty || DEFAULT_DIFFICULTY);
+    const mult = entry.isTeammate ? 1 : diff.aiPower;
+    const base = entry.syntheticPower * 100 * mult;
     return base + rand(-6, 6);
   }
 

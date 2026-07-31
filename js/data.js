@@ -259,6 +259,31 @@ const AI_DRIVER_NAMES = [
   'Lance Dunn','Kyle Steele','Dale Sutton','Rex Chambers','Ray Norris',
 ];
 
+// ─── Difficulty ──────────────────────────────────────────────
+// Beginner is the original balance: hook onto a team-mate and the win looks
+// after itself. Each step up makes the AI quicker on track, stronger in the
+// simulation and less willing to let you cruise in the draft.
+const DIFFICULTIES = [
+  { id: 'beginner', name: 'Beginner',
+    blurb: 'Relaxed. Draft a team-mate and the win takes care of itself.',
+    aiSpeed: 1.00, aiPower: 1.00, aiAggro: 1.00, playerDraft: 1.00 },
+  { id: 'amateur',  name: 'Amateur',
+    blurb: 'The field keeps you honest. You have to work the draft.',
+    aiSpeed: 1.035, aiPower: 1.06, aiAggro: 1.15, playerDraft: 0.94 },
+  { id: 'semipro',  name: 'Semi-Pro',
+    blurb: 'Quick, committed racers. Mistakes cost you positions.',
+    aiSpeed: 1.065, aiPower: 1.12, aiAggro: 1.35, playerDraft: 0.88 },
+  { id: 'pro',      name: 'Pro',
+    blurb: 'Everyone is fast and nobody lifts. Wins have to be earned.',
+    aiSpeed: 1.09,  aiPower: 1.18, aiAggro: 1.55, playerDraft: 0.82 },
+];
+
+const DEFAULT_DIFFICULTY = 'beginner';
+
+function difficultyById(id) {
+  return DIFFICULTIES.find(d => d.id === id) || DIFFICULTIES[0];
+}
+
 // ─── Bank ────────────────────────────────────────────────────
 // Borrow now, repay within `term` races. Miss the deadline and the balance
 // starts compounding at LATE_RATE every race until it is cleared.

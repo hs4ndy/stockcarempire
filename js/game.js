@@ -247,6 +247,7 @@ function newGame(teamName, driverName, firstCarName) {
     staff: [],           // { staffType, name, weeklyCost }
     activeSponsors: [],  // sponsor deal ids
     loans: [],           // bank loans currently outstanding
+    difficulty: DEFAULT_DIFFICULTY,
 
     season: {
       year: 1,
@@ -429,12 +430,13 @@ function postRaceUpdate(playerResult, earnings, allResults) {
   const weeklyStaff = game.staff.reduce((s, st) => s + st.weeklyCost, 0);
   game.money -= weeklyStaff;
 
-  // Sponsor payouts
+  // Sponsor payouts — base pay scales with how many cars you fielded
+  const sponsorMult = sponsorCarMultiplier();
   let sponsorPay = 0;
   game.activeSponsors.forEach(sid => {
     const deal = SPONSOR_DEALS.find(d => d.id === sid);
     if (!deal) return;
-    sponsorPay += deal.weekly;
+    sponsorPay += deal.weekly * sponsorMult;
     // Bonus
     if (deal.cond === 'top10' && pos <= 10) sponsorPay += deal.bonus;
     else if (deal.cond === 'top5' && pos <= 5) sponsorPay += deal.bonus;
@@ -464,10 +466,11 @@ function skipRace() {
   const weeklyStaff = game.staff.reduce((s, st) => s + st.weeklyCost, 0);
   game.money -= weeklyStaff;
   // Sponsor base pay still comes in
+  const skipMult = sponsorCarMultiplier();
   let sponsorPay = 0;
   game.activeSponsors.forEach(sid => {
     const deal = SPONSOR_DEALS.find(d => d.id === sid);
-    if (deal) sponsorPay += deal.weekly;
+    if (deal) sponsorPay += deal.weekly * skipMult;
   });
   game.money += sponsorPay;
   saveGame();
@@ -897,10 +900,20 @@ function weeklyExpenses() {
   return staffCost + driverCost;
 }
 
+// More cars on track means more branding for your sponsors, so base pay scales
+// with the size of the entry: each car you field doubles the money.
+function sponsorCarMultiplier() {
+  const entered = (game.cars || []).filter(c =>
+    c.assignedDriverId === 'player' || (game.hiredDrivers || []).some(h => h.carId === c.id)
+  ).length;
+  return Math.max(1, entered);
+}
+
 function weeklySponsorIncome() {
+  const mult = sponsorCarMultiplier();
   return game.activeSponsors.reduce((s, sid) => {
     const deal = SPONSOR_DEALS.find(d => d.id === sid);
-    return s + (deal ? deal.weekly : 0);
+    return s + (deal ? deal.weekly * mult : 0);
   }, 0);
 }
 

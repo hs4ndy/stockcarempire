@@ -80,6 +80,16 @@ function showQuickRaceScreen() {
   document.body.insertAdjacentHTML('beforeend', renderQuickRaceModal());
 }
 
+// Quick Race difficulty is chosen in the modal before launching
+let quickRaceDifficulty = DEFAULT_DIFFICULTY;
+
+function setQuickRaceDifficulty(id) {
+  quickRaceDifficulty = id;
+  document.querySelectorAll('#quick-race-modal .difficulty-card').forEach(el => {
+    el.classList.toggle('selected', el.dataset.diff === id);
+  });
+}
+
 function handleStartQuickRace(fieldSize) {
   document.getElementById('quick-race-modal')?.remove();
   const AI_COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#c0392b','#16a085','#8e44ad','#2980b9','#27ae60'];
@@ -92,15 +102,25 @@ function handleStartQuickRace(fieldSize) {
   }
   showScreen('game-race');
   launch3DRace(
-    { playerColor: '#e8001d', playerNumber: 1, playerPower: 0.60, fieldSize, aiEntries },
+    { playerColor: '#e8001d', playerNumber: 1, playerPower: 0.60, fieldSize,
+      difficulty: quickRaceDifficulty, aiEntries },
     (pos) => {
       showScreen('intro');
-      toast(`Quick Race finished — you placed ${pos}${ordinal(pos)}!`, pos <= 3 ? 'success' : 'info');
+      const d = difficultyById(quickRaceDifficulty).name;
+      toast(`Quick Race (${d}) finished — you placed ${pos}${ordinal(pos)}!`, pos <= 3 ? 'success' : 'info');
     }
   );
 }
 
 // ─── Career Stats ─────────────────────────────────────────────
+function handleSetDifficulty(id) {
+  const d = difficultyById(id);
+  game.difficulty = d.id;
+  saveGame();
+  toast(`Difficulty set to ${d.name}.`, 'success');
+  renderTab('carstats');
+}
+
 function handleSetCarColor(carId, color) {
   setCarColor(carId, color);
   renderTab('carstats');
@@ -129,15 +149,9 @@ function handleOpenRaceWeekend() {
   document.getElementById('race-setup-content').innerHTML = renderRaceSetup();
 }
 
+// Races can no longer be skipped — run them or simulate them.
 function handleSkipRace() {
-  if (!confirm('Skip this race? You won\'t earn prize money, but weekly costs still apply.')) return;
-  const race = currentRace();
-  if (!race) return;
-  race.status = 'skipped';
-  skipRace();
-  toast('Race skipped. Weekly costs deducted.', 'info');
-  updateHeader();
-  renderTab('dashboard');
+  toast('Races cannot be skipped. Run the race or use Simulate.', 'warning');
 }
 
 function handleEndSeason() {
@@ -329,21 +343,35 @@ function handleDropSponsor(sponsorId) {
 }
 
 // ─── Race Weekend ─────────────────────────────────────────────
-// Every car you own must have someone in it before the team can enter.
-// Returns an error string, or null when the entry is legal.
+// Cars with nobody in them simply sit the race out — that is not an error.
+// Returns { error } if the team genuinely cannot enter, plus { idle } listing
+// any car being left at home so we can say so.
 function validateRaceEntry(playerCarId) {
   if (!game.cars || game.cars.length === 0) {
-    return 'No car — you must buy a car before you can race.';
+    return { error: 'No car — you must buy a car before you can race.' };
   }
-  if (game.driverMode === 'hired') return null;   // you drive for another team
-  const undriven = game.cars.filter(c =>
-    c.id !== playerCarId && !(game.hiredDrivers || []).find(h => h.carId === c.id)
+  if (game.driverMode === 'hired') return { error: null, idle: [] };
+
+  const idle = game.cars.filter(c =>
+    c.id !== playerCarId && !hireForCar(c.id)
   );
-  if (undriven.length) {
-    const names = undriven.map(c => `#${c.number || 1} ${c.name}`).join(', ');
-    return `Error: assign a driver to ${names} before racing — hire one in the Team tab, or sell the car.`;
+  // Only a problem if it leaves nobody at all on the grid
+  if (idle.length === game.cars.length) {
+    return { error: 'No driver available — assign yourself or hire a driver before racing.' };
   }
-  return null;
+  return { error: null, idle };
+}
+
+// Cars that will actually take the green: yours plus any with a hired driver
+function enteredCars(playerCarId) {
+  return game.cars.filter(c => c.id === playerCarId || hireForCar(c.id));
+}
+
+// Tell the player which cars are staying home, without blocking them
+function noteIdleCars(idle) {
+  if (!idle || !idle.length) return;
+  const names = idle.map(c => `#${c.number || 1} ${c.name}`).join(', ');
+  toast(`${names} ${idle.length === 1 ? 'has' : 'have'} no driver and will not be entered.`, 'warning', 5000);
 }
 
 function handleStartRace() {
@@ -363,12 +391,13 @@ function handleStartRace() {
     });
   }
 
-  // Every owned car needs a driver before the team can enter
-  const entryError = validateRaceEntry(playerCarId);
-  if (entryError) { toast(entryError, 'error', 6000); return; }
+  // Cars without a driver just sit this one out
+  const check = validateRaceEntry(playerCarId);
+  if (check.error) { toast(check.error, 'error', 6000); return; }
+  noteIdleCars(check.idle);
 
-  // Deduct entry fee
-  const entryFee = series.entryFee * Math.max(1, game.cars.length);
+  // Entry fee is charged per car actually entered, not per car owned
+  const entryFee = series.entryFee * Math.max(1, enteredCars(playerCarId).length);
   if (game.money < entryFee) {
     toast(`Not enough money for entry fee (${fmt$(entryFee)}).`, 'error');
     return;
@@ -403,8 +432,9 @@ function handleStartRace() {
   // Player's own teammate cars (other cars in game.cars not driven by player)
   game.cars.forEach(car => {
     if (car.id === pCar?.id) return; // skip the car the player is driving
-    const hired     = hireForCar(car.id);
-    const hiredName = hired ? HIREABLE_DRIVERS.find(d => d.id === hired.driverId)?.name : null;
+    const hired = hireForCar(car.id);
+    if (!hired) return;                    // nobody in it — stays in the garage
+    const hiredName = HIREABLE_DRIVERS.find(d => d.id === hired.driverId)?.name;
     if (!car.driverName) car.driverName = nextDriverName();
     // Teammate pace reflects both the car and how good the driver has become
     const carScore = (car.speed + car.handling + car.reliability) / 300;
@@ -415,6 +445,7 @@ function handleStartRace() {
       number:     nextNum(car.number),
       power:      clamp(carScore * 0.68 + skill * 0.27, 0.25, 0.95),
       isTeammate: true,
+      carId:      car.id,          // lets the 3D result map back to this car
     });
   });
 
@@ -444,13 +475,20 @@ function handleStartRace() {
       playerNumber: pCar?.number || 1,
       playerPower,
       playerName:   game.driverName || game.teamName,
+      playerCarId,
       fieldSize:    series.fieldSize,
+      difficulty:   game.difficulty || DEFAULT_DIFFICULTY,
       aiEntries:    aiEntries.slice(0, series.fieldSize - 1),
     },
-    (playerPosition) => {
+    (playerPosition, trackOrder) => {
       // 3D race complete — playerPosition is 1-indexed finish position
       // Run background sim to get AI standings (player result will be overridden)
       const simResult = simulateRace({ playerCarId, trackId: race.trackId, isHiredMode });
+
+      // Your team-mates raced on track alongside you, so their real finishing
+      // order has to carry over too — otherwise the car you pushed to the win
+      // shows up somewhere else entirely in the results.
+      const teamOrder = (trackOrder || []).filter(o => o.carId);
 
       // Slot the player's real 3D finish into the field, shifting everyone
       // else so every position stays unique.
@@ -465,7 +503,7 @@ function handleStartRace() {
         position:    playerPosition,
       };
       const merged     = simResult.results.map(r => (r.isPlayer ? stub : r));
-      const allResults = reRankWithPlayerAt(merged, playerPosition);
+      const allResults = reRankWithTeamOrder(merged, playerPosition, teamOrder);
       const pr         = allResults.find(r => r.isPlayer);
       const prize      = pr.prize;
       const pts        = pr.points;
@@ -508,11 +546,12 @@ function handleSimulateRace() {
     });
   }
 
-  const entryError = validateRaceEntry(playerCarId);
-  if (entryError) { toast(entryError, 'error', 6000); return; }
+  const check = validateRaceEntry(playerCarId);
+  if (check.error) { toast(check.error, 'error', 6000); return; }
+  noteIdleCars(check.idle);
 
-  // Deduct entry fee
-  const entryFee = series.entryFee * Math.max(1, game.cars.length);
+  // Deduct entry fee — only for cars actually entered
+  const entryFee = series.entryFee * Math.max(1, enteredCars(playerCarId).length);
   if (game.money < entryFee) {
     toast(`Not enough money for entry fee (${fmt$(entryFee)}).`, 'error');
     return;
@@ -620,6 +659,44 @@ function finishRacePlayback() {
   }, 800);
 }
 
+// ─── Save reminder ────────────────────────────────────────────
+// Auto-save only runs once a slot is bound, so nag (gently) while a career is
+// unsaved: after the first race, then every few races after that.
+function checkSaveReminder() {
+  if (!game) return;
+  if (currentSlot !== null && currentSlot !== undefined) return;   // already saving
+  const done = game.season.calendar.filter(r => r.status === 'completed').length;
+  if (done === 0) return;
+  const last = game._lastSaveNag || 0;
+  if (done === 1 || done - last >= 3) {
+    game._lastSaveNag = done;
+    setTimeout(() => showSaveReminder(done), 1400);
+  }
+}
+
+function showSaveReminder(racesDone) {
+  if (document.getElementById('save-reminder')) return;
+  document.body.insertAdjacentHTML('beforeend', `
+    <div class="modal-overlay" id="save-reminder">
+      <div class="modal">
+        <div class="modal-header"><h3>Save Your Career</h3></div>
+        <div class="modal-body">
+          <p>You have run ${racesDone} race${racesDone === 1 ? '' : 's'} and this career has not been saved yet.
+             Pick a slot and the game will keep saving there automatically.</p>
+          <p class="muted-text small">Nothing is written to a save slot until you choose one, so closing the tab now would lose this career.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="dismissSaveReminder()">Later</button>
+          <button class="btn btn-primary" onclick="dismissSaveReminder(); handleSaveGame();">Choose Slot</button>
+        </div>
+      </div>
+    </div>`);
+}
+
+function dismissSaveReminder() {
+  document.getElementById('save-reminder')?.remove();
+}
+
 // Surface what happened off-track during the race weekend
 function reportLoanNotes() {
   const notes = [
@@ -637,6 +714,7 @@ function handleCloseResults() {
   updateHeader();
   renderTab('dashboard');
   reportLoanNotes();
+  checkSaveReminder();     // back in the lobby — nudge if nothing is saved
 }
 
 // ─── Premier Cup career choice ────────────────────────────────

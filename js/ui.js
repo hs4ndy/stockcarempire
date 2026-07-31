@@ -203,7 +203,6 @@ function renderDashboard() {
         <div class="team-stat"><span>1st Prize</span><span class="green">${fmt$(series.prize[0])}</span></div>
         <div class="btn-row mt">
           <button class="btn btn-primary" onclick="handleOpenRaceWeekend()">Race Weekend</button>
-          <button class="btn btn-ghost" onclick="handleSkipRace()">Skip</button>
         </div>
       `}
     </div>
@@ -864,8 +863,7 @@ function renderRaceSetup() {
     <div class="btn-row mt">
       <button class="btn btn-primary btn-lg" id="btn-start-race" onclick="handleStartRace()">Race</button>
       <button class="btn btn-ghost btn-lg" onclick="handleSimulateRace()">Simulate</button>
-      <button class="btn btn-ghost" onclick="handleSkipRace()">Skip</button>
-      <button class="btn btn-ghost" onclick="showScreen('game')">Cancel</button>
+      <button class="btn btn-ghost" onclick="showScreen('game')">Back</button>
     </div>
   </div>`;
 }
@@ -1059,8 +1057,24 @@ function renderCareerStats() {
       <span class="res-prize">${e.wins}W ${e.top5}T5</span>
     </div>`).join('');
 
+  const curDiff = game.difficulty || DEFAULT_DIFFICULTY;
+
   return `
   <div class="page-header"><h2>Career Stats</h2></div>
+  <div class="card mb">
+    <div class="card-header">Difficulty</div>
+    <div class="card-body">
+      <p class="muted-text small">Applies from your next race onward — change it any time.</p>
+      <div class="difficulty-grid">
+        ${DIFFICULTIES.map(d => `
+          <div class="difficulty-card${d.id === curDiff ? ' selected' : ''}"
+               onclick="handleSetDifficulty('${d.id}')">
+            <span class="difficulty-name">${d.name}</span>
+            <span class="difficulty-blurb">${d.blurb}</span>
+          </div>`).join('')}
+      </div>
+    </div>
+  </div>
   <div class="card mb">
     <div class="card-header">Reputation</div>
     <div class="card-body">
@@ -1160,6 +1174,16 @@ function renderQuickRaceModal() {
       </div>
       <div class="modal-body">
         <p>Jump straight into a superspeedway race — no career consequences.</p>
+        <div class="card-header">Difficulty</div>
+        <div class="difficulty-grid">
+          ${DIFFICULTIES.map(d => `
+            <div class="difficulty-card${d.id === quickRaceDifficulty ? ' selected' : ''}"
+                 data-diff="${d.id}" onclick="setQuickRaceDifficulty('${d.id}')">
+              <span class="difficulty-name">${d.name}</span>
+              <span class="difficulty-blurb">${d.blurb}</span>
+            </div>`).join('')}
+        </div>
+        <div class="card-header mt">Field Size</div>
         <div class="career-choices" style="flex-direction:column;gap:0.75rem">
           <button class="btn btn-primary" onclick="handleStartQuickRace(12)">Small Field (12 cars)</button>
           <button class="btn btn-primary" onclick="handleStartQuickRace(20)">Full Field (20 cars)</button>

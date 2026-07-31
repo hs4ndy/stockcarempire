@@ -237,8 +237,15 @@ function launch3DRace(config, onComplete) {
   });
 
   window._r3dFinish = (pos) => {
-    if (window._r3d) { try { window._r3d.destroy(); } catch (_) {} window._r3d = null; }
-    onComplete(pos);
+    // Grab the real on-track order before tearing the engine down, so the
+    // results table reflects what actually happened — team-mates included.
+    let order = [];
+    if (window._r3d) {
+      try { order = window._r3d.finalOrder(); } catch (_) {}
+      try { window._r3d.destroy(); } catch (_) {}
+      window._r3d = null;
+    }
+    onComplete(pos, order);
   };
 }
 
@@ -265,6 +272,10 @@ class Race3DEngine {
     this._orderAcc    = 0;   // throttle accumulator for the order tower
     this._mapAcc      = 0;
     this._dummy       = new THREE.Object3D();
+    // Difficulty scales AI pace and aggression, and how much the draft gives you
+    this.diff = (typeof difficultyById === 'function')
+      ? difficultyById(config.difficulty || DEFAULT_DIFFICULTY)
+      : { aiSpeed: 1, aiPower: 1, aiAggro: 1, playerDraft: 1 };
 
     this._init();
   }
@@ -645,6 +656,7 @@ class Race3DEngine {
       isPlayer:   true,
       isTeammate: false,
       label:      config.playerName || 'YOU',
+      carId:      config.playerCarId || null,
     });
     this.cars.push(this.player);
 
@@ -660,11 +672,12 @@ class Race3DEngine {
         isPlayer:   false,
         isTeammate: !!entry.isTeammate,
         label:      entry.name,
+        carId:      entry.carId || null,
       }));
     }
   }
 
-  _makeCar(x, z, { color, number, power, isPlayer, isTeammate, label }) {
+  _makeCar(x, z, { color, number, power, isPlayer, isTeammate, label, carId }) {
     const hex = typeof color === 'string' ? parseInt(color.replace('#', ''), 16) : color;
     const G = this.G, M = this.M;
     const g = new THREE.Group();
@@ -774,7 +787,7 @@ class Race3DEngine {
     this.scene.add(g);
 
     return {
-      mesh: g, glowMat, wheels, isTeammate,
+      mesh: g, glowMat, wheels, isTeammate, carId,
       isPlayer, power, label, hex, number, x, z,
       lv: 0,
       speed: R3D.SPEED_BASE * (0.78 + power * 0.22),
@@ -974,8 +987,10 @@ class Race3DEngine {
 
       // Continuous aggression ramp — no sudden switch from calm to chaos.
       const progress = car.z / R3D.TRACK_LEN;
+      // Harder settings start racing hard sooner
+      const calmFrac = R3D.CALM_FRAC / Math.max(0.5, this.diff.aiAggro);
       const aggro = clamp(
-        (progress - R3D.CALM_FRAC) / Math.max(0.01, R3D.ENDGAME_FRAC - R3D.CALM_FRAC), 0, 1);
+        (progress - calmFrac) / Math.max(0.01, R3D.ENDGAME_FRAC - calmFrac), 0, 1);
       const mix = (calm, wild) => calm + (wild - calm) * aggro;
       const endgame = progress >= R3D.ENDGAME_FRAC;
       car.laneTimer -= dt;
@@ -1041,9 +1056,14 @@ class Race3DEngine {
         }
       }
 
-      const tgt = Math.min(R3D.SPEED_BASE * (0.79 + car.power * 0.23) + car.draftBoost, R3D.SPEED_MAX);
-      const latSpeed = mix(2.4, 5.2);
-      const maxLat   = mix(2.2, 6.0);   // hard cap on darting (units/sec)
+      // Difficulty lifts both the AI's pace and its ceiling
+      const dSpd = this.diff.aiSpeed;
+      const tgt = Math.min(
+        (R3D.SPEED_BASE * (0.79 + car.power * 0.23)) * dSpd + car.draftBoost,
+        R3D.SPEED_MAX * dSpd);
+      const aggroMul = this.diff.aiAggro;
+      const latSpeed = mix(2.4, 5.2) * aggroMul;
+      const maxLat   = mix(2.2, 6.0) * aggroMul;   // hard cap on darting (units/sec)
       const prevX = car.x;
       car.speed += (tgt - car.speed) * Math.min(1, dt * 2.2);
       const step = clamp((car.targetX - car.x) * Math.min(1, dt * latSpeed), -maxLat * dt, maxLat * dt);
@@ -1084,6 +1104,9 @@ class Race3DEngine {
         liveBoost = Math.max(liveBoost, intensity * R3D.DRAFT_BOOST);
       }
       car._pushBoosted = false;
+
+      // Higher difficulties give the player less free speed from the tow
+      if (car.isPlayer) liveBoost *= this.diff.playerDraft;
 
       if (liveBoost > car.draftMomentum) car.draftMomentum = liveBoost;
       else car.draftMomentum = Math.max(0, car.draftMomentum - R3D.DRAFT_SLING * dt);
@@ -1231,6 +1254,26 @@ class Race3DEngine {
         if (car.isPlayer) { this.done = true; this._showFinish(this.finishOrder.length); }
       }
     }
+  }
+
+  // The real running order at the moment the player takes the flag: cars that
+  // already finished in the order they crossed, then everyone else by distance,
+  // then retirements. Used so the on-track result — including your team-mates —
+  // is what actually goes in the results table.
+  finalOrder() {
+    const finished = this.finishOrder.slice();
+    const running  = this.cars
+      .filter(c => !c.finished && !c.dnf)
+      .sort((a, b) => b.z - a.z);
+    const retired  = this.cars.filter(c => c.dnf);
+    return [...finished, ...running, ...retired].map((c, i) => ({
+      carId:    c.carId || null,
+      isPlayer: !!c.isPlayer,
+      number:   c.number,
+      label:    c.label,
+      position: i + 1,
+      dnf:      !!c.dnf,
+    }));
   }
 
   _triggerWreck() {
