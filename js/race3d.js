@@ -26,16 +26,17 @@ const R3D = {
   // ── Drafting (TUNED — preserved feel) ──────────────────────
   DRAFT_Z:        92,     // draft cone depth — long tow behind each car
   DRAFT_X:        4.6,    // draft cone width
-  DRAFT_BOOST:    28,     // max speed bonus at bumper
-  DRAFT_SLING:    11,     // momentum decay/sec
+  DRAFT_BOOST:    38,     // max speed bonus at bumper — the tow really pulls
+  DRAFT_SLING:    13,     // momentum decay/sec
+  DRAFT_CURVE:    0.72,   // <1 = the tow bites from further back
   PUSH_Z:         5.2,    // bumper-to-bumper push distance
   PUSH_X:         1.8,    // lateral tolerance for locked push
-  PUSH_BONUS:     6,      // ≈+5 mph when locked bumpers
+  PUSH_BONUS:     11,     // shove you give the car you are hard against
   CHAIN_PER_CAR:  5,      // extra speed per car in a draft chain
   CHAIN_CURVE:    0.14,   // each extra car is worth MORE than the last
   CHAIN_MAX:      34,     // ceiling on chain bonus so a long train can't run away
-  PACK_CATCHUP:   14,     // max catch-up speed for cars stranded behind the pack
-  PACK_GAP:       260,    // distance behind the leader where catch-up is full
+  PACK_CATCHUP:   22,     // max catch-up speed for cars stranded behind the pack
+  PACK_GAP:       190,    // distance behind the leader where catch-up is full
   TEAM_HELP_Z:    60,     // range at which a teammate starts working with you
   TEAM_PUSH_BONUS: 4,     // extra shove when you and a teammate are locked up
   MIRROR_HFOV:    88,     // mirror HORIZONTAL field of view, degrees
@@ -65,6 +66,8 @@ const R3D = {
   LANE_GAIN_MIN:  0.14,   // a lane must beat the current one by this to move
   LANE_INERTIA:   0.13,
   TOW_APPEAL:     2.1,    // how strongly the AI wants to be in a draft train
+  STUCK_Z:        34,     // being this close behind a slower car counts as bottled up
+  STUCK_PENALTY:  1.6,    // how badly a driver wants out of that
   TACTIC_COMMIT:  2.6,    // seconds a driver sticks with a tow/block decision
   BLOCK_Z:        20,     // how close behind before a driver starts defending
   BLOCK_MAX:      1.6,    // furthest a defender will shade across — no chopping
@@ -1195,6 +1198,7 @@ class Race3DEngine {
 
     let score      = 0;
     let nearestAhead = Infinity;   // gap to the next car in this lane
+    let aheadCar   = null;         // whoever that is
     let towGap     = Infinity;     // gap to a car close enough to tow off
     let towCar     = null;         // the car providing that tow
     let blocked    = false;        // someone occupying that space right now
@@ -1209,7 +1213,7 @@ class Race3DEngine {
       if (Math.abs(dz) < R3D.CAR_SEP_Z * 1.6 && adx < R3D.CAR_SEP_X * 1.25) blocked = true;
 
       if (dz > 0) {
-        if (dz < nearestAhead) nearestAhead = dz;
+        if (dz < nearestAhead) { nearestAhead = dz; aheadCar = other; }
         if (dz > R3D.PUSH_Z && dz < R3D.DRAFT_Z && dz < towGap) { towGap = dz; towCar = other; }
       }
     }
@@ -1226,6 +1230,13 @@ class Race3DEngine {
       const trainLen   = (towCar && towCar.chainLen) || 1; // how big is that line
       const trainPull  = 1 + Math.min(trainLen - 1, 4) * 0.22;
       score += towQuality * R3D.TOW_APPEAL * trainPull;
+    }
+
+    // Stuck behind someone slower is the thing a racer most wants to fix, so
+    // a lane that has you bottled up scores badly and the way past looks good.
+    if (aheadCar && nearestAhead < R3D.STUCK_Z && aheadCar.speed < car.speed - 1) {
+      const howStuck = 1 - (nearestAhead / R3D.STUCK_Z);
+      score -= howStuck * R3D.STUCK_PENALTY;
     }
 
     // Never move into a car
@@ -1264,7 +1275,11 @@ class Race3DEngine {
           continue;
         }
         if (dz > R3D.DRAFT_Z || dx > R3D.DRAFT_X) continue;
-        const intensity = 1 - (dz / R3D.DRAFT_Z);
+        // The tow ropes you in: there is a real tug from the far edge of the
+        // cone, and it keeps building the closer you get, until you arrive on
+        // the bumper and start pushing instead.
+        const closeness  = 1 - (dz / R3D.DRAFT_Z);
+        const intensity  = Math.pow(closeness, R3D.DRAFT_CURVE);
         liveBoost = Math.max(liveBoost, intensity * R3D.DRAFT_BOOST);
       }
       car._pushBoosted = false;

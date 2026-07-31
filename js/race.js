@@ -252,40 +252,45 @@ function reRankWithPlayerAt(results, playerPosition) {
 // the win could still be shown mid-pack.
 function reRankWithTeamOrder(results, playerPosition, trackOrder) {
   const series = SERIES[game.currentSeries];
-  const order  = (trackOrder || []).filter(o => o.carId || o.isPlayer);
+  const order  = trackOrder || [];
   if (!order.length) return reRankWithPlayerAt(results, playerPosition);
 
-  // Results for our own cars, keyed so we can look them up by carId
-  const isOurs = r => r.isPlayer || order.some(o => o.carId && o.carId === r.carId);
-  const ours   = results.filter(isOurs);
-  const rest   = results.filter(r => !isOurs(r)).sort((a, b) => a.position - b.position);
+  // The 3D race IS the race, so its finishing order is authoritative for the
+  // WHOLE field, not just your cars. An earlier version kept your team as one
+  // contiguous block anchored on your own finish, which quietly moved a
+  // team-mate who had actually won back to just ahead of you whenever a rival
+  // finished between the two of you.
+  const pool = results.slice();
+  const used = new Array(pool.length).fill(false);
+  const driverOf = r => String(r.displayName || '').split(' / ').pop().trim();
 
-  // Sort our cars by where they really finished on track
-  const trackPos = r => {
-    const hit = order.find(o => (r.isPlayer && o.isPlayer) || (o.carId && o.carId === r.carId));
-    return hit ? hit.position : Infinity;
+  const take = pred => {
+    for (let i = 0; i < pool.length; i++) {
+      if (!used[i] && pred(pool[i])) { used[i] = true; return pool[i]; }
+    }
+    return null;
   };
-  ours.sort((a, b) => trackPos(a) - trackPos(b));
 
-  // The player's on-track position anchors the team in the overall field;
-  // team-mates that beat them slot in ahead, the rest just behind.
-  const running = rest.filter(r => !r.dnf);
-  const retired = rest.filter(r => r.dnf);
-  const ourRunning = ours.filter(r => !r.dnf);
-  const ourRetired = ours.filter(r => r.dnf);
+  const ordered = [];
+  for (const o of order) {
+    let r = null;
+    if (o.isPlayer)      r = take(x => x.isPlayer);
+    else if (o.carId)    r = take(x => x.carId === o.carId);          // your other cars
+    if (!r && o.label)   r = take(x => driverOf(x) === String(o.label).trim());
+    if (!r)              r = take(x => !x.isPlayer);                  // any spare rival
+    // Retirement is decided on track too. The simulation runs its own
+    // reliability rolls, and letting those stand would retire a car that
+    // plainly took the flag in front of you.
+    if (r) ordered.push(r.dnf === !!o.dnf ? r : { ...r, dnf: !!o.dnf });
+  }
+  // Anything the track order did not cover keeps its simulated order at the back
+  for (let i = 0; i < pool.length; i++) if (!used[i]) ordered.push(pool[i]);
 
-  const playerIdxInTeam = Math.max(0, ourRunning.findIndex(r => r.isPlayer));
-  const anchor = clamp(playerPosition - 1 - playerIdxInTeam, 0, running.length);
+  // Retirements always classify behind the runners
+  const runners = ordered.filter(r => !r.dnf);
+  const retired = ordered.filter(r => r.dnf);
 
-  const ordered = [
-    ...running.slice(0, anchor),
-    ...ourRunning,
-    ...running.slice(anchor),
-    ...ourRetired,
-    ...retired,
-  ];
-
-  return ordered.map((r, i) => {
+  return [...runners, ...retired].map((r, i) => {
     const pos = i + 1;
     const table = series.prize;
     const base  = table[pos - 1] !== undefined ? table[pos - 1] : table[table.length - 1];
