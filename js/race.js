@@ -115,7 +115,7 @@ function buildEntryList(playerCarId, trackId, isHiredMode) {
       entries.push({
         id:          'player',
         carId:       car.id,
-        displayName: `${game.teamName} / ${car.name}`,
+        displayName: `${game.teamName} / ${game.driverName || 'You'}`,
         teamName:    game.teamName,
         teamColor:   '#e8001d',
         isPlayer:    true,
@@ -140,7 +140,7 @@ function buildEntryList(playerCarId, trackId, isHiredMode) {
       const power = (aiTeam.cars[0]?.power || 0.55) + game.playerSkill / 100 * 0.2;
       entries.push({
         id:          'player',
-        displayName: `${aiTeam.name} / You`,
+        displayName: `${aiTeam.name} / ${game.driverName || 'You'}`,
         teamName:    aiTeam.name,
         teamColor:   aiTeam.color,
         isPlayer:    true,
