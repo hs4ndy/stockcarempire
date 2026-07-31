@@ -371,11 +371,14 @@ function renderUpgradeModal(carId) {
   const series = SERIES[game.currentSeries];
   const cls    = CAR_CLASSES[car.classId];
 
+  const cap      = tierCapacity();          // 3 + one per Data Analyst
+  const analysts = analystCount();
+
   const sections = UPGRADE_TIERS.map(t => {
     const parts    = cls.upgrades.filter(u => u.tier === t.tier);
     const fitted   = tierInstalled(car, t.tier, cls);
     const unlocked = tierUnlocked(car, t.tier, cls);
-    const full     = fitted >= MAX_PER_TIER;
+    const full     = fitted >= cap;
 
     const rows = parts.map(upg => {
       const installed = car.appliedUpgrades.includes(upg.id);
@@ -407,13 +410,16 @@ function renderUpgradeModal(carId) {
             <span class="upgrade-tier-name">Tier ${t.tier} — ${t.name}</span>
             <span class="upgrade-tier-blurb">${unlocked ? t.blurb : `Fit ${MAX_PER_TIER} Tier ${t.tier - 1} parts to unlock.`}</span>
           </div>
-          <span class="upgrade-tier-count${full ? ' is-full' : ''}">${fitted}/${MAX_PER_TIER}</span>
+          <span class="upgrade-tier-count${full ? ' is-full' : ''}">${fitted}/${cap}</span>
         </div>
         ${rows}
       </div>`;
   }).join('');
 
   const totalFitted = (car.appliedUpgrades || []).length;
+  const analystNote = analysts > 0
+    ? `<p class="muted-text small">${analysts} Data Analyst${analysts > 1 ? 's' : ''} on staff — ${analysts * ANALYST_TIER_SLOTS} extra slot${analysts * ANALYST_TIER_SLOTS > 1 ? 's' : ''} in every tier.</p>`
+    : `<p class="muted-text small">Hire a Data Analyst to open an extra slot in every tier.</p>`;
   return `
   <div class="modal-overlay" id="upgrade-modal" onclick="closeUpgradeModal(event)">
     <div class="modal modal-wide" onclick="event.stopPropagation()">
@@ -423,12 +429,13 @@ function renderUpgradeModal(carId) {
       </div>
       <div class="modal-body">
         <div class="upgrade-summary">
-          <div><span class="upgrade-sum-label">Fitted</span><span class="upgrade-sum-val">${totalFitted} / ${UPGRADE_TIERS.length * MAX_PER_TIER}</span></div>
+          <div><span class="upgrade-sum-label">Fitted</span><span class="upgrade-sum-val">${totalFitted} / ${UPGRADE_TIERS.length * cap}</span></div>
           <div><span class="upgrade-sum-label">Speed</span><span class="upgrade-sum-val">${car.speed}</span></div>
           <div><span class="upgrade-sum-label">Handling</span><span class="upgrade-sum-val">${car.handling}</span></div>
           <div><span class="upgrade-sum-label">Reliability</span><span class="upgrade-sum-val">${car.reliability}</span></div>
           <div><span class="upgrade-sum-label">Budget</span><span class="upgrade-sum-val gold">${fmt$(game.money)}</span></div>
         </div>
+        ${analystNote}
         ${sections}
       </div>
     </div>

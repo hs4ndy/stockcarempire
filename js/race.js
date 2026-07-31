@@ -27,9 +27,14 @@ function simulateRace({ playerCarId, trackId, isHiredMode }) {
   const phases = ['start', 'early', 'mid', 'late', 'finish'];
   const events  = [];
 
-  // Starting grid (sorted by perf with some qualifying randomness)
+  // Starting grid (sorted by perf with some qualifying randomness).
+  // Data Analysts turn practice data into a better lap, so your cars qualify
+  // stronger and with less scatter.
+  const analystQuali = analystCount() * ANALYST_QUALI_BONUS;
   entries.forEach(e => {
-    e.qualifyScore = e.perfScore + rand(-8, 8);
+    const ours = e.isPlayer || e.isTeammate;
+    const scatter = ours && analystQuali > 0 ? 5 : 8;
+    e.qualifyScore = e.perfScore + rand(-scatter, scatter) + (ours ? analystQuali : 0);
   });
   entries.sort((a, b) => b.qualifyScore - a.qualifyScore);
   entries.forEach((e, i) => { e.position = i + 1; });
@@ -123,6 +128,7 @@ function buildEntryList(playerCarId, trackId, isHiredMode) {
         driverSkill: game.playerSkill,
         hasCrchief:  game.staff.some(s => s.typeId === 'crew_chief'),
         hasEngineer: game.staff.some(s => s.typeId === 'engineer'),
+        analysts:    analystCount(),
       });
     }
   }
@@ -312,7 +318,8 @@ function calcPerf(entry, track) {
   const skillMod  = 0.25 + entry.driverSkill / 100 * 0.35; // 0.25–0.60
   const chiefBonus = entry.hasCrchief ? 2 : 0;
   const engBonus   = entry.hasEngineer ? 2 : 0;
-  const base = raw * condMod + entry.driverSkill * 0.1 + chiefBonus + engBonus;
+  const analystBonus = (entry.analysts || 0) * 2;   // setup work found in the data
+  const base = raw * condMod + entry.driverSkill * 0.1 + chiefBonus + engBonus + analystBonus;
   return clamp(base, 10, 99) + rand(-5, 5);
 }
 
@@ -323,9 +330,15 @@ function runPhase(entries, phase, track, currentLeader, cautionCount) {
   const liveEntries = entries.filter(e => !e.dnf);
 
   // --- Position churn ---
-  // Re-evaluate performance with fresh noise
+  // Re-evaluate performance with fresh noise.
+  // Track position is sticky: where you qualified sets the opening phase, and
+  // running up front is worth a little every phase after. Without this the
+  // grid was decorative and qualifying could not matter.
+  const fieldN = liveEntries.length || 1;
   liveEntries.forEach(e => {
-    e.phaseScore = e.perfScore + rand(-10, 10);
+    const gridEdge = phase === 'start' ? (e.qualifyScore - e.perfScore) * 0.8 : 0;
+    const momentum = e.position ? (fieldN - e.position) / fieldN * 6 : 0;
+    e.phaseScore = e.perfScore + rand(-10, 10) + gridEdge + momentum;
     // Reliability check — DNF risk
     const relRisk = e.reliability !== undefined ? e.reliability : (e.syntheticPower || 0.5) * 80 + 30;
     const dnfChance = clamp((100 - relRisk) / 1000, 0.005, 0.06);

@@ -92,22 +92,27 @@ const UPGRADE_TIERS = [
 ];
 
 // base = price for the entry-level Stock Car; higher classes scale it up.
+// Five options per tier but only three slots (more with a Data Analyst), so
+// there is always something left on the table.
 const UPGRADE_POOL = [
-  // Tier 1 — pick 3 of 4
+  // Tier 1
   { id: 'engine_tune', tier: 1, name: 'Engine Tune',         base: 3500, effect: { speed: 8 } },
   { id: 'susp_kit',    tier: 1, name: 'Suspension Kit',       base: 2800, effect: { handling: 9 } },
   { id: 'rel_package', tier: 1, name: 'Reliability Package',  base: 2200, effect: { reliability: 12 } },
   { id: 'race_brakes', tier: 1, name: 'Racing Brakes',        base: 3200, effect: { handling: 7, reliability: 5 } },
-  // Tier 2 — pick 3 of 4
+  { id: 'ballast_kit', tier: 1, name: 'Ballast Kit',          base: 2600, effect: { handling: 6, speed: 3 } },
+  // Tier 2
   { id: 'perf_engine', tier: 2, name: 'Performance Engine',   base: 9500, effect: { speed: 14 } },
   { id: 'aero_pkg',    tier: 2, name: 'Aero Package',         base: 6800, effect: { speed: 5, handling: 6 } },
   { id: 'data_sys',    tier: 2, name: 'Data Analytics',       base: 7400, effect: { speed: 4, handling: 4, reliability: 4 } },
   { id: 'gearbox',     tier: 2, name: 'Close-Ratio Gearbox',  base: 6200, effect: { speed: 7, handling: 3 } },
-  // Tier 3 — pick 3 of 4
+  { id: 'cooling_pkg', tier: 2, name: 'Cooling Package',      base: 5800, effect: { reliability: 9, speed: 3 } },
+  // Tier 3
   { id: 'wind_tunnel', tier: 3, name: 'Wind Tunnel Program',  base: 16000, effect: { speed: 9, handling: 6 } },
   { id: 'chassis_jig', tier: 3, name: 'Chassis Jig',          base: 14000, effect: { handling: 11, reliability: 4 } },
   { id: 'sim_program', tier: 3, name: 'Simulator Program',    base: 15000, effect: { speed: 6, handling: 6, reliability: 5 } },
   { id: 'pit_package', tier: 3, name: 'Pit Crew Package',     base: 12000, effect: { reliability: 14 } },
+  { id: 'shaker_rig',  tier: 3, name: 'Seven-Post Rig',       base: 17000, effect: { handling: 8, speed: 5, reliability: 3 } },
 ];
 
 function buildUpgrades(mult) {
@@ -126,7 +131,8 @@ function tierInstalled(car, tier, cls) {
   }).length;
 }
 
-// A tier is available once the one below it is full
+// A tier is available once the one below it has its base three parts fitted.
+// Analyst slots are a bonus on top, so hiring one never re-locks a later tier.
 function tierUnlocked(car, tier, cls) {
   if (tier <= 1) return true;
   return tierInstalled(car, tier - 1, cls) >= MAX_PER_TIER;
@@ -189,8 +195,34 @@ const STAFF_TYPES = [
     weeklyCost: [900, 1800, 3600],
     bonus: '25% discount on all repair costs',
     max: 3
+  },
+  {
+    id: 'data_analyst',
+    name: 'Data Analyst',
+    icon: '📈',
+    description: 'Pores over practice data to find the quick way round, and identifies extra parts your crew can fit.',
+    weeklyCost: [1600, 3200, 6400],
+    bonus: 'Stronger qualifying, plus one extra upgrade slot per tier',
+    max: 2
   }
 ];
+
+// ── Data Analyst effects ────────────────────────────────────
+// Each analyst sharpens qualifying and opens another slot in every upgrade
+// tier, so a well-staffed team can fit more parts than a bare-bones one.
+const ANALYST_QUALI_BONUS = 7;   // qualifying score per analyst
+const ANALYST_TIER_SLOTS  = 1;   // extra parts allowed per tier, per analyst
+
+function analystCount() {
+  return (typeof game !== 'undefined' && game && game.staff)
+    ? game.staff.filter(s => s.typeId === 'data_analyst').length
+    : 0;
+}
+
+// Upgrade slots available per tier, including anything the analysts unlock
+function tierCapacity() {
+  return MAX_PER_TIER + analystCount() * ANALYST_TIER_SLOTS;
+}
 
 const HIREABLE_DRIVERS = [
   { id: 'drv01', name: 'Jake Rivers',              skill: 72, aggression: 65, morale: 80, weeklyCost: 3500 },

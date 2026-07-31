@@ -646,8 +646,15 @@ class Race3DEngine {
     }
     slots.length = fieldSize;                    // never draw a slot past the field
 
-    const playerSlotIdx = Math.floor(Math.random() * slots.length);
-    this._startingPos   = playerSlotIdx + 1;     // now genuinely 1 = pole
+    // Qualifying draw. Normally anywhere in the field, but a Data Analyst
+    // biases it toward the front — take the best of N draws, one extra draw
+    // per analyst on staff.
+    const draws = 1 + (config.qualifyBoost || 0);
+    let playerSlotIdx = Math.floor(Math.random() * slots.length);
+    for (let i = 1; i < draws; i++) {
+      playerSlotIdx = Math.min(playerSlotIdx, Math.floor(Math.random() * slots.length));
+    }
+    this._startingPos = playerSlotIdx + 1;     // now genuinely 1 = pole
     const ps = slots[playerSlotIdx];
     this.player = this._makeCar(ps.x, ps.z, {
       color:      config.playerColor || '#e8001d',

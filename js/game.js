@@ -722,8 +722,10 @@ function upgradeCar(carId, upgradeId) {
   if (!tierUnlocked(car, upgrade.tier, cls)) {
     return { ok: false, msg: `Fit ${MAX_PER_TIER} Tier ${upgrade.tier - 1} parts before Tier ${upgrade.tier} opens.` };
   }
-  if (tierInstalled(car, upgrade.tier, cls) >= MAX_PER_TIER) {
-    return { ok: false, msg: `Tier ${upgrade.tier} is full — ${MAX_PER_TIER} parts is the limit.` };
+  const cap = tierCapacity();   // 3, plus one per Data Analyst on staff
+  if (tierInstalled(car, upgrade.tier, cls) >= cap) {
+    const extra = cap > MAX_PER_TIER ? '' : ' Hire a Data Analyst to open another slot.';
+    return { ok: false, msg: `Tier ${upgrade.tier} is full — ${cap} parts is the limit.${extra}` };
   }
   if (game.money < upgrade.cost) return { ok: false, msg: 'Not enough money.' };
 

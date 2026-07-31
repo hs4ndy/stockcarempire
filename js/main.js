@@ -478,6 +478,7 @@ function handleStartRace() {
       playerCarId,
       fieldSize:    series.fieldSize,
       difficulty:   game.difficulty || DEFAULT_DIFFICULTY,
+      qualifyBoost: analystCount(),   // Data Analysts sharpen the grid draw
       aiEntries:    aiEntries.slice(0, series.fieldSize - 1),
     },
     (playerPosition, trackOrder) => {
