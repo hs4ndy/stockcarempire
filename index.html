@@ -97,7 +97,29 @@
     <div class="setup-panel-footer">
       <button class="btn-game btn-game-ghost" onclick="showScreen('intro')">Back</button>
       <button class="btn-game btn-game-primary" id="btn-create-team">
-        <span>Start Career</span>
+        <span>Continue</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 2 — choose difficulty before the career begins -->
+  <div class="setup-panel hidden" id="setup-difficulty">
+    <div class="setup-panel-header">
+      <div class="setup-panel-title-row">
+        <span class="setup-panel-number">02</span>
+        <div>
+          <div class="setup-panel-title">CHOOSE YOUR DIFFICULTY</div>
+          <div class="setup-panel-sub">How hard the field races you. You can change this later in Settings.</div>
+        </div>
+      </div>
+    </div>
+    <div class="setup-panel-body">
+      <div class="difficulty-grid lg" id="setup-difficulty-grid"></div>
+    </div>
+    <div class="setup-panel-footer">
+      <button class="btn-game btn-game-ghost" onclick="backToSetupDetails()">Back</button>
+      <button class="btn-game btn-game-primary" id="btn-begin-career">
+        <span>Begin Career</span>
       </button>
     </div>
   </div>

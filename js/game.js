@@ -671,6 +671,39 @@ function repairCar(carId) {
 }
 
 // ═══════════════════════════════════════════════════════════
+//  CHARITY — give back for goodwill
+// ═══════════════════════════════════════════════════════════
+// One donation per race weekend, so reputation still has to be earned on
+// track — money alone can only ever top it up.
+function donationRaceKey() {
+  return `${game.season.year}:${game.season.raceIndex}`;
+}
+
+function canDonate() {
+  return game.lastDonationKey !== donationRaceKey();
+}
+
+function donateToCharity(causeId) {
+  const cause = CHARITY_CAUSES.find(c => c.id === causeId);
+  if (!cause) return { ok: false, msg: 'Unknown cause.' };
+  if (!canDonate()) {
+    return { ok: false, msg: 'You have already given this race weekend. Come back after the next race.' };
+  }
+  const cost = charityCost(cause, game.currentSeries);
+  if (game.money < cost) return { ok: false, msg: `That pledge is ${fmt$(cost)}.` };
+
+  if (game.reputation == null) game.reputation = 50;
+  const gain = charityRepGain(cause, game.reputation);
+
+  game.money -= cost;
+  game.reputation = clamp(Math.round((game.reputation + gain) * 10) / 10, 0, 100);
+  game.lastDonationKey = donationRaceKey();
+  game.charityGiven = (game.charityGiven || 0) + cost;
+  saveGame();
+  return { ok: true, cost, gain, name: cause.name, reputation: game.reputation };
+}
+
+// ═══════════════════════════════════════════════════════════
 //  BANK — loans
 // ═══════════════════════════════════════════════════════════
 function getLoans() {

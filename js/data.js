@@ -344,6 +344,33 @@ function difficultyById(id) {
   return DIFFICULTIES.find(d => d.id === id) || DIFFICULTIES[0];
 }
 
+// ─── Charity ─────────────────────────────────────────────────
+// Giving back buys goodwill. Cost scales with the series you race in, the
+// reputation gained tapers as you become well known, and you can only give
+// once per race weekend so it cannot simply be bought to the top.
+const CHARITY_CAUSES = [
+  { id: 'ch_local',    name: 'Local Youth Racing Fund',
+    blurb: 'Karting seats for kids who could never afford one.',
+    mult: 0.35, rep: 3 },
+  { id: 'ch_safety',   name: 'Driver Safety Foundation',
+    blurb: 'Research into barriers, belts and better seats.',
+    mult: 0.9,  rep: 6 },
+  { id: 'ch_hospital', name: "Children's Hospital Appeal",
+    blurb: 'The cause every driver in the garage puts their name to.',
+    mult: 2.0,  rep: 11 },
+];
+
+function charityCost(cause, seriesLevel) {
+  const series = SERIES[seriesLevel] || SERIES[0];
+  return Math.round(series.prize[0] * cause.mult / 100) * 100;
+}
+
+// Reputation gained tapers hard as you approach the top
+function charityRepGain(cause, currentRep) {
+  const headroom = clamp((100 - currentRep) / 100, 0, 1);
+  return Math.round(cause.rep * (0.25 + 0.75 * headroom) * 10) / 10;
+}
+
 // ─── Bank ────────────────────────────────────────────────────
 // Borrow now, repay within `term` races. Miss the deadline and the balance
 // starts compounding at LATE_RATE every race until it is cleared.

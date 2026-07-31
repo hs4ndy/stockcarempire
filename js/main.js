@@ -49,6 +49,10 @@ document.getElementById('btn-quick-race')?.addEventListener('click', () => {
   showQuickRaceScreen();
 });
 
+// New career is a two-step setup: details, then difficulty.
+let pendingCareer = null;
+let setupDifficulty = DEFAULT_DIFFICULTY;
+
 document.getElementById('btn-create-team')?.addEventListener('click', () => {
   const teamName   = document.getElementById('inp-team-name').value.trim();
   const driverName = document.getElementById('inp-driver-name').value.trim();
@@ -56,8 +60,46 @@ document.getElementById('btn-create-team')?.addEventListener('click', () => {
   if (!teamName)   { toast('Please enter a team name.', 'warning'); return; }
   if (!driverName) { toast('Please enter a driver name.', 'warning'); return; }
   if (!carName)    { toast('Please name your first car.', 'warning'); return; }
+  pendingCareer = { teamName, driverName, carName };
+  showSetupDifficulty();
+});
+
+function renderSetupDifficultyCards() {
+  const grid = document.getElementById('setup-difficulty-grid');
+  if (!grid) return;
+  grid.innerHTML = DIFFICULTIES.map(d => `
+    <div class="difficulty-card${d.id === setupDifficulty ? ' selected' : ''}"
+         data-diff="${d.id}" onclick="setSetupDifficulty('${d.id}')">
+      <span class="difficulty-name">${d.name}</span>
+      <span class="difficulty-blurb">${d.blurb}</span>
+    </div>`).join('');
+}
+
+function setSetupDifficulty(id) {
+  setupDifficulty = id;
+  renderSetupDifficultyCards();
+}
+
+function showSetupDifficulty() {
+  document.querySelector('#screen-setup .setup-panel:not(#setup-difficulty)')?.classList.add('hidden');
+  document.getElementById('setup-difficulty')?.classList.remove('hidden');
+  renderSetupDifficultyCards();
+}
+
+function backToSetupDetails() {
+  document.getElementById('setup-difficulty')?.classList.add('hidden');
+  document.querySelector('#screen-setup .setup-panel:not(#setup-difficulty)')?.classList.remove('hidden');
+}
+
+document.getElementById('btn-begin-career')?.addEventListener('click', () => {
+  if (!pendingCareer) { backToSetupDetails(); return; }
+  const { teamName, driverName, carName } = pendingCareer;
   newGame(teamName, driverName, carName);
-  toast(`Welcome to Stock Car Empire, ${driverName}!`, 'success');
+  game.difficulty = setupDifficulty;
+  const d = difficultyById(setupDifficulty);
+  toast(`Welcome to Stock Car Empire, ${driverName} — racing on ${d.name}.`, 'success', 5000);
+  pendingCareer = null;
+  backToSetupDetails();          // reset the screen for next time
   enterGame();
 });
 
@@ -322,6 +364,14 @@ function handleRepayLoan(loanId, amount) {
   const res = repayLoan(loanId, amount);
   if (!res.ok) { toast(res.msg, 'error'); return; }
   toast(res.cleared ? `Loan cleared — ${fmt$(res.paid)} paid.` : `${fmt$(res.paid)} paid off.`, 'success');
+  updateHeader();
+  renderTab('market');
+}
+
+function handleDonate(causeId) {
+  const res = donateToCharity(causeId);
+  if (!res.ok) { toast(res.msg, 'error'); return; }
+  toast(`${fmt$(res.cost)} pledged to ${res.name}. Reputation now ${res.reputation}.`, 'success', 5000);
   updateHeader();
   renderTab('market');
 }

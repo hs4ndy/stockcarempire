@@ -726,6 +726,39 @@ function renderMarket() {
       ${offerRows}
     </div>`;
 
+  // ── Charity ─────────────────────────────────────────────
+  const rep = game.reputation != null ? game.reputation : 50;
+  const canGive = canDonate();
+  const charityRows = CHARITY_CAUSES.map(c => {
+    const cost = charityCost(c, game.currentSeries);
+    const gain = charityRepGain(c, rep);
+    const afford = game.money >= cost;
+    return `<div class="staff-row">
+      <div class="staff-info">
+        <span class="staff-name">${c.name}</span>
+        <div class="staff-meta">${fmt$(cost)} · <span class="green">+${gain} reputation</span></div>
+        <div class="staff-meta muted-text">${c.blurb}</div>
+      </div>
+      ${canGive && afford
+        ? `<button class="btn btn-sm btn-primary" onclick="handleDonate('${c.id}')">Donate</button>`
+        : `<button class="btn btn-sm" disabled>${!canGive ? 'Given' : 'Too costly'}</button>`}
+    </div>`;
+  }).join('');
+
+  const charityCard = `
+    <div class="card mt">
+      <div class="card-header">Charity</div>
+      <p class="muted-text small">Giving back builds your standing in the sport. One pledge per race weekend${
+        game.charityGiven ? ` · ${fmt$(game.charityGiven)} given so far` : ''}.</p>
+      ${!canGive ? `<p class="form-warning">You have already given this race weekend.</p>` : ''}
+      <div class="stat-row">
+        <span class="stat-label">Reputation</span>
+        <div class="stat-bar-wrap"><div class="stat-bar ${rep >= 60 ? 'bar-green' : rep >= 40 ? 'bar-yellow' : 'bar-red'}" style="width:${clamp(rep,0,100)}%"></div></div>
+        <span class="stat-value">${rep}</span>
+      </div>
+      ${charityRows}
+    </div>`;
+
   return `
   <div class="page-header"><h2>Market</h2></div>
   <div class="two-col-grid">
@@ -751,9 +784,10 @@ function renderMarket() {
       </div>
       <div class="card mt">
         <div class="card-header">Available Sponsors</div>
-        <p class="muted-text small">Sponsors pay you every race. Max 3 active deals.</p>
+        <p class="muted-text small">Sponsors pay you every race. You can run ${sponsorSlots()} deals at once.</p>
         ${sponsorRows}
       </div>
+      ${charityCard}
     </div>
   </div>`;
 }
@@ -1169,7 +1203,7 @@ function renderCareerStats() {
   <div class="two-col-grid">
     <div>
       <div class="card mb">
-        <div class="card-header">Standing</div>
+        <div class="card-header">Credentials</div>
         <div class="card-body">
           <div class="stat-row">
             <span class="stat-label">Reputation</span>
@@ -1223,50 +1257,40 @@ function renderCareerStats() {
 function renderSettings() {
   if (!game) return '';
   const curDiff = game.difficulty || DEFAULT_DIFFICULTY;
-  const slotLabel = (typeof currentSlot === 'undefined' || currentSlot === null)
-    ? 'Not saved yet' : `Slot ${currentSlot + 1}`;
+  const unsaved = (typeof currentSlot === 'undefined' || currentSlot === null);
+  const slotLabel = unsaved ? 'Not saved yet' : `Slot ${currentSlot + 1}`;
 
   return `
   <div class="page-header"><h2>Settings</h2></div>
-  <div class="two-col-grid">
-    <div>
-      <div class="card mb">
-        <div class="card-header">Difficulty</div>
-        <div class="card-body">
-          <p class="muted-text small">Applies from your next race onward — change it any time.</p>
-          <div class="difficulty-grid">
-            ${DIFFICULTIES.map(d => `
-              <div class="difficulty-card${d.id === curDiff ? ' selected' : ''}"
-                   onclick="handleSetDifficulty('${d.id}')">
-                <span class="difficulty-name">${d.name}</span>
-                <span class="difficulty-blurb">${d.blurb}</span>
-              </div>`).join('')}
-          </div>
-        </div>
+
+  <div class="card mb">
+    <div class="card-header">Difficulty</div>
+    <div class="card-body">
+      <p class="muted-text small">How hard the field races you. Applies from your next race onward.</p>
+      <div class="difficulty-grid lg">
+        ${DIFFICULTIES.map(d => `
+          <div class="difficulty-card${d.id === curDiff ? ' selected' : ''}"
+               onclick="handleSetDifficulty('${d.id}')">
+            <span class="difficulty-name">${d.name}</span>
+            <span class="difficulty-blurb">${d.blurb}</span>
+            <div class="difficulty-meta">
+              <span>AI pace <strong>${Math.round((d.aiSpeed - 1) * 100)}%</strong></span>
+              <span>Your tow <strong>${Math.round(d.playerDraft * 100)}%</strong></span>
+              <span>Racecraft <strong>${d.racecraft === 0 ? 'off' : Math.round(d.racecraft * 100) + '%'}</strong></span>
+            </div>
+          </div>`).join('')}
       </div>
     </div>
-    <div>
-      <div class="card mb">
-        <div class="card-header">Save</div>
-        <div class="card-body">
-          <div class="team-stat"><span>Auto-saving to</span><span class="${slotLabel === 'Not saved yet' ? 'red' : ''}">${slotLabel}</span></div>
-          <p class="muted-text small">Nothing is written to a slot until you pick one. After that the game keeps saving there automatically.</p>
-          <div class="btn-row mt">
-            <button class="btn btn-primary" onclick="handleSaveGame()">Save to Slot</button>
-            <button class="btn btn-ghost" onclick="showLoadModal()">Load a Game</button>
-          </div>
-        </div>
-      </div>
-      <div class="card mb">
-        <div class="card-header">Career</div>
-        <div class="card-body">
-          <div class="team-stat"><span>Team</span><span>${game.teamName}</span></div>
-          <div class="team-stat"><span>Driver</span><span>${game.driverName || '—'}</span></div>
-          <div class="team-stat"><span>Season</span><span>Year ${game.season.year}</span></div>
-          <div class="btn-row mt">
-            <button class="btn btn-danger" onclick="handleNewGamePrompt()">Start a New Career</button>
-          </div>
-        </div>
+  </div>
+
+  <div class="card mb">
+    <div class="card-header">Auto Save</div>
+    <div class="card-body">
+      <div class="team-stat"><span>Auto-saving to</span><span class="${unsaved ? 'red' : 'green'}">${slotLabel}</span></div>
+      <p class="muted-text small">Nothing is written to a slot until you pick one. After that the game keeps saving there automatically after every race.</p>
+      <div class="btn-row mt">
+        <button class="btn btn-primary" onclick="handleSaveGame()">${unsaved ? 'Choose a Slot' : 'Save Now'}</button>
+        <button class="btn btn-ghost" onclick="showLoadModal()">Load a Game</button>
       </div>
     </div>
   </div>`;
