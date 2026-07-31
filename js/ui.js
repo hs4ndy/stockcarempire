@@ -24,6 +24,7 @@ function renderTab(tabName) {
     case 'market':     main.innerHTML = renderMarket();      break;
     case 'standings':  main.innerHTML = renderStandings();   break;
     case 'carstats':   main.innerHTML = renderCareerStats(); break;
+    case 'settings':   main.innerHTML = renderSettings();    break;
     default:           main.innerHTML = renderDashboard();
   }
   attachTabListeners(tabName);
@@ -1076,87 +1077,198 @@ function renderPremierChoiceModal() {
 // ─── Career Stats ─────────────────────────────────────────────
 function renderCareerStats() {
   if (!game) return '';
+
+  // ── Career totals ────────────────────────────────────────
+  const hist        = game.history || [];
+  const seasonStand = getStandings();
+  const me          = seasonStand.find(e => e.id === 'player');
+  const seasonPos   = seasonStand.findIndex(e => e.id === 'player') + 1;
+
+  const seasonWins  = me?.wins  || 0;
+  const seasonTop5  = me?.top5  || 0;
+  const seasonTop10 = me?.top10 || 0;
+  const seasonRaces = me?.races || 0;
+  const seasonPts   = me?.points || 0;
+
+  // All-time = every completed season plus what is banked this year
+  const pastWins  = hist.reduce((s, h) => s + (h.wins || 0), 0);
+  const allWins   = pastWins + seasonWins;
+  const allRaces  = game.cars.reduce((s, c) => s + (c.races || 0), 0);
+  const titles    = game.titles || hist.filter(h => h.champion).length;
+  const seasons   = hist.length;
+  const earnings  = game.season.calendar
+    .filter(r => r.status === 'completed')
+    .reduce((s, r) => s + (r.earnings || 0), 0);
+  const careerPayouts = hist.reduce((s, h) => s + (h.payout || 0), 0);
+
   const rep = game.reputation || 50;
   const repLabel = rep >= 80 ? 'Legend' : rep >= 60 ? 'Respected' : rep >= 40 ? 'Known' : rep >= 20 ? 'Rookie' : 'Unknown';
   const repCls   = rep >= 60 ? 'bar-green' : rep >= 40 ? 'bar-yellow' : 'bar-red';
 
-  const histRows = (game.history || []).map(h => `
-    <div class="result-row">
-      <span class="res-pos">Year ${h.year}</span>
-      <span class="res-name">${h.series}</span>
-      <span class="res-pts">${h.finalPos}${ordinal(h.finalPos)}</span>
-      <span class="res-prize">${h.wins} W</span>
+  const winRate = allRaces > 0 ? Math.round(allWins / allRaces * 100) : 0;
+
+  // ── Last season ──────────────────────────────────────────
+  const last = hist.length ? hist[hist.length - 1] : null;
+  const lastSeason = last ? `
+    <div class="card mb">
+      <div class="card-header">Last Season — ${last.series}, Year ${last.year}</div>
+      <div class="card-body">
+        <div class="champ-stats">
+          <div><span class="champ-stat-num">${last.finalPos}${ordinal(last.finalPos)}</span><span class="champ-stat-label">Finish</span></div>
+          <div><span class="champ-stat-num">${last.wins || 0}</span><span class="champ-stat-label">Wins</span></div>
+          <div><span class="champ-stat-num">${last.champion ? 'YES' : 'NO'}</span><span class="champ-stat-label">Title</span></div>
+          <div><span class="champ-stat-num">${fmt$(last.payout || 0)}</span><span class="champ-stat-label">Purse</span></div>
+          <div><span class="champ-stat-num">${seasons}</span><span class="champ-stat-label">Seasons</span></div>
+        </div>
+      </div>
+    </div>` : `
+    <div class="card mb">
+      <div class="card-header">Last Season</div>
+      <div class="card-body"><p class="muted-text">You have not completed a season yet.</p></div>
+    </div>`;
+
+  const histRows = hist.slice().reverse().map(h => `
+    <div class="result-row ${h.champion ? 'player-result' : ''}">
+      <span class="res-pos ${h.finalPos <= 3 ? 'podium' : ''}">${h.finalPos}</span>
+      <span class="res-name">Year ${h.year} <span class="st-team">${h.series}</span></span>
+      <span class="res-pts">${h.wins || 0}W</span>
+      <span class="res-prize green">${fmt$(h.payout || 0)}</span>
     </div>`).join('') || '<p class="muted-text">No completed seasons yet.</p>';
 
-  const carRows = game.cars.map(car => `
-    <div class="car-card" style="margin-bottom:1rem">
-      <div class="car-card-header">
-        <span class="car-name">#${car.number || 1} ${car.name}</span>
-        <span class="car-class-badge" style="background:${car.color||'#e8001d'}">&nbsp;</span>
-      </div>
-      <div class="car-meta">
-        <div class="team-stat"><span>Number</span>
-          <span><button class="btn btn-sm btn-ghost" onclick="handleSetCarNumber('${car.id}')">#${car.number || 1} — Change</button></span>
-        </div>
-        <div class="team-stat"><span>Color</span>
-          <span>${['#e8001d','#3498db','#2ecc71','#f39c12','#9b59b6','#ffffff','#222222','#ff6600','#00cccc','#ff69b4'].map(c =>
-            `<button class="color-swatch${(car.color||'#e8001d')===c?' active':''}" style="background:${c};margin:1px" onclick="setCarColor('${car.id}','${c}');renderTab('carstats')" title="${c}"></button>`
-          ).join('')}</span>
-        </div>
-        <div class="team-stat"><span>Wins</span><span>${car.wins || 0}</span></div>
-        <div class="team-stat"><span>Races</span><span>${car.races || 0}</span></div>
-        <div class="team-stat"><span>Points</span><span>${car.totalPoints || 0}</span></div>
-      </div>
-    </div>`).join('');
+  return `
+  <div class="page-header"><h2>Career — ${game.driverName || game.teamName}</h2></div>
 
-  const sorted = getStandings();
-  const standRows = sorted.map((e, i) => `
-    <div class="result-row ${e.isPlayer ? 'player-result' : ''}">
-      <span class="res-pos ${i < 3 ? 'podium' : ''}">${i + 1}</span>
-      <span class="res-name">${standingName(e)}</span>
-      <span class="res-pts">${e.points} pts</span>
-      <span class="res-prize">${e.wins}W ${e.top5}T5</span>
-    </div>`).join('');
+  <div class="cmd-strip">
+    <div class="cmd-cell">
+      <span class="cmd-label">Career Wins</span>
+      <span class="cmd-value gold">${allWins}</span>
+      <span class="cmd-sub">${winRate}% of ${allRaces} starts</span>
+    </div>
+    <div class="cmd-cell">
+      <span class="cmd-label">Championships</span>
+      <span class="cmd-value">${titles}</span>
+      <span class="cmd-sub">${seasons} season${seasons === 1 ? '' : 's'} run</span>
+    </div>
+    <div class="cmd-cell">
+      <span class="cmd-label">Wins This Season</span>
+      <span class="cmd-value">${seasonWins}</span>
+      <span class="cmd-sub">${seasonTop5} top 5 · ${seasonTop10} top 10</span>
+    </div>
+    <div class="cmd-cell">
+      <span class="cmd-label">Championship</span>
+      <span class="cmd-value">${seasonPos}${ordinal(seasonPos)}</span>
+      <span class="cmd-sub">${seasonPts} points</span>
+    </div>
+    <div class="cmd-cell">
+      <span class="cmd-label">Reputation</span>
+      <span class="cmd-value">${repLabel}</span>
+      <span class="cmd-sub">${rep}/100</span>
+    </div>
+  </div>
 
+  <div class="two-col-grid">
+    <div>
+      <div class="card mb">
+        <div class="card-header">Standing</div>
+        <div class="card-body">
+          <div class="stat-row">
+            <span class="stat-label">Reputation</span>
+            <div class="stat-bar-wrap"><div class="stat-bar ${repCls}" style="width:${clamp(rep,0,100)}%"></div></div>
+            <span class="stat-value">${rep}</span>
+          </div>
+          ${statBar('Driver Skill', Math.round(game.playerSkill))}
+          <div class="team-stat"><span>Team</span><span>${game.teamName}</span></div>
+          <div class="team-stat"><span>Series</span><span>${SERIES[game.currentSeries].name}</span></div>
+          <div class="team-stat"><span>Role</span><span>${
+            game.driverMode === 'hired' ? 'Hired Driver'
+            : game.driverMode === 'manager' ? 'Team Manager' : 'Driver / Owner'}</span></div>
+        </div>
+      </div>
+
+      <div class="card mb">
+        <div class="card-header">This Season</div>
+        <div class="card-body">
+          <div class="team-stat"><span>Races Run</span><span>${seasonRaces}</span></div>
+          <div class="team-stat"><span>Wins</span><span>${seasonWins}</span></div>
+          <div class="team-stat"><span>Top 5 Finishes</span><span>${seasonTop5}</span></div>
+          <div class="team-stat"><span>Top 10 Finishes</span><span>${seasonTop10}</span></div>
+          <div class="team-stat"><span>Points</span><span>${seasonPts}</span></div>
+          <div class="team-stat"><span>Prize Money</span><span class="green">${fmt$(earnings)}</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      ${lastSeason}
+      <div class="card mb">
+        <div class="card-header">All Time</div>
+        <div class="card-body">
+          <div class="team-stat"><span>Career Wins</span><span class="highlight">${allWins}</span></div>
+          <div class="team-stat"><span>Career Starts</span><span>${allRaces}</span></div>
+          <div class="team-stat"><span>Win Rate</span><span>${winRate}%</span></div>
+          <div class="team-stat"><span>Championships</span><span class="gold">${titles}</span></div>
+          <div class="team-stat"><span>Seasons Completed</span><span>${seasons}</span></div>
+          <div class="team-stat"><span>Season Purses Won</span><span class="green">${fmt$(careerPayouts)}</span></div>
+        </div>
+      </div>
+      <div class="card mb">
+        <div class="card-header">Season History</div>
+        <div class="card-body results-list">${histRows}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ─── Settings ─────────────────────────────────────────────────
+function renderSettings() {
+  if (!game) return '';
   const curDiff = game.difficulty || DEFAULT_DIFFICULTY;
+  const slotLabel = (typeof currentSlot === 'undefined' || currentSlot === null)
+    ? 'Not saved yet' : `Slot ${currentSlot + 1}`;
 
   return `
-  <div class="page-header"><h2>Career Stats</h2></div>
-  <div class="card mb">
-    <div class="card-header">Difficulty</div>
-    <div class="card-body">
-      <p class="muted-text small">Applies from your next race onward — change it any time.</p>
-      <div class="difficulty-grid">
-        ${DIFFICULTIES.map(d => `
-          <div class="difficulty-card${d.id === curDiff ? ' selected' : ''}"
-               onclick="handleSetDifficulty('${d.id}')">
-            <span class="difficulty-name">${d.name}</span>
-            <span class="difficulty-blurb">${d.blurb}</span>
-          </div>`).join('')}
+  <div class="page-header"><h2>Settings</h2></div>
+  <div class="two-col-grid">
+    <div>
+      <div class="card mb">
+        <div class="card-header">Difficulty</div>
+        <div class="card-body">
+          <p class="muted-text small">Applies from your next race onward — change it any time.</p>
+          <div class="difficulty-grid">
+            ${DIFFICULTIES.map(d => `
+              <div class="difficulty-card${d.id === curDiff ? ' selected' : ''}"
+                   onclick="handleSetDifficulty('${d.id}')">
+                <span class="difficulty-name">${d.name}</span>
+                <span class="difficulty-blurb">${d.blurb}</span>
+              </div>`).join('')}
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-  <div class="card mb">
-    <div class="card-header">Reputation</div>
-    <div class="card-body">
-      <div class="stat-row">
-        <span class="stat-label">${repLabel}</span>
-        <div class="stat-bar-wrap"><div class="stat-bar ${repCls}" style="width:${rep}%"></div></div>
-        <span class="stat-value">${rep}/100</span>
+    <div>
+      <div class="card mb">
+        <div class="card-header">Save</div>
+        <div class="card-body">
+          <div class="team-stat"><span>Auto-saving to</span><span class="${slotLabel === 'Not saved yet' ? 'red' : ''}">${slotLabel}</span></div>
+          <p class="muted-text small">Nothing is written to a slot until you pick one. After that the game keeps saving there automatically.</p>
+          <div class="btn-row mt">
+            <button class="btn btn-primary" onclick="handleSaveGame()">Save to Slot</button>
+            <button class="btn btn-ghost" onclick="showLoadModal()">Load a Game</button>
+          </div>
+        </div>
+      </div>
+      <div class="card mb">
+        <div class="card-header">Career</div>
+        <div class="card-body">
+          <div class="team-stat"><span>Team</span><span>${game.teamName}</span></div>
+          <div class="team-stat"><span>Driver</span><span>${game.driverName || '—'}</span></div>
+          <div class="team-stat"><span>Season</span><span>Year ${game.season.year}</span></div>
+          <div class="btn-row mt">
+            <button class="btn btn-danger" onclick="handleNewGamePrompt()">Start a New Career</button>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-  <div class="card mb">
-    <div class="card-header">Car Setup</div>
-    <div class="card-body">${carRows}</div>
-  </div>
-  <div class="card mb">
-    <div class="card-header">Current Season Standings</div>
-    <div class="card-body results-list">${standRows}</div>
-  </div>
-  <div class="card mb">
-    <div class="card-header">Season History</div>
-    <div class="card-body results-list">${histRows}</div>
   </div>`;
 }
 

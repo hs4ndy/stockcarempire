@@ -24,14 +24,18 @@ const R3D = {
   STEER_FALLOFF:  0.35,   // how much steering authority is lost at top speed (0..1)
 
   // ── Drafting (TUNED — preserved feel) ──────────────────────
-  DRAFT_Z:        78,     // draft cone depth — long tow behind each car
+  DRAFT_Z:        92,     // draft cone depth — long tow behind each car
   DRAFT_X:        4.6,    // draft cone width
   DRAFT_BOOST:    28,     // max speed bonus at bumper
   DRAFT_SLING:    11,     // momentum decay/sec
   PUSH_Z:         5.2,    // bumper-to-bumper push distance
   PUSH_X:         1.8,    // lateral tolerance for locked push
   PUSH_BONUS:     6,      // ≈+5 mph when locked bumpers
-  CHAIN_PER_CAR:  2,      // extra speed per car in a draft chain
+  CHAIN_PER_CAR:  5,      // extra speed per car in a draft chain
+  CHAIN_CURVE:    0.14,   // each extra car is worth MORE than the last
+  CHAIN_MAX:      34,     // ceiling on chain bonus so a long train can't run away
+  PACK_CATCHUP:   14,     // max catch-up speed for cars stranded behind the pack
+  PACK_GAP:       260,    // distance behind the leader where catch-up is full
   TEAM_HELP_Z:    60,     // range at which a teammate starts working with you
   TEAM_PUSH_BONUS: 4,     // extra shove when you and a teammate are locked up
   MIRROR_HFOV:    88,     // mirror HORIZONTAL field of view, degrees
@@ -59,7 +63,8 @@ const R3D = {
   LANE_WIDTH:     2.6,    // how wide a "lane" is when scoring traffic
   LANE_COMMIT:    3.2,    // seconds a car holds a line before reconsidering
   LANE_GAIN_MIN:  0.14,   // a lane must beat the current one by this to move
-  LANE_INERTIA:   0.13,   // bonus for staying put — kills weaving
+  LANE_INERTIA:   0.13,
+  TOW_APPEAL:     2.1,    // how strongly the AI wants to be in a draft train
   TACTIC_COMMIT:  2.6,    // seconds a driver sticks with a tow/block decision
   BLOCK_Z:        20,     // how close behind before a driver starts defending
   BLOCK_MAX:      1.6,    // furthest a defender will shade across — no chopping
@@ -996,6 +1001,11 @@ class Race3DEngine {
   }
 
   _updateAI(dt) {
+    // Where the race leader is, so stragglers know how much ground to make up
+    this._leadZ = this.cars.reduce(
+      (m, c) => (!c.dnf && !c.finished && c.z > m ? c.z : m), -Infinity);
+    if (!isFinite(this._leadZ)) this._leadZ = this.player.z;
+
     for (const car of this.cars) {
       if (car.isPlayer) continue;
       if (car.contactCooldown > 0) car.contactCooldown -= dt;
@@ -1137,11 +1147,18 @@ class Race3DEngine {
         }
       }
 
-      // Difficulty lifts both the AI's pace and its ceiling
+      // Difficulty lifts both the AI's pace and its ceiling.
+      // The base spread is deliberately narrow: on a superspeedway the cars are
+      // all within a whisker of each other and the draft does the rest, which
+      // is what keeps the field packed instead of strung out.
       const dSpd = this.diff.aiSpeed;
+      // Anyone stranded behind the leader gets a hand back to the pack
+      const lead = this._leadZ || car.z;
+      const back = clamp((lead - car.z) / R3D.PACK_GAP, 0, 1);
+      const catchUp = back * R3D.PACK_CATCHUP;
       const tgt = Math.min(
-        (R3D.SPEED_BASE * (0.79 + car.power * 0.23)) * dSpd + car.draftBoost,
-        R3D.SPEED_MAX * dSpd);
+        (R3D.SPEED_BASE * (0.86 + car.power * 0.15)) * dSpd + car.draftBoost + catchUp,
+        R3D.SPEED_MAX * dSpd + catchUp);
       car.speed += (tgt - car.speed) * (1 - Math.exp(-2.2 * dt));   // frame-rate independent
 
       // ── Lateral motion with inertia ─────────────────────────
@@ -1179,6 +1196,7 @@ class Race3DEngine {
     let score      = 0;
     let nearestAhead = Infinity;   // gap to the next car in this lane
     let towGap     = Infinity;     // gap to a car close enough to tow off
+    let towCar     = null;         // the car providing that tow
     let blocked    = false;        // someone occupying that space right now
 
     for (const other of this.cars) {
@@ -1192,7 +1210,7 @@ class Race3DEngine {
 
       if (dz > 0) {
         if (dz < nearestAhead) nearestAhead = dz;
-        if (dz > R3D.PUSH_Z && dz < R3D.DRAFT_Z && dz < towGap) towGap = dz;
+        if (dz > R3D.PUSH_Z && dz < R3D.DRAFT_Z && dz < towGap) { towGap = dz; towCar = other; }
       }
     }
 
@@ -1200,11 +1218,14 @@ class Race3DEngine {
     // queue and go, rather than sitting in dirty air forever.
     score += Math.min(nearestAhead, 140) / 140 * 1.0;
 
-    // A tow is worth more than clear air when it is close: this is a
-    // superspeedway, you go faster hooked to someone than alone.
+    // A tow beats clear air almost every time: on a superspeedway you go
+    // nowhere alone, and hooking onto a train is how you get to the front. The
+    // longer the train already is, the more every driver wants to be in it.
     if (towGap < Infinity) {
       const towQuality = 1 - (towGap / R3D.DRAFT_Z);       // closer = stronger
-      score += towQuality * 1.25;
+      const trainLen   = (towCar && towCar.chainLen) || 1; // how big is that line
+      const trainPull  = 1 + Math.min(trainLen - 1, 4) * 0.22;
+      score += towQuality * R3D.TOW_APPEAL * trainPull;
     }
 
     // Never move into a car
@@ -1269,12 +1290,17 @@ class Race3DEngine {
       if (!inChain || i === active.length) {
         const len = i - chainStart;
         if (len >= 2) {
-          const bonus = (len - 1) * R3D.CHAIN_PER_CAR;
+          // Each extra car in the train is worth more than the last, so a
+          // three-car chain genuinely hauls in a two-car link rather than
+          // trailing it by a nose. Capped so a huge train can't escape.
+          const raw = (len - 1) * R3D.CHAIN_PER_CAR * (1 + (len - 2) * R3D.CHAIN_CURVE);
+          const bonus = Math.min(raw, R3D.CHAIN_MAX);
           for (let k = chainStart; k < i; k++) {
-            active[k].draftBoost = Math.min(
-              active[k].draftBoost + bonus,
-              R3D.DRAFT_BOOST + R3D.PUSH_BONUS + (len - 1) * R3D.CHAIN_PER_CAR);
+            active[k].draftBoost += bonus;
+            active[k].chainLen = len;
           }
+        } else {
+          for (let k = chainStart; k < i; k++) active[k].chainLen = 1;
         }
         chainStart = i;
       }
@@ -1408,12 +1434,26 @@ class Race3DEngine {
 
   _checkFinish() {
     const TL = R3D.TRACK_LEN;
+    // Several cars can cross on the same frame — at 200+ units/sec a frame is
+    // worth ~10 units of track. They must be credited in the order they are
+    // actually down the road, NOT in array order: the player sits at index 0,
+    // so iterating the array credited you ahead of a team-mate you had just
+    // pushed to the line.
+    const crossed = [];
     for (const car of this.cars) {
-      if (!car.finished && car.z >= TL) {
-        car.finished = true;
-        this.finishOrder.push(car);
-        if (car.isPlayer) { this.done = true; this._showFinish(this.finishOrder.length); }
-      }
+      if (!car.finished && car.z >= TL) crossed.push(car);
+    }
+    if (!crossed.length) return;
+    crossed.sort((a, b) => b.z - a.z);        // furthest down the track first
+
+    for (const car of crossed) {
+      car.finished = true;
+      this.finishOrder.push(car);
+    }
+    const player = crossed.find(c => c.isPlayer);
+    if (player) {
+      this.done = true;
+      this._showFinish(this.finishOrder.indexOf(player) + 1);
     }
   }
 

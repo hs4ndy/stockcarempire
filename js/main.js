@@ -112,18 +112,18 @@ function handleStartQuickRace(fieldSize) {
   );
 }
 
-// ─── Career Stats ─────────────────────────────────────────────
+// ─── Settings / Career ────────────────────────────────────────
 function handleSetDifficulty(id) {
   const d = difficultyById(id);
   game.difficulty = d.id;
   saveGame();
   toast(`Difficulty set to ${d.name}.`, 'success');
-  renderTab('carstats');
+  renderTab(activeTab());
 }
 
 function handleSetCarColor(carId, color) {
   setCarColor(carId, color);
-  renderTab('carstats');
+  renderTab(activeTab());
 }
 
 function handleSetCarNumber(carId) {
