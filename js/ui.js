@@ -45,13 +45,13 @@ function updateHeader() {
   document.getElementById('hdr-race').textContent = raceLabel;
   document.getElementById('hdr-year').textContent = `Year ${game.season.year}`;
 
-  // Flag an unsaved career — auto-save only runs once a slot is chosen.
+  // Flag an unsaved career - auto-save only runs once a slot is chosen.
   const saveBtn = document.getElementById('btn-hdr-save');
   if (saveBtn) {
     const unsaved = (typeof currentSlot === 'undefined' || currentSlot === null);
     saveBtn.textContent = unsaved ? 'Save *' : 'Save';
     saveBtn.title = unsaved
-      ? 'Not saved yet — choose a slot to enable auto-save (Ctrl+S)'
+      ? 'Not saved yet - choose a slot to enable auto-save (Ctrl+S)'
       : `Auto-saving to Slot ${currentSlot + 1} (Ctrl+S)`;
     saveBtn.classList.toggle('btn-unsaved', unsaved);
   }
@@ -85,7 +85,7 @@ function standingName(entry) {
   return entry.name || '';
 }
 
-// Race results / leaderboards store "Team / Driver" — show the driver first.
+// Race results / leaderboards store "Team / Driver" - show the driver first.
 function resultName(r) {
   const parts = String(r.displayName || '').split(' / ');
   if (parts.length >= 2) {
@@ -148,7 +148,7 @@ function renderDashboard() {
   const racesCompleted = game.season.calendar.filter(r => r.status === 'completed').length;
 
   const net = income - expenses;
-  const nextRaceLabel = seasonOver ? '—' : `${race.raceNum} / ${game.season.calendar.length}`;
+  const nextRaceLabel = seasonOver ? 'N/A' : `${race.raceNum} / ${game.season.calendar.length}`;
 
   return `
   <!-- Command Strip -->
@@ -176,7 +176,7 @@ function renderDashboard() {
     <div class="cmd-cell">
       <span class="cmd-label">Next Race</span>
       <span class="cmd-value">${nextRaceLabel}</span>
-      <span class="cmd-sub">${seasonOver ? 'Season complete' : (track?.name || '—')}</span>
+      <span class="cmd-sub">${seasonOver ? 'Season complete' : (track?.name || 'N/A')}</span>
     </div>
   </div>
 
@@ -257,7 +257,7 @@ function renderDashboard() {
       <div class="card-header">Driver Profile</div>
       <div class="team-stat"><span>Driver</span><span class="highlight">${game.driverName || game.teamName}</span></div>
       ${game.driverMode === 'hired' ? `
-        <div class="team-stat"><span>Team</span><span>${game.season.aiTeams.find(t=>t.id===game.hiredTeamId)?.name || '—'}</span></div>
+        <div class="team-stat"><span>Team</span><span>${game.season.aiTeams.find(t=>t.id===game.hiredTeamId)?.name || 'N/A'}</span></div>
         <div class="team-stat"><span>Salary</span><span class="green">${fmt$(game.hiredSalary || 0)}/week</span></div>
       ` : game.driverMode === 'manager' ? `
         <div class="team-stat"><span>Role</span><span>Team Manager</span></div>
@@ -329,7 +329,7 @@ function renderGarage() {
       </div>
       <div class="team-stat">
         <span>Car Number</span>
-        <span><button class="btn btn-sm btn-ghost" onclick="handleSetCarNumber('${car.id}')">#${car.number || 1} — Change</button></span>
+        <span><button class="btn btn-sm btn-ghost" onclick="handleSetCarNumber('${car.id}')">#${car.number || 1} - Change</button></span>
       </div>
       <div class="car-stats">
         ${statBar('Speed', car.speed)}
@@ -408,7 +408,7 @@ function renderUpgradeModal(carId) {
       <div class="upgrade-tier${!unlocked ? ' is-locked' : ''}">
         <div class="upgrade-tier-head">
           <div>
-            <span class="upgrade-tier-name">Tier ${t.tier} — ${t.name}</span>
+            <span class="upgrade-tier-name">Tier ${t.tier} - ${t.name}</span>
             <span class="upgrade-tier-blurb">${unlocked ? t.blurb : `Fit ${MAX_PER_TIER} Tier ${t.tier - 1} parts to unlock.`}</span>
           </div>
           <span class="upgrade-tier-count${full ? ' is-full' : ''}">${fitted}/${cap}</span>
@@ -419,13 +419,13 @@ function renderUpgradeModal(carId) {
 
   const totalFitted = (car.appliedUpgrades || []).length;
   const analystNote = analysts > 0
-    ? `<p class="muted-text small">${analysts} Data Analyst${analysts > 1 ? 's' : ''} on staff — ${analysts * ANALYST_TIER_SLOTS} extra slot${analysts * ANALYST_TIER_SLOTS > 1 ? 's' : ''} in every tier.</p>`
+    ? `<p class="muted-text small">${analysts} Data Analyst${analysts > 1 ? 's' : ''} on staff - ${analysts * ANALYST_TIER_SLOTS} extra slot${analysts * ANALYST_TIER_SLOTS > 1 ? 's' : ''} in every tier.</p>`
     : `<p class="muted-text small">Hire a Data Analyst to open an extra slot in every tier.</p>`;
   return `
   <div class="modal-overlay" id="upgrade-modal" onclick="closeUpgradeModal(event)">
     <div class="modal modal-wide" onclick="event.stopPropagation()">
       <div class="modal-header">
-        <h3>Upgrades — #${car.number || 1} ${car.name}</h3>
+        <h3>Upgrades - #${car.number || 1} ${car.name}</h3>
         <button class="modal-close" onclick="closeUpgradeModal()">Close</button>
       </div>
       <div class="modal-body">
@@ -472,7 +472,7 @@ function renderTeam() {
       </div>
       <button class="btn btn-sm btn-danger" onclick="handleFireDriver('${d.id}')">Release</button>
     </div>`;
-  }).join('') || '<p class="muted-text">No hired drivers — you drive yourself.</p>';
+  }).join('') || '<p class="muted-text">No hired drivers - you drive yourself.</p>';
 
   const staffRows = game.staff.map(s => {
     const type = STAFF_TYPES.find(t => t.id === s.typeId);
@@ -488,9 +488,9 @@ function renderTeam() {
   const availableDrivers = HIREABLE_DRIVERS.filter(d => !hiredIds.has(d.id));
   const openSeats = freeCarsForHire().length;
   const seatWarning = game.cars.length === 0
-    ? `<p class="form-warning">No car — buy a car before hiring a driver.</p>`
+    ? `<p class="form-warning">No car - buy a car before hiring a driver.</p>`
     : openSeats === 0
-      ? `<p class="form-warning">No free car — every car already has a driver. Buy another car to hire more.</p>`
+      ? `<p class="form-warning">No free car - every car already has a driver. Buy another car to hire more.</p>`
       : '';
 
   const driverRows = availableDrivers.map(d => {
@@ -620,7 +620,7 @@ function renderSchedule() {
   const totalEarnings = completedRaces.reduce((s, r) => s + (r.earnings || 0), 0);
 
   return `
-  <div class="page-header"><h2>${series.name} — Year ${game.season.year} Schedule</h2></div>
+  <div class="page-header"><h2>${series.name} - Year ${game.season.year} Schedule</h2></div>
   <div class="season-stats-bar">
     <div class="season-stat"><span class="ss-num">${completedRaces.length}</span><span>Races</span></div>
     <div class="season-stat"><span class="ss-num">${wins}</span><span>Wins</span></div>
@@ -673,7 +673,7 @@ function renderMarket() {
     const late = l.racesLeft <= 0;
     return `<div class="loan-row${late ? ' is-late' : ''}">
       <div class="loan-info">
-        <span class="loan-name">${l.name}${late ? ' — OVERDUE' : ''}</span>
+        <span class="loan-name">${l.name}${late ? ' - OVERDUE' : ''}</span>
         <div class="staff-meta">Owed ${fmt$(l.balance)} · borrowed ${fmt$(l.principal)}</div>
         <div class="staff-meta ${late ? 'red' : 'muted-text'}">
           ${late ? `Accruing ${Math.round(LOAN_LATE_RATE * 100)}% interest every race`
@@ -816,7 +816,7 @@ function renderStandings() {
   }).join('');
 
   return `
-  <div class="page-header"><h2>${series.name} — Championship Standings</h2></div>
+  <div class="page-header"><h2>${series.name} - Championship Standings</h2></div>
   <div class="card">
     <div class="standings-header standings-row">
       <span class="st-pos">Pos</span>
@@ -874,8 +874,8 @@ function renderRaceSetup() {
       ${openCars.map(c => `
         <label class="radio-row">
           <input type="radio" name="drive-car" value="${c.id}" ${c === driverCar ? 'checked' : ''}>
-          <span>#${c.number || 1} ${c.name} — Speed ${c.speed}, Handling ${c.handling}, Condition ${Math.round(c.condition)}%</span>
-        </label>`).join('') || '<p class="form-warning">Every car has a hired driver in it — release a driver to drive one yourself.</p>'}
+          <span>#${c.number || 1} ${c.name} - Speed ${c.speed}, Handling ${c.handling}, Condition ${Math.round(c.condition)}%</span>
+        </label>`).join('') || '<p class="form-warning">Every car has a hired driver in it - release a driver to drive one yourself.</p>'}
       ${taken.size ? `
         <div class="card-header mt">Entered By Your Drivers</div>
         ${[...taken.entries()].map(([carId, nm]) => {
@@ -1053,7 +1053,7 @@ function renderEndSeasonModal(info) {
   return `
   <div class="modal-overlay" id="end-season-modal">
     <div class="modal modal-wide">
-      <div class="modal-header"><h3>Season Over — ${info.seriesName}</h3></div>
+      <div class="modal-header"><h3>Season Over - ${info.seriesName}</h3></div>
       <div class="modal-body">
         <p class="highlight">${info.message}</p>
         ${info.promoted ? `<div class="achievement-badge">PROMOTED</div>` : ''}
@@ -1087,17 +1087,17 @@ function renderPremierChoiceModal() {
         <p>You've reached the top tier of stock car racing. How do you want to continue your career?</p>
         <div class="career-choices">
           <div class="career-card" onclick="selectCareerChoice('driver')">
-            <div class="career-icon">01</div>
+            <div class="career-index">01</div>
             <div class="career-title">Stay as Driver</div>
             <div class="career-desc">Drive one of your own cars each race. Compete for the championship yourself.</div>
           </div>
           <div class="career-card" onclick="selectCareerChoice('manager')">
-            <div class="career-icon">02</div>
+            <div class="career-index">02</div>
             <div class="career-title">Become a Manager</div>
             <div class="career-desc">Step back from driving. Run the team from the pit wall. Hire drivers for all your cars.</div>
           </div>
           <div class="career-card" onclick="selectCareerChoice('hired')">
-            <div class="career-icon">03</div>
+            <div class="career-index">03</div>
             <div class="career-title">Drive for Another Team</div>
             <div class="career-desc">Join an established team, collect a weekly salary, and leave the management headaches behind.</div>
           </div>
@@ -1151,7 +1151,7 @@ function renderCareerStats() {
   const last = hist.length ? hist[hist.length - 1] : null;
   const lastSeason = last ? `
     <div class="card mb">
-      <div class="card-header">Last Season — ${last.series}, Year ${last.year}</div>
+      <div class="card-header">Last Season - ${last.series}, Year ${last.year}</div>
       <div class="card-body">
         <div class="champ-stats">
           <div><span class="champ-stat-num">${last.finalPos}${ordinal(last.finalPos)}</span><span class="champ-stat-label">Finish</span></div>
@@ -1176,7 +1176,7 @@ function renderCareerStats() {
     </div>`).join('') || '<p class="muted-text">No completed seasons yet.</p>';
 
   return `
-  <div class="page-header"><h2>Career — ${game.driverName || game.teamName}</h2></div>
+  <div class="page-header"><h2>Career - ${game.driverName || game.teamName}</h2></div>
 
   <div class="cmd-strip">
     <div class="cmd-cell">
@@ -1371,7 +1371,7 @@ function renderQuickRaceModal() {
         <button class="modal-close" onclick="document.getElementById('quick-race-modal')?.remove()">Close</button>
       </div>
       <div class="modal-body">
-        <p>Jump straight into a superspeedway race — no career consequences.</p>
+        <p>Jump straight into a superspeedway race - no career consequences.</p>
         <div class="card-header">Difficulty</div>
         <div class="difficulty-grid">
           ${DIFFICULTIES.map(d => `

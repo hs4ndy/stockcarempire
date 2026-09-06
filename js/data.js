@@ -172,7 +172,6 @@ const STAFF_TYPES = [
   {
     id: 'crew_chief',
     name: 'Crew Chief',
-    icon: '🔧',
     description: 'Improves race strategy and pit stop timing. Adds a position bonus on race day.',
     weeklyCost: [1800, 3500, 7000],
     bonus: 'Earns +1 to +3 positions in race results',
@@ -181,7 +180,6 @@ const STAFF_TYPES = [
   {
     id: 'engineer',
     name: 'Race Engineer',
-    icon: '📊',
     description: 'Optimizes car setup between races. Adds flat speed/handling to your best car.',
     weeklyCost: [1400, 2800, 5500],
     bonus: '+4 effective speed/handling on assigned car',
@@ -190,7 +188,6 @@ const STAFF_TYPES = [
   {
     id: 'mechanic',
     name: 'Senior Mechanic',
-    icon: '⚙️',
     description: 'Reduces car repair costs and improves reliability.',
     weeklyCost: [900, 1800, 3600],
     bonus: '25% discount on all repair costs',
@@ -199,7 +196,6 @@ const STAFF_TYPES = [
   {
     id: 'data_analyst',
     name: 'Data Analyst',
-    icon: '📈',
     description: 'Pores over practice data to find the quick way round, and identifies extra parts your crew can fit.',
     weeklyCost: [1600, 3200, 6400],
     bonus: 'Stronger qualifying, plus one extra upgrade slot per tier',
@@ -208,7 +204,6 @@ const STAFF_TYPES = [
   {
     id: 'commercial_director',
     name: 'Commercial Director',
-    icon: '🤝',
     description: 'Works the paddock and the boardroom, opening room on the car for more backers than you could land alone.',
     weeklyCost: [2200, 4400, 8800],
     bonus: '+2 sponsor slots each (up to 7 deals in total)',
@@ -387,22 +382,22 @@ const LOAN_OFFERS = [
   { id: 'ln_std',   name: 'Standard Loan',   term: 8,  rate: 0.15, mult: 1.0,
     blurb: 'The usual deal. Reasonable size, reasonable window.' },
   { id: 'ln_long',  name: 'Long-Term Credit',term: 14, rate: 0.26, mult: 1.6,
-    blurb: 'Biggest cheque and the most breathing room — you pay for both.' },
+    blurb: 'Biggest cheque and the most breathing room - you pay for both.' },
 ];
 
 // Base borrowing power per series; reputation scales it up
 const LOAN_BASE = [40000, 180000, 700000];
 
 const SPONSOR_DEALS = [
-  { id: 'sp01', name: 'QuickLube Oil',        icon: '🛢️', weekly: 400,   bonus: 150,  cond: 'top10', level: 0 },
-  { id: 'sp02', name: "Buster's Auto Parts",  icon: '🔩', weekly: 800,   bonus: 500,  cond: 'top5',  level: 0 },
-  { id: 'sp03', name: 'Frontier Fuel Co.',    icon: '⛽', weekly: 650,   bonus: 900,  cond: 'win',   level: 0 },
-  { id: 'sp04', name: 'National Tire Co.',    icon: '🏎️', weekly: 2500,  bonus: 1800, cond: 'top5',  level: 1 },
-  { id: 'sp05', name: 'Velocity Motors',      icon: '🚗', weekly: 4000,  bonus: 2500, cond: 'top3',  level: 1 },
-  { id: 'sp06', name: 'Eagle Energy Drinks',  icon: '⚡', weekly: 3200,  bonus: 4500, cond: 'win',   level: 1 },
-  { id: 'sp07', name: 'Premier Auto Insure',  icon: '🛡️', weekly: 14000, bonus: 9000, cond: 'top5',  level: 2 },
-  { id: 'sp08', name: 'National Bank Corp.',  icon: '🏦', weekly: 22000, bonus: 13000,cond: 'top3',  level: 2 },
-  { id: 'sp09', name: 'Apex Racing Parts',    icon: '🏆', weekly: 18000, bonus: 28000,cond: 'win',   level: 2 },
+  { id: 'sp01', name: 'QuickLube Oil',        weekly: 400,   bonus: 150,  cond: 'top10', level: 0 },
+  { id: 'sp02', name: "Buster's Auto Parts",  weekly: 800,   bonus: 500,  cond: 'top5',  level: 0 },
+  { id: 'sp03', name: 'Frontier Fuel Co.',    weekly: 650,   bonus: 900,  cond: 'win',   level: 0 },
+  { id: 'sp04', name: 'National Tire Co.',    weekly: 2500,  bonus: 1800, cond: 'top5',  level: 1 },
+  { id: 'sp05', name: 'Velocity Motors',      weekly: 4000,  bonus: 2500, cond: 'top3',  level: 1 },
+  { id: 'sp06', name: 'Eagle Energy Drinks',  weekly: 3200,  bonus: 4500, cond: 'win',   level: 1 },
+  { id: 'sp07', name: 'Premier Auto Insure',  weekly: 14000, bonus: 9000, cond: 'top5',  level: 2 },
+  { id: 'sp08', name: 'National Bank Corp.',  weekly: 22000, bonus: 13000,cond: 'top3',  level: 2 },
+  { id: 'sp09', name: 'Apex Racing Parts',    weekly: 18000, bonus: 28000,cond: 'win',   level: 2 },
 ];
 
 const RACE_EVENTS = {
@@ -410,33 +405,33 @@ const RACE_EVENTS = {
     'Yellow flag! Debris on the backstretch.',
     'Caution is out! Spin in turn 3.',
     'Yellow flag for a multi-car incident.',
-    'Caution period — oil on the track.',
+    'Caution period - oil on the track.',
     'Full course yellow for a stalled car.',
   ],
   leadChange: [
     '{car} takes the lead on lap {lap}!',
     '{car} surges to the front!',
-    'Position change at the top — {car} leads!',
+    'Position change at the top - {car} leads!',
     '{car} makes a bold move for the lead!',
   ],
   crash: [
     '{car} hits the wall and is done for the day.',
-    'Big crash — {car} is out of the race.',
+    'Big crash - {car} is out of the race.',
     '{car} gets into the fence and retires.',
   ],
   pitStop: [
     '{car} dives into pit road for tires and fuel.',
-    'Strategy call — {car} pits under green.',
+    'Strategy call - {car} pits under green.',
     '{car} makes an early pit stop.',
   ],
   good: [
     'Your car is flying today!',
-    'Great setup — you\'re gaining ground!',
+    'Great setup - you\'re gaining ground!',
     'The crew chief nailed the strategy.',
     'Your pit crew executes a lightning-fast stop.',
   ],
   bad: [
-    'Loose wheel — you lose several positions!',
+    'Loose wheel - you lose several positions!',
     'Tight handling is hurting your lap times.',
     'You brush the wall and fall back.',
     'A slow pit stop drops you behind.',

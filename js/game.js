@@ -23,7 +23,7 @@ function saveToSlot(slot) {
     const meta = getSaveMeta();
     meta[slot] = {
       teamName: game.teamName,
-      series: SERIES[game.currentSeries]?.name || '—',
+      series: SERIES[game.currentSeries]?.name || 'N/A',
       year: game.season.year,
       wins: game.cars.reduce((s, c) => s + (c.wins || 0), 0),
       savedAt: Date.now(),
@@ -276,7 +276,7 @@ function newGame(teamName, driverName, firstCarName) {
 
 // ─── Load / Save (slot wrappers) ─────────────────────────────
 // Auto-save (called after most game actions). Only writes once the player has
-// actually chosen a slot — otherwise a brand-new career would silently
+// actually chosen a slot - otherwise a brand-new career would silently
 // overwrite whatever save already lives in slot 0.
 function saveGame() {
   if (currentSlot === null || currentSlot === undefined) return false;
@@ -310,7 +310,7 @@ function rebuildStandings() {
     races: 0,
   });
 
-  // Your other cars run by hired drivers — they score their own championship
+  // Your other cars run by hired drivers - they score their own championship
   // points, so they need their own standings entry.
   (game.cars || []).forEach(car => {
     const hire = (game.hiredDrivers || []).find(h => h.carId === car.id);
@@ -363,7 +363,7 @@ function applyRaceResults(results) {
     const pts = series.points[pos - 1] || 0;
 
     let entry = game.season.standings.find(e => e.id === r.entrantId);
-    // A car hired a driver mid-season — give it a standings entry on the fly
+    // A car hired a driver mid-season - give it a standings entry on the fly
     // so its results are never silently dropped.
     if (!entry && r.carId && game.cars.some(c => c.id === r.carId)) {
       entry = {
@@ -396,7 +396,7 @@ function postRaceUpdate(playerResult, earnings, allResults) {
   game.playerSkill = clamp(game.playerSkill + relPerf * 0.4 + 0.1, 0, 98);
 
   // Reputation: improves with good finishes, degrades slightly on bad ones
-  // Winning is a big deal — it moves reputation far more than anything else.
+  // Winning is a big deal - it moves reputation far more than anything else.
   // Gains taper as reputation climbs so it still takes a career to reach Legend.
   if (!game.reputation) game.reputation = 50;
   const headroom = (100 - game.reputation) / 100;   // 1.0 unknown → 0.0 maxed
@@ -436,7 +436,7 @@ function postRaceUpdate(playerResult, earnings, allResults) {
   const weeklyStaff = game.staff.reduce((s, st) => s + st.weeklyCost, 0);
   game.money -= weeklyStaff;
 
-  // Sponsor payouts — base pay scales with how many cars you fielded
+  // Sponsor payouts - base pay scales with how many cars you fielded
   const sponsorMult = sponsorCarMultiplier();
   let sponsorPay = 0;
   game.activeSponsors.forEach(sid => {
@@ -485,10 +485,10 @@ function skipRace() {
 // ─── End of season ───────────────────────────────────────────
 // End-of-season prize money. Every driver who ran the season is paid on final
 // championship position, and the champion takes a purse far bigger than
-// anyone else's — winning the title should be the payday of the year.
+// anyone else's - winning the title should be the payday of the year.
 function seasonPayout(seriesLevel, pos, total) {
   const series = SERIES[seriesLevel];
-  // The purse grows sharply with the series — a Premier Cup Series title is a
+  // The purse grows sharply with the series - a Premier Cup Series title is a
   // life-changing payday, a Grassroots title is a good year.
   const PURSE_MULT = [8, 14, 22];
   const purse = series.prize[0] * (PURSE_MULT[seriesLevel] || 8);
@@ -564,7 +564,7 @@ function endSeason() {
     message = `You finished ${playerPos}${ordinal(playerPos)} and were relegated to the ${newSeries.name}.`;
     relegateCarClass();
   } else if (isChampion) {
-    message = `You are the ${series.name} champion. There is nowhere higher to go — now defend it.`;
+    message = `You are the ${series.name} champion. There is nowhere higher to go - now defend it.`;
   } else {
     message = `You finished ${playerPos}${ordinal(playerPos)} in the ${series.name}. Gearing up for another season!`;
   }
@@ -678,10 +678,10 @@ function repairCar(carId) {
 }
 
 // ═══════════════════════════════════════════════════════════
-//  CHARITY — give back for goodwill
+//  CHARITY - give back for goodwill
 // ═══════════════════════════════════════════════════════════
 // One donation per race weekend, so reputation still has to be earned on
-// track — money alone can only ever top it up.
+// track - money alone can only ever top it up.
 function donationRaceKey() {
   return `${game.season.year}:${game.season.raceIndex}`;
 }
@@ -711,7 +711,7 @@ function donateToCharity(causeId) {
 }
 
 // ═══════════════════════════════════════════════════════════
-//  BANK — loans
+//  BANK - loans
 // ═══════════════════════════════════════════════════════════
 function getLoans() {
   if (!game.loans) game.loans = [];
@@ -746,7 +746,7 @@ function takeLoan(offerId) {
 
   const principal = loanPrincipal(offer);
   if (principal < 500) {
-    return { ok: false, msg: 'No credit available — repay existing debt first.' };
+    return { ok: false, msg: 'No credit available - repay existing debt first.' };
   }
 
   const loan = {
@@ -791,7 +791,7 @@ function tickLoans() {
       if (loan.racesLeft === 1) notes.push(`${loan.name}: 1 race left to repay ${fmt$(loan.balance)}.`);
     }
     if (loan.racesLeft <= 0) {
-      // Term is up — try to settle automatically, then charge interest on the rest
+      // Term is up - try to settle automatically, then charge interest on the rest
       if (game.money >= loan.balance) {
         game.money  -= loan.balance;
         loan.balance = 0;
@@ -801,7 +801,7 @@ function tickLoans() {
         const interest = Math.round(loan.balance * LOAN_LATE_RATE);
         loan.balance += interest;
         loan.overdue  = true;
-        notes.push(`${loan.name} is overdue — ${fmt$(interest)} interest added.`);
+        notes.push(`${loan.name} is overdue - ${fmt$(interest)} interest added.`);
       }
     }
   });
@@ -823,7 +823,7 @@ function upgradeCar(carId, upgradeId) {
   const cap = tierCapacity();   // 3, plus one per Data Analyst on staff
   if (tierInstalled(car, upgrade.tier, cls) >= cap) {
     const extra = cap > MAX_PER_TIER ? '' : ' Hire a Data Analyst to open another slot.';
-    return { ok: false, msg: `Tier ${upgrade.tier} is full — ${cap} parts is the limit.${extra}` };
+    return { ok: false, msg: `Tier ${upgrade.tier} is full - ${cap} parts is the limit.${extra}` };
   }
   if (game.money < upgrade.cost) return { ok: false, msg: 'Not enough money.' };
 
@@ -888,7 +888,7 @@ function hireDriver(driverId, carId) {
   const car = game.cars.find(c => c.id === carId);
   if (car) car.assignedDriverId = driverId;
 
-  // Skill lives on the hire record, not on HIREABLE_DRIVERS — that list is a
+  // Skill lives on the hire record, not on HIREABLE_DRIVERS - that list is a
   // shared constant, so mutating it would leak between save slots.
   // Each driver has a ceiling, so a cheap rookie can develop but a journeyman
   // will not turn into a superstar.

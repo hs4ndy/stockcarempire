@@ -49,11 +49,15 @@ test('arcade camera creates speed sensation without inflating the dash past abou
     e.paused = true;
     const sample = speed => {
       e.player.speed = speed;
+      e.player.lv = 0;
       e.camera.fov = 50;
       e._updateCamera(10);
       e._updateHUD(1 / 60);
+      const direction = e.camera.getWorldDirection(new THREE.Vector3());
       return {
         fov: e.camera.fov,
+        height: e.camera.position.y,
+        directionY: direction.y,
         followDistance: e.player.z - e.camera.position.z,
         dash: Number(document.getElementById('r3d-speed').textContent),
       };
@@ -64,6 +68,8 @@ test('arcade camera creates speed sensation without inflating the dash past abou
   expect(samples.race.fov).toBeGreaterThan(82);
   expect(samples.draft.fov).toBeGreaterThan(samples.race.fov);
   expect(samples.race.followDistance).toBeLessThan(22);
+  expect(samples.race.height).toBeGreaterThan(5.8);
+  expect(samples.race.directionY).toBeLessThan(-0.08);
   expect(samples.draft.dash).toBeGreaterThanOrEqual(218);
   expect(samples.draft.dash).toBeLessThanOrEqual(222);
 });

@@ -71,7 +71,7 @@ function simulateRace({ playerCarId, trackId, isHiredMode }) {
   }
 
   // Final positions.
-  // These MUST come from the running order the phases produced — the closing
+  // These MUST come from the running order the phases produced - the closing
   // phase decides the race. Re-sorting on the pre-race perfScore here threw
   // the whole race away and handed the win to whoever qualified strongest,
   // so the car reported leading at the flag could still lose.
@@ -134,7 +134,7 @@ function buildEntryList(playerCarId, trackId, isHiredMode) {
   }
 
   if (isHiredMode) {
-    // Player is driving for an AI team — treat like a strong entry
+    // Player is driving for an AI team - treat like a strong entry
     const aiTeam = game.season.aiTeams.find(t => t.id === game.hiredTeamId);
     if (aiTeam) {
       const power = (aiTeam.cars[0]?.power || 0.55) + game.playerSkill / 100 * 0.2;
@@ -178,7 +178,7 @@ function buildEntryList(playerCarId, trackId, isHiredMode) {
   // AI team entries
   game.season.aiTeams.forEach(team => {
     team.cars.forEach(car => {
-      if (isHiredMode && team.id === game.hiredTeamId) return; // skip — player fills this slot
+      if (isHiredMode && team.id === game.hiredTeamId) return; // skip - player fills this slot
       entries.push({
         id:          car.id,
         displayName: `${team.name} / ${car.driverName}`,
@@ -372,7 +372,7 @@ function runPhase(entries, phase, track, currentLeader, cautionCount) {
     const gridEdge = phase === 'start' ? (e.qualifyScore - e.perfScore) * 0.8 : 0;
     const momentum = e.position ? (fieldN - e.position) / fieldN * 6 : 0;
     e.phaseScore = e.perfScore + rand(-10, 10) + gridEdge + momentum;
-    // Reliability check — DNF risk
+    // Reliability check - DNF risk
     const relRisk = e.reliability !== undefined ? e.reliability : (e.syntheticPower || 0.5) * 80 + 30;
     const dnfChance = clamp((100 - relRisk) / 1000, 0.005, 0.06);
     if (Math.random() < dnfChance) {

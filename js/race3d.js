@@ -1,5 +1,5 @@
 // ============================================================
-// STOCK CAR EMPIRE — 3D Race Engine (Three.js r134)
+// STOCK CAR EMPIRE - 3D Race Engine (Three.js r134)
 // Straight-line superspeedway drafting sprint.
 // Controls: A = steer left, D = steer right, S = brake (auto-throttle)
 // ============================================================
@@ -11,7 +11,7 @@ const R3D = {
   HALF_W:         11,
   WHEEL_R:        0.40,
 
-  // ── Gameplay speed model (TUNED — preserved feel) ──────────
+  // ── Gameplay speed model (TUNED - preserved feel) ──────────
   SPEED_BASE:     210,    // restrained simulation pace; speed sensation is camera-driven
   SPEED_MAX:      270,    // enough headroom for draft and late-race runs
   ACCEL:          1.6,    // forward accel lerp
@@ -30,7 +30,7 @@ const R3D = {
   CAMERA_FAR_Z:   22,
 
   // ── Drafting: continuous wake, push and carried momentum ───
-  DRAFT_Z:        92,     // draft cone depth — long tow behind each car
+  DRAFT_Z:        92,     // draft cone depth - long tow behind each car
   DRAFT_X:        3.8,    // wake half-width at distance; narrower at the bumper
   DRAFT_BOOST:    29,
   DRAFT_BUILD:    1.8,    // exponential response rates, independent of frame rate
@@ -63,7 +63,7 @@ const R3D = {
 
   // ── AI lateral model ───────────────────────────────────────
   // Cars steer by accelerating a lateral velocity, never by snapping position.
-  AI_LAT_ACC:     5.0,    // lateral acceleration (units/sec²) — low = smooth arcs
+  AI_LAT_ACC:     5.0,    // lateral acceleration (units/sec²) - low = smooth arcs
   AI_LAT_MAX:     2.6,    // top lateral speed (units/sec)
   AI_LAT_DAMP:    0.02,   // velocity damping base (per second)
   AI_STEER_GAIN:  0.9,    // desired lateral speed per unit of error
@@ -77,7 +77,7 @@ const R3D = {
   STUCK_PENALTY:  1.6,    // how badly a driver wants out of that
   TACTIC_COMMIT:  2.6,    // seconds a driver sticks with a tow/block decision
   BLOCK_Z:        20,     // how close behind before a driver starts defending
-  BLOCK_MAX:      1.6,    // furthest a defender will shade across — no chopping
+  BLOCK_MAX:      1.6,    // furthest a defender will shade across - no chopping
 
   // ── Physical separation ────────────────────────────────────
   // Contact is resolved with impulses and gentle correction, not teleports.
@@ -123,7 +123,7 @@ function r3dTex(w, h, draw) {
 }
 const r3dHex = v => '#' + (v & 0xffffff).toString(16).padStart(6, '0');
 
-// Painted door/roof number roundel — white disc, dark number (reads on any livery).
+// Painted door/roof number roundel - white disc, dark number (reads on any livery).
 // Cached per number so a 30-car field doesn't allocate 30 identical canvases.
 const _r3dRoundelCache = new Map();
 function r3dRoundelTex(num) {
@@ -142,7 +142,7 @@ function r3dRoundelTex(num) {
   return tex;
 }
 
-// Asphalt — flat dark base with aggregate speckle
+// Asphalt - flat dark base with aggregate speckle
 function r3dAsphaltTex() {
   return r3dTex(128, 128, (ctx, w, h) => {
     ctx.fillStyle = '#2c2c31'; ctx.fillRect(0, 0, w, h);
@@ -156,7 +156,7 @@ function r3dAsphaltTex() {
   });
 }
 
-// Grass — flat green with subtle mow banding
+// Grass - flat green with subtle mow banding
 function r3dGrassTex() {
   return r3dTex(64, 64, (ctx, w, h) => {
     ctx.fillStyle = '#37833f'; ctx.fillRect(0, 0, w, h);
@@ -169,7 +169,7 @@ function r3dGrassTex() {
   });
 }
 
-// Grandstand crowd — dark base, scattered bright clothing dots
+// Grandstand crowd - dark base, scattered bright clothing dots
 function r3dCrowdTex() {
   return r3dTex(64, 64, (ctx, w, h) => {
     ctx.fillStyle = '#1d1d22'; ctx.fillRect(0, 0, w, h);
@@ -181,7 +181,7 @@ function r3dCrowdTex() {
   });
 }
 
-// Catchfence — transparent grid
+// Catchfence - transparent grid
 function r3dFenceTex() {
   return r3dTex(64, 64, (ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
@@ -191,7 +191,7 @@ function r3dFenceTex() {
   });
 }
 
-// Sponsor wall boards — alternating flat color blocks with faux logos.
+// Sponsor wall boards - alternating flat color blocks with faux logos.
 // Dimensions must be powers of two: a NPOT texture with RepeatWrapping loses
 // mipmaps/tiling and renders as a smeared mess.
 function r3dWallAdTex() {
@@ -246,12 +246,21 @@ function launch3DRace(config, onComplete) {
       </div>
 
       <div class="r3d-telemetry">
-        <div class="r3d-tele-pos">
-          <span class="r3d-tele-pos-num" id="r3d-pos">1</span>
-          <span class="r3d-tele-pos-of" id="r3d-pos-of">/ 20</span>
-        </div>
-        <div class="r3d-tele-speed">
-          <span id="r3d-speed">0</span><span class="r3d-tele-unit">MPH</span>
+        <div class="r3d-tele-head">RACE DATA</div>
+        <div class="r3d-tele-grid">
+          <div>
+            <span class="r3d-data-label">POSITION</span>
+            <div class="r3d-tele-pos">
+              <span class="r3d-tele-pos-num" id="r3d-pos">1</span>
+              <span class="r3d-tele-pos-of" id="r3d-pos-of">/ 20</span>
+            </div>
+          </div>
+          <div>
+            <span class="r3d-data-label">SPEED</span>
+            <div class="r3d-tele-speed">
+              <span id="r3d-speed">0</span><span class="r3d-tele-unit">MPH</span>
+            </div>
+          </div>
         </div>
         <div class="r3d-draft">
           <div class="r3d-draft-label" id="r3d-draft">Draft</div>
@@ -261,7 +270,7 @@ function launch3DRace(config, onComplete) {
 
       <div class="r3d-progress-wrap">
         <div class="r3d-progress-fill" id="r3d-prog-fill"></div>
-        <div class="r3d-progress-label">FINISH</div>
+        <div class="r3d-progress-label"><span>RACE DISTANCE</span><span>FINISH</span></div>
       </div>
 
       <div class="r3d-warning hidden" id="r3d-warn"></div>
@@ -292,7 +301,7 @@ function launch3DRace(config, onComplete) {
 
   window._r3dFinish = (pos) => {
     // Grab the real on-track order before tearing the engine down, so the
-    // results table reflects what actually happened — team-mates included.
+    // results table reflects what actually happened - team-mates included.
     let order = [];
     if (window._r3d) {
       try { order = window._r3d.finalOrder(); } catch (_) {}
@@ -372,7 +381,7 @@ class Race3DEngine {
     this.scene.add(sun);
 
     // Max anisotropy keeps the heavily-tiled asphalt/grass sharp at distance
-    // instead of shimmering — most visible in the mirror.
+    // instead of shimmering - most visible in the mirror.
     this._maxAniso = this.renderer.capabilities?.getMaxAnisotropy?.() || 4;
 
     this._initGeometries();
@@ -695,7 +704,7 @@ class Race3DEngine {
     const fieldSize  = Math.min(config.aiEntries.length + 1, config.fieldSize);
 
     // Grid slots ordered POLE FIRST. +Z is the direction of travel, so row 0
-    // must sit at the highest z — building them the other way round made the
+    // must sit at the highest z - building them the other way round made the
     // announced starting position the exact inverse of the real one.
     const slots = [];
     const rows  = Math.ceil(fieldSize / 2);
@@ -707,7 +716,7 @@ class Race3DEngine {
     slots.length = fieldSize;                    // never draw a slot past the field
 
     // Qualifying draw. Normally anywhere in the field, but a Data Analyst
-    // biases it toward the front — take the best of N draws, one extra draw
+    // biases it toward the front - take the best of N draws, one extra draw
     // per analyst on staff.
     const draws = 1 + (config.qualifyBoost || 0);
     let playerSlotIdx = Math.floor(Math.random() * slots.length);
@@ -826,7 +835,7 @@ class Race3DEngine {
       wheels.push(tire, rim, hub);
     });
 
-    // Painted number decals — roof + both doors
+    // Painted number decals - roof + both doors
     const roundel = r3dRoundelTex(number);
     const decalMat = new THREE.MeshBasicMaterial({ map: roundel, transparent: true });
     const roofDecal = new THREE.Mesh(G.decalRoof, decalMat);
@@ -836,9 +845,9 @@ class Race3DEngine {
       door.position.set(sx, 0.5, -0.1); door.rotation.y = ry; g.add(door);
     });
 
-    // (No draft box around the car — the HUD draft meter carries that info.)
+    // (No draft box around the car - the HUD draft meter carries that info.)
 
-    // Teammate marker — flat gold trim painted on the car itself.
+    // Teammate marker - flat gold trim painted on the car itself.
     // (No floating banner: keeps the field readable at speed.)
     if (isTeammate) {
       const tmMat = new THREE.MeshLambertMaterial({ color: 0xe0a800 });
@@ -900,7 +909,7 @@ class Race3DEngine {
       el.classList.remove('go');
     };
 
-    setMsg(`FORMATION LAP  —  P${this._startingPos} START`, true);
+    setMsg(`FORMATION LAP  -  P${this._startingPos} START`, true);
     setTimeout(() => {
       if (this.done) return;
       setMsg('3');
@@ -943,7 +952,7 @@ class Race3DEngine {
     // NOTE: _pushLocked is cleared inside _separateCars, not here. It is set
     // by the contact solver which runs AFTER _updateAI, so clearing it here
     // meant _updateAI always saw false and cars in a pack kept making lane
-    // decisions while locked bumper-to-bumper — a big source of the twitching.
+    // decisions while locked bumper-to-bumper - a big source of the twitching.
     this._updatePlayer(dt);
     this._updateAI(dt);
     this._calcDraft(dt);
@@ -1272,7 +1281,7 @@ class Race3DEngine {
       }
     }
 
-    // Clear air ahead is worth a lot — this is what makes a car pull out of a
+    // Clear air ahead is worth a lot - this is what makes a car pull out of a
     // queue and go, rather than sitting in dirty air forever.
     score += Math.min(nearestAhead, 140) / 140 * (1 + aggro * 0.6);
 
@@ -1496,7 +1505,7 @@ class Race3DEngine {
 
   _checkFinish() {
     const TL = R3D.TRACK_LEN;
-    // Several cars can cross on the same frame — at 200+ units/sec a frame is
+    // Several cars can cross on the same frame - at 200+ units/sec a frame is
     // worth ~10 units of track. They must be credited in the order they are
     // actually down the road, NOT in array order: the player sits at index 0,
     // so iterating the array credited you ahead of a team-mate you had just
@@ -1525,7 +1534,7 @@ class Race3DEngine {
 
   // The real running order at the moment the player takes the flag: cars that
   // already finished in the order they crossed, then everyone else by distance,
-  // then retirements. Used so the on-track result — including your team-mates —
+  // then retirements. Used so the on-track result - including your team-mates -
   // is what actually goes in the results table.
   finalOrder() {
     const finished = this.finishOrder.slice();
@@ -1567,7 +1576,7 @@ class Race3DEngine {
     victim.debrisTimer = 1.2;
     // Warn on initiation, not after a wall-clock timeout. The simulation timer
     // below stops during pause and cannot spawn debris in a subsequent race.
-    this._warn('WRECK AHEAD — FIND A CLEAR LANE');
+    this._warn('WRECK AHEAD - FIND A CLEAR LANE');
   }
 
   _dropDebris(car) {
@@ -1589,7 +1598,7 @@ class Race3DEngine {
     const ny = sk > 0 ? (Math.random() - 0.5) * sk * 0.4 : 0;
 
     // Perceived speed is deliberately decoupled from simulation speed. A low,
-    // close camera and a broad race-speed FOV restore the arcade sensation
+    // elevated camera and a broad race-speed FOV preserve the arcade sensation
     // without making every car cover the track unrealistically quickly.
     const speedFeel = r3dSmooth(clamp((p.speed - R3D.PACE_SPEED) / (245 - R3D.PACE_SPEED), 0, 1));
     const fovTarget = R3D.CAMERA_FOV_MIN +
@@ -1598,7 +1607,7 @@ class Race3DEngine {
     this.camera.updateProjectionMatrix();
 
     const tx = p.x * 0.85 + nx;
-    const ty = 3.5 + ny;
+    const ty = 6.0 + ny;
     const followZ = R3D.CAMERA_NEAR_Z + (R3D.CAMERA_FAR_Z - R3D.CAMERA_NEAR_Z) * speedFeel;
     const tz = p.z - followZ + nx * 0.15;
     this.camera.position.x += (tx - this.camera.position.x) * (1 - Math.exp(-6 * dt));
@@ -1607,7 +1616,7 @@ class Race3DEngine {
     // FPS and draft speed. Keep the familiar race-speed framing at a fixed
     // distance; ease lateral motion without changing the size of the pack.
     this.camera.position.z = tz;
-    this.camera.lookAt(p.x * 0.55, 1.2, p.z + 30);
+    this.camera.lookAt(p.x * 0.55, 0.8, p.z + 30);
     this.camera.rotateZ(-p.lv / R3D.LAT_MAX * 0.026);
     this.camShake = Math.max(0, sk - dt * 2.5);
 
@@ -1622,7 +1631,7 @@ class Race3DEngine {
   //
   // The old approach negated projectionMatrix.elements[0] to flip left/right.
   // That also reverses triangle winding, so every front face was drawn as a
-  // back face — surfaces looked hollow and textures read wrong. Instead we
+  // back face - surfaces looked hollow and textures read wrong. Instead we
   // render the rear view normally into an offscreen target (correct winding,
   // correct lighting) and then blit it through a quad with mirrored UVs.
   _initMirrorTarget(w, h) {
@@ -1660,7 +1669,7 @@ class Race3DEngine {
       this.mirrorQuadMat.map = this.mirrorRT.texture;
       this.mirrorQuadMat.needsUpdate = true;
     }
-    // Horizontal flip — this is what makes it read as a mirror.
+    // Horizontal flip - this is what makes it read as a mirror.
     const t = this.mirrorRT.texture;
     t.wrapS = THREE.RepeatWrapping;
     t.repeat.x = -1;
@@ -1688,7 +1697,7 @@ class Race3DEngine {
     r.getSize(sz);
     this.mirrorSize.value.set(mw, mh);
 
-    // Pass 1 — rear view into the offscreen target, unflipped.
+    // Pass 1 - rear view into the offscreen target, unflipped.
     // The mirror is a wide letterbox. Driving it with a fixed VERTICAL fov
     // meant the horizontal fov ballooned with the aspect ratio (~154° at
     // 620x104) and everything looked fisheyed. Derive the vertical fov from a
@@ -1715,7 +1724,7 @@ class Race3DEngine {
       r.setRenderTarget(null);
     }
 
-    // Pass 2 — blit it into the mirror rectangle with mirrored UVs.
+    // Pass 2 - blit it into the mirror rectangle with mirrored UVs.
     const scaleX = sz.x / cr.width, scaleY = sz.y / cr.height;
     const mx  = Math.round((rect.left + wrap.clientLeft - cr.left) * scaleX);
     const my  = Math.round((rect.top + wrap.clientTop - cr.top) * scaleY);
@@ -1818,7 +1827,7 @@ class Race3DEngine {
         <span class="r3d-order-name">${nm}</span>
       </div>`;
     }).join('');
-    el.innerHTML = rows;
+    el.innerHTML = `<div class="r3d-order-head"><span>POS</span><span>LIVE ORDER</span></div>${rows}`;
   }
 
   _warn(msg) {
@@ -1870,10 +1879,10 @@ class Race3DEngine {
     window.removeEventListener('resize',    this._onResize);
     window.removeEventListener('blur',      this._onBlur);
 
-    // Release GPU resources — without this, every race leaks its track,
+    // Release GPU resources - without this, every race leaks its track,
     // car geometry and canvas textures for the life of the page.
     if (this.scene && this.scene.traverse) {
-      const shared = new Set(_r3dRoundelCache.values()); // reused across races — keep
+      const shared = new Set(_r3dRoundelCache.values()); // reused across races - keep
       const seen = new Set();
       this.scene.traverse(obj => {
         if (obj.geometry && !seen.has(obj.geometry)) {

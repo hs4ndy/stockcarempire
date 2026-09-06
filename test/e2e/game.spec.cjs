@@ -12,6 +12,34 @@ test.beforeEach(async ({ page }) => {
   }));
 });
 
+test('phase 0.75 UI stays flat and free of decorative icons and em dashes', async ({ page }) => {
+  await page.goto('/');
+  const audit = await page.evaluate(async () => {
+    const paths = [
+      '/index.html', '/style.css', '/js/data.js', '/js/game.js',
+      '/js/race.js', '/js/race3d.js', '/js/ui.js', '/js/main.js',
+    ];
+    const source = (await Promise.all(paths.map(async path => (await fetch(path)).text()))).join('\n');
+    return {
+      computedGradients: [...document.querySelectorAll('*')]
+        .filter(el => getComputedStyle(el).backgroundImage.includes('gradient')).length,
+      sourceGradient: /(?:linear|radial|conic|repeating-[a-z-]*)-gradient\s*\(/i.test(source),
+      emDash: source.includes('\u2014'),
+      emoji: /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(source),
+      iconMarkup: /class=["'][^"']*\bicon\b/i.test(source),
+      iconData: /\bicon\s*:/i.test(source),
+    };
+  });
+  expect(audit).toEqual({
+    computedGradients: 0,
+    sourceGradient: false,
+    emDash: false,
+    emoji: false,
+    iconMarkup: false,
+    iconData: false,
+  });
+});
+
 test('a new career completes both setup steps and creates a 20-entry field', async ({ page }) => {
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(error.message));
