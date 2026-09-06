@@ -36,11 +36,13 @@ handoff and source snapshot describe an older revision, not this tuning pass.
   position, rounded output, and multisampling where WebGL2 is available. Its
   render-target viewport is no longer multiplied by device pixel ratio twice.
   Player visibility, shadows and the main viewport are restored after its pass.
-- Following player feedback, nominal race pace increased from 175 to 200 for
-  both player and AI. Clean-air driving stays faster without increasing the
-  draft bonus or changing its smooth release. The top-speed cap is unchanged.
-- Steering acceleration increased from 18 to 20 and lateral speed from 6.5 to
-  7.1, with a slightly quicker input response and the same release damping.
+- Following player feedback, nominal race pace now sits at 235 for both player
+  and AI, with top speed raised to 305 and braking raised proportionally. This
+  is a deliberate fast-paced setting, while preserving draft headroom and its
+  smooth release.
+- Steering acceleration is 28 and lateral speed is 9.0, with a quicker input
+  response and the same release damping. It is meaningfully more sensitive,
+  but still accelerates through continuous motion instead of snapping sideways.
 - The HUD label stays "Draft" in every state; the live meter still rises and
   falls with draft momentum. The approved mirror is unchanged in this follow-up.
 

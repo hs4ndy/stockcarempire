@@ -138,7 +138,7 @@ test('clean-air race pace stays brisk and releasing a tow still carries speed sm
     for (let i = 0; i < 120; i++) e._updatePlayer(1 / 120);
     return { cruise, trace, braked: p.speed };
   })()`);
-  assert.ok(result.cruise > 185 && result.cruise < 195);
+  assert.ok(result.cruise > 218 && result.cruise < 228);
   assert.ok(result.trace[119] > result.cruise + 18, 'carry an earned run for the passing move');
   for (let i = 1; i < result.trace.length; i++) {
     assert.ok(result.trace[i] >= result.cruise);
@@ -161,11 +161,11 @@ test('continuous steering builds, reverses, and settles without a lateral jump',
     return out;
   })()`);
   assert.ok(trace[5].x < 0.2);
-  assert.ok(trace[59].x > 2 && trace[59].x < 5.5);
+  assert.ok(trace[59].x > 5.5 && trace[59].x < 9.2);
   assert.ok(trace[60].lv > 0 && trace[60].lv < trace[59].lv);
-  assert.ok(trace[119].x - trace[59].x < 2.0);
+  assert.ok(trace[119].x - trace[59].x < 3.0);
   for (let i = 1; i < trace.length; i++) {
-    assert.ok(Math.abs(trace[i].lv - trace[i - 1].lv) <= 20 / 60 + 0.00001);
+    assert.ok(Math.abs(trace[i].lv - trace[i - 1].lv) <= 28 / 60 + 0.00001);
   }
 });
 

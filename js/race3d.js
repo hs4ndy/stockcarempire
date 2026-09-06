@@ -12,14 +12,14 @@ const R3D = {
   WHEEL_R:        0.40,
 
   // ── Gameplay speed model (TUNED — preserved feel) ──────────
-  SPEED_BASE:     200,    // brisk clean-air pace for both player and AI
-  SPEED_MAX:      268,    // absolute max
+  SPEED_BASE:     235,    // fast clean-air pace for both player and AI
+  SPEED_MAX:      305,    // preserves headroom for a strong draft and late-race runs
   ACCEL:          1.6,    // forward accel lerp
-  BRAKE_FORCE:    140,    // speed loss when braking (units/sec²)
+  BRAKE_FORCE:    165,    // speed loss when braking (units/sec²)
 
   // ── Steering ───────────────────────────────────────────────
-  LAT_ACC:        20,     // bounded acceleration toward requested lateral velocity
-  LAT_MAX:        7.1,    // slightly quicker continuous steering, not discrete lanes
+  LAT_ACC:        28,     // quick but bounded acceleration toward requested lateral velocity
+  LAT_MAX:        9.0,    // responsive continuous steering, not discrete lanes
   LAT_DAMP:       0.025,  // release damping base per second
   STEER_FALLOFF:  0.35,   // how much steering authority is lost at top speed (0..1)
 
@@ -1002,7 +1002,7 @@ class Race3DEngine {
     // A = left = +X (world), D = right = -X (world); camera looks +Z so world +X = screen left
     const input = Number(this.keys.a) - Number(this.keys.d);
     const desired = input * R3D.LAT_MAX * steerAuth;
-    const rate = input ? 4.5 : -Math.log(R3D.LAT_DAMP);
+    const rate = input ? 6.0 : -Math.log(R3D.LAT_DAMP);
     p.lv += clamp((desired - p.lv) * (1 - Math.exp(-rate * dt)), -R3D.LAT_ACC * dt, R3D.LAT_ACC * dt);
 
     p.lv = clamp(p.lv, -R3D.LAT_MAX, R3D.LAT_MAX);

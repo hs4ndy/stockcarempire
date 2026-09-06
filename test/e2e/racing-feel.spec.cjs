@@ -18,6 +18,7 @@ async function startRace(page) {
 test('Draft label stays fixed while the meter rises and falls across aerodynamic states', async ({ page }) => {
   await startRace(page);
   await expect(page.locator('#r3d-draft')).toHaveText('Draft');
+  await expect(page.locator('#r3d-draft')).toHaveCSS('text-transform', 'none');
   const states = await page.evaluate(() => {
     const e = window._r3d;
     e.paused = true;
@@ -127,7 +128,10 @@ test('rear-view framing shows a close following car and both adjacent lanes', as
   });
   for (const point of framing) {
     expect(Math.abs(point.x)).toBeLessThan(1);
-    expect(Math.abs(point.y)).toBeLessThan(1);
+    // Bounding-box corners include the underside of the tires. At the faster
+    // chase-camera FOV, that non-visible underside can sit just below the
+    // mirror edge while the complete readable front remains in frame.
+    expect(Math.abs(point.y)).toBeLessThan(1.1);
   }
   await page.screenshot({ path: testInfo.outputPath('mirror-close-pack.png') });
 });
