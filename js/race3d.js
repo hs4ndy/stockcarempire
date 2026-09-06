@@ -39,7 +39,9 @@ const R3D = {
   PACK_GAP:       190,    // distance behind the leader where catch-up is full
   TEAM_HELP_Z:    60,     // range at which a teammate starts working with you
   TEAM_PUSH_BONUS: 4,     // extra shove when you and a teammate are locked up
-  MIRROR_HFOV:    88,     // mirror HORIZONTAL field of view, degrees
+  // A narrower lens keeps following cars large enough to read at a glance.
+  // This remains a horizontal FOV so the view is stable at every mirror size.
+  MIRROR_HFOV:    72,     // mirror HORIZONTAL field of view, degrees
 
   // ── AI / race director ─────────────────────────────────────
   // Aggression ramps smoothly from CALM_FRAC to ENDGAME_FRAC: early laps are
@@ -1555,10 +1557,10 @@ class Race3DEngine {
     this.camera.lookAt(p.x * 0.55, 1.5, p.z + 26);
     this.camShake = Math.max(0, sk - dt * 2.5);
 
-    // Sit just above and behind the roofline, aimed level down the track so
-    // cars behind sit in the middle of the glass rather than at the top edge.
-    this.mirrorCam.position.set(p.x, 2.5, p.z + 1.2);
-    this.mirrorCam.lookAt(p.x, 1.8, p.z - 60);
+    // Sit above the rear window and focus on the immediate trailing lane.
+    // The old long, wide view made cars too small to use while racing.
+    this.mirrorCam.position.set(p.x, 2.8, p.z + 1.7);
+    this.mirrorCam.lookAt(p.x, 1.7, p.z - 46);
   }
 
   // Rear-view mirror.

@@ -1461,14 +1461,17 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   top: 18px;
   left: 50%;
   transform: translateX(-50%);
-  width: min(620px, 44vw);
-  height: 104px;
-  border: 1px solid var(--line-2);
+  width: min(640px, 46vw);
+  height: 128px;
+  border: 3px solid rgba(8, 10, 13, 0.92);
+  border-radius: 4px 4px 14px 14px;
+  box-shadow: 0 3px 14px rgba(0,0,0,0.58), inset 0 0 0 1px rgba(255,255,255,0.16);
   background: rgba(0,0,0,0.4);
+  overflow: hidden;
 }
 .r3d-mirror-label {
   position: absolute;
-  top: -10px;
+  top: 4px;
   left: 50%;
   transform: translateX(-50%);
   padding: 1px 10px;
@@ -1655,7 +1658,7 @@ input[type="text"]::placeholder { color: var(--text-mute); }
    the running-order tower on the left or the pause button on the right. */
 @media (max-width: 1040px) {
   .r3d-map { display: none; }               /* mirror + tower matter more */
-  #r3d-mirror-wrap { width: min(460px, calc(100vw - 500px)); height: 92px; }
+  #r3d-mirror-wrap { width: min(500px, calc(100vw - 500px)); height: 104px; }
 }
 @media (max-width: 860px) {
   .r3d-order { width: 178px; font-size: 11px; }
@@ -1663,7 +1666,7 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   .r3d-telemetry { width: 168px; padding: 10px 11px; }
   .r3d-tele-pos-num { font-size: 1.9rem; }
   .r3d-tele-speed > span:first-child { font-size: 1.3rem; }
-  #r3d-mirror-wrap { width: min(420px, calc(100vw - 430px)); height: 82px; }
+  #r3d-mirror-wrap { width: min(440px, calc(100vw - 430px)); height: 92px; }
 }
 @media (max-width: 680px) {
   .r3d-order { display: none; }             /* telemetry carries position */
