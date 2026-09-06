@@ -6,22 +6,28 @@
 
 const R3D = {
   // ── Track / world ──────────────────────────────────────────
-  TRACK_LEN:      15000,  // long superspeedway — ~90 sec sprint
+  TRACK_LEN:      15000,  // long superspeedway sprint
   TRACK_W:        22,
   HALF_W:         11,
   WHEEL_R:        0.40,
 
   // ── Gameplay speed model (TUNED — preserved feel) ──────────
-  SPEED_BASE:     235,    // fast clean-air pace for both player and AI
-  SPEED_MAX:      305,    // preserves headroom for a strong draft and late-race runs
+  SPEED_BASE:     210,    // restrained simulation pace; speed sensation is camera-driven
+  SPEED_MAX:      270,    // enough headroom for draft and late-race runs
   ACCEL:          1.6,    // forward accel lerp
-  BRAKE_FORCE:    165,    // speed loss when braking (units/sec²)
+  BRAKE_FORCE:    145,    // speed loss when braking (units/sec²)
 
   // ── Steering ───────────────────────────────────────────────
-  LAT_ACC:        28,     // quick but bounded acceleration toward requested lateral velocity
-  LAT_MAX:        9.0,    // responsive continuous steering, not discrete lanes
+  LAT_ACC:        60,     // arcade-fast but bounded response; no position snapping
+  LAT_MAX:        17.0,   // roughly double the prior lateral authority
   LAT_DAMP:       0.025,  // release damping base per second
-  STEER_FALLOFF:  0.35,   // how much steering authority is lost at top speed (0..1)
+  STEER_FALLOFF:  0.15,   // retain most steering authority at race speed
+
+  // ── Perceived speed / chase camera ─────────────────────────
+  CAMERA_FOV_MIN: 66,
+  CAMERA_FOV_MAX: 86,
+  CAMERA_NEAR_Z:  18,
+  CAMERA_FAR_Z:   22,
 
   // ── Drafting: continuous wake, push and carried momentum ───
   DRAFT_Z:        92,     // draft cone depth — long tow behind each car
@@ -1002,7 +1008,7 @@ class Race3DEngine {
     // A = left = +X (world), D = right = -X (world); camera looks +Z so world +X = screen left
     const input = Number(this.keys.a) - Number(this.keys.d);
     const desired = input * R3D.LAT_MAX * steerAuth;
-    const rate = input ? 6.0 : -Math.log(R3D.LAT_DAMP);
+    const rate = input ? 10.0 : -Math.log(R3D.LAT_DAMP);
     p.lv += clamp((desired - p.lv) * (1 - Math.exp(-rate * dt)), -R3D.LAT_ACC * dt, R3D.LAT_ACC * dt);
 
     p.lv = clamp(p.lv, -R3D.LAT_MAX, R3D.LAT_MAX);
@@ -1582,21 +1588,27 @@ class Race3DEngine {
     const nx = sk > 0 ? (Math.random() - 0.5) * sk : 0;
     const ny = sk > 0 ? (Math.random() - 0.5) * sk * 0.4 : 0;
 
-    const spd = clamp((p.speed - R3D.SPEED_BASE) / (R3D.SPEED_MAX - R3D.SPEED_BASE), 0, 1);
-    const fovTarget = 62 + spd * 13;
+    // Perceived speed is deliberately decoupled from simulation speed. A low,
+    // close camera and a broad race-speed FOV restore the arcade sensation
+    // without making every car cover the track unrealistically quickly.
+    const speedFeel = r3dSmooth(clamp((p.speed - R3D.PACE_SPEED) / (245 - R3D.PACE_SPEED), 0, 1));
+    const fovTarget = R3D.CAMERA_FOV_MIN +
+      (R3D.CAMERA_FOV_MAX - R3D.CAMERA_FOV_MIN) * speedFeel;
     this.camera.fov += (fovTarget - this.camera.fov) * (1 - Math.exp(-4.35 * dt));
     this.camera.updateProjectionMatrix();
 
     const tx = p.x * 0.85 + nx;
-    const ty = 4.4 + ny;
-    const tz = p.z - 32 + nx * 0.15;
+    const ty = 3.5 + ny;
+    const followZ = R3D.CAMERA_NEAR_Z + (R3D.CAMERA_FAR_Z - R3D.CAMERA_NEAR_Z) * speedFeel;
+    const tz = p.z - followZ + nx * 0.15;
     this.camera.position.x += (tx - this.camera.position.x) * (1 - Math.exp(-6 * dt));
     this.camera.position.y += (ty - this.camera.position.y) * (1 - Math.exp(-5 * dt));
     // Longitudinal camera lag changed the apparent following distance with
     // FPS and draft speed. Keep the familiar race-speed framing at a fixed
     // distance; ease lateral motion without changing the size of the pack.
     this.camera.position.z = tz;
-    this.camera.lookAt(p.x * 0.55, 1.5, p.z + 26);
+    this.camera.lookAt(p.x * 0.55, 1.2, p.z + 30);
+    this.camera.rotateZ(-p.lv / R3D.LAT_MAX * 0.026);
     this.camShake = Math.max(0, sk - dt * 2.5);
 
     // Virtual interior mirror: enough eye-to-bumper distance to show the

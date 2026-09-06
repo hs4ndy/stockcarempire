@@ -42,6 +42,32 @@ test('Draft label stays fixed while the meter rises and falls across aerodynamic
   expect(states.map(s => s.fill)).toEqual(['0%', '47%', '100%', '70%', '23%', '0%']);
 });
 
+test('arcade camera creates speed sensation without inflating the dash past about 220', async ({ page }) => {
+  await startRace(page);
+  const samples = await page.evaluate(() => {
+    const e = window._r3d;
+    e.paused = true;
+    const sample = speed => {
+      e.player.speed = speed;
+      e.camera.fov = 50;
+      e._updateCamera(10);
+      e._updateHUD(1 / 60);
+      return {
+        fov: e.camera.fov,
+        followDistance: e.player.z - e.camera.position.z,
+        dash: Number(document.getElementById('r3d-speed').textContent),
+      };
+    };
+    return { pace: sample(R3D.PACE_SPEED), race: sample(200), draft: sample(240) };
+  });
+  expect(samples.pace.fov).toBeCloseTo(66, 1);
+  expect(samples.race.fov).toBeGreaterThan(82);
+  expect(samples.draft.fov).toBeGreaterThan(samples.race.fov);
+  expect(samples.race.followDistance).toBeLessThan(22);
+  expect(samples.draft.dash).toBeGreaterThanOrEqual(218);
+  expect(samples.draft.dash).toBeLessThanOrEqual(222);
+});
+
 test('mirror renders both sides without DPR cropping and preserves main-render state', async ({ page }, testInfo) => {
   for (const dpr of [1, 2]) {
     await startRace(page);
@@ -172,7 +198,7 @@ test('real keyboard departure from a bumper carries a smooth run', async ({ page
   const trace = await page.evaluate(() => window.raceTraces);
   expect(trace.length).toBeGreaterThan(30);
   for (let i = 1; i < trace.length; i++) {
-    expect(Math.abs(trace[i].x - trace[i - 1].x)).toBeLessThan(0.13);
+    expect(Math.abs(trace[i].x - trace[i - 1].x)).toBeLessThan(0.16);
     expect(Math.abs(trace[i].speed - trace[i - 1].speed)).toBeLessThan(3);
     expect(Math.abs(trace[i].boost - trace[i - 1].boost)).toBeLessThan(1);
   }
