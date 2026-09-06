@@ -185,13 +185,30 @@ a:focus-visible,
 .intro-checker-strip.top { top: 0; }
 .intro-checker-strip.bottom { bottom: 0; }
 .intro-bg-lines {
-  display: none;
+  display: block;
   position: absolute;
   inset: -15%;
-  opacity: .5;
+  opacity: .65;
   pointer-events: none;
-  background: transparent;
+  overflow: hidden;
+  transform: skewY(-5deg);
 }
+.intro-bg-lines span {
+  position: absolute;
+  left: -12%;
+  width: 124%;
+  height: 1px;
+  background: rgba(255, 255, 255, .055);
+  transform: rotate(-7deg);
+}
+.intro-bg-lines span:nth-child(1) { top: 8%; }
+.intro-bg-lines span:nth-child(2) { top: 25%; }
+.intro-bg-lines span:nth-child(3) { top: 42%; }
+.intro-bg-lines span:nth-child(4) { top: 59%; }
+.intro-bg-lines span:nth-child(5) { top: 76%; }
+.intro-bg-lines span:nth-child(6) { top: 93%; }
+.intro-bg-lines span:nth-child(7) { top: 110%; }
+.intro-bg-lines span:nth-child(8) { top: 127%; }
 
 .intro-layout { display: flex; justify-content: center; width: 100%; }
 .intro-center {
