@@ -1,0 +1,9 @@
+{
+  "name": "stock-car-empire",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "check": "node --check js/data.js && node --check js/game.js && node --check js/race.js && node --check js/race3d.js && node --check js/ui.js && node --check js/main.js",
+    "test": "node --test test/race-regression.test.js"
+  }
+}

@@ -684,6 +684,7 @@ class Race3DEngine {
     this._startingPos = playerSlotIdx + 1;     // now genuinely 1 = pole
     const ps = slots[playerSlotIdx];
     this.player = this._makeCar(ps.x, ps.z, {
+      entrantId:  'player',
       color:      config.playerColor || '#e8001d',
       number:     config.playerNumber || 1,
       power:      config.playerPower,
@@ -700,18 +701,20 @@ class Race3DEngine {
       const entry = config.aiEntries[aiIdx++];
       const slot  = slots[i];
       this.cars.push(this._makeCar(slot.x, slot.z, {
+        entrantId:  entry.entrantId || null,
         color:      entry.color,
         number:     entry.number || (aiIdx + 1),
         power:      clamp(entry.power, 0.25, 0.95),
         isPlayer:   false,
         isTeammate: !!entry.isTeammate,
         label:      entry.name,
+        teamName:   entry.teamName || null,
         carId:      entry.carId || null,
       }));
     }
   }
 
-  _makeCar(x, z, { color, number, power, isPlayer, isTeammate, label, carId }) {
+  _makeCar(x, z, { entrantId, color, number, power, isPlayer, isTeammate, label, teamName, carId }) {
     const hex = typeof color === 'string' ? parseInt(color.replace('#', ''), 16) : color;
     const G = this.G, M = this.M;
     const g = new THREE.Group();
@@ -818,7 +821,7 @@ class Race3DEngine {
     this.scene.add(g);
 
     return {
-      mesh: g, wheels, isTeammate, carId,
+      mesh: g, wheels, isTeammate, carId, entrantId, teamName,
       isPlayer, power, label, hex, number, x, z,
       lv: 0,
       lvx: 0,          // AI lateral velocity (inertia)
@@ -940,8 +943,11 @@ class Race3DEngine {
     p.x  = clamp(p.x + p.lv * dt, -hw, hw);
 
     for (const car of this.cars) {
-      car.speed += (R3D.PACE_SPEED - car.speed) * Math.min(1, dt * 3.0);
-      car.z += car.speed * dt;
+      // Every row advances together on the formation lap. Letting each car
+      // converge from its power-based race speed changed the live order before
+      // the green flag, so the HUD could disagree with the announced grid spot.
+      car.speed = R3D.PACE_SPEED;
+      car.z += R3D.PACE_SPEED * dt;
       car.mesh.position.set(car.x, 0, car.z);
     }
     p.mesh.position.set(p.x, 0, p.z);
@@ -1468,7 +1474,11 @@ class Race3DEngine {
     const player = crossed.find(c => c.isPlayer);
     if (player) {
       this.done = true;
-      this._showFinish(this.finishOrder.indexOf(player) + 1);
+      const pos = this.finishOrder.indexOf(player) + 1;
+      // The tower normally refreshes at 5fps. Once done is set the main loop
+      // stops updating it, so force one authoritative final refresh here.
+      this._updateOrder(pos, this.cars.filter(c => !c.dnf).length);
+      this._showFinish(pos);
     }
   }
 
@@ -1483,10 +1493,13 @@ class Race3DEngine {
       .sort((a, b) => b.z - a.z);
     const retired  = this.cars.filter(c => c.dnf);
     return [...finished, ...running, ...retired].map((c, i) => ({
+      entrantId: c.entrantId || null,
       carId:    c.carId || null,
       isPlayer: !!c.isPlayer,
       number:   c.number,
       label:    c.label,
+      teamName: c.teamName || null,
+      teamColor: r3dHex(c.hex),
       position: i + 1,
       dnf:      !!c.dnf,
     }));

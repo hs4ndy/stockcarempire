@@ -271,13 +271,41 @@ function reRankWithTeamOrder(results, playerPosition, trackOrder) {
     return null;
   };
 
-  const ordered = [];
-  for (const o of order) {
+  // Resolve every identifiable car before consuming fallbacks. Otherwise an
+  // unmatched guest car near the front can steal a result that has a stable
+  // match later in the order, shifting two identities instead of one.
+  const slots = order.map(o => {
     let r = null;
-    if (o.isPlayer)      r = take(x => x.isPlayer);
-    else if (o.carId)    r = take(x => x.carId === o.carId);          // your other cars
-    if (!r && o.label)   r = take(x => driverOf(x) === String(o.label).trim());
-    if (!r)              r = take(x => !x.isPlayer);                  // any spare rival
+    if (o.isPlayer)         r = take(x => x.isPlayer);
+    else if (o.entrantId)   r = take(x => x.entrantId === o.entrantId); // stable AI identity
+    if (!r && o.carId)      r = take(x => x.carId === o.carId);         // your other cars
+    if (!r && o.label)      r = take(x => driverOf(x) === String(o.label).trim());
+    return { o, r };
+  });
+
+  const ordered = [];
+  for (const slot of slots) {
+    const { o } = slot;
+    let r = slot.r;
+    let usedFallback = false;
+    if (!r) {
+      r = take(x => !x.isPlayer);                                      // any spare rival
+      usedFallback = !!r;
+    }
+    // Older saves can still need a temporary race-day backmarker. When no
+    // stable result identity exists, preserve the driver and team that were
+    // actually shown on track instead of displaying a different simulated car.
+    if (r && usedFallback && o.label) {
+      const driver = String(o.label).trim();
+      const teamName = o.teamName || r.teamName;
+      r = {
+        ...r,
+        entrantId:  o.entrantId || r.entrantId,
+        displayName: teamName ? `${teamName} / ${driver}` : driver,
+        teamName,
+        teamColor:  o.teamColor || r.teamColor,
+      };
+    }
     // Retirement is decided on track too. The simulation runs its own
     // reliability rolls, and letting those stand would retire a car that
     // plainly took the flag in front of you.

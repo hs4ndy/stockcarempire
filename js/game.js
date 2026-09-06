@@ -188,7 +188,7 @@ function generateCalendar(seriesLevel) {
 // ─── Generate AI teams for a season ─────────────────────────
 function generateAITeams(seriesLevel) {
   const series = SERIES[seriesLevel];
-  const needed = series.fieldSize;
+  const targetCars = Math.max(0, series.fieldSize - 1); // one field slot belongs to the player
 
   // Shuffle templates, give varying power
   const templates = [...AI_TEAM_TEMPLATES].sort(() => Math.random() - 0.5);
@@ -196,8 +196,14 @@ function generateAITeams(seriesLevel) {
   let carCount = 0;
 
   for (const tmpl of templates) {
-    if (carCount >= needed - 2) break; // leave room for player
+    if (carCount >= targetCars) break;
     const team = makeAITeam(tmpl, seriesLevel);
+    // Higher series can generate two-car teams. Trim only the final team so
+    // the championship roster is exactly the advertised field size rather
+    // than relying on a temporary, differently named race-day backmarker.
+    const remaining = targetCars - carCount;
+    if (team.cars.length > remaining) team.cars = team.cars.slice(0, remaining);
+    team.cars.forEach(c => { c.teamId = team.id; });
     teams.push(team);
     carCount += team.cars.length;
   }

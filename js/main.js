@@ -137,7 +137,7 @@ function handleStartQuickRace(fieldSize) {
   const namePool = [...AI_DRIVER_NAMES].sort(() => Math.random() - 0.5);
   for (let i = 0; i < fieldSize - 1; i++) {
     const nm = namePool[i % namePool.length] + (i >= namePool.length ? ' Jr.' : '');
-    aiEntries.push({ name: nm, color: AI_COLORS[i % AI_COLORS.length], number: i + 2, power: rand(0.35, 0.80) });
+    aiEntries.push({ entrantId: `quick-${i + 1}`, name: nm, color: AI_COLORS[i % AI_COLORS.length], number: i + 2, power: rand(0.35, 0.80) });
   }
   showScreen('game-race');
   launch3DRace(
@@ -480,7 +480,9 @@ function handleStartRace() {
     const carScore = (car.speed + car.handling + car.reliability) / 300;
     const skill    = hired ? hiredDriverSkill(hired) / 100 : 0.5;
     aiEntries.push({
+      entrantId:  car.id,
       name:       nextDriverName(hiredName || car.driverName),
+      teamName:   game.teamName,
       color:      car.color || pCar?.color || '#e8001d',
       number:     nextNum(car.number),
       power:      clamp(carScore * 0.68 + skill * 0.27, 0.25, 0.95),
@@ -493,17 +495,26 @@ function handleStartRace() {
     team.cars.forEach(car => {
       if (isHiredMode && team.id === game.hiredTeamId) return;
       aiEntries.push({
-        name:   nextDriverName(car.driverName),
-        color:  car.color || team.color,
-        number: nextNum(car.number),
-        power:  clamp(car.power * (car.condition / 100), 0.25, 0.95),
+        entrantId: car.id,
+        name:      nextDriverName(car.driverName),
+        teamName:  team.name,
+        color:     car.color || team.color,
+        number:    nextNum(car.number),
+        power:     clamp(car.power * (car.condition / 100), 0.25, 0.95),
       });
     });
   });
   // Pad with generic backmarkers to fill field
   while (aiEntries.length < series.fieldSize - 1) {
     const tmpl = pick(AI_TEAM_TEMPLATES);
-    aiEntries.push({ name: nextDriverName(), color: tmpl.color, number: nextNum(), power: rand(0.28, 0.48) });
+    aiEntries.push({
+      entrantId: uid(),
+      name: nextDriverName(),
+      teamName: tmpl.name,
+      color: tmpl.color,
+      number: nextNum(),
+      power: rand(0.28, 0.48),
+    });
   }
 
   // Switch to race screen and launch 3D

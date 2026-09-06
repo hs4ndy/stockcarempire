@@ -156,7 +156,7 @@ function renderDashboard() {
     <div class="cmd-cell">
       <span class="cmd-label">Championship</span>
       <span class="cmd-value gold">${pos}${ordinal(pos)}</span>
-      <span class="cmd-sub">of ${totalEntrants} teams</span>
+      <span class="cmd-sub">of ${totalEntrants} entries</span>
     </div>
     <div class="cmd-cell">
       <span class="cmd-label">Points</span>
@@ -837,6 +837,9 @@ function renderRaceSetup() {
   const race   = currentRace();
   const track  = TRACKS.find(t => t.id === race.trackId);
   const series = SERIES[game.currentSeries];
+  const weightTotal = Math.max(0.01, track.speedW + track.handW);
+  const speedEmphasis = Math.round(track.speedW / weightTotal * 100);
+  const handlingEmphasis = 100 - speedEmphasis;
 
   // Which cars can the player enter?
   const cars = game.driverMode === 'hired' ? [] : game.cars;
@@ -897,8 +900,8 @@ function renderRaceSetup() {
         <div class="team-stat"><span>Laps</span><span>${track.laps}</span></div>
         <div class="team-stat"><span>Entry Fee</span><span>${fmt$(series.entryFee)}</span></div>
         <div class="team-stat"><span>1st Prize</span><span>${fmt$(series.prize[0])}</span></div>
-        <div class="team-stat"><span>Speed Emphasis</span><span>${Math.round(track.speedW * 10)}/10</span></div>
-        <div class="team-stat"><span>Handling Emphasis</span><span>${Math.round(track.handW * 10)}/10</span></div>
+        <div class="team-stat"><span>Speed Emphasis</span><span>${speedEmphasis}%</span></div>
+        <div class="team-stat"><span>Handling Emphasis</span><span>${handlingEmphasis}%</span></div>
       </div>
     </div>
     <div class="card mt">
