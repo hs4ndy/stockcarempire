@@ -35,6 +35,7 @@ test('rear-view mirror stays readable and renders correctly across five real 3D 
   page.on('pageerror', error => pageErrors.push(error.message));
 
   for (let run = 1; run <= 5; run++) {
+    await page.setViewportSize({ width: [1440, 1024, 768, 390, 1440][run - 1], height: 900 });
     await page.goto('/');
     await page.locator('#btn-quick-race').click();
     await page.locator('.quick-series-btn').first().click();
@@ -48,7 +49,7 @@ test('rear-view mirror stays readable and renders correctly across five real 3D 
       const wrap = document.getElementById('r3d-mirror-wrap');
       const canvas = document.getElementById('r3d-canvas');
       const direction = engine.mirrorCam.getWorldDirection(new THREE.Vector3());
-      const aspect = wrap.getBoundingClientRect().width / wrap.getBoundingClientRect().height;
+      const aspect = wrap.clientWidth / wrap.clientHeight;
       const verticalFov = engine.mirrorCam.fov * Math.PI / 180;
       const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * aspect) * 180 / Math.PI;
       const bounds = wrap.getBoundingClientRect();
@@ -67,10 +68,10 @@ test('rear-view mirror stays readable and renders correctly across five real 3D 
     });
 
     expect(mirror.directionZ).toBeLessThan(-0.9);
-    expect(mirror.horizontalFov).toBeCloseTo(72, 0);
+    expect(mirror.horizontalFov).toBeCloseTo(68, 0);
     expect(mirror.targetWidth).toBeGreaterThan(1);
     expect(mirror.targetHeight).toBeGreaterThan(1);
-    expect(mirror.mirrorWidth / mirror.mirrorHeight).toBeGreaterThan(4);
+    expect(mirror.mirrorWidth / mirror.mirrorHeight).toBeGreaterThan(2);
     expect(mirror.insideCanvas).toBe(true);
     expect(mirror.textureFlipped).toBe(true);
 

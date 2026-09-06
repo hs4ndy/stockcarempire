@@ -1527,11 +1527,11 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   left: 50%;
   transform: translateX(-50%);
   width: min(640px, 46vw);
-  height: 128px;
+  height: 120px;
   border: 3px solid rgba(8, 10, 13, 0.92);
-  border-radius: 4px 4px 14px 14px;
+  border-radius: 11px;
   box-shadow: 0 3px 14px rgba(0,0,0,0.58), inset 0 0 0 1px rgba(255,255,255,0.16);
-  background: rgba(0,0,0,0.4);
+  background: transparent;
   overflow: hidden;
 }
 .r3d-mirror-label {
