@@ -321,7 +321,7 @@ const AI_DRIVER_NAMES = [
 const DIFFICULTIES = [
   { id: 'beginner', name: 'Beginner',
     blurb: 'Relaxed. Draft a team-mate and the win takes care of itself.',
-    aiSpeed: 1.00, aiPower: 1.00, aiAggro: 1.00, playerDraft: 1.00, racecraft: 0 },
+    aiSpeed: 1.00, aiPower: 1.00, aiAggro: 1.00, playerDraft: 1.12, racecraft: 0 },
   { id: 'amateur',  name: 'Amateur',
     blurb: 'The field keeps you honest. You have to work the draft.',
     aiSpeed: 1.035, aiPower: 1.06, aiAggro: 1.12, playerDraft: 0.94, racecraft: 0.30 },

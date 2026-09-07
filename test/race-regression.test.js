@@ -138,7 +138,7 @@ test('clean-air race pace stays brisk and releasing a tow still carries speed sm
     for (let i = 0; i < 120; i++) e._updatePlayer(1 / 120);
     return { cruise, trace, braked: p.speed };
   })()`);
-  assert.ok(result.cruise > 195 && result.cruise < 203);
+  assert.ok(result.cruise > 207 && result.cruise < 211);
   assert.ok(result.trace[119] > result.cruise + 18, 'carry an earned run for the passing move');
   for (let i = 1; i < result.trace.length; i++) {
     assert.ok(result.trace[i] >= result.cruise);

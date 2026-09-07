@@ -30,18 +30,20 @@ const R3D = {
   CAMERA_FAR_Z:   22,
 
   // ── Drafting: continuous wake, push and carried momentum ───
-  DRAFT_Z:        92,     // draft cone depth - long tow behind each car
-  DRAFT_X:        3.8,    // wake half-width at distance; narrower at the bumper
-  DRAFT_BOOST:    29,
+  DRAFT_Z:        82,     // useful tow range without linking the whole field
+  DRAFT_X:        3.6,    // wake half-width at distance; narrower at the bumper
+  DRAFT_BOOST:    31,
   DRAFT_BUILD:    1.8,    // exponential response rates, independent of frame rate
-  DRAFT_RELEASE:  0.85,
+  DRAFT_RELEASE:  0.78,
   PUSH_Z:         6.5,    // push fades continuously from contact to this gap
   PUSH_X:         1.45,   // accurate bumper alignment earns the strongest push
   PUSH_BONUS:     8,
-  CHAIN_MAX:      8,      // diminishing returns, no unlimited train multiplier
+  CHAIN_MAX:      3.5,    // small-group benefit; long trains lose efficiency
+  CHAIN_LIMIT:    3,      // full aerodynamic value ends after three linked cars
   AERO_MAX:       43,     // combined tow, received push and chain ceiling
-  PACK_CATCHUP:   22,     // max catch-up speed for cars stranded behind the pack
-  PACK_GAP:       190,    // distance behind the leader where catch-up is full
+  PACK_CATCHUP:   8,      // recovery assistance only for genuinely detached cars
+  PACK_GAP_START: 320,    // ordinary race gaps receive no field-compressing boost
+  PACK_GAP:       760,    // distance behind the leader where recovery is full
   TEAM_HELP_Z:    60,     // range at which a teammate starts working with you
   TEAM_PUSH_BONUS: 4,     // extra shove when you and a teammate are locked up
   // A narrower lens keeps following cars large enough to read at a glance.
@@ -49,11 +51,10 @@ const R3D = {
   MIRROR_HFOV:    68,     // readable trailing cars, stable across aspect ratios
 
   // ── AI / race director ─────────────────────────────────────
-  // Aggression ramps smoothly from CALM_FRAC to ENDGAME_FRAC: early laps are
-  // a settled pack, the closing stage is a full-attack scramble.
-  CALM_FRAC:      0.45,   // fully calm before this point
-  ENDGAME_FRAC:   0.75,   // fully aggressive from here to the flag
-  RUBBER_BAND:    10,     // max extra speed for last-place player
+  // Passing intent exists from the green flag and rises only moderately late.
+  CALM_FRAC:      0.08,
+  ENDGAME_FRAC:   0.82,
+  RUBBER_BAND:    14,     // enough recovery for a skilled rear-to-front drive
   WRECK_FIRST:    42,
   WRECK_MIN:      48,
   WRECK_MAX:      85,
@@ -70,9 +71,9 @@ const R3D = {
   LANE_STEP:      2.4,    // spacing of candidate lanes
   LANE_WIDTH:     2.6,    // how wide a "lane" is when scoring traffic
   LANE_COMMIT:    3.2,    // seconds a car holds a line before reconsidering
-  LANE_GAIN_MIN:  0.14,   // a lane must beat the current one by this to move
+  LANE_GAIN_MIN:  0.09,   // racers act on a useful lane before a train forms
   LANE_INERTIA:   0.13,
-  TOW_APPEAL:     1.25,   // tow is useful, but a pass can be worth leaving it
+  TOW_APPEAL:     1.05,   // seek a tow, then leave it when the run is earned
   STUCK_Z:        34,     // being this close behind a slower car counts as bottled up
   STUCK_PENALTY:  1.6,    // how badly a driver wants out of that
   TACTIC_COMMIT:  2.6,    // seconds a driver sticks with a tow/block decision
@@ -949,6 +950,8 @@ class Race3DEngine {
     }
     if (!this.racing || this.done) return;
 
+    for (const car of this.cars) car._frameStartX = car.x;
+
     // NOTE: _pushLocked is cleared inside _separateCars, not here. It is set
     // by the contact solver which runs AFTER _updateAI, so clearing it here
     // meant _updateAI always saw false and cars in a pack kept making lane
@@ -1025,7 +1028,7 @@ class Race3DEngine {
 
     if (Math.abs(p.x) >= hw - 0.001 && p.lv * p.x > 0) {
       p.lv = -p.lv * 0.08;
-      p.speed = Math.max(p.speed * Math.exp(-1.6 * dt), 80);
+      p.speed = Math.max(p.speed * Math.exp(-1.3 * dt), 80);
       this.camShake = Math.max(this.camShake, 0.35);
       this._warn('WALL BRUSH');
     }
@@ -1035,7 +1038,7 @@ class Race3DEngine {
     const posFrac     = activeCount > 1 ? aheadCount / (activeCount - 1) : 0;
     const rubberBand  = posFrac * R3D.RUBBER_BAND;
 
-    const tgt = Math.min(R3D.SPEED_BASE * (0.84 + p.power * 0.18) + p.draftBoost + rubberBand, R3D.SPEED_MAX);
+    const tgt = Math.min(R3D.SPEED_BASE * (0.89 + p.power * 0.18) + p.draftBoost + rubberBand, R3D.SPEED_MAX);
     let braking = false;
     if (this.keys.s) {
       p.speed = Math.max(tgt * 0.38, p.speed - R3D.BRAKE_FORCE * dt);
@@ -1090,14 +1093,13 @@ class Race3DEngine {
       const mix = (calm, wild) => calm + (wild - calm) * aggro;
       this._chooseAILine(car, aggro, dt);
 
-      // Difficulty lifts both the AI's pace and its ceiling.
-      // The base spread is deliberately narrow: on a superspeedway the cars are
-      // all within a whisker of each other and the draft does the rest, which
-      // is what keeps the field packed instead of strung out.
+      // Difficulty lifts both the AI's pace and its ceiling. Individual power
+      // creates natural separation; recovery applies only after a car has lost
+      // the main racing groups, so it cannot compress the field into one pack.
       const dSpd = this.diff.aiSpeed;
-      // Anyone stranded behind the leader gets a hand back to the pack
       const lead = this._leadZ || car.z;
-      const back = clamp((lead - car.z) / R3D.PACK_GAP, 0, 1);
+      const back = clamp((lead - car.z - R3D.PACK_GAP_START) /
+        (R3D.PACK_GAP - R3D.PACK_GAP_START), 0, 1);
       const catchUp = back * R3D.PACK_CATCHUP;
       const tgt = Math.min(
         (R3D.SPEED_BASE * (0.86 + car.power * 0.15)) * dSpd + car.draftBoost + catchUp,
@@ -1130,7 +1132,10 @@ class Race3DEngine {
 
   _raceAggression(car) {
     const calm = R3D.CALM_FRAC / Math.max(0.5, car.isTeammate ? 1 : this.diff.aiAggro);
-    return r3dSmooth((car.z / R3D.TRACK_LEN - calm) / Math.max(0.01, R3D.ENDGAME_FRAC - calm));
+    const phase = r3dSmooth((car.z / R3D.TRACK_LEN - calm) /
+      Math.max(0.01, R3D.ENDGAME_FRAC - calm));
+    const temperament = clamp(((car.raceNerve || 1) - 1) * 0.45, -0.08, 0.08);
+    return clamp(0.38 + phase * 0.44 + temperament, 0.3, 0.9);
   }
 
   _laneSafe(car, x) {
@@ -1206,12 +1211,13 @@ class Race3DEngine {
     const gap = ahead ? ahead.z - car.z : Infinity;
     const closing = ahead ? car.speed - ahead.speed : 0;
     const nerve = car.raceNerve || 1;
-    // Early: require a real run. Late: accept a smaller advantage, but only
-    // into a usable lane. All rivals make this decision against ALL traffic.
-    const runNeeded = (3.6 - aggro * 2.6 - craft * 0.6) / nerve;
+    // A racer with a real run tries to pass throughout the event. A fourth car
+    // arriving at a train also looks for another lane before the chain grows.
+    const trainCrowded = (car.chainLen || 1) > R3D.CHAIN_LIMIT;
+    const runNeeded = (3.05 - aggro * 1.45 - craft * 0.45) / nerve;
     const hasRun = closing > runNeeded ||
-      (aggro > 0.55 && car.draftMomentum > 18 && closing > -0.5);
-    if (gap < 38 && hasRun && alternatives.length) {
+      (car.draftMomentum > 15 && closing > -0.7 && (aggro > 0.32 || trainCrowded));
+    if (gap < 44 && hasRun && alternatives.length) {
       car.targetX = alternatives.sort((a, b) =>
         this._scoreLane(car, b, aggro) - this._scoreLane(car, a, aggro))[0];
       car._tactic = 'pass';
@@ -1289,9 +1295,12 @@ class Race3DEngine {
     // opportunity. Long trains have diminishing appeal, especially late on.
     if (towGap < Infinity) {
       const towQuality = r3dWake({ ...car, x: laneX }, towCar).tow;
-      const trainLen   = (towCar && towCar.chainLen) || 1; // how big is that line
-      const trainPull  = 1 + Math.min(trainLen - 1, 4) * 0.07;
-      score += towQuality * R3D.TOW_APPEAL * trainPull * (1 - aggro * 0.3);
+      const trainLen = (towCar && towCar.chainLen) || 1;
+      const openSlots = clamp(R3D.CHAIN_LIMIT - trainLen + 1, 0, R3D.CHAIN_LIMIT);
+      score += towQuality * R3D.TOW_APPEAL * (0.55 + openSlots * 0.15) * (1 - aggro * 0.18);
+      if (trainLen >= R3D.CHAIN_LIMIT) {
+        score -= towQuality * (0.5 + (trainLen - R3D.CHAIN_LIMIT) * 0.28) * (0.75 + aggro);
+      }
     }
 
     // Stuck behind someone slower is the thing a racer most wants to fix, so
@@ -1323,19 +1332,21 @@ class Race3DEngine {
       car.chainLen = 1;
       car._wakeLeader = null;
       car._pushTarget = 0;
-      car._trainMass = 0;
+      car._draftDepth = 1;
       if (car.dnf || car.finished || car.spinning) {
         car.draftBoost = car.draftMomentum = 0;
       }
     }
 
-    // Pass 1: sample all geometric wakes and accumulate incoming pushes.
-    // No car writes another's smoothed boost while it is being calculated.
+    // Pass 1: sample wakes front-to-back and accumulate incoming pushes. The
+    // fourth linked car closes a train; anyone behind it must use another car
+    // or another lane instead of extending one aerodynamic chain indefinitely.
     for (const car of active) {
       for (const other of active) {
         if (other === car) continue;
         const wake = r3dWake(car, other);
-        if (wake.tow > car.towStrength) {
+        const openTrain = (other._draftDepth || 1) < R3D.CHAIN_LIMIT + 1;
+        if (openTrain && wake.tow > car.towStrength) {
           car.towStrength = wake.tow;
           car._wakeLeader = other;
         }
@@ -1345,25 +1356,24 @@ class Race3DEngine {
         car._pushTarget = Math.max(car._pushTarget, wake.push * bonus);
         other.receivedPush = Math.max(other.receivedPush, wake.push * bonus * (teamLink ? 1 : 0.75));
       }
+      car._draftDepth = car._wakeLeader ? (car._wakeLeader._draftDepth || 1) + 1 : 1;
+      car.chainLen = car._draftDepth;
     }
 
-    // Wake links always point forward. Propagate train mass from the rear;
-    // an unrelated car in the other lane cannot break a real train's link.
-    for (let i = active.length - 1; i >= 0; i--) {
-      const car = active[i], leader = car._wakeLeader;
-      if (leader) leader._trainMass = Math.max(leader._trainMass,
-        (1 + car._trainMass) * car.towStrength);
-    }
+    // Wake links point forward, so the front-to-back order yields an exact
+    // depth for each train. Cars one through three retain the full tow. A
+    // fourth can briefly join, but the loss of clean air makes a longer line
+    // inefficient and encourages it to form or join another small group.
     for (const car of active) {
-      const leader = car._wakeLeader;
-      const upstream = leader ? (1 + (leader._upstreamMass || 0)) * car.towStrength : 0;
-      car._upstreamMass = upstream;
-      const mass = Math.min(6, car._trainMass + upstream);
-      car.chainLen = 1 + mass;
-      const chain = R3D.CHAIN_MAX * (1 - Math.exp(-mass * 0.32));
+      const depth = car._draftDepth;
+      const excess = Math.max(0, depth - R3D.CHAIN_LIMIT);
+      const trainEfficiency = excess === 0 ? 1 : Math.max(0.36, 1 - excess * 0.24);
+      const linkedCars = Math.min(R3D.CHAIN_LIMIT - 1, Math.max(0, depth - 1));
+      const chain = R3D.CHAIN_MAX * (1 - Math.exp(-linkedCars * 0.5));
+      const rawTarget = (car.towStrength * R3D.DRAFT_BOOST + car._pushTarget + chain) *
+        trainEfficiency + car.receivedPush;
       const target = Math.min(R3D.AERO_MAX,
-        car.towStrength * R3D.DRAFT_BOOST + car._pushTarget + car.receivedPush + chain) *
-        (car.isPlayer ? this.diff.playerDraft : 1);
+        rawTarget * (car.isPlayer ? this.diff.playerDraft : 1));
       const before = car.draftMomentum || 0;
       const rate = target > before ? R3D.DRAFT_BUILD : R3D.DRAFT_RELEASE;
       car.draftMomentum = before + (target - before) * (1 - Math.exp(-rate * dt));
@@ -1379,6 +1389,8 @@ class Race3DEngine {
     const step = Math.max(dt || 0.016, 0.001);
     const active = this.cars.filter(c => !c.finished && !c.dnf && !c.spinning);
     const hw = R3D.HALF_W - 1.1;
+    const startX = new Map(active.map(c => [c,
+      Number.isFinite(c._frameStartX) ? c._frameStartX : c.x]));
     // Cleared here so _updateAI (which runs first) reads last frame's value
     for (const c of this.cars) c._pushLocked = false;
 
@@ -1405,7 +1417,7 @@ class Race3DEngine {
             B.mesh.position.z = B.z;
             const diff = B.speed - A.speed;
             if (diff > 0) {
-              const give = Math.min(diff, 60) * (1 - Math.exp(-3 * step)) * bumper;
+              const give = Math.min(diff, 60) * (1 - Math.exp(-2.6 * step)) * bumper;
               A.speed = Math.min(R3D.SPEED_MAX * 1.05, A.speed + give);
               B.speed = Math.max(40, B.speed - give * 0.65);
             }
@@ -1433,6 +1445,15 @@ class Race3DEngine {
           }
         }
       }
+    }
+    // A car can overlap more than one neighbor in dense traffic. Cap the total
+    // correction from all solver pairs, not only each pair, so traffic pressure
+    // cannot add up to a sideways jump in a single physics step.
+    for (const car of active) {
+      const origin = startX.get(car);
+      const maxRate = car.isPlayer ? R3D.LAT_MAX : R3D.AI_LAT_MAX * 1.5 + R3D.SEP_X_RATE;
+      car.x = clamp(car.x, origin - maxRate * step, origin + maxRate * step);
+      car.mesh.position.x = car.x;
     }
   }
 
