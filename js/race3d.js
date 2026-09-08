@@ -124,20 +124,19 @@ function r3dTex(w, h, draw) {
 }
 const r3dHex = v => '#' + (v & 0xffffff).toString(16).padStart(6, '0');
 
-// Painted door/roof number roundel - white disc, dark number (reads on any livery).
+// Bold painted racing numbers with an outline that reads on any livery.
 // Cached per number so a 30-car field doesn't allocate 30 identical canvases.
 const _r3dRoundelCache = new Map();
 function r3dRoundelTex(num) {
   if (_r3dRoundelCache.has(num)) return _r3dRoundelCache.get(num);
-  const tex = r3dTex(128, 128, (ctx) => {
-    ctx.clearRect(0, 0, 128, 128);
-    ctx.fillStyle = '#f4f4f4';
-    ctx.beginPath(); ctx.arc(64, 64, 54, 0, Math.PI * 2); ctx.fill();
-    ctx.lineWidth = 6; ctx.strokeStyle = '#15151a'; ctx.stroke();
-    ctx.fillStyle = '#15151a';
-    ctx.font = 'bold 72px Arial, sans-serif';
+  const tex = r3dTex(256, 256, (ctx) => {
+    ctx.clearRect(0, 0, 256, 256);
+    ctx.fillStyle = '#f2f3e9';
+    ctx.lineWidth = 14; ctx.strokeStyle = '#161b24'; ctx.lineJoin = 'round';
+    ctx.font = 'italic 900 166px Arial, sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(String(num), 64, 70);
+    ctx.strokeText(String(num), 120, 139, 222);
+    ctx.fillText(String(num), 120, 139, 222);
   });
   _r3dRoundelCache.set(num, tex);
   return tex;
@@ -444,40 +443,32 @@ class Race3DEngine {
 
   // Shared geometries (reused across all cars for memory/perf)
   _initGeometries() {
-    const tire = new THREE.CylinderGeometry(R3D.WHEEL_R, R3D.WHEEL_R, 0.34, 18);
-    tire.rotateZ(Math.PI / 2);   // axle along local X → roll about X
-    const rim  = new THREE.CylinderGeometry(0.22, 0.22, 0.36, 14);
-    rim.rotateZ(Math.PI / 2);
-    const hub  = new THREE.CylinderGeometry(0.07, 0.07, 0.38, 8);
-    hub.rotateZ(Math.PI / 2);
+    // Blender exports local, indexed geometry. Decode once per race; every car
+    // shares these GPU buffers. No asynchronous model loading during a start.
+    const decode = data => {
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(data.position, 3));
+      geometry.setAttribute('normal', new THREE.Float32BufferAttribute(data.normal, 3));
+      if (data.color) geometry.setAttribute('color', new THREE.Float32BufferAttribute(data.color, 3));
+      geometry.setIndex(data.index);
+      geometry.computeBoundingSphere();
+      return geometry;
+    };
     this.G = {
-      tire, rim, hub,
-      lowerBody: new THREE.BoxGeometry(2.16, 0.5, 4.0),
-      hood:      new THREE.BoxGeometry(2.0, 0.26, 1.7),
-      nose:      new THREE.BoxGeometry(1.74, 0.34, 0.9),
-      tail:      new THREE.BoxGeometry(2.0, 0.30, 0.9),
-      cabin:     new THREE.BoxGeometry(1.78, 0.5, 1.95),
-      roof:      new THREE.BoxGeometry(1.62, 0.16, 1.7),
-      airdam:    new THREE.BoxGeometry(2.2, 0.16, 0.42),
-      splitter:  new THREE.BoxGeometry(2.34, 0.06, 0.5),
-      wing:      new THREE.BoxGeometry(2.24, 0.08, 0.5),
-      wingEnd:   new THREE.BoxGeometry(0.08, 0.4, 0.5),
-      strut:     new THREE.BoxGeometry(0.12, 0.42, 0.12),
-      mirror:    new THREE.BoxGeometry(0.14, 0.14, 0.3),
-      glass:     new THREE.BoxGeometry(1.6, 0.42, 0.1),
-      sideglass: new THREE.BoxGeometry(0.08, 0.34, 1.4),
-      decalDoor: new THREE.PlaneGeometry(1.0, 1.0),
-      decalRoof: new THREE.PlaneGeometry(1.2, 1.2),
-      lamp:      new THREE.PlaneGeometry(0.5, 0.28),
+      parts: Object.fromEntries(Object.entries(SC_STOCK_CAR_MODEL.parts)
+        .map(([name, data]) => [name, decode(data)])),
+      wheel: decode(SC_STOCK_CAR_MODEL.wheel),
+      decalDoor: new THREE.PlaneGeometry(0.80, 0.58),
+      decalRoof: new THREE.PlaneGeometry(1.04, 1.04),
+      teamBand: new THREE.BoxGeometry(1.48, 0.012, 0.12),
     };
     this.M = {
-      tire:  new THREE.MeshLambertMaterial({ color: 0x141416 }),
-      rim:   new THREE.MeshLambertMaterial({ color: 0xb9bcc4 }),
-      hub:   new THREE.MeshLambertMaterial({ color: 0x6a6d75 }),
-      trim:  new THREE.MeshLambertMaterial({ color: 0x101012 }),
-      glass: new THREE.MeshLambertMaterial({ color: 0x223044, transparent: true, opacity: 0.66 }),
-      head:  new THREE.MeshBasicMaterial({ color: 0xfff2c8 }),
-      tail:  new THREE.MeshBasicMaterial({ color: 0xd11a1a }),
+      trim: new THREE.MeshLambertMaterial({ color: 0x191d23, side: THREE.DoubleSide }),
+      glass: new THREE.MeshPhongMaterial({ color: 0x233e50, shininess: 65, side: THREE.DoubleSide }),
+      metal: new THREE.MeshPhongMaterial({ color: 0x8d989e, shininess: 48, side: THREE.DoubleSide }),
+      headlight: new THREE.MeshBasicMaterial({ color: 0xe5ece3, side: THREE.DoubleSide }),
+      taillight: new THREE.MeshBasicMaterial({ color: 0x9c1223, side: THREE.DoubleSide }),
+      wheel: new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }),
     };
   }
 
@@ -762,102 +753,53 @@ class Race3DEngine {
     const G = this.G, M = this.M;
     const g = new THREE.Group();
 
-    const bodyMat = new THREE.MeshLambertMaterial({ color: hex });
-    const darker  = (hex & 0xfefefe) >> 1; // ~50% darker for accent panels
-    const accMat  = new THREE.MeshLambertMaterial({ color: darker });
+    g.name = 'Empire SC-01';
+    const bodyMat = new THREE.MeshPhongMaterial({ color: hex, shininess: 45, side: THREE.DoubleSide });
+    // Keep player/team colors exact; high-contrast stripes remain readable
+    // on light liveries, and gold continues to identify teammates.
+    const luminance = (((hex >> 16) & 255) * 0.2126 +
+      ((hex >> 8) & 255) * 0.7152 + (hex & 255) * 0.0722) / 255;
+    const accent = isTeammate ? 0xe0a800 : (luminance > 0.65 ? 0x202630 : 0xe8ece2);
+    const accMat = new THREE.MeshLambertMaterial({ color: accent, side: THREE.DoubleSide });
+    for (const [name, geometry] of Object.entries(G.parts)) {
+      const mesh = new THREE.Mesh(geometry, name === 'paint' ? bodyMat : name === 'accent' ? accMat : M[name]);
+      mesh.name = name;
+      mesh.castShadow = name === 'paint' || name === 'trim';
+      mesh.receiveShadow = true;
+      g.add(mesh);
+    }
 
-    // Lower hull
-    const lower = new THREE.Mesh(G.lowerBody, bodyMat);
-    lower.position.set(0, 0.42, 0); lower.castShadow = true; g.add(lower);
-
-    // Sloped nose (front, +Z) and tail (rear, -Z)
-    const nose = new THREE.Mesh(G.nose, bodyMat);
-    nose.position.set(0, 0.40, 2.05); nose.rotation.x = 0.18; nose.castShadow = true; g.add(nose);
-    const tail = new THREE.Mesh(G.tail, bodyMat);
-    tail.position.set(0, 0.44, -2.05); tail.rotation.x = -0.12; g.add(tail);
-
-    // Hood + decklid
-    const hood = new THREE.Mesh(G.hood, bodyMat);
-    hood.position.set(0, 0.60, 1.05); hood.rotation.x = -0.05; g.add(hood);
-
-    // Greenhouse / cabin + roof
-    const cabin = new THREE.Mesh(G.cabin, accMat);
-    cabin.position.set(0, 0.78, -0.15); cabin.castShadow = true; g.add(cabin);
-    const roof = new THREE.Mesh(G.roof, bodyMat);
-    roof.position.set(0, 1.05, -0.15); g.add(roof);
-
-    // Glass: windshield, rear glass, side windows
-    const ws = new THREE.Mesh(G.glass, M.glass);
-    ws.position.set(0, 0.86, 0.78); ws.rotation.x = 0.5; g.add(ws);
-    const rw = new THREE.Mesh(G.glass, M.glass);
-    rw.position.set(0, 0.86, -1.05); rw.rotation.x = -0.5; g.add(rw);
-    [-0.9, 0.9].forEach(sx => {
-      const sg = new THREE.Mesh(G.sideglass, M.glass);
-      sg.position.set(sx, 0.84, -0.15); g.add(sg);
+    const wheels = SC_STOCK_CAR_MODEL.wheelPositions.map(([wx, wy, wz]) => {
+      const wheel = new THREE.Mesh(G.wheel, M.wheel);
+      wheel.name = 'Rolling stock-car wheel';
+      wheel.position.set(wx, wy, wz);
+      wheel.castShadow = true;
+      g.add(wheel);
+      return wheel;
     });
 
-    // Aero: front air dam + splitter, rear wing
-    const dam = new THREE.Mesh(G.airdam, M.trim);
-    dam.position.set(0, 0.20, 2.28); g.add(dam);
-    const splitter = new THREE.Mesh(G.splitter, M.trim);
-    splitter.position.set(0, 0.10, 2.38); g.add(splitter);
-    const wing = new THREE.Mesh(G.wing, M.trim);
-    wing.position.set(0, 1.08, -2.18); g.add(wing);
-    [-1.08, 1.08].forEach(sx => {
-      const ep = new THREE.Mesh(G.wingEnd, M.trim);
-      ep.position.set(sx, 0.92, -2.18); g.add(ep);
-      const st = new THREE.Mesh(G.strut, M.trim);
-      st.position.set(sx * 0.55, 0.86, -2.18); g.add(st);
+    const decalMat = new THREE.MeshBasicMaterial({
+      map: r3dRoundelTex(number), transparent: true, depthWrite: false,
+      polygonOffset: true, polygonOffsetFactor: -1,
     });
-
-    // Mirrors
-    [-1.0, 1.0].forEach(sx => {
-      const mir = new THREE.Mesh(G.mirror, M.trim);
-      mir.position.set(sx, 0.82, 0.55); g.add(mir);
-    });
-
-    // Lights (decal-style emissive planes)
-    [-0.6, 0.6].forEach(sx => {
-      const hl = new THREE.Mesh(G.lamp, M.head);
-      hl.position.set(sx, 0.46, 2.51); g.add(hl);
-      const tl = new THREE.Mesh(G.lamp, M.tail);
-      tl.position.set(sx, 0.5, -2.51); tl.rotation.y = Math.PI; g.add(tl);
-    });
-
-    // Wheels (shared geometry; stored for rolling animation)
-    const wheels = [];
-    [[-1.12, -1.42], [1.12, -1.42], [-1.12, 1.42], [1.12, 1.42]].forEach(([wx, wz]) => {
-      const tire = new THREE.Mesh(G.tire, M.tire);
-      tire.position.set(wx, R3D.WHEEL_R, wz); tire.castShadow = true; g.add(tire);
-      const rim = new THREE.Mesh(G.rim, M.rim);
-      rim.position.set(wx, R3D.WHEEL_R, wz); g.add(rim);
-      const hub = new THREE.Mesh(G.hub, M.hub);
-      hub.position.set(wx, R3D.WHEEL_R, wz); g.add(hub);
-      wheels.push(tire, rim, hub);
-    });
-
-    // Painted number decals - roof + both doors
-    const roundel = r3dRoundelTex(number);
-    const decalMat = new THREE.MeshBasicMaterial({ map: roundel, transparent: true });
     const roofDecal = new THREE.Mesh(G.decalRoof, decalMat);
-    roofDecal.position.set(0, 1.14, -0.15); roofDecal.rotation.x = -Math.PI / 2; g.add(roofDecal);
-    [[-1.09, Math.PI / 2], [1.09, -Math.PI / 2]].forEach(([sx, ry]) => {
+    roofDecal.position.set(0, 1.334, -0.20);
+    roofDecal.rotation.x = -Math.PI / 2;
+    roofDecal.name = 'Roof number';
+    g.add(roofDecal);
+    // Outward-facing normals on both doors prevent mirrored or invisible numbers.
+    [[-1.045, -Math.PI / 2], [1.045, Math.PI / 2]].forEach(([sx, ry]) => {
       const door = new THREE.Mesh(G.decalDoor, decalMat);
-      door.position.set(sx, 0.5, -0.1); door.rotation.y = ry; g.add(door);
+      door.position.set(sx, 0.58, 0.04);
+      door.rotation.y = ry;
+      door.name = 'Door number';
+      g.add(door);
     });
 
-    // (No draft box around the car - the HUD draft meter carries that info.)
-
-    // Teammate marker - flat gold trim painted on the car itself.
-    // (No floating banner: keeps the field readable at speed.)
     if (isTeammate) {
-      const tmMat = new THREE.MeshLambertMaterial({ color: 0xe0a800 });
-      const roofBand = new THREE.Mesh(new THREE.BoxGeometry(1.64, 0.05, 0.3), tmMat);
-      roofBand.position.set(0, 1.14, 0.6); g.add(roofBand);
-      [-1.10, 1.10].forEach(sx => {
-        const rocker = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.13, 3.4), tmMat);
-        rocker.position.set(sx, 0.22, 0); g.add(rocker);
-      });
+      const roofBand = new THREE.Mesh(G.teamBand, accMat);
+      roofBand.position.set(0, 1.33, 0.34);
+      g.add(roofBand);
     }
 
     g.position.set(x, 0, z);
