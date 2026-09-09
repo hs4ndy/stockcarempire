@@ -1,4 +1,4 @@
-"""Build the original Empire SC-01 stock car and its shared browser geometry.
+"""Build the original Empire Gen-7 stock car and its shared browser geometry.
 
 Run with Blender --background --python tools/build_stock_car.py.
 Coordinates in modeling helpers match the game: X across, Y up, +Z forward.
@@ -29,11 +29,11 @@ def material(name, color, metallic=0, roughness=.38):
     return m
 
 M = {
-    'paint': material('paint', (.48, .008, .016), .3, .32),
-    'accent': material('accent', (.89, .91, .85), .12),
+    'paint': material('paint', (.028, .038, .052), .55, .29),
+    'accent': material('accent', (.70, .035, .018), .15),
     'trim': material('trim', (.014, .018, .021), .05, .5),
     'glass': material('glass', (.035, .075, .10), .42, .17),
-    'metal': material('metal', (.26, .31, .34), .75, .3),
+    'metal': material('metal', (.16, .19, .22), .75, .3),
     'headlight': material('headlight', (.82, .88, .83), .1),
     'taillight': material('taillight', (.48, .008, .012), .2),
     'rubber': material('rubber', (.018, .021, .025), 0, .8),
@@ -91,110 +91,204 @@ def interp(z, knots):
             return va+(vb-va)*t
     return knots[-1][1]
 
+# Gen-7/P3 body fits the existing 4.6-unit contact envelope.
+AXLE=1.30
 def arch_bottom(z):
-    h=.19
-    for axle in [-1.42,1.42]:
+    h=.165
+    for axle in [-AXLE,AXLE]:
         d=abs(z-axle)
-        if d < .46:
-            h=max(h,.40+math.sqrt(.46**2-d**2))
+        if d<.437: h=max(h,.40+math.sqrt(.437**2-d**2))
     return h
 
-def body_height(z):
-    return max(interp(z,[(-2.48,.76),(-2.0,.86),(-.9,.89),(.75,.87),(1.7,.80),(2.48,.65)]),arch_bottom(z)+.05)
+def width(z):
+    return interp(z,[(-2.27,1.0),(-2.10,1.015),(-1.30,1.035),(-.76,1.018),(.70,1.018),(1.30,1.035),(1.99,1.01),(2.27,1.0)])
 
-# Continuous stamped shell with open wheel wells, rounded shoulders and a hood.
-zs=sorted(set([-2.48,-2.4,-2.25,-2.04,-.90,-.75,-.4,0,.4,.75,.90,2.04,2.25,2.4,2.48]+
-    [round(axle+.46*math.cos(i*math.pi/14),6) for axle in [-1.42,1.42] for i in range(15)]))
-verts=[]
+def deck(z):
+    return interp(z,[(-2.27,.78),(-1.90,.82),(-1.45,.835),(-.80,.845),(.85,.815),(1.30,.785),(1.85,.727),(2.27,.635)])
+
+def grid(name,rows,mat,smooth=True):
+    n=len(rows[0])
+    return mesh(name,[p for row in rows for p in row],
+                [(j*n+i,j*n+i+1,(j+1)*n+i+1,(j+1)*n+i)
+                 for j in range(len(rows)-1) for i in range(n-1)],mat,smooth)
+
+# Hood center independent of fender crowns; actual open wheel wells.
+zs=sorted(set([-2.27,-2.21,-2.10,-1.94,-.76,-.50,0,.50,.76,1.94,2.10,2.21,2.27]+
+    [round(axle+.437*math.cos(i*math.pi/18),6) for axle in [-AXLE,AXLE] for i in range(19)]))
+rows=[]
 for z in zs:
-    w=interp(z,[(-2.48,.91),(-2.25,1.05),(-1.42,1.075),(0,1.02),(1.42,1.075),(2.25,1.03),(2.48,.90)])
-    h=body_height(z)
-    verts += [(x,y,z) for x,y in [(-w,arch_bottom(z)),(-w,h-.035),(-w*.94,h+.005),
-        (-w*.78,h+.03),(0,h+.047),(w*.78,h+.03),(w*.94,h+.005),(w,h-.035),(w,arch_bottom(z))]]
-faces=[]
-for j in range(len(zs)-1):
-    for k in range(8):
-        a=j*9+k
-        faces.append((a,a+1,a+10,a+9))
-faces += [tuple(range(8,-1,-1)),tuple((len(zs)-1)*9+i for i in range(9))]
-mesh('SC01 sculpted body and open wheel arches',verts,faces,'paint',True)
-box('Undertray',(0,.15,0),(1.86,.065,4.60),'trim',.03)
+    w=width(z); b=arch_bottom(z); d=deck(z); s=max(d+.027,b+.026)
+    profile=[(-w*.970,b),(-w,b+(s-b)*.62),(-w,s-.006),(-w*.970,s+.012),
+             (-w*.87,s+.020),(-w*.67,d+.014),(0,d+.024),
+             (w*.67,d+.014),(w*.87,s+.020),(w*.970,s+.012),(w,s-.006),
+             (w,b+(s-b)*.62),(w*.970,b)]
+    # The shell's end rings follow the same rounded plan-view as the fascia.
+    # This closes the previous gaps between the front/rear caps and quarters.
+    def shell_z(x):
+        if z>1.94: return z-.245*(abs(x)/1.025)**4*((z-1.94)/.33)
+        if z< -1.94: return z+.11*(abs(x)/1.02)**5*((-z-1.94)/.33)
+        return z
+    rows.append([(x,y,shell_z(x)) for x,y in profile])
+grid('Continuous composite shell',rows,'paint')
+box('Flat underfloor',(0,.136,0),(1.79,.038,4.40),'trim',.02)
 
-# Cabin: low coupe roof and raked front/rear glazing, framed by painted pillars.
-roof=box('Crowned roof',(0,1.285,-.22),(1.52,.075,1.36),'paint',.055)
-mesh('Front windshield',[(-.74,1.30,.43),(.74,1.30,.43),(.87,.92,.99),(-.87,.92,.99)],[(0,1,2,3)],'glass')
-mesh('Rear windshield',[(-.74,1.29,-.85),(-.89,.91,-1.50),(.89,.91,-1.50),(.74,1.29,-.85)],[(0,1,2,3)],'glass')
+def nose(x,y,offset=0):
+    return (x,y,2.273-.245*(abs(x)/1.025)**4-max(0,.30-y)*.11+offset)
+
+xs=[-1.0,-.95,-.86,-.72,-.50,0,.50,.72,.86,.95,1.0]
+grid('Rounded front bumper',[[nose(x,y) for x in xs] for y in [.145,.28,.49,.615]],'paint')
+grid('Nose upper shoulder',[[nose(x,.615) for x in xs],
+    [(x,interp(abs(x),[(0,.659),(.67,.649),(.87,.682),(.97,.674),(1,.656)]),nose(x,.615)[2]-.003) for x in xs]],'paint')
+
+def graphic(name,path,mat,thickness=.008,surface=nose):
+    sampled=[]
+    for a,b in zip(path,path[1:]):
+        sampled.extend((a[0]+(b[0]-a[0])*i/12,a[1]+(b[1]-a[1])*i/12) for i in range(12))
+    sampled.append(path[-1])
+    rows=[]
+    for i,(x,y) in enumerate(sampled):
+        a=sampled[max(0,i-1)]; b=sampled[min(len(sampled)-1,i+1)]
+        dx,dy=b[0]-a[0],b[1]-a[1]
+        length=math.hypot(dx,dy)
+        ox,oy=-dy/length*thickness/2,dx/length*thickness/2
+        rows.append([surface(x-ox,y-oy,.006),surface(x+ox,y+oy,.006)])
+    return grid(name,rows,mat,False)
+
+def fascia_patch(name,path,mat,surface=nose):
+    # Subdivide onto the curved fascia, otherwise a flat polygon disappears
+    # behind the painted bumper between its corners.
+    a,b,c,d=path
+    rows=[]
+    for j in range(5):
+        t=j/4
+        left=(a[0]*(1-t)+d[0]*t,a[1]*(1-t)+d[1]*t)
+        right=(b[0]*(1-t)+c[0]*t,b[1]*(1-t)+c[1]*t)
+        rows.append([surface(left[0]+(right[0]-left[0])*i/16,left[1]+(right[1]-left[1])*i/16,.004) for i in range(17)])
+    return grid(name,rows,mat,False)
+
+fascia_patch('Wide lower radiator opening',[(-.70,.155),(.70,.155),(.53,.405),(-.53,.405)],'trim')
+for x in [-.48,-.32,-.16,0,.16,.32,.48]:
+    tube('Radiator vane',nose(x,.17,.010),nose(x,.38,.010),.003,'metal',4)
 for side in [-1,1]:
-    mesh('Side glazing',[(side*.755,1.28,.41),(side*.755,1.28,-.83),
-         (side*.94,.915,-1.30),(side*.94,.915,.85)],[(0,1,2,3)],'glass')
-    tube('A pillar',(side*.765,1.29,.43),(side*.91,.90,.98),.047,'paint')
-    tube('C pillar',(side*.77,1.28,-.88),(side*.95,.91,-1.50),.07,'paint')
-    tube('Window sill',(side*.943,.91,-1.31),(side*.943,.91,.89),.028,'trim')
-    tube('B pillar',(side*.773,1.28,-.30),(side*.943,.917,-.36),.030,'trim')
-    tube('Roof rail',(side*.77,1.30,-.83),(side*.77,1.30,.43),.022,'paint')
-    box('Side skirt',(side*1.035,.19,0),(.07,.095,1.95),'trim',.018)
-    box('Lower door sweep',(side*1.042,.29,-.05),(.016,.055,1.69),'accent')
-    # Wheel-arch lips follow the actual tire cutouts.
-    for axle in [-1.42,1.42]:
-        for i in range(14):
-            a=i*math.pi/14
-            b=(i+1)*math.pi/14
-            tube('Fender rolled lip',(side*1.078,.40+.465*math.sin(a),axle+.465*math.cos(a)),
-                 (side*1.078,.40+.465*math.sin(b),axle+.465*math.cos(b)),.013,'paint',6)
-    # Small roof-height door mirror with a dark face.
-    tube('Mirror stem',(side*.90,1.00,.72),(side*1.09,1.015,.65),.025,'trim')
-    box('Mirror shell',(side*1.09,1.03,.64),(.16,.09,.19),'paint',.025)
-    box('Mirror face',(side*1.09,1.03,.54),(.12,.06,.009),'metal')
-    tube('Side exhaust',(side*1.04,.23,-.73),(side*1.08,.23,-.73),.050,'metal',12)
-
-# Splitter, grille and low-profile deck spoiler instead of a pedestal wing.
-box('Front splitter',(0,.13,2.32),(2.21,.055,.42),'trim',.035)
-box('Front grille',(0,.40,2.485),(1.16,.235,.021),'trim',.035)
-for y in [.33,.39,.45]:
-    box('Grille slat',(0,y,2.501),(1.08,.013,.013),'metal')
+    fascia_patch('Vertical brake inlet',[(side*.79,.18),(side*.94,.18),(side*.92,.455),(side*.81,.47)],'trim')
+    graphic('Inlet edge',[(side*.94,.18),(side*.95,.44),(side*.85,.47)],'accent',.006)
+    graphic('Continuous upper lamp signature',[(0,.559),(side*.52,.565),(side*.71,.58),(side*.94,.615)],'accent',.010)
+    graphic('Slim lower lamp signature',[(0,.514),(side*.52,.52),(side*.68,.514),(side*.91,.563),(side*.94,.615)],'accent',.006)
+    graphic('Lower nose pinstripe',[(0,.442),(side*.53,.442),(side*.76,.153)],'accent',.007)
+split_outline=[(-1.07,.113,1.87),(-1.065,.113,2.06),(-.97,.113,2.23),(-.70,.113,2.295),
+               (.70,.113,2.295),(.97,.113,2.23),(1.065,.113,2.06),(1.07,.113,1.87)]
+mesh('Stepped front splitter',split_outline,[tuple(range(8))],'trim')
 for side in [-1,1]:
-    box('Headlight housing',(side*.70,.562,2.49),(.37,.14,.018),'trim',.015)
-    mesh('Headlight graphic',[(side*.53,.61,2.504),(side*.86,.60,2.504),
-        (side*.84,.535,2.504),(side*.54,.55,2.504)],[(0,1,2,3)],'headlight')
-    box('Brake inlet',(side*.77,.30,2.466),(.23,.12,.025),'trim',.018)
-    box('Tail lamp recess',(side*.64,.60,-2.485),(.50,.14,.015),'trim',.012)
-    for i in range(3):
-        box('Tail lamp',(side*(.45+i*.17),.60,-2.498),(.12,.065,.012),'taillight',.008)
-box('Rear diffuser',(0,.24,-2.40),(1.55,.12,.22),'trim',.01)
-for x in [-.70,-.35,0,.35,.70]:
-    box('Diffuser fin',(x,.17,-2.38),(.022,.17,.30),'trim')
-spoiler=mesh('Deck-mounted blade spoiler',[(-1.01,.85,-2.25),(1.01,.85,-2.25),
-    (1.01,1.03,-2.36),(-1.01,1.03,-2.36),(-1.01,.85,-2.23),(1.01,.85,-2.23),
-    (1.01,1.03,-2.34),(-1.01,1.03,-2.34)],[(0,1,2,3),(4,7,6,5),(0,4,5,1),(3,2,6,7),(0,3,7,4),(1,5,6,2)],'trim')
-box('Rear bumper accent',(0,.72,-2.49),(1.8,.035,.015),'accent')
+    tube('Splitter stay',(side*.85,.14,2.22),(side*.87,.29,2.17),.008,'metal',6)
+    for z in [1.65,1.76]:
+        tube('Hood pin',(side*.58,deck(z)+.026,z),(side*.58,deck(z)+.034,z),.023,'metal',8)
 
-# Flat livery panels and hood vents. These tint independently in the game.
+# Shaped roof and compound-curved front/rear glazing.
+roof_z=[-.78,-.66,-.44,-.16,.12,.31,.43]
+def roof_center(z):
+    return interp(z,[(-.78,1.23),(-.66,1.275),(-.44,1.299),(-.16,1.302),(.12,1.29),(.31,1.263),(.43,1.223)])
+def roof_width(z):
+    return interp(z,[(-.78,.714),(-.44,.747),(-.16,.75),(.12,.745),(.43,.711)])
+grid('Compound crowned roof',[[(f*roof_width(z),roof_center(z)-.052*abs(f)**3,z)
+    for f in [-1,-.96,-.84,-.60,0,.60,.84,.96,1]] for z in roof_z],'paint')
+for rear in [False,True]:
+    rows=[]
+    for j in range(7):
+        t=j/6
+        z=(.42*(1-t)+.94*t) if not rear else (-.77*(1-t)-1.54*t)
+        w=(.68*(1-t)+.887*t) if not rear else (.682*(1-t)+.895*t)
+        y=(1.22*(1-t)+.844*t) if not rear else (1.23*(1-t)+.862*t)
+        rows.append([(f*w,y+.018*(1-f*f),z+.037*(1-f*f)*math.sin(t*math.pi)*(1 if not rear else -1))
+                     for f in [-1,-.8,-.4,0,.4,.8,1]])
+    grid('Raked rear glass' if rear else 'Curved windshield',rows,'glass')
+    for x in [-.28,.28]:
+        brace=[]
+        for j in range(5):
+            t=j/4
+            z=(.42*(1-t)+.94*t) if not rear else (-.77*(1-t)-1.54*t)
+            w=(.68*(1-t)+.887*t) if not rear else (.682*(1-t)+.895*t)
+            y=(1.22*(1-t)+.844*t) if not rear else (1.23*(1-t)+.862*t)
+            brace.append((x,y+.018*(1-(x/w)**2)+.007,z+.037*(1-(x/w)**2)*math.sin(t*math.pi)*(1 if not rear else -1)))
+        for a,b in zip(brace,brace[1:]):
+            tube('Rear retention strip' if rear else 'Windshield brace',a,b,.007,'metal',5)
 for side in [-1,1]:
-    stripe_zs=sorted(set([.99,2.40]+[z for z in zs if .99<z<2.40]))
-    stripe_verts=[]
-    for z in stripe_zs:
-        for x in [.11,.27]:
-            stripe_verts.append((side*x,body_height(z)+.049-x*.021,z))
-    mesh('Hood racing stripe',stripe_verts,[(i*2,i*2+1,i*2+3,i*2+2) for i in range(len(stripe_zs)-1)],'accent')
-    for z in [1.10,1.20,1.30,1.40]:
-        y=body_height(z)+.041
-        box('Hood cooling louver',(side*.53,y,z),(.24,.015,.035),'trim',.005)
-    mesh('Rear quarter livery sweep',[(side*1.077,.84,-1.96),(side*1.077,.69,-1.99),
-        (side*1.03,.47,-.66),(side*1.03,.63,-.68)],[(0,1,2,3)],'accent')
-for z in [-.66,-.16]:
-    box('Roof flap seam',(0,1.325,z),(.88,.004,.009),'trim')
-for x in [-.44,.44]:
-    box('Roof flap seam',(x,1.325,-.41),(.009,.004,.50),'trim')
+    def side_panel(name,pts,mat='paint'):
+        return mesh(name,[(side*x,y,z) for x,y,z in pts],[tuple(range(len(pts)))],mat)
+    side_panel('Swept A pillar',[(.713,1.185,.43),(.756,1.17,.40),(.951,.847,.89),(.884,.847,.956)])
+    outer=[(.767,1.226,-.43),(.716,1.18,-.77),(.966,.85,-1.54),(.94,.884,-.45)]
+    # Close the rail between the raked backlight and the side quarter panel.
+    side_panel('Backlight edge rail',[(.682,1.23,-.77),(.716,1.18,-.77),(.966,.85,-1.54),(.895,.862,-1.54)])
+    inner=[(.798,1.165,-.53),(.805,1.124,-.83),(.934,.897,-1.30),(.928,.904,-.55)]
+    mesh('Sculpted quarter-window surround',[(side*x,y,z) for x,y,z in outer+inner],
+         [(i,(i+1)%4,(i+1)%4+4,i+4) for i in range(4)],'paint',True)
+    grid('Roof-side stamped rail',[
+        [(side*(roof_width(z)+dx),roof_center(z)-dy,z) for dx,dy in [(0,.045),(.022,.069)]]
+        for z in roof_z],'paint')
+    side_panel('Window belt rail',[(.922,.89,.85),(.948,.842,.90),(.960,.855,-1.50),(.934,.885,-1.43)])
+    side_panel('B pillar',[(.767,1.226,-.34),(.767,1.23,-.43),(.94,.884,-.45),(.94,.884,-.36)],'trim')
+    side_panel('Triangular quarter glass',inner,'glass')
+    tube('Quarter brace',(side*.925,.91,-1.29),(side*.83,1.085,-.70),.010,'metal',6)
+    box('Rocker skirt',(side*.991,.168,0),(.072,.07,1.80),'trim',.012)
+    box('Rocker highlight',(side*1.029,.209,0),(.009,.018,1.69),'accent')
+    box('Exhaust heat shield',(side*1.032,.272,-.65),(.014,.13,.43),'metal',.018)
+    tube('Exhaust dark bore',(side*1.040,.27,-.69),(side*1.047,.27,-.69),.061,'trim',16)
+    for i in range(16):
+        a=i*math.tau/16; b=(i+1)*math.tau/16
+        tube('Exhaust rolled edge',(side*1.05,.27+.065*math.sin(a),-.69+.065*math.cos(a)),
+             (side*1.05,.27+.065*math.sin(b),-.69+.065*math.cos(b)),.007,'metal',5)
+    for z in [-.49,-.40,-.31,-.22]:
+        box('Skirt cooling slot',(side*1.03,.27,z),(.010,.072,.037),'trim')
+    for axle in [-AXLE,AXLE]:
+        arc=[]
+        for i in range(25):
+            a=i*math.pi/24; z=axle+.438*math.cos(a)
+            arc.append([(side*(width(z)+.001),.40+r*math.sin(a),axle+r*math.cos(a)) for r in [.438,.450]])
+        grid('Rolled arch lip',arc,'paint')
+    for z in [1.09,1.16,1.23,1.30,1.37]:
+        box('Recessed hood extractor',(side*.52,deck(z)+.021,z),(.26,.011,.028),'trim',.004)
+box('Dark cockpit tub',(0,.73,-.16),(1.55,.20,1.55),'trim')
+box('Driver seat back',(-.40,.955,-.42),(.39,.43,.12),'trim',.05)
+for side in [-1,1]:
+    tube('Internal main hoop',(side*.68,.81,-.48),(side*.64,1.20,-.48),.020,'metal',6)
+    tube('Cage roof side',(side*.64,1.19,-.48),(side*.65,1.14,.38),.018,'metal',6)
+    tube('Cage door brace',(side*.85,.86,-.32),(side*.69,1.14,.35),.018,'metal',6)
+tube('Cage cross member',(-.64,1.20,-.48),(.64,1.20,-.48),.020,'metal',6)
+tube('Cage diagonal',(-.64,.81,-.49),(.64,1.20,-.49),.020,'metal',6)
+def window_x(y):
+    return -.94+(y-.895)/.30*.171
+for z in [-.27,-.16,-.05,.06,.17,.28,.39,.50]:
+    top=min(1.18,1.18-max(0,z-.30)*.65)
+    tube('Window net vertical',(window_x(.91),.91,z),(window_x(top),top,z),.006,'trim',4)
+for y in [.92,.97,1.02,1.07,1.12,1.17]:
+    tube('Window net horizontal',(window_x(y),y,-.27),(window_x(y),y,.50-max(0,y-1.05)*1.5),.006,'trim',4)
 
-# Driver's window net, two windshield braces and rear glass retention strips.
-for z in [-.20,-.05,.10,.25,.40]:
-    tube('Window safety net',(-.805,1.18,z),(-.941,.95,z),.008,'trim',4)
-for y in [.99,1.05,1.11,1.17]:
-    x=-.941+(y-.95)/.23*.136
-    tube('Window safety net',(x,y,-.20),(x,y,.40),.008,'trim',4)
-for x in [-.27,.27]:
-    tube('Windshield brace',(x,1.303,.44),(x,.925,.985),.011,'metal',6)
-    tube('Rear window strap',(x,1.295,-.85),(x,.921,-1.49),.013,'metal',6)
+def tail(x,y,offset=0):
+    return (x,y,-2.277+.11*(abs(x)/1.02)**5-offset)
+grid('Upright rear fascia',[[tail(x,y) for x in xs] for y in [.22,.37,.61,.785]],'paint')
+grid('Rear deck trailing edge',[[tail(x,.785) for x in xs],
+    [(x,interp(abs(x),[(0,.804),(.67,.794),(.87,.827),(.97,.819),(1,.801)]),tail(x,.785)[2]+.006) for x in xs]],'paint')
+fascia_patch('Rear recessed bumper panel',[(-.80,.44),(.80,.44),(.87,.68),(-.87,.68)],'trim',tail)
+for side in [-1,1]:
+    graphic('Slim rear light',[(side*.47,.643),(side*.78,.644),(side*.88,.685)],'taillight',.034,tail)
+    graphic('Rear shoulder outline',[(side*.43,.696),(side*.82,.696),(side*.91,.73)],'accent',.008,tail)
+mesh('Rear diffuser ramp',[(-.84,.14,-1.88),(.84,.14,-1.88),(.84,.29,-2.275),(-.84,.29,-2.275)],[(0,1,2,3)],'trim')
+for x in [-.79,-.40,0,.40,.79]:
+    mesh('Diffuser strake',[(x,.125,-1.85),(x,.145,-2.28),(x,.29,-2.28),(x,.145,-1.85)],[(0,1,2,3)],'trim')
+mesh('Deck blade spoiler',[(-.97,.83,-2.05),(.97,.83,-2.05),(.98,1.013,-2.19),(-.98,1.013,-2.19),
+                           (-.97,.83,-2.03),(.97,.83,-2.03),(.98,1.013,-2.17),(-.98,1.013,-2.17)],
+     [(0,1,2,3),(4,7,6,5),(0,4,5,1),(3,2,6,7),(0,3,7,4),(1,5,6,2)],'trim')
+for side in [-1,1]:
+    mesh('Spoiler end fence',[(side*.977,.83,-1.99),(side*.977,.83,-2.22),(side*.977,1.018,-2.22)],[(0,1,2)],'trim')
+    tube('Fuel surround',(side*1.016,.721,-1.90),(side*1.026,.721,-1.90),.068,'trim',16)
+    tube('Fuel cap',(side*1.027,.721,-1.90),(side*1.03,.721,-1.90),.048,'metal',12)
+for z in [-.58,-.10]:
+    grid('Roof flap transverse seam',[
+        [(x,roof_center(z)+.001-.052*abs(x/roof_width(z))**3,z+dz) for dz in [-.003,.003]]
+        for x in [-.43,-.20,0,.20,.43]],'trim',False)
+for x in [-.43,.43]:
+    grid('Roof flap longitudinal seam',[
+        [(x+dx,roof_center(z)+.002-.052*abs(x/roof_width(z))**3,z) for dx in [-.003,.003]]
+        for z in [-.58,-.44,-.16,-.10]],'trim',False)
 
 # One local wheel prototype. All four instances share this baked geometry.
 wheel_parts=[]
@@ -214,7 +308,9 @@ for j in range(len(rings)-1):
     faces += [(j*n+i,j*n+(i+1)%n,(j+1)*n+(i+1)%n,(j+1)*n+i) for i in range(n)]
 wheel_mesh('Slick tire',verts,faces,'rubber')
 for side in [-1,1]:
-    # Rim rings and ten visible forged spokes.
+    # Rim rings and ten split-Y forged spokes around a single center lock.
+    disk=[(side*.13,0,0)]+[(side*.13,.261*math.sin(i*math.tau/n),.261*math.cos(i*math.tau/n)) for i in range(n)]
+    wheel_mesh('Recessed brake disc',disk,[(0,1+i,1+(i+1)%n) for i in range(n)],'trim',False)
     vs=[]
     for x,r in [(side*.166,.305),(side*.170,.284),(side*.151,.263)]:
         vs += [(x,r*math.sin(i*math.tau/n),r*math.cos(i*math.tau/n)) for i in range(n)]
@@ -223,12 +319,15 @@ for side in [-1,1]:
     vs=[]; fs=[]
     for i in range(10):
         a=i*math.tau/10
-        p=len(vs)
-        vs += [(side*.169,r*math.sin(a+da),r*math.cos(a+da)) for r,da in [(.075,-.14),(.285,-.065),(.285,.065),(.075,.14)]]
-        fs.append((p,p+1,p+2,p+3))
-    wheel_mesh('Ten forged spokes',vs,fs,'metal',False)
+        for radii in [[(.070,-.17),(.18,-.068),(.18,.068),(.070,.17)],
+                      [(.16,-.07),(.285,-.19),(.285,-.125),(.19,.02)],
+                      [(.19,-.02),(.285,.125),(.285,.19),(.16,.07)]]:
+            p=len(vs)
+            vs += [(side*.169,r*math.sin(a+da),r*math.cos(a+da)) for r,da in radii]
+            fs.append((p,p+1,p+2,p+3))
+    wheel_mesh('Ten split-Y forged spokes',vs,fs,'metal',False)
     vs=[(side*.173,0,0)]+[(side*.173,.075*math.sin(i*math.tau/8),.075*math.cos(i*math.tau/8)) for i in range(8)]
-    wheel_mesh('Center lock',vs,[(0,1+i,1+(i+1)%8) for i in range(8)],'accent',False)
+    wheel_mesh('Center lock',vs,[(0,1+i,1+(i+1)%8) for i in range(8)],'metal',False)
 
 # Bake exactly the same meshes for Blender, GLB and the synchronous Three r134 adapter.
 def bake(objects, vertex_colors=False):
@@ -244,7 +343,7 @@ def bake(objects, vertex_colors=False):
             for li in tri.loops:
                 loop=data.loops[li]
                 co=ev.matrix_world @ data.vertices[loop.vertex_index].co
-                normal=data.corner_normals[li].vector
+                normal=(ev.matrix_world.to_3x3().inverted().transposed() @ data.corner_normals[li].vector).normalized()
                 group['position'] += [round(co.x,5),round(co.z,5),round(-co.y,5)]
                 group['normal'] += [round(normal.x,5),round(normal.z,5),round(-normal.y,5)]
                 if vertex_colors:
@@ -263,10 +362,29 @@ def bake(objects, vertex_colors=False):
         group.clear(); group.update(indexed); group['index']=indices
     return groups
 
-payload={'version':1,'name':'Empire SC-01','wheelRadius':.40,
-         'wheelPositions':[[-1.00,.40,-1.42],[1.00,.40,-1.42],[-1.00,.40,1.42],[1.00,.40,1.42]],
-         'parts':bake(parts),'wheel':bake(wheel_parts,True)['wheel']}
-(OUT/'stock-car-model.js').write_text('// Generated by tools/build_stock_car.py. Original Empire SC-01 geometry.\nconst SC_STOCK_CAR_MODEL = '+json.dumps(payload,separators=(',',':'))+';\n',encoding='utf8')
+def roof_overlay(half_width,zmin,zmax):
+    # Number and teammate markings follow the crowned roof exactly. They do
+    # not float above it or disappear inside it when viewed from behind.
+    data={'position':[],'normal':[],'uv':[],'index':[]}
+    nx,nz=8,16
+    for j in range(nz+1):
+        z=zmin+(zmax-zmin)*j/nz
+        for i in range(nx+1):
+            x=-half_width+2*half_width*i/nx
+            data['position'] += [round(x,5),round(roof_center(z)-.052*abs(x/roof_width(z))**3+.004,5),round(z,5)]
+            data['normal'] += [0,1,0]
+            data['uv'] += [i/nx,1-j/nz]
+    for j in range(nz):
+        for i in range(nx):
+            a=j*(nx+1)+i
+            data['index'] += [a,a+nx+1,a+1,a+1,a+nx+1,a+nx+2]
+    return data
+
+payload={'version':2,'name':'Empire Gen-7','wheelRadius':.40,
+         'wheelPositions':[[-.87,.40,-AXLE],[.87,.40,-AXLE],[-.87,.40,AXLE],[.87,.40,AXLE]],
+         'parts':bake(parts),'wheel':bake(wheel_parts,True)['wheel'],
+         'roofDecal':roof_overlay(.49,-.69,.29),'teamBand':roof_overlay(.70,.18,.27)}
+(OUT/'stock-car-model.js').write_text('// Generated by tools/build_stock_car.py. Original generic Gen-7-inspired geometry.\nconst SC_STOCK_CAR_MODEL = '+json.dumps(payload,separators=(',',':'))+';\n',encoding='utf8')
 
 for ob in wheel_parts:
     for i,(x,y,z) in enumerate(payload['wheelPositions']):
@@ -292,17 +410,17 @@ def lettering(name, text, pos, size, rotation):
     curve.materials.append(M['accent'])
     return ob
 
-lettering('Roof race number','27',(0,1.331,-.20),.83,(0,0,0))
-lettering('Left door race number','27',(-1.043,.60,.04),.50,(math.pi/2,0,-math.pi/2))
-lettering('Right door race number','27',(1.043,.60,.04),.50,(math.pi/2,0,math.pi/2))
-lettering('Rear deck wordmark','EMPIRE',(0,.908,-1.91),.19,(0,0,math.pi))
+lettering('Roof race number','27',(0,1.312,-.20),.83,(0,0,0))
+lettering('Left door race number','27',(-1.021,.56,.04),.50,(math.pi/2,0,-math.pi/2))
+lettering('Right door race number','27',(1.021,.56,.04),.50,(math.pi/2,0,math.pi/2))
+lettering('Rear deck wordmark','EMPIRE',(0,.853,-1.88),.19,(0,0,math.pi))
 model_objects=list(bpy.context.scene.objects)
 for ob in model_objects:
     ob.select_set(True)
-bpy.ops.export_scene.gltf(filepath=str(OUT/'empire-sc01.glb'),use_selection=True,export_format='GLB')
+bpy.ops.export_scene.gltf(filepath=str(OUT/'empire-gen7.glb'),use_selection=True,export_format='GLB')
 
 # Neutral studio with three livery studies. Studio is excluded from the GLB.
-for title,offset,color in [('Cobalt',(3.4,1.2,0),(.018,.16,.62)),('Ivory',(-3.4,1.2,0),(.79,.80,.72))]:
+for title,offset,color in [('Cobalt',(3.4,1.2,0),(.018,.12,.40)),('Ivory',(-3.4,1.2,0),(.70,.72,.68))]:
     paint=material(title+' paint',color,.3,.28)
     accent=material(title+' accent',(.10,.12,.14) if title=='Ivory' else (.82,.91,.11),.12)
     for ob in model_objects:
@@ -333,16 +451,16 @@ area('Rim light',(0,6,7),2400,6)
 cam_data=bpy.data.cameras.new('Presentation camera')
 cam=bpy.data.objects.new('Presentation camera',cam_data)
 scene.collection.objects.link(cam)
-cam.location=(10,-13,9)
+cam.location=(9,-14,7)
 cam.rotation_euler=(Vector((0,.2,.55))-cam.location).to_track_quat('-Z','Y').to_euler()
-cam_data.type='ORTHO'; cam_data.ortho_scale=13.6
+cam_data.type='ORTHO'; cam_data.ortho_scale=12.0
 scene.camera=cam
 scene.render.engine='CYCLES'
 scene.cycles.samples=32
 scene.cycles.use_denoising=True
 scene.render.resolution_x=1600; scene.render.resolution_y=1050; scene.render.resolution_percentage=100
 scene.render.image_settings.file_format='PNG'
-scene.render.filepath=str(OUT/'sc01-lineup.png')
+scene.render.filepath=str(OUT/'gen7-lineup.png')
 scene.view_settings.view_transform='AgX'
 scene.view_settings.look='AgX - Medium High Contrast'
 scene.view_settings.exposure=-.65
@@ -351,6 +469,16 @@ for screen in bpy.data.screens:
         if area_ui.type=='VIEW_3D':
             area_ui.spaces.active.region_3d.view_perspective='CAMERA'
 bpy.context.preferences.filepaths.save_version=0
-bpy.ops.wm.save_as_mainfile(filepath=str(OUT/'empire-sc01.blend'))
+bpy.ops.wm.save_as_mainfile(filepath=str(OUT/'empire-gen7.blend'))
 bpy.ops.render.render(write_still=True)
-print('SC01_EXPORT',json.dumps({'bodyTriangles':sum(len(p['index'])//3 for p in payload['parts'].values()),'wheelTriangles':len(payload['wheel']['index'])//3,'materials':list(payload['parts'])}))
+# Single-car front/side/rear studies share the exact exported model.
+for ob in scene.objects:
+    if ob.name.startswith(('Cobalt /','Ivory /')): ob.hide_render=True
+scene.render.resolution_x=1440; scene.render.resolution_y=900
+for view,loc,scale in [('front',(5,-8,3.1),6.6),('side',(-8,0,1.75),5.9),('rear',(-5,8,3.4),6.6)]:
+    cam.location=loc
+    cam.rotation_euler=(Vector((0,0,.60))-cam.location).to_track_quat('-Z','Y').to_euler()
+    cam_data.ortho_scale=scale
+    scene.render.filepath=str(OUT/('gen7-'+view+'.png'))
+    bpy.ops.render.render(write_still=True)
+print('GEN7_EXPORT',json.dumps({'bodyTriangles':sum(len(p['index'])//3 for p in payload['parts'].values()),'wheelTriangles':len(payload['wheel']['index'])//3,'materials':list(payload['parts'])}))

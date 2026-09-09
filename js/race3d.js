@@ -450,6 +450,7 @@ class Race3DEngine {
       geometry.setAttribute('position', new THREE.Float32BufferAttribute(data.position, 3));
       geometry.setAttribute('normal', new THREE.Float32BufferAttribute(data.normal, 3));
       if (data.color) geometry.setAttribute('color', new THREE.Float32BufferAttribute(data.color, 3));
+      if (data.uv) geometry.setAttribute('uv', new THREE.Float32BufferAttribute(data.uv, 2));
       geometry.setIndex(data.index);
       geometry.computeBoundingSphere();
       return geometry;
@@ -458,10 +459,22 @@ class Race3DEngine {
       parts: Object.fromEntries(Object.entries(SC_STOCK_CAR_MODEL.parts)
         .map(([name, data]) => [name, decode(data)])),
       wheel: decode(SC_STOCK_CAR_MODEL.wheel),
-      decalDoor: new THREE.PlaneGeometry(0.80, 0.58),
-      decalRoof: new THREE.PlaneGeometry(1.04, 1.04),
-      teamBand: new THREE.BoxGeometry(1.48, 0.012, 0.12),
+      decalDoor: new THREE.PlaneGeometry(0.80, 0.48),
+      decalRoof: decode(SC_STOCK_CAR_MODEL.roofDecal),
+      teamBand: decode(SC_STOCK_CAR_MODEL.teamBand),
     };
+    // The track uses intentionally bright arcade lighting. A paint-only
+    // reflectance layer keeps saturated liveries from clipping into flat neon,
+    // so the new hood and fender normals remain readable without relighting
+    // the track or changing the entrant's actual team color.
+    const paint = this.G.parts.paint;
+    const reflectance = new Float32Array(paint.attributes.position.count * 3);
+    for (let i = 0; i < paint.attributes.position.count; i++) {
+      const y = paint.attributes.position.getY(i);
+      const value = 0.56 + 0.10 * clamp((y - 0.15) / 0.9, 0, 1);
+      reflectance.set([value, value, value], i * 3);
+    }
+    paint.setAttribute('color', new THREE.BufferAttribute(reflectance, 3));
     this.M = {
       trim: new THREE.MeshLambertMaterial({ color: 0x191d23, side: THREE.DoubleSide }),
       glass: new THREE.MeshPhongMaterial({ color: 0x233e50, shininess: 65, side: THREE.DoubleSide }),
@@ -753,9 +766,10 @@ class Race3DEngine {
     const G = this.G, M = this.M;
     const g = new THREE.Group();
 
-    g.name = 'Empire SC-01';
-    const bodyMat = new THREE.MeshPhongMaterial({ color: hex, shininess: 45, side: THREE.DoubleSide });
-    // Keep player/team colors exact; high-contrast stripes remain readable
+    g.name = SC_STOCK_CAR_MODEL.name;
+    const bodyMat = new THREE.MeshPhongMaterial({ color: hex, vertexColors: true,
+      shininess: 70, specular: 0x30343a, side: THREE.DoubleSide });
+    // Keep player/team colors exact; high-contrast accents remain readable
     // on light liveries, and gold continues to identify teammates.
     const luminance = (((hex >> 16) & 255) * 0.2126 +
       ((hex >> 8) & 255) * 0.7152 + (hex & 255) * 0.0722) / 255;
@@ -783,14 +797,13 @@ class Race3DEngine {
       polygonOffset: true, polygonOffsetFactor: -1,
     });
     const roofDecal = new THREE.Mesh(G.decalRoof, decalMat);
-    roofDecal.position.set(0, 1.334, -0.20);
-    roofDecal.rotation.x = -Math.PI / 2;
+    // Generated overlay already conforms to the Gen-7 roof in car coordinates.
     roofDecal.name = 'Roof number';
     g.add(roofDecal);
     // Outward-facing normals on both doors prevent mirrored or invisible numbers.
-    [[-1.045, -Math.PI / 2], [1.045, Math.PI / 2]].forEach(([sx, ry]) => {
+    [[-1.023, -Math.PI / 2], [1.023, Math.PI / 2]].forEach(([sx, ry]) => {
       const door = new THREE.Mesh(G.decalDoor, decalMat);
-      door.position.set(sx, 0.58, 0.04);
+      door.position.set(sx, 0.55, 0.04);
       door.rotation.y = ry;
       door.name = 'Door number';
       g.add(door);
@@ -798,7 +811,6 @@ class Race3DEngine {
 
     if (isTeammate) {
       const roofBand = new THREE.Mesh(G.teamBand, accMat);
-      roofBand.position.set(0, 1.33, 0.34);
       g.add(roofBand);
     }
 
@@ -1674,15 +1686,19 @@ class Race3DEngine {
     r.setRenderTarget(this.mirrorRT);
     // setRenderTarget already sets a physical-pixel viewport. setViewport()
     // in r134 multiplies by DPR again, cropping/distorting a retina mirror.
-    const playerVisible = this.player.mesh.visible;
+    // The virtual mirror eye is ahead of the player to frame close followers.
+    // In a bumper train it can sit INSIDE the leader. Exclude forward cars in
+    // this pass only; retain rear traffic and cars overlapping alongside us.
+    const mirrorHidden = this.cars.filter(c => c === this.player ||
+      c.z - this.player.z > R3D.CAR_SEP_Z / 2).map(c => [c.mesh, c.mesh.visible]);
     const shadowAutoUpdate = r.shadowMap.autoUpdate;
     try {
-      this.player.mesh.visible = false;
+      for (const [mesh] of mirrorHidden) mesh.visible = false;
       r.shadowMap.autoUpdate = false;
       r.clear(true, true, true);
       r.render(this.scene, this.mirrorCam);
     } finally {
-      this.player.mesh.visible = playerVisible;
+      for (const [mesh, visible] of mirrorHidden) mesh.visible = visible;
       r.shadowMap.autoUpdate = shadowAutoUpdate;
       r.setRenderTarget(null);
     }
