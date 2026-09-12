@@ -3,10 +3,11 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "check": "node --check js/data.js && node --check js/game.js && node --check js/race.js && node --check js/race3d.js && node --check js/ui.js && node --check js/main.js",
-    "test": "node --test test/race-regression.test.js test/race-dynamics.test.js",
+    "check": "node --check js/data.js && node --check js/game.js && node --check js/race.js && node --check assets/track/track-model.js && node --check assets/track/track-textures.js && node --check js/race3d.js && node --check js/ui.js && node --check js/main.js",
+    "build:track-textures": "node tools/pack_track_textures.cjs",
+    "test": "node --test test/race-regression.test.js test/race-dynamics.test.js test/track-assets.test.js",
     "test:browser": "node ./node_modules/playwright/cli.js test",
-    "test:all": "node --test test/race-regression.test.js test/race-dynamics.test.js && node ./node_modules/playwright/cli.js test"
+    "test:all": "npm run check && npm test && npm run test:browser"
   },
   "devDependencies": {
     "playwright": "1.56.1",

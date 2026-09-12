@@ -142,20 +142,6 @@ function r3dRoundelTex(num) {
   return tex;
 }
 
-// Asphalt - flat dark base with aggregate speckle
-function r3dAsphaltTex() {
-  return r3dTex(128, 128, (ctx, w, h) => {
-    ctx.fillStyle = '#2c2c31'; ctx.fillRect(0, 0, w, h);
-    for (let i = 0; i < 2800; i++) {
-      const light = Math.random() < 0.5;
-      ctx.fillStyle = light ? 'rgba(80,80,86,0.5)' : 'rgba(18,18,20,0.5)';
-      ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1);
-    }
-    ctx.fillStyle = 'rgba(0,0,0,0.10)';
-    ctx.fillRect(0, 96, w, 3); // faint seam
-  });
-}
-
 // Grass - flat green with subtle mow banding
 function r3dGrassTex() {
   return r3dTex(64, 64, (ctx, w, h) => {
@@ -178,47 +164,6 @@ function r3dCrowdTex() {
       ctx.fillStyle = cols[(Math.random() * cols.length) | 0];
       ctx.fillRect((Math.random() * w) | 0, (Math.random() * h) | 0, 2, 2);
     }
-  });
-}
-
-// Catchfence - transparent grid
-function r3dFenceTex() {
-  return r3dTex(64, 64, (ctx, w, h) => {
-    ctx.clearRect(0, 0, w, h);
-    ctx.strokeStyle = 'rgba(190,190,200,0.45)'; ctx.lineWidth = 1;
-    for (let i = 0; i <= w; i += 6) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, h); ctx.stroke(); }
-    for (let i = 0; i <= h; i += 6) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(w, i); ctx.stroke(); }
-  });
-}
-
-// Sponsor wall boards - alternating flat color blocks with faux logos.
-// Dimensions must be powers of two: a NPOT texture with RepeatWrapping loses
-// mipmaps/tiling and renders as a smeared mess.
-function r3dWallAdTex() {
-  return r3dTex(256, 64, (ctx, w, h) => {
-    const cols = ['#e4002b', '#1f6fc0', '#2f9a52', '#e0a800', '#6a4ea0', '#cfcfd4'];
-    const seg = 64;
-    for (let x = 0, i = 0; x < w; x += seg, i++) {
-      ctx.fillStyle = cols[i % cols.length];
-      ctx.fillRect(x + 2, 4, seg - 4, h - 8);
-      ctx.fillStyle = 'rgba(255,255,255,0.85)';
-      ctx.font = 'bold 18px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      const letters = 'ABCDEFGHJKLMNPRSTVXZ';
-      let tag = '';
-      for (let k = 0; k < 3; k++) tag += letters[(Math.random() * letters.length) | 0];
-      ctx.fillText(tag, x + seg / 2, h / 2);
-    }
-  });
-}
-
-// Start/finish gantry banner
-function r3dBannerTex() {
-  return r3dTex(512, 64, (ctx, w, h) => {
-    ctx.fillStyle = '#15151a'; ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = '#e4002b'; ctx.fillRect(0, 0, w, 5); ctx.fillRect(0, h - 5, w, 5);
-    ctx.fillStyle = '#ececef';
-    ctx.font = 'bold 34px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('START  /  FINISH', w / 2, h / 2 + 2);
   });
 }
 
@@ -489,21 +434,62 @@ class Race3DEngine {
   _buildTrack() {
     const s  = this.scene;
     const TL = R3D.TRACK_LEN;
-    const TW = R3D.TRACK_W;
     const d  = this._dummy;
 
-    // Asphalt (textured). DoubleSide so the flipped mirror projection doesn't cull it.
-    const aTex = r3dAsphaltTex();
-    aTex.wrapS = aTex.wrapT = THREE.RepeatWrapping;
-    aTex.repeat.set(3, TL / 26);
-    const asphalt = new THREE.Mesh(
-      new THREE.PlaneGeometry(TW, TL + 80),
-      new THREE.MeshLambertMaterial({ map: aTex, color: 0xbbbbbb, side: THREE.DoubleSide })
-    );
-    asphalt.rotation.x = -Math.PI / 2;
-    asphalt.position.set(0, 0, TL / 2);
-    asphalt.receiveShadow = true;
-    s.add(asphalt);
+    // Blender-authored flat straight: pavement, white barrier rails and curved
+    // catch fencing. The 22-unit playable width and wall contact plane are unchanged.
+    // One shared indexed buffer per material, repeated in 60-unit modules.
+    const track = SC_TRACK_MODEL;
+    const loader = new THREE.TextureLoader();
+    const load = name => {
+      // Data URLs remain valid WebGL sources when index.html is opened via
+      // file://. Neighboring file images are rejected by Chrome's CORS rules.
+      const tex = loader.load(SC_TRACK_TEXTURES[name]);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.anisotropy = this._maxAniso;
+      return tex;
+    };
+    const trackMaterials = {
+      asphalt: new THREE.MeshLambertMaterial({ map: load('speedway-asphalt'), color: 0xbdbdbd, side: THREE.DoubleSide }),
+      wall: new THREE.MeshLambertMaterial({ map: load('speedway-wall'), side: THREE.DoubleSide }),
+      concrete: new THREE.MeshLambertMaterial({ color: 0x858984, side: THREE.DoubleSide }),
+      steel: new THREE.MeshLambertMaterial({ color: 0x505b60, side: THREE.DoubleSide }),
+      absorber: new THREE.MeshLambertMaterial({ color: 0x252a28, side: THREE.DoubleSide }),
+      paint: new THREE.MeshLambertMaterial({ color: 0xe2dfcf, side: THREE.DoubleSide }),
+      fence: new THREE.MeshLambertMaterial({ map: load('speedway-mesh'), side: THREE.DoubleSide,
+        alphaTest: 0.35, alphaToCoverage: true }),
+    };
+    // Visual runout extends past the cameras' 4,000-unit far plane at both
+    // endpoints. Classification still uses the original 15,000-unit finish.
+    const runoutModules = Math.ceil(4200 / track.moduleLength);
+    const moduleCount = Math.ceil(TL / track.moduleLength) + 2 * runoutModules;
+    this.trackGroup = new THREE.Group();
+    this.trackGroup.name = track.name;
+    const buildGeometry = data => {
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(data.position, 3));
+      geometry.setAttribute('normal', new THREE.Float32BufferAttribute(data.normal, 3));
+      geometry.setAttribute('uv', new THREE.Float32BufferAttribute(data.uv, 2));
+      geometry.setIndex(data.index);
+      geometry.computeBoundingSphere();
+      return geometry;
+    };
+    for (const [name, data] of Object.entries(track.parts)) {
+      const geometry = buildGeometry(data);
+      const mesh = new THREE.InstancedMesh(geometry, trackMaterials[name], moduleCount);
+      mesh.name = 'track:' + name;
+      mesh.receiveShadow = name === 'asphalt' || name === 'wall' || name === 'concrete';
+      for (let i = 0; i < moduleCount; i++) {
+        d.position.set(0, 0, (i - runoutModules) * track.moduleLength);
+        d.rotation.set(0, 0, 0); d.scale.set(1, 1, 1); d.updateMatrix();
+        mesh.setMatrixAt(i, d.matrix);
+      }
+      mesh.instanceMatrix.needsUpdate = true;
+      // Three r134 cannot calculate aggregate InstancedMesh bounds.
+      mesh.frustumCulled = false;
+      this.trackGroup.add(mesh);
+    }
+    s.add(this.trackGroup);
 
     // Grass aprons (textured)
     const gTex = r3dGrassTex();
@@ -513,125 +499,25 @@ class Race3DEngine {
     [-1, 1].forEach(side => {
       const g = new THREE.Mesh(new THREE.PlaneGeometry(600, TL + 200), grassMat);
       g.rotation.x = -Math.PI / 2;
-      g.position.set(side * (TW / 2 + 300), -0.02, TL / 2);
+      // Exterior grass begins behind the wall, never beneath the paved edge.
+      g.position.set(side * (track.wallInnerX + 300), -0.02, TL / 2);
       g.receiveShadow = true;
       s.add(g);
     });
 
-    // Lane dashes (InstancedMesh, 1 draw call)
-    const DASH_STEP = 24;
-    const DASH_COUNT = Math.floor(TL / DASH_STEP);
-    const dashMesh = new THREE.InstancedMesh(
-      new THREE.BoxGeometry(0.24, 0.02, 6),
-      new THREE.MeshLambertMaterial({ color: 0xf2f2f2 }),
-      2 * DASH_COUNT
-    );
-    let di = 0;
-    [-TW / 6, TW / 6].forEach(lx => {
-      for (let z = 12; z < TL - 12; z += DASH_STEP) {
-        d.position.set(lx, 0.015, z); d.rotation.set(0, 0, 0); d.scale.set(1, 1, 1);
-        d.updateMatrix(); dashMesh.setMatrixAt(di++, d.matrix);
-      }
-    });
-    dashMesh.count = di;
-    dashMesh.instanceMatrix.needsUpdate = true;
-    s.add(dashMesh);
-
-    // Solid edge lines + colored rumble strips
-    const edgeMat = new THREE.MeshLambertMaterial({ color: 0xf2f2f2 });
-    [-(TW / 2 - 0.4), TW / 2 - 0.4].forEach(lx => {
-      const el = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.02, TL), edgeMat);
-      el.position.set(lx, 0.014, TL / 2); s.add(el);
-    });
-    const RUMBLE_STEP = 6;
-    const RUMBLE_COUNT = Math.floor(TL / RUMBLE_STEP);
-    [-(TW / 2 + 0.45), TW / 2 + 0.45].forEach(rx => {
-      const redM = new THREE.InstancedMesh(new THREE.BoxGeometry(0.9, 0.05, RUMBLE_STEP - 0.4),
-        new THREE.MeshLambertMaterial({ color: 0xd0202a }), Math.ceil(RUMBLE_COUNT / 2));
-      const whM = new THREE.InstancedMesh(new THREE.BoxGeometry(0.9, 0.05, RUMBLE_STEP - 0.4),
-        new THREE.MeshLambertMaterial({ color: 0xf0f0f0 }), Math.ceil(RUMBLE_COUNT / 2));
-      let ri = 0, wi = 0;
-      for (let si = 0; si < RUMBLE_COUNT; si++) {
-        d.position.set(rx, 0.025, si * RUMBLE_STEP + 3); d.rotation.set(0, 0, 0); d.scale.set(1, 1, 1);
-        d.updateMatrix();
-        if (si % 2 === 0) redM.setMatrixAt(ri++, d.matrix); else whM.setMatrixAt(wi++, d.matrix);
-      }
-      redM.count = ri; whM.count = wi;
-      redM.instanceMatrix.needsUpdate = true; whM.instanceMatrix.needsUpdate = true;
-      s.add(redM); s.add(whM);
-    });
-
-    // SAFER walls + sponsor boards + catchfence
-    const adTex = r3dWallAdTex();
-    adTex.wrapS = adTex.wrapT = THREE.RepeatWrapping;
-    adTex.repeat.set(TL / 24, 1);
-    const fenceTex = r3dFenceTex();
-    fenceTex.wrapS = fenceTex.wrapT = THREE.RepeatWrapping;
-    fenceTex.repeat.set(TL / 4, 2.5);
-
-    [-1, 1].forEach(side => {
-      const bx = side * (TW / 2 + 0.9);
-      const wall = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.15, TL + 20),
-        new THREE.MeshLambertMaterial({ color: 0xe7e7ea }));
-      wall.position.set(bx, 0.58, TL / 2); wall.receiveShadow = true; s.add(wall);
-
-      // Sponsor board face (just inside wall, toward track)
-      const ad = new THREE.Mesh(new THREE.PlaneGeometry(TL, 0.85),
-        new THREE.MeshLambertMaterial({ map: adTex, side: THREE.DoubleSide }));
-      ad.position.set(bx - side * 0.72, 0.62, TL / 2);
-      ad.rotation.y = side > 0 ? Math.PI / 2 : -Math.PI / 2;
-      s.add(ad);
-
-      // Catchfence
-      const fence = new THREE.Mesh(new THREE.PlaneGeometry(TL, 5.2),
-        new THREE.MeshBasicMaterial({ map: fenceTex, transparent: true, side: THREE.DoubleSide, depthWrite: false }));
-      fence.position.set(bx - side * 0.72, 3.6, TL / 2);
-      fence.rotation.y = side > 0 ? Math.PI / 2 : -Math.PI / 2;
-      s.add(fence);
-    });
-
-    // Start/finish checkerboard
-    const COLS = 14, CW = TW / COLS, ROWS = 2;
-    const checkW = new THREE.InstancedMesh(new THREE.BoxGeometry(CW - 0.04, 0.03, 2.8),
-      new THREE.MeshLambertMaterial({ color: 0xffffff }), COLS * ROWS);
-    const checkB = new THREE.InstancedMesh(new THREE.BoxGeometry(CW - 0.04, 0.03, 2.8),
-      new THREE.MeshLambertMaterial({ color: 0x121212 }), COLS * ROWS);
-    let wIdx = 0, bIdx = 0;
-    for (let row = 0; row < ROWS; row++) {
-      for (let col = 0; col < COLS; col++) {
-        d.position.set(-TW / 2 + CW / 2 + col * CW, 0.02, TL - 4.2 + row * 2.8);
-        d.rotation.set(0, 0, 0); d.scale.set(1, 1, 1); d.updateMatrix();
-        if ((col + row) % 2 === 0) checkW.setMatrixAt(wIdx++, d.matrix);
-        else                       checkB.setMatrixAt(bIdx++, d.matrix);
-      }
+    // One Blender-authored finish: dark steel truss, two-sided mesh lettering
+    // and flush checkered paint centered on the unchanged classification plane.
+    this.finishGroup = new THREE.Group();
+    this.finishGroup.name = 'track:finish';
+    this.finishGroup.position.z = TL;
+    for (const [name, data] of Object.entries(track.finishParts)) {
+      const mesh = new THREE.Mesh(buildGeometry(data), trackMaterials[name]);
+      mesh.name = 'finish:' + name;
+      mesh.receiveShadow = true;
+      this.finishGroup.add(mesh);
     }
-    checkW.count = wIdx; checkB.count = bIdx;
-    checkW.instanceMatrix.needsUpdate = true; checkB.instanceMatrix.needsUpdate = true;
-    s.add(checkW); s.add(checkB);
-
-    // Finish gantry with banner
-    const postMat = new THREE.MeshLambertMaterial({ color: 0xcfcfd4 });
-    [-(TW / 2 + 2), TW / 2 + 2].forEach(px => {
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.6, 13, 0.6), postMat);
-      post.position.set(px, 6.5, TL - 2.8); s.add(post);
-    });
-    const gantry = new THREE.Mesh(new THREE.BoxGeometry(TW + 6, 0.6, 0.6), postMat);
-    gantry.position.set(0, 12.6, TL - 2.8); s.add(gantry);
-    const banner = new THREE.Mesh(new THREE.BoxGeometry(TW + 4, 2.4, 0.25),
-      new THREE.MeshLambertMaterial({ map: r3dBannerTex() }));
-    banner.position.set(0, 10.8, TL - 2.95); s.add(banner);
-
-    // Starting grid markers
-    const GRID_ROWS = 16;
-    const gridMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(TW, 0.02, 0.45),
-      new THREE.MeshLambertMaterial({ color: 0xf0c020 }), GRID_ROWS);
-    for (let r = 0; r < GRID_ROWS; r++) {
-      d.position.set(0, 0.016, r * R3D.GRID_SPACING + 0.25);
-      d.rotation.set(0, 0, 0); d.scale.set(1, 1, 1); d.updateMatrix();
-      gridMesh.setMatrixAt(r, d.matrix);
-    }
-    gridMesh.instanceMatrix.needsUpdate = true;
-    s.add(gridMesh);
+    s.add(this.finishGroup);
+    // Starting positions remain unchanged; the old yellow grid stripes are gone.
   }
 
   // ── Environment ──────────────────────────────────────────────
@@ -693,14 +579,7 @@ class Race3DEngine {
     poleMesh.instanceMatrix.needsUpdate = true; lightMesh.instanceMatrix.needsUpdate = true;
     s.add(poleMesh); s.add(lightMesh);
 
-    // Pit-wall banner strip (left side)
-    const bannerColors = [0xe4002b, 0x1f6fc0, 0x2f9a52, 0xe0a800, 0x6a4ea0];
-    for (let z = 80, k = 0; z < TL - 80; z += 160, k++) {
-      const bm = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.8, 150),
-        new THREE.MeshLambertMaterial({ color: bannerColors[k % bannerColors.length] }));
-      bm.position.set(-(TW / 2 + 0.2), 1.55, z + 75);
-      s.add(bm);
-    }
+    // Wall dressing is authored with the barrier in _buildTrack().
   }
 
   // ── Cars ─────────────────────────────────────────────────────
