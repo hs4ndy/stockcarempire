@@ -147,13 +147,101 @@ test('third car carries an earned draft run while moving out to pass', () => {
   assert.equal(result.timer, 0);
 });
 
+test('longer connected lines earn more speed, including their lead car', () => {
+  const context = physicsContext();
+  const runs = readJson(context, `[1,2,3,5,8].map(size => {
+    const cars = Array.from({length:size}, (_,i) => car(i === 0 ? 'player' : 'ai-'+i, 0, 5000-i*4.6, 210));
+    const e = engine(cars, 'semipro');
+    for (let i=0;i<300;i++) e._calcDraft(1/60);
+    return {size, front:cars[0].draftBoost, mean:cars.reduce((n,c)=>n+c.draftBoost,0)/size,
+      counts:cars.map(c=>c.chainLen)};
+  })`);
+  for (let i=1;i<runs.length;i++) {
+    assert.ok(runs[i].front > runs[i-1].front, 'front car should benefit from the larger line');
+    assert.ok(runs[i].mean > runs[i-1].mean, 'longer line should earn a faster average pace');
+    assert.ok(runs[i].counts.every(n=>n === runs[i].size));
+    assert.ok(runs[i].mean <= 43, 'train gains remain bounded');
+  }
+});
+
+test('rivals push the player while chasing and hold still to receive a push', () => {
+  const context = physicsContext();
+  const result = readJson(context, `(() => {
+    const p = car('player',0,5000,210), rival=car('rival',0,4995,212), lead=car('lead',5,5400,210);
+    const e=engine([p,rival,lead],'pro');
+    e._chooseAILine(rival,.7,1/60);
+    const pushing=rival._tactic;
+    e._calcDraft(1/60);
+    const received=p.receivedPush;
+    p.z=4990; rival.z=5000;
+    rival._tactic=null; rival.laneTimer=rival.tacticTimer=0;
+    e._chooseAILine(rival,.7,1/60);
+    return {pushing,received,receiving:rival._tactic,target:rival.targetX};
+  })()`);
+  assert.equal(result.pushing,'push');
+  assert.ok(result.received > 1);
+  assert.equal(result.receiving,'receive');
+  assert.equal(result.target,0);
+});
+
+test('a separated or retired car stops extending a drafting line', () => {
+  const context = physicsContext();
+  const result = readJson(context, `(() => {
+    const p=car('player',0,5000), middle=car('middle',0,4995.4), back=car('back',0,4990.8);
+    const e=engine([p,middle,back]);
+    e._calcDraft(1/60);
+    const connected=e.cars.map(c=>c.chainLen);
+    back.x=7;
+    e._calcDraft(1/60);
+    const separated=e.cars.map(c=>c.chainLen);
+    middle.dnf=true;
+    e._calcDraft(1/60);
+    return {connected,separated,retired:e.cars.map(c=>c.chainLen),boost:middle.draftBoost};
+  })()`);
+  assert.deepEqual(result.connected,[3,3,3]);
+  assert.deepEqual(result.separated,[2,2,1]);
+  assert.deepEqual(result.retired,[1,1,1]);
+  assert.equal(result.boost,0);
+});
+
+test('a brief wake touch cannot bank an unearned full-strength passing boost', () => {
+  const context=physicsContext();
+  const result=readJson(context, `(() => {
+    const p=car('player',0,0), front=car('front',0,4.6), e=engine([p,front]);
+    e._calcDraft(1/60);
+    const earned=p.draftBoost;
+    p.x=7;
+    for(let i=0;i<60;i++) e._calcDraft(1/60);
+    return {earned,later:p.draftBoost};
+  })()`);
+  assert.ok(result.earned>0 && result.earned<2);
+  assert.ok(result.later<result.earned);
+});
+
+test('small bumper alignment offsets do not trap a car between two safe exits', () => {
+  const context = physicsContext();
+  const result = readJson(context, `(() => {
+    const p = car('player',0,5000,210), front=car('front',.15,5004.6,210),
+      back=car('back',-.15,4995.4,210), e=engine([p,front,back]);
+    const clear = [-3.1,3.1].map(x=>e._laneSafe(p,x));
+    e.cars.push(car('alongside',3.1,5000,210));
+    return {clear,occupied:e._laneSafe(p,3.1)};
+  })()`);
+  assert.deepEqual(result.clear,[true,true]);
+  assert.equal(result.occupied,false);
+});
+
 test('clean-air race pace stays brisk and releasing a tow still carries speed smoothly', () => {
   const context = physicsContext();
   const result = readJson(context, `(() => {
     const p = car('player', 0, 0, R3D.PACE_SPEED), e = engine([p]);
     for (let i = 0; i < 120 * 12; i++) e._updatePlayer(1 / 120);
     const cruise = p.speed;
-    p.draftBoost = p.draftMomentum = 30; p.speed = cruise + 30;
+    const partner = car('partner', 0, p.z + 4.6, cruise);
+    e.cars.push(partner);
+    for (let i = 0; i < 120 * 4; i++) e._calcDraft(1 / 120);
+    p.speed = cruise + p.draftBoost;
+    partner.x = 8;
     const trace = [];
     for (let i = 0; i < 120 * 6; i++) {
       e._calcDraft(1 / 120); e._updatePlayer(1 / 120);

@@ -32,21 +32,21 @@ const R3D = {
   // ── Drafting: continuous wake, push and carried momentum ───
   DRAFT_Z:        82,     // useful tow range without linking the whole field
   DRAFT_X:        3.6,    // wake half-width at distance; narrower at the bumper
-  DRAFT_BOOST:    31,
+  DRAFT_BOOST:    27,
   DRAFT_BUILD:    1.8,    // exponential response rates, independent of frame rate
-  DRAFT_RELEASE:  1.05,
-  DRAFT_CARRY:    0.75,   // earned run survives the initial move out of line
+  DRAFT_RELEASE:  1.50,
+  DRAFT_CARRY:    1.35,   // enough time to clear a bumper and use the earned run
   PUSH_Z:         6.5,    // push fades continuously from contact to this gap
   PUSH_X:         1.45,   // accurate bumper alignment earns the strongest push
   PUSH_BONUS:     8,
-  CHAIN_MAX:      3.5,    // small-group benefit; long trains lose efficiency
-  CHAIN_LIMIT:    3,      // full aerodynamic value ends after three linked cars
+  CHAIN_MAX:      12,     // diminishing shared efficiency, including the lead car
+  CHAIN_LINK_Z:   24,     // close, aligned cars contribute to the same working line
   AERO_MAX:       43,     // combined tow, received push and chain ceiling
-  PACK_CATCHUP:   8,      // recovery assistance only for genuinely detached cars
-  PACK_GAP_START: 320,    // ordinary race gaps receive no field-compressing boost
-  PACK_GAP:       760,    // distance behind the leader where recovery is full
+  PACK_CATCHUP:   16,     // gradual recovery after losing the leading groups
+  PACK_GAP_START: 160,
+  PACK_GAP:       600,
   TEAM_HELP_Z:    60,     // range at which a teammate starts working with you
-  TEAM_PUSH_BONUS: 4,     // extra shove when you and a teammate are locked up
+  TEAM_PUSH_BONUS: 1.5,   // coordination benefit only while working through the pack
   TEAM_FRONT_FRAC: 0.18,  // top of the field races for itself, regardless of team
   TEAM_RACE_END:  0.72,   // teammates stop cooperating before the final charge
   // A narrower lens keeps following cars large enough to read at a glance.
@@ -872,7 +872,9 @@ class Race3DEngine {
     const activeCount = this.cars.filter(c => !c.dnf && !c.finished).length;
     const aheadCount  = this.cars.filter(c => !c.dnf && !c.finished && c.z > p.z).length;
     const posFrac     = activeCount > 1 ? aheadCount / (activeCount - 1) : 0;
-    const rubberBand  = posFrac * R3D.RUBBER_BAND * (this.diff.playerCatchup ?? 1);
+    const leadZ = this.cars.reduce((z,c) => !c.dnf && !c.finished ? Math.max(z,c.z) : z, p.z);
+    const recovery = clamp((leadZ-p.z-R3D.PACK_GAP_START) / (R3D.PACK_GAP-R3D.PACK_GAP_START),0,1);
+    const rubberBand = posFrac * R3D.RUBBER_BAND * (this.diff.playerCatchup ?? 1) + recovery * R3D.PACK_CATCHUP;
 
     const tgt = Math.min(R3D.SPEED_BASE * (0.89 + p.power * 0.18) + p.draftBoost + rubberBand, R3D.SPEED_MAX);
     let braking = false;
@@ -931,8 +933,8 @@ class Race3DEngine {
       this._chooseAILine(car, aggro, dt);
 
       // Difficulty lifts both the AI's pace and its ceiling. Individual power
-      // creates natural separation; recovery applies only after a car has lost
-      // the main racing groups, so it cannot compress the field into one pack.
+      // creates natural separation; bounded recovery helps detached cars
+      // reconnect without changing their positions or slowing the leaders.
       const dSpd = this.diff.aiSpeed;
       const lead = this._leadZ || car.z;
       const back = clamp((lead - car.z - R3D.PACK_GAP_START) /
@@ -989,6 +991,13 @@ class Race3DEngine {
     return pAhead >= frontCount && mateAhead >= frontCount;
   }
 
+  _wantsTrain(car) {
+    const lead = this._leadZ ?? Math.max(...this.cars.filter(c => !c.dnf && !c.finished).map(c => c.z));
+    // Cooperation is a way to catch the leaders. Drivers contest the finish,
+    // and drivers already in the leading group take their own opportunities.
+    return lead - car.z > 65 && car.z / R3D.TRACK_LEN < 0.80 + (this.diff.racecraft || 0) * 0.07;
+  }
+
   _laneSafe(car, x) {
     if (Math.abs(x) > R3D.HALF_W - 1.4) return false;
     // Check the swept lane corridor, including a car closing from behind.
@@ -998,9 +1007,11 @@ class Race3DEngine {
       // Pulling away from an overlapping lane increases clearance, including
       // at bumper contact. Do not mistake the car being passed for a blocker
       // in the destination lane, or the move will be cancelled halfway out.
+      // Tiny alignment offsets at opposite bumpers must not veto both exits.
       if (Math.abs(other.x - car.x) < R3D.CAR_SEP_X &&
           Math.abs(x - other.x) > R3D.CAR_SEP_X + 0.4 &&
-          (x - car.x) * (car.x - other.x) >= 0) return false;
+          ((x - car.x) * (car.x - other.x) >= 0 ||
+            (Math.abs(other.x - car.x) < 0.35 && Math.abs(dz) > R3D.CAR_SEP_Z * 0.8))) return false;
       const nearPath = other.x > Math.min(car.x, x) - R3D.CAR_SEP_X - 0.25 &&
         other.x < Math.max(car.x, x) + R3D.CAR_SEP_X + 0.25;
       const future = dz + (other.speed - car.speed) * 0.9;
@@ -1047,6 +1058,32 @@ class Race3DEngine {
       }
     }
 
+    // Any driver will work with any useful partner, including the player.
+    // Let an existing passing/avoidance move finish before seeking a new line.
+    if (this._wantsTrain(car) && !(['pass', 'avoid', 'defend'].includes(car._tactic) && car.tacticTimer > 0)) {
+      const partners = this.cars.filter(c => c !== car && !c.dnf && !c.finished && !c.spinning &&
+        c.z > car.z && c.z - car.z < R3D.DRAFT_Z * 1.4 && Math.abs(c.x - car.x) < 6);
+      const partner = partners.sort((a,b) =>
+        (a.z-car.z + Math.abs(a.x-car.x)*12) - (b.z-car.z + Math.abs(b.x-car.x)*12))[0];
+      const soloPace = R3D.SPEED_BASE * (0.86 + car.power * 0.15) * this.diff.aiSpeed;
+      if (partner && partner.speed > soloPace - 8 && car.speed - partner.speed < 10) {
+        if (Math.abs(partner.x - car.x) < .35 || this._laneSafe(car, partner.x)) {
+          car.targetX = clamp(partner.x, -hw, hw);
+          car._tactic = partner.z - car.z < R3D.PUSH_Z + 3 ? 'push' : 'join';
+          car.tacticTimer = car.laneTimer = 0.8;
+          return;
+        }
+      }
+      const pusher = this.cars.find(c => c !== car && !c.dnf && !c.finished && !c.spinning &&
+        car.z - c.z > 0 && car.z - c.z < 28 && Math.abs(c.x-car.x) < 2.5 && c.speed >= car.speed - 2);
+      if (pusher) {
+        car.targetX = car.x;
+        car._tactic = 'receive';
+        car.tacticTimer = car.laneTimer = 0.8;
+        return;
+      }
+    }
+
     if (car._tactic && car.tacticTimer > 0) {
       // Safety can cancel a move; drafting appeal cannot cancel a committed pass.
       if (Math.abs(car.targetX - car.x) > 0.2 && !this._laneSafe(car, car.targetX)) {
@@ -1066,12 +1103,10 @@ class Race3DEngine {
     const gap = ahead ? ahead.z - car.z : Infinity;
     const closing = ahead ? car.speed - ahead.speed : 0;
     const nerve = car.raceNerve || 1;
-    // A racer with a real run tries to pass throughout the event. A fourth car
-    // arriving at a train also looks for another lane before the chain grows.
-    const trainCrowded = (car.chainLen || 1) > R3D.CHAIN_LIMIT;
+    // A racer with a real run contests the leading group and the finish.
     const runNeeded = (3.05 - aggro * 1.45 - craft * 0.45) / nerve;
     const hasRun = closing > runNeeded ||
-      (car.draftMomentum > 15 && closing > -0.7 && (aggro > 0.32 || trainCrowded));
+      (car.draftMomentum > 15 && closing > -0.7 && aggro > 0.32);
     if (gap < 44 && hasRun && alternatives.length) {
       car.targetX = alternatives.sort((a, b) =>
         this._scoreLane(car, b, aggro) - this._scoreLane(car, a, aggro))[0];
@@ -1146,16 +1181,11 @@ class Race3DEngine {
     // queue and go, rather than sitting in dirty air forever.
     score += Math.min(nearestAhead, 140) / 140 * (1 + aggro * 0.6);
 
-    // A useful tow is worth seeking, but not at the expense of every passing
-    // opportunity. Long trains have diminishing appeal, especially late on.
+    // Chasing drivers value a connected line; leaders value a passing lane.
     if (towGap < Infinity) {
       const towQuality = r3dWake({ ...car, x: laneX }, towCar).tow;
       const trainLen = (towCar && towCar.chainLen) || 1;
-      const openSlots = clamp(R3D.CHAIN_LIMIT - trainLen + 1, 0, R3D.CHAIN_LIMIT);
-      score += towQuality * R3D.TOW_APPEAL * (0.55 + openSlots * 0.15) * (1 - aggro * 0.18);
-      if (trainLen >= R3D.CHAIN_LIMIT) {
-        score -= towQuality * (0.5 + (trainLen - R3D.CHAIN_LIMIT) * 0.28) * (0.75 + aggro);
-      }
+      score += towQuality * R3D.TOW_APPEAL * (this._wantsTrain(car) ? 2.2 + Math.min(trainLen,8)*.12 : .85);
     }
 
     // Stuck behind someone slower is the thing a racer most wants to fix, so
@@ -1194,48 +1224,47 @@ class Race3DEngine {
       }
     }
 
-    // Pass 1: sample wakes front-to-back and accumulate incoming pushes. The
-    // fourth linked car closes a train; anyone behind it must use another car
-    // or another lane instead of extending one aerodynamic chain indefinitely.
+    const cooperating = new Set(active.filter(c => this._teammateCooperation(c)));
+    const trains = new Map();
+    // Forward-only links cannot cycle. A distant or offset wake still gives
+    // a tow, but only close aligned cars share a train's efficiency benefit.
     for (const car of active) {
       for (const other of active) {
         if (other === car) continue;
         const wake = r3dWake(car, other);
-        const openTrain = (other._draftDepth || 1) < R3D.CHAIN_LIMIT + 1;
-        if (openTrain && wake.tow > car.towStrength) {
+        if (wake.tow > car.towStrength) {
           car.towStrength = wake.tow;
           car._wakeLeader = other;
         }
         const teammate = car.isTeammate ? car : other.isTeammate ? other : null;
         const teamLink = !!teammate && ((car.isTeammate && other.isPlayer) ||
-          (car.isPlayer && other.isTeammate)) && this._teammateCooperation(teammate);
+          (car.isPlayer && other.isTeammate)) && cooperating.has(teammate);
         const bonus = R3D.PUSH_BONUS + (teamLink ? R3D.TEAM_PUSH_BONUS : 0);
         car.pushStrength = Math.max(car.pushStrength, wake.push);
         car._pushTarget = Math.max(car._pushTarget, wake.push * bonus);
         other.receivedPush = Math.max(other.receivedPush, wake.push * bonus * (teamLink ? 1 : 0.75));
       }
       car._draftDepth = car._wakeLeader ? (car._wakeLeader._draftDepth || 1) + 1 : 1;
-      car.chainLen = car._draftDepth;
+      const leader = car._wakeLeader;
+      car._trainRoot = leader && leader.z-car.z < R3D.CHAIN_LINK_Z && car.towStrength > .55
+        ? leader._trainRoot : car;
+      const members = trains.get(car._trainRoot) || [];
+      members.push(car);
+      trains.set(car._trainRoot,members);
     }
 
-    // Wake links point forward, so the front-to-back order yields an exact
-    // depth for each train. Cars one through three retain the full tow. A
-    // fourth can briefly join, but the loss of clean air makes a longer line
-    // inefficient and encourages it to form or join another small group.
+    for (const members of trains.values()) for (const car of members) car.chainLen = members.length;
+    // Every additional linked car helps the whole line, with diminishing gains.
+    // Two cars no longer get an advantage that a larger chasing line cannot earn.
     for (const car of active) {
-      const depth = car._draftDepth;
-      const excess = Math.max(0, depth - R3D.CHAIN_LIMIT);
-      const trainEfficiency = excess === 0 ? 1 : Math.max(0.36, 1 - excess * 0.24);
-      const linkedCars = Math.min(R3D.CHAIN_LIMIT - 1, Math.max(0, depth - 1));
-      const chain = R3D.CHAIN_MAX * (1 - Math.exp(-linkedCars * 0.5));
-      const rawTarget = (car.towStrength * R3D.DRAFT_BOOST + car._pushTarget + chain) *
-        trainEfficiency + car.receivedPush;
+      const chain = R3D.CHAIN_MAX * (1 - Math.exp(-(car.chainLen-1) / 3));
+      const rawTarget = car.towStrength * R3D.DRAFT_BOOST + car._pushTarget + chain + car.receivedPush;
       let target = Math.min(R3D.AERO_MAX,
         rawTarget * (car.isPlayer ? this.diff.playerDraft : 1));
       const before = car.draftMomentum || 0;
       const activeDraft = car.towStrength > 0.12 || car.pushStrength > 0.12 || car.receivedPush > 1;
       if (activeDraft) {
-        car._draftCarryMomentum = Math.max(target, before);
+        car._draftCarryMomentum = before;
         car._draftCarryTimer = R3D.DRAFT_CARRY;
       } else if ((car._draftCarryTimer || 0) > 0 && (car._draftCarryMomentum || 0) > 8) {
         car._draftCarryTimer = Math.max(0, car._draftCarryTimer - dt);

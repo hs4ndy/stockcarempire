@@ -7,7 +7,7 @@ const vm = require('node:vm');
 const ROOT = path.resolve(__dirname, '..');
 const SOURCE_FILES = ['js/data.js', 'js/game.js', 'js/race.js', 'js/race3d.js', 'js/ui.js'];
 
-function runRearStart(seed, fieldSize = 36) {
+function runRearStart(seed, fieldSize = 36, difficulty = 'beginner', strategy = 'managed', baseline = null) {
   let state = seed >>> 0;
   const seededMath = Object.create(Math);
   seededMath.random = () => {
@@ -26,8 +26,11 @@ function runRearStart(seed, fieldSize = 36) {
     clearTimeout,
   });
   for (const file of SOURCE_FILES) {
-    vm.runInContext(fs.readFileSync(path.join(ROOT, file), 'utf8'), context, { filename: file });
+    const source = baseline ? require('node:child_process').execFileSync('git', ['show', `${baseline}:${file}`], {encoding:'utf8'})
+      : fs.readFileSync(path.join(ROOT, file), 'utf8');
+    vm.runInContext(source, context, { filename: file });
   }
+  vm.runInContext(fs.readFileSync(path.join(ROOT,'test/helpers/race-driver.js'),'utf8'), context);
 
   return JSON.parse(vm.runInContext(`JSON.stringify((() => {
     function car(id, x, z, speed = 175) {
@@ -59,7 +62,7 @@ function runRearStart(seed, fieldSize = 36) {
       car('ai-' + i, slot.x, slot.z))];
     const engine = Object.create(Race3DEngine.prototype);
     Object.assign(engine, {
-      cars, player, diff: difficultyById('beginner'),
+      cars, player, diff: difficultyById('${difficulty}'),
       keys: { a: false, d: false, s: false },
       wrecks: [], wreckCount: 0, wreckCooldown: Infinity, camShake: 0,
       finishOrder: [], done: false, racing: true, paused: false, paceMode: false,
@@ -67,50 +70,16 @@ function runRearStart(seed, fieldSize = 36) {
       _updateCamera() {}, _dropDebris() {},
     });
 
-    let targetX = player.x;
-    let passUntil = 0;
+    const driver = {};
     const passStarts = [0, 0, 0];
     const lastTactic = new Map();
     const samples = [];
     let startPosition = null;
 
-    for (let frame = 0; frame < 120 * 140 && !engine.done; frame++) {
-      const time = frame / 120;
-      if (frame % 12 === 0) {
-        const running = cars.filter(c => !c.dnf && !c.finished);
-        const ahead = running.filter(c => c !== player && c.z > player.z)
-          .sort((a, b) => a.z - b.z)[0];
-        const position = 1 + running.filter(c => c !== player && c.z > player.z).length;
-        const progress = player.z / R3D.TRACK_LEN;
-        const holdForFinish = position <= 10 && progress < 0.70;
+    for (let frame = 0; frame < 60 * 140 && !engine.done; frame++) {
+      raceDriverStep(engine, driver, 1/60, '${strategy}');
 
-        if (time >= passUntil && ahead) {
-          const gap = ahead.z - player.z;
-          if (gap < 14 && player.draftMomentum > 13 && !holdForFinish) {
-            const options = [player.x - 3.2, player.x + 3.2]
-              .map(x => clamp(x, -R3D.HALF_W + 1.3, R3D.HALF_W - 1.3))
-              .filter(x => engine._laneSafe(player, x));
-            if (options.length) {
-              targetX = options.sort((a, b) =>
-                Math.abs(b - ahead.x) - Math.abs(a - ahead.x))[0];
-              passUntil = time + 1.8;
-            }
-          } else {
-            targetX = ahead.x;
-          }
-        }
-        if (!ahead) {
-          const chaser = running.filter(c => c !== player && c.z < player.z)
-            .sort((a, b) => b.z - a.z)[0];
-          targetX = chaser && player.z - chaser.z < 34 ? chaser.x : 0;
-        }
-        engine.keys.a = targetX - player.x > 0.25;
-        engine.keys.d = targetX - player.x < -0.25;
-        engine.keys.s = !!(holdForFinish && ahead &&
-          ahead.z - player.z < 7 && player.speed > ahead.speed);
-      }
-
-      engine._update(1 / 120);
+      engine._update(1 / 60);
       for (const car of cars) {
         if (car._tactic === 'pass' && lastTactic.get(car) !== 'pass') {
           const third = Math.min(2, Math.floor((car.z / R3D.TRACK_LEN) * 3));
@@ -119,7 +88,7 @@ function runRearStart(seed, fieldSize = 36) {
         lastTactic.set(car, car._tactic);
       }
 
-      if (frame % 120 === 0) {
+      if (frame % 60 === 0) {
         const active = cars.filter(c => !c.dnf && !c.finished);
         const position = 1 + active.filter(c => c !== player && c.z > player.z).length;
         if (startPosition === null) startPosition = position;
@@ -127,6 +96,9 @@ function runRearStart(seed, fieldSize = 36) {
           span: Math.max(...active.map(c => c.z)) - Math.min(...active.map(c => c.z)),
           chain: Math.max(...active.map(c => c.chainLen || 1)),
           drafting: active.filter(c => c.towStrength > 0.2).length,
+          nearby: active.filter(c => c !== player && Math.abs(c.z-player.z) < 100).length,
+          leaderGap: Math.max(...active.map(c => c.z)) - player.z,
+          playerPush: player.receivedPush || 0,
         });
       }
     }
@@ -142,20 +114,24 @@ function runRearStart(seed, fieldSize = 36) {
       passStarts,
       medianSpan: median('span'),
       medianDrafting: median('drafting'),
+      medianNearby: median('nearby'),
+      medianLeaderGap: median('leaderGap'),
+      pushedSamples: samples.filter(s => s.playerPush > 1).length,
       maxChain: Math.max(...samples.map(sample => sample.chain)),
     };
   })())`, context));
 }
 
-test('large fields split into small drafting groups and race throughout the event', () => {
+module.exports = { runRearStart };
+
+if (require.main === module) test('chasing groups stay connected and contest positions throughout the race', () => {
   const reports = [3, 17, 41].map(seed => runRearStart(seed));
   for (const report of reports) {
     assert.equal(report.done, true, 'every measured race must finish');
     assert.equal(report.startPosition, 36, 'the player must begin at the rear');
-    assert.ok(report.maxChain <= 4, 'aerodynamic chains must never exceed four cars');
-    assert.ok(report.medianSpan > 500, 'the field must remain spread into separate groups');
-    assert.ok(report.medianDrafting >= 3, 'small groups must still use the draft');
-    assert.ok(report.medianDrafting <= 14, 'the majority of the field must not share one draft train');
+    assert.ok(report.maxChain >= 4, 'chasing cars should form useful longer lines');
+    assert.ok(report.medianSpan > 100 && report.medianSpan < 1100, 'field should have racing room without becoming unreachable');
+    assert.ok(report.medianDrafting >= 3, 'chasing groups must use the draft');
     assert.ok(report.passStarts.every(count => count >= 10),
       'AI passing attempts must occur in every third of the race');
   }

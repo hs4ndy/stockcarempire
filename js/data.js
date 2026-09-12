@@ -323,13 +323,13 @@ const DIFFICULTIES = [
     aiSpeed: 1.00, aiPower: 1.00, aiAggro: 1.00, playerDraft: 1.12, playerCatchup: 1.00, racecraft: 0 },
   { id: 'amateur',  name: 'Amateur',
     blurb: 'The field keeps you honest. You have to work the draft.',
-    aiSpeed: 1.045, aiPower: 1.08, aiAggro: 1.18, playerDraft: 0.91, playerCatchup: 0.84, racecraft: 0.38 },
+    aiSpeed: 1.02, aiPower: 1.08, aiAggro: 1.10, playerDraft: 1.02, playerCatchup: 0.90, racecraft: 0.35 },
   { id: 'semipro',  name: 'Semi-Pro',
     blurb: 'Fast racers who convert draft runs and defend their line.',
-    aiSpeed: 1.075, aiPower: 1.15, aiAggro: 1.30, playerDraft: 0.84, playerCatchup: 0.68, racecraft: 0.75 },
+    aiSpeed: 1.035, aiPower: 1.15, aiAggro: 1.22, playerDraft: 1.00, playerCatchup: 0.80, racecraft: 0.70 },
   { id: 'pro',      name: 'Pro',
     blurb: 'Everyone is fast, works the tow and holds their ground.',
-    aiSpeed: 1.105, aiPower: 1.22, aiAggro: 1.40, playerDraft: 0.76, playerCatchup: 0.52, racecraft: 1.15 },
+    aiSpeed: 1.05, aiPower: 1.22, aiAggro: 1.32, playerDraft: 0.98, playerCatchup: 0.70, racecraft: 1.00 },
 ];
 
 const DEFAULT_DIFFICULTY = 'beginner';
