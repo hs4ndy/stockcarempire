@@ -315,22 +315,21 @@ const AI_DRIVER_NAMES = [
 ];
 
 // ─── Difficulty ──────────────────────────────────────────────
-// Beginner is the original balance: hook onto a team-mate and the win looks
-// after itself. Each step up makes the AI quicker on track, stronger in the
-// simulation and less willing to let you cruise in the draft.
+// Beginner retains the relaxed pace. Each step up makes rivals quicker and
+// more decisive, reduces player comeback assistance and demands a better run.
 const DIFFICULTIES = [
   { id: 'beginner', name: 'Beginner',
-    blurb: 'Relaxed. Draft a team-mate and the win takes care of itself.',
-    aiSpeed: 1.00, aiPower: 1.00, aiAggro: 1.00, playerDraft: 1.12, racecraft: 0 },
+    blurb: 'Relaxed pace and extra drafting help while you learn the pack.',
+    aiSpeed: 1.00, aiPower: 1.00, aiAggro: 1.00, playerDraft: 1.12, playerCatchup: 1.00, racecraft: 0 },
   { id: 'amateur',  name: 'Amateur',
     blurb: 'The field keeps you honest. You have to work the draft.',
-    aiSpeed: 1.035, aiPower: 1.06, aiAggro: 1.12, playerDraft: 0.94, racecraft: 0.30 },
+    aiSpeed: 1.045, aiPower: 1.08, aiAggro: 1.18, playerDraft: 0.91, playerCatchup: 0.84, racecraft: 0.38 },
   { id: 'semipro',  name: 'Semi-Pro',
-    blurb: 'Racers who use the draft to recover and defend their line.',
-    aiSpeed: 1.065, aiPower: 1.12, aiAggro: 1.22, playerDraft: 0.88, racecraft: 0.65 },
+    blurb: 'Fast racers who convert draft runs and defend their line.',
+    aiSpeed: 1.075, aiPower: 1.15, aiAggro: 1.30, playerDraft: 0.84, playerCatchup: 0.68, racecraft: 0.75 },
   { id: 'pro',      name: 'Pro',
     blurb: 'Everyone is fast, works the tow and holds their ground.',
-    aiSpeed: 1.09,  aiPower: 1.18, aiAggro: 1.30, playerDraft: 0.82, racecraft: 1.00 },
+    aiSpeed: 1.105, aiPower: 1.22, aiAggro: 1.40, playerDraft: 0.76, playerCatchup: 0.52, racecraft: 1.15 },
 ];
 
 const DEFAULT_DIFFICULTY = 'beginner';

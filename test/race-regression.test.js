@@ -116,10 +116,35 @@ test('aero is independent of roster order, with capped smooth release and teamma
   const received = readJson(context, `(() => {
     const p = car('player', 0, 0), b = car('b', 0, 4.6);
     b.isTeammate = true;
-    const e = engine([p, b]); e._calcDraft(1);
-    return { received: b.receivedPush, leadBoost: b.draftBoost };
+    const traffic = Array.from({length: 4}, (_, i) => car('traffic-' + i, i % 2 ? -4 : 4, 120 + i * 20));
+    const e = engine([p, b, ...traffic]); e._calcDraft(1);
+    return { received: b.receivedPush, leadBoost: b.draftBoost, working: e._teammateCooperation(b) };
   })()`);
+  assert.equal(received.working, true);
   assert.ok(received.received > 8 && received.leadBoost > 0);
+});
+
+test('third car carries an earned draft run while moving out to pass', () => {
+  const context = physicsContext();
+  const result = readJson(context, `(() => {
+    const p = car('player', 0, 0, 205), second = car('second', 0, 4.6, 205),
+      leader = car('leader', 0, 9.2, 205), e = engine([p, second, leader]);
+    for (let i = 0; i < 240; i++) e._calcDraft(1 / 60);
+    const built = p.draftMomentum;
+    p.x = 4.5;
+    const trace = [];
+    for (let i = 0; i < 240; i++) {
+      e._calcDraft(1 / 60);
+      if ([0, 29, 59, 119, 239].includes(i)) trace.push(p.draftMomentum);
+    }
+    return { built, trace, timer: p._draftCarryTimer };
+  })()`);
+  assert.ok(result.built > 25, 'third car should build a meaningful run');
+  assert.ok(result.trace[1] > result.built * 0.9, 'run must survive the first half-second out of line');
+  assert.ok(result.trace[2] > result.built * 0.68, 'momentum must still be useful after one second');
+  assert.ok(result.trace[3] < result.trace[2], 'carried momentum must begin wearing off');
+  assert.ok(result.trace.at(-1) < result.built * 0.25, 'carried run must eventually expire');
+  assert.equal(result.timer, 0);
 });
 
 test('clean-air race pace stays brisk and releasing a tow still carries speed smoothly', () => {
@@ -235,11 +260,57 @@ test('teammate ahead holds its line when the player pulls off the bumper', () =>
   const result = readJson(context, `(() => {
     const p = car('player', 2, 0), b = car('b', 0, 5);
     b.isTeammate = true;
-    engine([p, b])._chooseAILine(b, 1, 1 / 60);
+    const traffic = Array.from({length: 4}, (_, i) => car('traffic-' + i, i % 2 ? -4 : 4, 120 + i * 20));
+    engine([p, b, ...traffic])._chooseAILine(b, 1, 1 / 60);
     return { target: b.targetX, helping: b._helping };
   })()`);
   assert.equal(result.target, 0);
   assert.equal(result.helping, true);
+});
+
+test('teammates cooperate in the pack but race the player at the front and late', () => {
+  const context = physicsContext();
+  const result = readJson(context, `(() => {
+    const p = car('player', 0, 5000, 204), mate = car('mate', 0, 4994, 208);
+    mate.isTeammate = true; mate.draftMomentum = mate.draftBoost = 28;
+    const traffic = Array.from({length: 8}, (_, i) => car('traffic-' + i, i % 2 ? -4 : 4, 5200 + i * 20));
+    const pack = engine([p, mate, ...traffic]);
+    pack._chooseAILine(mate, 0.7, 1 / 60);
+    const middle = { working: mate._helping, tactic: mate._tactic };
+
+    p.z = 10850; mate.z = 10844; traffic.forEach((c, i) => c.z = 10500 - i * 20);
+    mate.targetX = mate.x = 0; mate.laneTimer = mate.tacticTimer = 0; mate._tactic = 'support';
+    pack._chooseAILine(mate, 0.8, 1 / 60);
+    const late = { working: mate._helping, tactic: mate._tactic, target: mate.targetX };
+
+    p.z = 7000; mate.z = 6994; traffic.forEach((c, i) => c.z = 6800 - i * 20);
+    mate.targetX = mate.x = 0; mate.laneTimer = mate.tacticTimer = 0; mate._tactic = 'support';
+    pack._chooseAILine(mate, 0.8, 1 / 60);
+    return { middle, late, front: { working: mate._helping, tactic: mate._tactic, target: mate.targetX } };
+  })()`);
+  assert.equal(result.middle.working, true);
+  assert.equal(result.middle.tactic, 'support');
+  for (const phase of [result.late, result.front]) {
+    assert.equal(phase.working, false);
+    assert.equal(phase.tactic, 'pass');
+    assert.notEqual(phase.target, 0);
+  }
+});
+
+test('difficulty above Beginner is strictly tougher in pace, racecraft and comeback help', () => {
+  const context = makeContext();
+  const values = readJson(context, `DIFFICULTIES.map(d => ({
+    id:d.id, speed:d.aiSpeed, power:d.aiPower, aggression:d.aiAggro,
+    playerDraft:d.playerDraft, playerCatchup:d.playerCatchup, racecraft:d.racecraft
+  }))`);
+  for (let i = 1; i < values.length; i++) {
+    assert.ok(values[i].speed > values[i - 1].speed);
+    assert.ok(values[i].power > values[i - 1].power);
+    assert.ok(values[i].aggression > values[i - 1].aggression);
+    assert.ok(values[i].racecraft > values[i - 1].racecraft);
+    assert.ok(values[i].playerDraft < values[i - 1].playerDraft);
+    assert.ok(values[i].playerCatchup < values[i - 1].playerCatchup);
+  }
 });
 
 test('incidents require advance warning and harmless rubbing never randomly spins the player', () => {
