@@ -240,6 +240,10 @@ class Race3DEngine {
   constructor(canvas, config, onComplete) {
     this.canvas       = canvas;
     this.config       = config;
+    this.isGrassroots = (config.seriesId || SERIES.find(s => s.fieldSize === config.fieldSize)?.id) === 'grassroots';
+    this.speedScale = this.isGrassroots ? 0.9 : 1;
+    this.trackHalfWidth = R3D.HALF_W * (this.isGrassroots ? .94 : 1);
+    this.carModel = this.isGrassroots ? SC_LEGACY_STOCK_CAR_MODEL : SC_STOCK_CAR_MODEL;
     this.onComplete   = onComplete;
     this.keys         = { a: false, d: false, s: false };
     this.paused       = false;
@@ -379,12 +383,12 @@ class Race3DEngine {
       return geometry;
     };
     this.G = {
-      parts: Object.fromEntries(Object.entries(SC_STOCK_CAR_MODEL.parts)
+      parts: Object.fromEntries(Object.entries(this.carModel.parts)
         .map(([name, data]) => [name, decode(data)])),
-      wheel: decode(SC_STOCK_CAR_MODEL.wheel),
-      decalDoor: new THREE.PlaneGeometry(0.80, 0.48),
-      decalRoof: decode(SC_STOCK_CAR_MODEL.roofDecal),
-      teamBand: decode(SC_STOCK_CAR_MODEL.teamBand),
+      wheel: decode(this.carModel.wheel),
+      decalDoor: new THREE.PlaneGeometry(0.80, this.isGrassroots ? 0.58 : 0.48),
+      decalRoof: this.isGrassroots ? new THREE.PlaneGeometry(1.04, 1.04) : decode(this.carModel.roofDecal),
+      teamBand: this.isGrassroots ? new THREE.BoxGeometry(1.48, .012, .12) : decode(this.carModel.teamBand),
     };
     // The track uses intentionally bright arcade lighting. A paint-only
     // reflectance layer keeps saturated liveries from clipping into flat neon,
@@ -414,15 +418,16 @@ class Race3DEngine {
     const TL = R3D.TRACK_LEN;
     const d  = this._dummy;
 
-    // Blender-authored flat straight: pavement, white barrier rails and curved
-    // catch fencing. The 22-unit playable width and wall contact plane are unchanged.
+    // Blender-authored straight selected by series. Grassroots has a narrower
+    // worn surface, plain retaining walls and shorter catch fencing.
     // One shared indexed buffer per material, repeated in 60-unit modules.
-    const track = SC_TRACK_MODEL;
+    const track = this.isGrassroots ? SC_GRASSROOTS_TRACK_MODEL : SC_TRACK_MODEL;
+    const textures = this.isGrassroots ? SC_GRASSROOTS_TRACK_TEXTURES : SC_TRACK_TEXTURES;
     const loader = new THREE.TextureLoader();
     const load = name => {
       // Data URLs remain valid WebGL sources when index.html is opened via
       // file://. Neighboring file images are rejected by Chrome's CORS rules.
-      const tex = loader.load(SC_TRACK_TEXTURES[name]);
+      const tex = loader.load(textures[name]);
       tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
       tex.anisotropy = this._maxAniso;
       return tex;
@@ -443,6 +448,7 @@ class Race3DEngine {
     const moduleCount = Math.ceil(TL / track.moduleLength) + 2 * runoutModules;
     this.trackGroup = new THREE.Group();
     this.trackGroup.name = track.name;
+    this.trackGroup.userData = { width: track.trackWidth, wallInnerX: track.wallInnerX, fenceHeight: track.fenceHeight };
     const buildGeometry = data => {
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute('position', new THREE.Float32BufferAttribute(data.position, 3));
@@ -651,7 +657,7 @@ class Race3DEngine {
     const G = this.G, M = this.M;
     const g = new THREE.Group();
 
-    g.name = SC_STOCK_CAR_MODEL.name;
+    g.name = this.carModel.name;
     const bodyMat = new THREE.MeshPhongMaterial({ color: hex, vertexColors: true,
       shininess: 70, specular: 0x30343a, side: THREE.DoubleSide });
     // Keep player/team colors exact; high-contrast accents remain readable
@@ -668,7 +674,7 @@ class Race3DEngine {
       g.add(mesh);
     }
 
-    const wheels = SC_STOCK_CAR_MODEL.wheelPositions.map(([wx, wy, wz]) => {
+    const wheels = this.carModel.wheelPositions.map(([wx, wy, wz]) => {
       const wheel = new THREE.Mesh(G.wheel, M.wheel);
       wheel.name = 'Rolling stock-car wheel';
       wheel.position.set(wx, wy, wz);
@@ -683,12 +689,16 @@ class Race3DEngine {
     });
     const roofDecal = new THREE.Mesh(G.decalRoof, decalMat);
     // Generated overlay already conforms to the Gen-7 roof in car coordinates.
+    if (this.isGrassroots) {
+      roofDecal.position.set(0, 1.334, -.20);
+      roofDecal.rotation.x = -Math.PI / 2;
+    }
     roofDecal.name = 'Roof number';
     g.add(roofDecal);
     // Outward-facing normals on both doors prevent mirrored or invisible numbers.
-    [[-1.023, -Math.PI / 2], [1.023, Math.PI / 2]].forEach(([sx, ry]) => {
+    [[-(this.isGrassroots ? 1.045 : 1.023), -Math.PI / 2], [this.isGrassroots ? 1.045 : 1.023, Math.PI / 2]].forEach(([sx, ry]) => {
       const door = new THREE.Mesh(G.decalDoor, decalMat);
-      door.position.set(sx, 0.55, 0.04);
+      door.position.set(sx, this.isGrassroots ? .58 : .55, .04);
       door.rotation.y = ry;
       door.name = 'Door number';
       g.add(door);
@@ -696,9 +706,12 @@ class Race3DEngine {
 
     if (isTeammate) {
       const roofBand = new THREE.Mesh(G.teamBand, accMat);
+      if (this.isGrassroots) roofBand.position.set(0, 1.33, .34);
       g.add(roofBand);
     }
 
+    // Fit the historical 5.06 x 2.34 body inside today's 4.6 x 2.15 contact envelope.
+    if (this.isGrassroots) g.scale.set(.91, 1, .9);
     g.position.set(x, 0, z);
     this.scene.add(g);
 
@@ -707,7 +720,7 @@ class Race3DEngine {
       isPlayer, power, label, hex, number, x, z,
       lv: 0,
       lvx: 0,          // AI lateral velocity (inertia)
-      speed: R3D.SPEED_BASE * (0.78 + power * 0.22),
+      speed: R3D.SPEED_BASE * (0.78 + power * 0.22) * (this.speedScale ?? 1),
       targetX: x,
       spinning: false, spinTimer: 0, spinDir: 1,
       finished: false, dnf: false,
@@ -819,7 +832,7 @@ class Race3DEngine {
   }
 
   _updatePaceLap(dt) {
-    const hw = R3D.HALF_W - 1.2;
+    const hw = (this.trackHalfWidth ?? R3D.HALF_W) - 1.2;
     const p  = this.player;
     const input = Number(this.keys.a) - Number(this.keys.d);
     const desired = input * R3D.LAT_MAX * 0.6;
@@ -832,8 +845,8 @@ class Race3DEngine {
       // Every row advances together on the formation lap. Letting each car
       // converge from its power-based race speed changed the live order before
       // the green flag, so the HUD could disagree with the announced grid spot.
-      car.speed = R3D.PACE_SPEED;
-      car.z += R3D.PACE_SPEED * dt;
+      car.speed = R3D.PACE_SPEED * (this.speedScale ?? 1);
+      car.z += car.speed * dt;
       car.mesh.position.set(car.x, 0, car.z);
     }
     p.mesh.position.set(p.x, 0, p.z);
@@ -841,7 +854,7 @@ class Race3DEngine {
 
   _updatePlayer(dt) {
     const p  = this.player;
-    const hw = R3D.HALF_W - 1.2;
+    const hw = (this.trackHalfWidth ?? R3D.HALF_W) - 1.2;
 
     if (p.spinning) {
       p.spinTimer -= dt;
@@ -879,7 +892,7 @@ class Race3DEngine {
     const recovery = clamp((leadZ-p.z-R3D.PACK_GAP_START) / (R3D.PACK_GAP-R3D.PACK_GAP_START),0,1);
     const rubberBand = posFrac * R3D.RUBBER_BAND * (this.diff.playerCatchup ?? 1) + recovery * R3D.PACK_CATCHUP;
 
-    const tgt = Math.min(R3D.SPEED_BASE * (0.89 + p.power * 0.18) + p.draftBoost + rubberBand, R3D.SPEED_MAX);
+    const tgt = Math.min(R3D.SPEED_BASE * (0.89 + p.power * 0.18) + p.draftBoost + rubberBand, R3D.SPEED_MAX) * (this.speedScale ?? 1);
     let braking = false;
     if (this.keys.s) {
       p.speed = Math.max(tgt * 0.38, p.speed - R3D.BRAKE_FORCE * dt);
@@ -945,7 +958,7 @@ class Race3DEngine {
       const catchUp = back * R3D.PACK_CATCHUP;
       const tgt = Math.min(
         (R3D.SPEED_BASE * (0.86 + car.power * 0.15)) * dSpd + car.draftBoost + catchUp,
-        R3D.SPEED_MAX * dSpd + catchUp);
+        R3D.SPEED_MAX * dSpd + catchUp) * (this.speedScale ?? 1);
       car.speed += (tgt - car.speed) * (1 - Math.exp(-2.2 * dt));   // frame-rate independent
 
       // ── Lateral motion with inertia ─────────────────────────
@@ -958,7 +971,7 @@ class Race3DEngine {
       const err     = car.targetX - car.x;
       // Ease into the target so cars settle instead of overshooting and hunting
       const desired = clamp(err * R3D.AI_STEER_GAIN, -maxLat, maxLat);
-      const edge = R3D.HALF_W - 1.2;
+      const edge = (this.trackHalfWidth ?? R3D.HALF_W) - 1.2;
       car.lvx = car.lvx || 0;
       car.lvx += clamp(desired - car.lvx, -latAcc * dt, latAcc * dt);
       car.lvx *= Math.pow(R3D.AI_LAT_DAMP, dt);
@@ -1002,7 +1015,7 @@ class Race3DEngine {
   }
 
   _laneSafe(car, x) {
-    if (Math.abs(x) > R3D.HALF_W - 1.4) return false;
+    if (Math.abs(x) > (this.trackHalfWidth ?? R3D.HALF_W) - 1.4) return false;
     // Check the swept lane corridor, including a car closing from behind.
     return !this.cars.some(other => {
       if (other === car || other.dnf || other.finished) return false;
@@ -1023,7 +1036,7 @@ class Race3DEngine {
   }
 
   _chooseAILine(car, aggro, dt) {
-    const hw = R3D.HALF_W - 1.4;
+    const hw = (this.trackHalfWidth ?? R3D.HALF_W) - 1.4;
     const step = R3D.LANE_STEP + 0.6;
     const alternatives = [car.x - step, car.x + step].filter(x => this._laneSafe(car, x));
     const hazard = [...this.wrecks, ...this.cars.filter(c => c !== car && c.spinning)]
@@ -1068,7 +1081,7 @@ class Race3DEngine {
         c.z > car.z && c.z - car.z < R3D.DRAFT_Z * 1.4 && Math.abs(c.x - car.x) < 6);
       const partner = partners.sort((a,b) =>
         (a.z-car.z + Math.abs(a.x-car.x)*12) - (b.z-car.z + Math.abs(b.x-car.x)*12))[0];
-      const soloPace = R3D.SPEED_BASE * (0.86 + car.power * 0.15) * this.diff.aiSpeed;
+      const soloPace = R3D.SPEED_BASE * (0.86 + car.power * 0.15) * this.diff.aiSpeed * (this.speedScale ?? 1);
       if (partner && partner.speed > soloPace - 8 && car.speed - partner.speed < 10) {
         if (Math.abs(partner.x - car.x) < .35 || this._laneSafe(car, partner.x)) {
           car.targetX = clamp(partner.x, -hw, hw);
@@ -1155,7 +1168,7 @@ class Race3DEngine {
   // better. This is what gives the AI race IQ: it moves for a reason (clear
   // air, a tow, avoiding someone alongside) instead of drifting at random.
   _scoreLane(car, laneX, aggro) {
-    const hw = R3D.HALF_W - 1.4;
+    const hw = (this.trackHalfWidth ?? R3D.HALF_W) - 1.4;
     if (Math.abs(laneX) > hw) return -100;
 
     let score      = 0;
@@ -1287,7 +1300,7 @@ class Race3DEngine {
   _separateCars(dt) {
     const step = Math.max(dt || 0.016, 0.001);
     const active = this.cars.filter(c => !c.finished && !c.dnf && !c.spinning);
-    const hw = R3D.HALF_W - 1.1;
+    const hw = (this.trackHalfWidth ?? R3D.HALF_W) - 1.1;
     const startX = new Map(active.map(c => [c,
       Number.isFinite(c._frameStartX) ? c._frameStartX : c.x]));
     // Cleared here so _updateAI (which runs first) reads last frame's value
@@ -1317,7 +1330,7 @@ class Race3DEngine {
             const diff = B.speed - A.speed;
             if (diff > 0) {
               const give = Math.min(diff, 60) * (1 - Math.exp(-2.6 * step)) * bumper;
-              A.speed = Math.min(R3D.SPEED_MAX * 1.05, A.speed + give);
+              A.speed = Math.min(R3D.SPEED_MAX * 1.05 * (this.speedScale ?? 1), A.speed + give);
               B.speed = Math.max(40, B.speed - give * 0.65);
             }
           }
@@ -1681,7 +1694,7 @@ class Race3DEngine {
     if (ofEl) ofEl.textContent = '/ ' + total;
 
     // Speed
-    const mph = Math.round(p.speed * 0.78 + 33);
+    const mph = Math.round(p.speed * 0.78 + 33 * (this.speedScale ?? 1));
     const spdEl = document.getElementById('r3d-speed');
     if (spdEl) spdEl.textContent = mph;
 
@@ -1709,7 +1722,7 @@ class Race3DEngine {
     this._mapAcc += dt;
     if (this._mapAcc >= 0.05) {
       this._mapAcc = 0;
-      const hw = R3D.HALF_W;
+      const hw = this.trackHalfWidth ?? R3D.HALF_W;
       for (const car of this.cars) {
         if (!car._dot) continue;
         if (car.dnf) { car._dot.style.opacity = '0.25'; }

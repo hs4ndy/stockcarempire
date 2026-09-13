@@ -1,5 +1,11 @@
 # Empire Gen-7
 
+Grassroots now uses `legacy-stock-car-model.js`, restored from commit
+`687d839` (the original Empire SC-01). Challenger and Premier use Gen-7.
+The legacy body is scaled 0.9 along its length and 0.91 across its width to fit
+today's 4.6 by 2.15 contact envelope; its original roof and door number placement is
+restored. The locally edited legacy Blender file and backup are not touched.
+
 Original generic Gen-7/P3-inspired stock car for all three Stock Car Empire series. This is a fictional, independently modeled asset, not an official NASCAR or manufacturer model.
 
 ## Deliverables

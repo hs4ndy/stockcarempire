@@ -1,5 +1,22 @@
 # Empire straight speedway
 
+## Grassroots variant (September 13)
+
+`grassroots/` contains the separate Blender source, GLB, runtime geometry and
+embedded texture bundle for the Grassroots Cup. The straight is 20.68 units
+wide (6% narrower), with wall inner faces at +/-10.528. Plain concrete walls
+replace the steel rails and absorbers. Catch fencing reaches 4.1156 units.
+The asphalt has faded aggregate and two short fine cracks per 60-unit tile.
+The finish paint and structure fit the narrower straight. Other series use
+the original track. Steering, AI lane limits and contact limits follow the
+selected width. Both player and AI speed targets, including draft/recovery,
+are multiplied by 0.9 in Grassroots; higher series retain their existing pace.
+
+Rebuild only this variant with Blender using
+`--background --python tools/build_track.py -- --grassroots --no-render`.
+Omit `--no-render` to produce the optional studio inspection images.
+Run `test/e2e/grassroots.spec.cjs` for a brief three-series browser check.
+
 Original Kansas Speedway-inspired pavement, walls and catch fencing for Stock Car Empire's existing straight sprint. This is a visual interpretation, not a surveyed replica or an engineering specification for a real safety barrier.
 
 ## Scope and references

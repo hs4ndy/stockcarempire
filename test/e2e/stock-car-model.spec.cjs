@@ -2,7 +2,7 @@ const path = require('node:path');
 const { test, expect } = require('playwright/test');
 
 for (const [series, fieldSize] of [[0, 20], [1, 26], [2, 36]]) {
-test(`Gen-7 cars share geometry and retain identities in the ${fieldSize}-car series`, async ({ page }, testInfo) => {
+test(`Series cars share geometry and retain identities in the ${fieldSize}-car series`, async ({ page }, testInfo) => {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.route('**/three.min.js', route => route.fulfill({
@@ -61,8 +61,8 @@ test(`Gen-7 cars share geometry and retain identities in the ${fieldSize}-car se
       model: p.mesh.name,
       overlayUVs: overlays.every(g => g.attributes.uv.count === g.attributes.position.count &&
         Array.from(g.attributes.position.array).every(Number.isFinite)),
-      length: box.max.z - box.min.z,
-      width: box.max.x - box.min.x,
+      length: (box.max.z - box.min.z) * p.mesh.scale.z,
+      width: (box.max.x - box.min.x) * p.mesh.scale.x,
       color: p.mesh.getObjectByName('paint').material.color.getHex() === p.hex,
       decals: p.mesh.children.filter(m => /number/.test(m.name)).length,
       rolling: after.every((v, i) => v !== before[i]),
@@ -74,7 +74,7 @@ test(`Gen-7 cars share geometry and retain identities in the ${fieldSize}-car se
     };
   });
   expect(report.count).toBe(fieldSize);
-  expect(report.model).toBe('Empire Gen-7');
+  expect(report.model).toBe(series === 0 ? 'Empire SC-01' : 'Empire Gen-7');
   expect(report.overlayUVs).toBe(true);
   expect(report.length).toBeLessThanOrEqual(4.6);
   expect(report.width).toBeLessThanOrEqual(2.15);
