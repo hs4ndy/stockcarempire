@@ -142,6 +142,7 @@ function handleStartQuickRace(fieldSize) {
   showScreen('game-race');
   launch3DRace(
     { playerColor: '#e8001d', playerNumber: 1, playerPower: 0.60, fieldSize,
+      seriesId: SERIES.find(s => s.fieldSize === fieldSize)?.id || 'grassroots',
       difficulty: quickRaceDifficulty, aiEntries },
     (pos) => {
       showScreen('intro');
@@ -528,6 +529,7 @@ function handleStartRace() {
       playerName:   game.driverName || game.teamName,
       playerCarId,
       fieldSize:    series.fieldSize,
+      seriesId:     series.id,
       difficulty:   game.difficulty || DEFAULT_DIFFICULTY,
       qualifyBoost: analystCount(),   // Data Analysts sharpen the grid draw
       aiEntries:    aiEntries.slice(0, series.fieldSize - 1),

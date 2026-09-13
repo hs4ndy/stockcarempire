@@ -158,18 +158,6 @@ function r3dGrassTex() {
   });
 }
 
-// Grandstand crowd - dark base, scattered bright clothing dots
-function r3dCrowdTex() {
-  return r3dTex(64, 64, (ctx, w, h) => {
-    ctx.fillStyle = '#1d1d22'; ctx.fillRect(0, 0, w, h);
-    const cols = ['#d9d2c5', '#b54b4b', '#3f6fb0', '#4c9a52', '#d8b34a', '#cfcfd4', '#7a4ea0', '#c98a3a'];
-    for (let i = 0; i < 420; i++) {
-      ctx.fillStyle = cols[(Math.random() * cols.length) | 0];
-      ctx.fillRect((Math.random() * w) | 0, (Math.random() * h) | 0, 2, 2);
-    }
-  });
-}
-
 // ─── Public launcher ─────────────────────────────────────────
 function launch3DRace(config, onComplete) {
   const container = document.getElementById('race-3d-container');
@@ -530,28 +518,7 @@ class Race3DEngine {
     const TW = R3D.TRACK_W;
     const d  = this._dummy;
 
-    // Grandstands (one long textured structure per side, set behind the apron)
-    const crowdTex = r3dCrowdTex();
-    crowdTex.wrapS = crowdTex.wrapT = THREE.RepeatWrapping;
-    crowdTex.repeat.set(TL / 14, 3);
-    const standLen = TL * 0.82;
-    [-1, 1].forEach(side => {
-      const sx = side * (TW / 2 + 52);
-      const faceIdx = side > 0 ? 1 : 0; // -X face for right stand, +X for left
-      const mats = [];
-      for (let i = 0; i < 6; i++) {
-        mats.push(i === faceIdx
-          ? new THREE.MeshLambertMaterial({ map: crowdTex })
-          : new THREE.MeshLambertMaterial({ color: 0x9a9aa2 }));
-      }
-      const stand = new THREE.Mesh(new THREE.BoxGeometry(10, 13, standLen), mats);
-      stand.position.set(sx, 6.5, TL / 2);
-      s.add(stand);
-      const roof = new THREE.Mesh(new THREE.BoxGeometry(14, 1, standLen),
-        new THREE.MeshLambertMaterial({ color: 0x33343c }));
-      roof.position.set(sx - side * 1.5, 13.4, TL / 2);
-      s.add(roof);
-    });
+    this._buildGrandstands();
 
     // Distant treeline ridge for depth (flat, far, behind stands)
     const ridgeMat = new THREE.MeshLambertMaterial({ color: 0x2f5a36 });
@@ -583,6 +550,71 @@ class Race3DEngine {
     s.add(poleMesh); s.add(lightMesh);
 
     // Wall dressing is authored with the barrier in _buildTrack().
+  }
+
+  _buildGrandstands() {
+    const asset = SC_GRANDSTANDS;
+    const seriesId = this.config.seriesId || SERIES.find(s => s.fieldSize === this.config.fieldSize)?.id;
+    const model = asset.models[seriesId] || asset.models.grassroots;
+    const crowd = new THREE.TextureLoader().load(asset.crowdTexture);
+    crowd.wrapS = crowd.wrapT = THREE.RepeatWrapping;
+    const materials = {};
+    for (const [name, color] of Object.entries(asset.materials)) {
+      materials[name] = new THREE.MeshLambertMaterial({ color: new THREE.Color(...color),
+        side: name === 'crowd' ? THREE.DoubleSide : THREE.FrontSide,
+        ...(name === 'crowd' ? { map: crowd, alphaTest: 0.45, alphaToCoverage: true } : {}) });
+    }
+    this.grandstandGroup = new THREE.Group();
+    this.grandstandGroup.name = 'grandstands:' + model.id;
+    this.grandstandGroup.userData = { seriesId: model.id, decks: model.deckCount, height: model.height, frontX: model.frontX };
+    this._grandstandModel = model;
+    this._grandstandBands = [];
+    // A bounded pool follows both cameras. Far modules retain the architecture
+    // but omit individual benches/spectators. Nothing is rebuilt each frame.
+    const reach = Math.ceil(2400 / model.pitch);
+    for (const [lod, parts] of [['near', model.parts], ['far', model.distantParts]]) {
+      const meshes = [];
+      for (const [name, data] of Object.entries(parts)) {
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(data.position, 3));
+        geometry.setAttribute('normal', new THREE.Float32BufferAttribute(data.normal, 3));
+        geometry.setAttribute('uv', new THREE.Float32BufferAttribute(data.uv, 2));
+        geometry.setIndex(data.index); geometry.computeBoundingSphere();
+        const mesh = new THREE.InstancedMesh(geometry, materials[name], (reach * 2 + 1) * 2);
+        mesh.name = 'grandstand:' + lod + ':' + name;
+        // Three r134 has no aggregate instanced bounds. The bounded pool is
+        // manually placed around the player, including the rear-view direction.
+        mesh.frustumCulled = false;
+        this.grandstandGroup.add(mesh); meshes.push(mesh);
+      }
+      this._grandstandBands.push({ lod, meshes });
+    }
+    this.scene.add(this.grandstandGroup);
+    this._positionGrandstands();
+  }
+
+  _positionGrandstands() {
+    if (!this._grandstandModel) return;
+    const model = this._grandstandModel;
+    const center = Math.floor((this.player?.z || 0) / model.pitch);
+    if (center === this._grandstandCenter) return;
+    this._grandstandCenter = center;
+    const reach = Math.ceil(2400 / model.pitch), d = this._dummy;
+    for (const { lod, meshes } of this._grandstandBands) {
+      let index = 0;
+      for (let offset = -reach; offset <= reach; offset++) {
+        const near = Math.abs(offset * model.pitch) <= 300;
+        if (near !== (lod === 'near')) continue;
+        for (const side of [-1, 1]) {
+          // Rotate rather than use a negative instance scale (unsupported by Three).
+          d.position.set(side * model.frontX, 0, (center + offset) * model.pitch + (side < 0 ? SC_GRANDSTANDS.moduleLength : 0));
+          d.rotation.set(0, side < 0 ? Math.PI : 0, 0); d.scale.set(1, 1, 1); d.updateMatrix();
+          for (const mesh of meshes) mesh.setMatrixAt(index, d.matrix);
+          index++;
+        }
+      }
+      for (const mesh of meshes) { mesh.count = index; mesh.instanceMatrix.needsUpdate = true; }
+    }
   }
 
   // ── Cars ─────────────────────────────────────────────────────
@@ -1509,6 +1541,7 @@ class Race3DEngine {
   }
 
   _updateCamera(dt) {
+    this._positionGrandstands();
     const p  = this.player;
     const sk = this.camShake;
     const nx = sk > 0 ? (Math.random() - 0.5) * sk : 0;
