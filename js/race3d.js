@@ -145,19 +145,6 @@ function r3dRoundelTex(num) {
   return tex;
 }
 
-// Grass - flat green with subtle mow banding
-function r3dGrassTex() {
-  return r3dTex(64, 64, (ctx, w, h) => {
-    ctx.fillStyle = '#37833f'; ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = 'rgba(255,255,255,0.04)';
-    for (let y = 0; y < h; y += 8) ctx.fillRect(0, y, w, 4);
-    for (let i = 0; i < 400; i++) {
-      ctx.fillStyle = Math.random() < 0.5 ? 'rgba(20,60,24,0.5)' : 'rgba(70,140,76,0.5)';
-      ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1);
-    }
-  });
-}
-
 // ─── Public launcher ─────────────────────────────────────────
 function launch3DRace(config, onComplete) {
   const container = document.getElementById('race-3d-container');
@@ -287,8 +274,8 @@ class Race3DEngine {
     const h = c.height || window.innerHeight;
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x7fb2dd);
-    this.scene.fog = new THREE.FogExp2(0xb7d4e8, 0.00085);
+    this.scene.background = new THREE.Color(SC_ENVIRONMENT.sky.horizon);
+    this.scene.fog = new THREE.FogExp2(SC_ENVIRONMENT.sky.horizon, 0.00085);
 
     this.camera = new THREE.PerspectiveCamera(62, w / h, 0.5, 4000);
     this.camera.position.set(0, 5, -12);
@@ -482,20 +469,6 @@ class Race3DEngine {
     }
     s.add(this.trackGroup);
 
-    // Grass aprons (textured)
-    const gTex = r3dGrassTex();
-    gTex.wrapS = gTex.wrapT = THREE.RepeatWrapping;
-    gTex.repeat.set(40, TL / 20);
-    const grassMat = new THREE.MeshLambertMaterial({ map: gTex, color: 0xcccccc, side: THREE.DoubleSide });
-    [-1, 1].forEach(side => {
-      const g = new THREE.Mesh(new THREE.PlaneGeometry(600, TL + 200), grassMat);
-      g.rotation.x = -Math.PI / 2;
-      // Exterior grass begins behind the wall, never beneath the paved edge.
-      g.position.set(side * (track.wallInnerX + 300), -0.02, TL / 2);
-      g.receiveShadow = true;
-      s.add(g);
-    });
-
     // One Blender-authored finish: dark steel truss, two-sided mesh lettering
     // and flush checkered paint centered on the unchanged classification plane.
     this.finishGroup = new THREE.Group();
@@ -513,43 +486,41 @@ class Race3DEngine {
 
   // ── Environment ──────────────────────────────────────────────
   _buildEnvironment() {
-    const s  = this.scene;
-    const TL = R3D.TRACK_LEN;
-    const TW = R3D.TRACK_W;
-    const d  = this._dummy;
-
     this._buildGrandstands();
-
-    // Distant treeline ridge for depth (flat, far, behind stands)
-    const ridgeMat = new THREE.MeshLambertMaterial({ color: 0x2f5a36 });
-    [-1, 1].forEach(side => {
-      const ridge = new THREE.Mesh(new THREE.BoxGeometry(18, 26, TL + 400), ridgeMat);
-      ridge.position.set(side * (TW / 2 + 230), 8, TL / 2);
-      s.add(ridge);
-    });
-
-    // Light poles (instanced)
-    const POLE_STEP = 200;
-    const POLE_COUNT = Math.floor(TL / POLE_STEP);
-    const poleMesh  = new THREE.InstancedMesh(new THREE.BoxGeometry(0.5, 24, 0.5),
-      new THREE.MeshLambertMaterial({ color: 0x80828a }), POLE_COUNT * 2);
-    const lightMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(7, 0.7, 0.7),
-      new THREE.MeshLambertMaterial({ color: 0xfffce0 }), POLE_COUNT * 2);
-    let pi = 0;
-    for (let z = 160; z < TL - 100; z += POLE_STEP) {
-      [-1, 1].forEach(sx => {
-        const px = sx * (TW / 2 + 66);
-        d.position.set(px, 12, z); d.rotation.set(0, 0, 0); d.scale.set(1, 1, 1);
-        d.updateMatrix(); poleMesh.setMatrixAt(pi, d.matrix);
-        d.position.set(px - sx * 3, 24.2, z); d.updateMatrix(); lightMesh.setMatrixAt(pi, d.matrix);
-        pi++;
-      });
+    const asset = SC_ENVIRONMENT, model = asset.models[this._grandstandModel.id];
+    this.environmentGroup = new THREE.Group();
+    this.environmentGroup.name = 'environment:ground';
+    this.environmentGroup.userData = { seriesId: this._grandstandModel.id, frontX: model.frontX, backX: model.backX };
+    const runout = Math.ceil(4200 / asset.moduleLength);
+    const count = Math.ceil(R3D.TRACK_LEN / asset.moduleLength) + runout * 2;
+    for (const [name, data] of Object.entries(model.parts)) {
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(data.position, 3));
+      geometry.setAttribute('normal', new THREE.Float32BufferAttribute(data.normal, 3));
+      geometry.setAttribute('uv', new THREE.Float32BufferAttribute(data.uv, 2));
+      geometry.setIndex(data.index);
+      const map = new THREE.TextureLoader().load(asset.textures[name]);
+      map.wrapS = map.wrapT = THREE.RepeatWrapping;
+      const mesh = new THREE.InstancedMesh(geometry, new THREE.MeshLambertMaterial({ map }), count);
+      mesh.name = 'ground:' + name; mesh.receiveShadow = true; mesh.frustumCulled = false;
+      for (let i = 0; i < count; i++) {
+        this._dummy.position.set(0, 0, (i - runout) * asset.moduleLength);
+        this._dummy.rotation.set(0, 0, 0); this._dummy.scale.set(1, 1, 1); this._dummy.updateMatrix();
+        mesh.setMatrixAt(i, this._dummy.matrix);
+      }
+      mesh.instanceMatrix.needsUpdate = true; this.environmentGroup.add(mesh);
     }
-    poleMesh.count = pi; lightMesh.count = pi;
-    poleMesh.instanceMatrix.needsUpdate = true; lightMesh.instanceMatrix.needsUpdate = true;
-    s.add(poleMesh); s.add(lightMesh);
-
-    // Wall dressing is authored with the barrier in _buildTrack().
+    this.scene.add(this.environmentGroup);
+    // Direction-only background: no translation, clouds, extra sun disc or
+    // finite skybox edges. The same shader covers the chase and mirror views.
+    this.sky = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 12), new THREE.ShaderMaterial({
+      uniforms: { horizon: { value: new THREE.Color(asset.sky.horizon) }, zenith: { value: new THREE.Color(asset.sky.zenith) } },
+      vertexShader: 'varying vec3 direction; void main(){ direction=position; vec4 p=projectionMatrix*vec4(mat3(viewMatrix)*position,1.0); gl_Position=p.xyww; }',
+      fragmentShader: 'uniform vec3 horizon; uniform vec3 zenith; varying vec3 direction; void main(){ float t=smoothstep(0.0,0.65,normalize(direction).y); gl_FragColor=vec4(mix(horizon,zenith,t),1.0); }',
+      side: THREE.BackSide, depthWrite: false, toneMapped: false
+    }));
+    this.sky.name = 'environment:clear-midday'; this.sky.frustumCulled = false; this.sky.renderOrder = -100;
+    this.scene.add(this.sky);
   }
 
   _buildGrandstands() {

@@ -18,6 +18,9 @@ The September 12 revision removes wavy rubber grooves, tar repairs and the origi
 
 ## Deliverables
 
+Later environment update: the legacy exterior grass, treeline blocks and light
+posts are now replaced/removed by `assets/environment`; track geometry is unchanged.
+
 - `empire-straight.blend`: editable 60-unit section with pavement, both barriers/fences and the finish assembly displayed at its midpoint, packed textures and an inspection camera. Opens independently of car authoring files.
 - `empire-straight.glb`: the same section and finish study, excluding the inspection camera and lighting.
 - `track-model.js`: indexed geometry exported from those Blender meshes, grouped by material for the Three.js r134 runtime. `parts` repeats along the road; `finishParts` uses local Z = 0 and is placed only once at the race finish.

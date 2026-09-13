@@ -1,5 +1,9 @@
 # Series grandstands
 
+The later ground/sky update is documented in `assets/environment/README.md`.
+It replaces legacy grass, removes treelines/light posts, and adds concrete under
+these stands without changing their geometry.
+
 Three original Blender-authored modular grandstands for both sides of the
 existing straight. This change replaces the previous identical crowd-textured
 boxes, without changing pavement, walls, catch fencing, exterior grass,

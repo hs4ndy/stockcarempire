@@ -13,6 +13,7 @@ for (const [series, decks, mode] of [[0,1,'desktop'],[1,2,'desktop'],[2,4,'deskt
     await page.locator('#btn-quick-race').click();
     await page.locator('.quick-series-btn').nth(series).click();
     await page.waitForFunction(()=>window._r3d?.racing && window._r3d?.grandstandGroup?.children.every(m=>!m.material.map || m.material.map.image?.naturalWidth>0));
+    await page.waitForFunction(()=>window._r3d?.environmentGroup?.children.every(m=>m.material.map.image?.naturalWidth===512));
     const metadata=await page.evaluate(()=>{
       const e=window._r3d; e.paused=true; e.paceMode=false; cancelAnimationFrame(e._raf);
       return {...e.grandstandGroup.userData,selected:e.config.seriesId};
@@ -22,6 +23,25 @@ for (const [series, decks, mode] of [[0,1,'desktop'],[1,2,'desktop'],[2,4,'deskt
     expect(metadata.height).toBeGreaterThan([5,25,65][series]);
     if(series===1) expect(metadata.height).toBeCloseTo(25.24,2);
     if(series===2) expect(metadata.height).toBeCloseTo(68.26,2);
+    const ground=await page.evaluate(()=>{
+      const e=window._r3d, group=e.environmentGroup, {frontX,backX}=group.userData;
+      e.scene.updateMatrixWorld(true);
+      const ray=new THREE.Raycaster(); let continuous=true;
+      for(const z of [-4100,0,59.999,60.001,7500,15000,19100]) {
+        for(const side of [-1,1]) {
+          for(const [x,name] of [[12,'grass'],[(frontX+backX)/2,'concrete'],[backX+1,'grass']]) {
+            ray.set(new THREE.Vector3(side*x,2,z),new THREE.Vector3(0,-1,0));
+            const hits=ray.intersectObjects(group.children);
+            continuous &&= hits.length>0 && hits[0].object.name==='ground:'+name;
+          }
+        }
+      }
+      return {continuous,meshes:group.children.length,
+        noLegacyMeshes:e.scene.children.filter(o=>o.isMesh && o!==e.sky).length===0,
+        clearSky:e.sky.name==='environment:clear-midday' && !e.sky.material.depthWrite,
+        horizonMatches:e.sky.material.uniforms.horizon.value.equals(e.scene.fog.color)};
+    });
+    expect(ground).toEqual({continuous:true,meshes:2,noLegacyMeshes:true,clearSky:true,horizonMatches:true});
     for(const z of [120,7500,15000]) {
       const report=await page.evaluate(z=>{
         const e=window._r3d, p=e.player;
