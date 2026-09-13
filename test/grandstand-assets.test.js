@@ -38,7 +38,7 @@ test('Premier tiers recede behind the previous seating rake and retain their can
     const [start,base,rows,tread,rise]=m.decks[i-1];
     assert.ok(m.decks[i][0]>=start+rows*tread+1,'upper tier must clear the lower seating rows');
     const gap=m.decks[i][1]-(base+(rows-1)*rise);
-    assert.ok(gap>3 && gap<10,'tier separation must leave a compact suite/concourse band');
+    assert.ok(Math.abs(gap-3.4)<.001,'tier separation must tightly fit the suite band without a large open gap');
   }
   const [start,base,rows,tread,rise]=m.decks[3];
   const roofY=base+(rows-1)*rise+5;

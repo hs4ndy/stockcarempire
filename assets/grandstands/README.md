@@ -9,14 +9,15 @@ lighting, trees, race physics, AI, cars, or finish classification.
 | --- | --- | --- | --- | --- |
 | Grassroots | Open aluminum benches, exposed bracing, steps and handrails; separate bleacher sections | 1 / 8 | 5.76 | 20 |
 | Challenger | Collegiate-style concrete seating, blue benches, suite band and partial canopy | 2 / 14 + 16 | 29.50 | 24 |
-| Premier Cup | Four progressively recessed seating tiers, three glazed suite bands, structural rakers and large cantilever canopy | 4 / 16 + 18 + 20 + 22 | 80.88 | 28 |
+| Premier Cup | Four progressively recessed seating tiers, three glazed suite bands, structural rakers and large cantilever canopy | 4 / 16 + 18 + 20 + 22 | 68.26 | 28 |
 
 Dimensions are game units and artistic choices, not construction specifications.
 Premier is inspired by AT&T Stadium's scale and layered seating, not a replica.
 Premier deck fronts sit at local X = 0, 18, 39 and 62: each upper tier is
 behind the previous seating rake rather than stacked over its front rows.
-Its original canopy follows the recessed fourth deck. Height, row counts,
-materials, LOD triangle counts and the two other series are unchanged.
+Its original canopy follows the recessed fourth deck. Vertical tier gaps are
+3.4 units, tightly fitting the existing suite bands with minimal open space.
+Row counts, materials, LOD triangle counts and the two other series are unchanged.
 There is no roof over the track, oval, football field, or infield. Left stands
 are rotated counterparts of the right-hand modules, not negative-scale meshes.
 

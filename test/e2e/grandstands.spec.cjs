@@ -19,7 +19,8 @@ for (const [series, decks, mode] of [[0,1,'desktop'],[1,2,'desktop'],[2,4,'deskt
     });
     expect(metadata.seriesId).toBe(['grassroots','challenger','premier'][series]);
     expect(metadata.selected).toBe(metadata.seriesId); expect(metadata.decks).toBe(decks);
-    expect(metadata.height).toBeGreaterThan([5,25,75][series]);
+    expect(metadata.height).toBeGreaterThan([5,25,65][series]);
+    if(series===2) expect(metadata.height).toBeCloseTo(68.26,2);
     for(const z of [120,7500,15000]) {
       const report=await page.evaluate(z=>{
         const e=window._r3d, p=e.player;
