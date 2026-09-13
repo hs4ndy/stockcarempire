@@ -11,7 +11,7 @@ const SERIES = [
     racesPerSeason: 18,
     carClass: 'stock',
     entryFee: 500,
-    prize: [5000,3500,2500,2000,1800,1600,1400,1200,1100,1000,900,800,700,600,500,400,300,200,150,100],
+    prize: [15000,11000,8500,7000,6000,5200,4500,3900,3400,3000,2600,2200,1900,1600,1300,1000,800,600,400,300],
     points: [40,35,31,28,25,22,20,18,16,14,12,10,8,6,4,3,2,1,0,0],
     promotionSpots: 3,
     relegationSpots: 0,
@@ -388,9 +388,9 @@ const LOAN_OFFERS = [
 const LOAN_BASE = [40000, 180000, 700000];
 
 const SPONSOR_DEALS = [
-  { id: 'sp01', name: 'QuickLube Oil',        weekly: 400,   bonus: 150,  cond: 'top10', level: 0 },
-  { id: 'sp02', name: "Buster's Auto Parts",  weekly: 800,   bonus: 500,  cond: 'top5',  level: 0 },
-  { id: 'sp03', name: 'Frontier Fuel Co.',    weekly: 650,   bonus: 900,  cond: 'win',   level: 0 },
+  { id: 'sp01', name: 'QuickLube Oil',        weekly: 800,   bonus: 500,  cond: 'top10', level: 0 },
+  { id: 'sp02', name: "Buster's Auto Parts",  weekly: 1600,  bonus: 1500, cond: 'top5',  level: 0 },
+  { id: 'sp03', name: 'Frontier Fuel Co.',    weekly: 1300,  bonus: 3000, cond: 'win',   level: 0 },
   { id: 'sp04', name: 'National Tire Co.',    weekly: 2500,  bonus: 1800, cond: 'top5',  level: 1 },
   { id: 'sp05', name: 'Velocity Motors',      weekly: 4000,  bonus: 2500, cond: 'top3',  level: 1 },
   { id: 'sp06', name: 'Eagle Energy Drinks',  weekly: 3200,  bonus: 4500, cond: 'win',   level: 1 },

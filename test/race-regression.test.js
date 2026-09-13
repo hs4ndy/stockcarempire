@@ -71,6 +71,38 @@ function physicsContext(seed = 17) {
   return context;
 }
 
+test('Grassroots race purses and sponsor income support early career growth', () => {
+  const context = makeContext();
+  const economy = readJson(context, `({
+    grassrootsPrize: SERIES[0].prize,
+    challengerWin: SERIES[1].prize[0],
+    grassrootsSponsors: SPONSOR_DEALS.filter(deal => deal.level === 0),
+  })`);
+
+  assert.deepEqual(economy.grassrootsPrize.slice(0, 5), [15000, 11000, 8500, 7000, 6000]);
+  assert.equal(economy.grassrootsPrize.at(-1), 300);
+  assert.ok(economy.grassrootsPrize.every((amount, index, prizes) => index === 0 || amount <= prizes[index - 1]));
+  assert.ok(economy.grassrootsPrize[0] < economy.challengerWin, 'series progression must remain intact');
+  assert.deepEqual(economy.grassrootsSponsors.map(deal => deal.weekly), [800, 1600, 1300]);
+  assert.deepEqual(economy.grassrootsSponsors.map(deal => deal.bonus), [500, 1500, 3000]);
+
+  const sponsorIncome = vm.runInContext(`(() => {
+    newGame('Economy Test', 'Taylor Tester', 'Test Car');
+    game.activeSponsors = ['sp01', 'sp02', 'sp03'];
+    return weeklySponsorIncome();
+  })()`, context);
+  assert.equal(sponsorIncome, 3700);
+
+  const winningWeekendIncome = vm.runInContext(`(() => {
+    const carId = game.cars[0].id;
+    const before = game.money;
+    const result = { entrantId: 'player', carId, position: 1, isPlayer: true };
+    postRaceUpdate(result, SERIES[0].prize[0], [result]);
+    return game.money - before;
+  })()`, context);
+  assert.equal(winningWeekendIncome, 23700, 'win purse plus all three base and bonus payments');
+});
+
 test('tow and push taper continuously across gap and alignment boundaries', () => {
   const context = physicsContext();
   const checks = readJson(context, `[1.449, 1.45, 1.451, 3.799, 3.8, 3.801].map(x => {

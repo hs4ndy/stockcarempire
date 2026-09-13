@@ -967,29 +967,47 @@ function renderRaceResultsModal(results, events, playerResult) {
       ${r.dnf ? '<span class="badge badge-red">DNF</span>' : ''}
     </div>`).join('');
 
+  const isWinner = playerResult?.position === 1;
   let playerSection = '';
   if (playerResult) {
     const pos = playerResult.position;
-    const label = pos === 1 ? 'VICTORY LANE' : pos <= 3 ? 'PODIUM FINISH' : `P${pos} FINISH`;
-    playerSection = `
-      <div class="player-result-hero">
-        <div class="big-pos-label">${label}</div>
-        <div>
-          <div class="big-pos">${pos}${ordinal(pos)} place</div>
-          <div class="big-prize green">${fmt$(playerResult.prize)} earned</div>
-          <div class="muted-text">${playerResult.points} championship points</div>
-        </div>
-      </div>`;
+    if (isWinner) {
+      const nameParts = String(playerResult.displayName || '').split(' / ');
+      const winnerDriver = nameParts[nameParts.length - 1] || game.driverName || 'You';
+      const winnerTeam = nameParts.length > 1 ? nameParts[0] : game.teamName;
+      playerSection = `
+        <div class="race-win-banner">
+          <div class="race-win-rail"></div>
+          <div class="race-win-series">${series.name} · Victory Lane</div>
+          <h3 class="race-win-title" id="race-win-title">Race Winner</h3>
+          <div class="race-win-driver">${winnerDriver}</div>
+          <div class="race-win-team">${winnerTeam}</div>
+          <div class="race-win-stats">
+            <div class="race-win-stat"><strong>${fmt$(playerResult.prize)}</strong><span>Race Purse</span></div>
+            <div class="race-win-stat"><strong>${playerResult.points}</strong><span>Championship Points</span></div>
+          </div>
+        </div>`;
+    } else {
+      const label = pos <= 3 ? 'PODIUM FINISH' : `P${pos} FINISH`;
+      playerSection = `
+        <div class="player-result-hero">
+          <div class="big-pos-label">${label}</div>
+          <div>
+            <div class="big-pos">${pos}${ordinal(pos)} place</div>
+            <div class="big-prize green">${fmt$(playerResult.prize)} earned</div>
+            <div class="muted-text">${playerResult.points} championship points</div>
+          </div>
+        </div>`;
+    }
   }
 
   return `
-  <div class="modal-overlay" id="results-modal">
-    <div class="modal modal-wide">
-      <div class="modal-header">
-        <h3>Race Results</h3>
-      </div>
+  <div class="modal-overlay" id="results-modal" role="dialog" aria-modal="true" aria-labelledby="${isWinner ? 'race-win-title' : 'race-results-title'}">
+    <div class="modal modal-wide${isWinner ? ' race-win-modal' : ''}">
+      ${isWinner ? '' : `<div class="modal-header"><h3 id="race-results-title">Race Results</h3></div>`}
+      ${isWinner ? playerSection : ''}
       <div class="modal-body">
-        ${playerSection}
+        ${isWinner ? '' : playerSection}
         <div class="card-header mt">Top 10 Finishers</div>
         <div class="results-list">${topRows}</div>
         ${results.length > 10 ? `<p class="muted-text small">${results.length - 10} more finishers...</p>` : ''}
