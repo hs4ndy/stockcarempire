@@ -32,6 +32,14 @@ test('embedded crowd texture matches the Blender image and works without externa
   assert.ok(asset.crowdTexture.startsWith('data:image/png;base64,'));
   assert.deepEqual(Buffer.from(asset.crowdTexture.split(',')[1],'base64'),fs.readFileSync(path.join(root,'assets/grandstands/seated-crowd.png')));
 });
+test('Challenger has two fewer rows per deck and a tightly fitted tier gap',()=>{
+  const m=asset.models.challenger;
+  assert.deepEqual(Array.from(m.decks,d=>d[2]),[12,14]);
+  const [start,base,rows,tread,rise]=m.decks[0];
+  assert.ok(m.decks[1][0]>=start+rows*tread+1);
+  assert.ok(Math.abs(m.decks[1][1]-(base+(rows-1)*rise)-3.4)<.001);
+  assert.ok(Math.abs(m.height-25.24)<.001);
+});
 test('Premier tiers recede behind the previous seating rake and retain their canopy in both LODs',()=>{
   const m=asset.models.premier;
   for(let i=1;i<m.decks.length;i++) {

@@ -8,10 +8,13 @@ lighting, trees, race physics, AI, cars, or finish classification.
 | Series | Architecture | Decks / rows | Height | Front setback from track center |
 | --- | --- | --- | --- | --- |
 | Grassroots | Open aluminum benches, exposed bracing, steps and handrails; separate bleacher sections | 1 / 8 | 5.76 | 20 |
-| Challenger | Collegiate-style concrete seating, blue benches, suite band and partial canopy | 2 / 14 + 16 | 29.50 | 24 |
+| Challenger | Collegiate-style concrete seating, blue benches, suite band and partial canopy | 2 / 12 + 14 | 25.24 | 24 |
 | Premier Cup | Four progressively recessed seating tiers, three glazed suite bands, structural rakers and large cantilever canopy | 4 / 16 + 18 + 20 + 22 | 68.26 | 28 |
 
 Dimensions are game units and artistic choices, not construction specifications.
+Challenger has two fewer rows per deck than the original version. Its upper
+deck starts at local X = 12, behind the lower seating rake, with the same
+tightly fitted 3.4-unit suite band as Premier. Its partial canopy is retained.
 Premier is inspired by AT&T Stadium's scale and layered seating, not a replica.
 Premier deck fronts sit at local X = 0, 18, 39 and 62: each upper tier is
 behind the previous seating rake rather than stacked over its front rows.
@@ -78,7 +81,7 @@ and hides the pool edges in the existing distance fog. Grassroots sections are
 60 units long on a 78-unit pitch, leaving local-track gaps. Stadium modules
 repeat on a continuous 60-unit pitch.
 
-Near-module triangle counts: 2,044 Grassroots, 8,916 Challenger and 21,116
+Near-module triangle counts: 2,044 Grassroots, 7,984 Challenger and 21,116
 Premier. The pooled runtime is tested below 900,000 stand triangles and
 14 material/detail-level draw calls. The crowd is alpha-tested, double-sided,
 mipmapped and embedded as a data URL for Chrome `file://` compatibility.

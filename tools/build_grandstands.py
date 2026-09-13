@@ -85,7 +85,7 @@ def beam(name,a,b,width,mat='steel'):
 
 SPECS=[
  {'id':'grassroots','name':'Local short-track bleachers','frontX':20,'decks':[(0,1.3,8,.72,.46)],'pitch':78},
- {'id':'challenger','name':'Two-deck collegiate grandstand','frontX':24,'decks':[(0,2.8,14,.88,.56),(4,15.5,16,.88,.56)],'pitch':60},
+ {'id':'challenger','name':'Two-deck collegiate grandstand','frontX':24,'decks':[(0,2.8,12,.88,.56),(12,12.36,14,.88,.56)],'pitch':60},
  # Upper decks sit behind the previous seating rake, not above its front rows.
  {'id':'premier','name':'Four-deck premier stadium','frontX':28,'decks':[(0,3.5,16,1.05,.68),(18,17.1,18,1.05,.68),(39,32.06,20,1.05,.68),(62,48.38,22,1.05,.68)],'pitch':60}
 ]
