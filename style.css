@@ -1,20 +1,21 @@
 /* ============================================================
    STOCK CAR EMPIRE - UI System
-   Phase 0.75: a flat race-weekend shell. The simulation and screen
+   Phase 0.90: borderless editorial panels and a tighter race-weekend shell.
+   The simulation and screen
    structure intentionally remain independent of this visual layer.
    ============================================================ */
 
 /* ---- Design tokens ---------------------------------------- */
 :root {
   /* Surfaces - single neutral scale */
-  --bg:        #080a0f;
-  --panel:     #11141c;
-  --panel-2:   #181c27;
-  --panel-3:   #222838;
+  --bg:        #07090e;
+  --panel:     #11151e;
+  --panel-2:   #191f2b;
+  --panel-3:   #242b3a;
 
   /* Lines */
-  --line:      #293142;
-  --line-2:    #3b465d;
+  --line:      #252d3c;
+  --line-2:    #323d52;
 
   /* Text */
   --text:      #f5f7fb;
@@ -340,7 +341,7 @@ a:focus-visible,
   position: relative;
   z-index: 1;
   background: var(--panel);
-  border: 1px solid var(--line-2);
+  border: 0;
   border-top: 3px solid var(--accent);
   box-shadow: none;
 }
@@ -405,9 +406,9 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   align-items: center;
   gap: 1.5rem;
   padding: 0 1.5rem;
-  height: 68px;
+  height: 70px;
   background: var(--bg);
-  border-bottom: 2px solid var(--line-2);
+  border-bottom: 0;
   position: sticky;
   top: 0;
   z-index: 40;
@@ -460,9 +461,9 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   gap: 0;
   padding: 0 1.5rem;
   background: var(--panel);
-  border-bottom: 1px solid var(--line);
+  border-bottom: 0;
   position: sticky;
-  top: 68px;
+  top: 70px;
   z-index: 39;
   overflow-x: auto;
 }
@@ -473,14 +474,14 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   align-items: center;
   gap: .55rem;
   padding: 0 1.1rem;
-  height: 50px;
+  height: 48px;
   color: var(--text-mute);
   border-bottom: 3px solid transparent;
   white-space: nowrap;
   transition: color 180ms ease, border-color 180ms ease, background-color 180ms ease;
 }
 .nav-btn:hover { color: var(--text); background: rgba(255, 255, 255, .035); }
-.nav-btn.active { color: var(--text); border-bottom-color: var(--accent); background: var(--panel-2); }
+.nav-btn.active { color: var(--text); border-bottom-color: var(--accent); background: var(--bg); }
 .nav-idx {
   font-size: 10px;
   font-weight: 700;
@@ -496,7 +497,7 @@ input[type="text"]::placeholder { color: var(--text-mute); }
 #main-content {
   max-width: var(--maxw);
   margin: 0 auto;
-  padding: 1.75rem 1.5rem 3rem;
+  padding: 2rem 1.5rem 3.5rem;
 }
 .page-header {
   display: flex;
@@ -504,9 +505,19 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid var(--line-2);
+  margin-bottom: 1.75rem;
+  padding-bottom: .8rem;
+  border-bottom: 0;
+  position: relative;
+}
+.page-header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 42px;
+  height: 3px;
+  background: var(--accent);
 }
 .page-header h2 {
   font-family: var(--font-display);
@@ -521,17 +532,37 @@ input[type="text"]::placeholder { color: var(--text-mute); }
    ============================================================ */
 .card {
   background: var(--panel);
-  border: 1px solid var(--line-2);
-  border-left: 3px solid var(--line-2);
-  padding: 1.25rem;
+  border: 0;
+  padding: 1.35rem;
   box-shadow: none;
+  position: relative;
+  overflow: hidden;
+}
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 34px;
+  height: 3px;
+  background: var(--accent);
 }
 .card-header {
-  display: block;
-  padding-bottom: .7rem;
-  margin-bottom: 1rem;
-  border-bottom: 1px solid var(--line-2);
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  padding-bottom: .65rem;
+  margin-bottom: .9rem;
+  border-bottom: 0;
   color: var(--text);
+  letter-spacing: .16em;
+  font-size: 12px;
+}
+.card-header::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: var(--line);
 }
 .card-body { display: block; }
 
@@ -543,7 +574,7 @@ input[type="text"]::placeholder { color: var(--text-mute); }
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1.25rem;
+  gap: 1rem;
 }
 
 /* ============================================================
@@ -552,17 +583,18 @@ input[type="text"]::placeholder { color: var(--text-mute); }
 .cmd-strip {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  border: 1px solid var(--line);
-  background: var(--panel);
-  border-color: var(--line-2);
-  margin-bottom: 1.5rem;
+  border: 0;
+  background: transparent;
+  gap: 2px;
+  margin-bottom: 1.75rem;
 }
 .cmd-cell {
   display: flex;
   flex-direction: column;
   gap: .3rem;
-  padding: 1.1rem 1.2rem;
-  border-right: 1px solid var(--line-2);
+  padding: 1.2rem 1.25rem;
+  border-right: 0;
+  background: var(--panel);
 }
 .cmd-cell:last-child { border-right: none; }
 .cmd-cell:first-child { border-left: 3px solid var(--accent); }
@@ -708,7 +740,7 @@ input[type="text"]::placeholder { color: var(--text-mute); }
 }
 .car-card {
   background: var(--panel);
-  border: 1px solid var(--line);
+  border: 0;
   border-top: 3px solid var(--accent);
   padding: 1.1rem;
 }
@@ -791,7 +823,7 @@ input[type="text"]::placeholder { color: var(--text-mute); }
 .upgrade-summary {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  border: 1px solid var(--line);
+  border: 0;
   background: var(--panel-2);
   margin-bottom: 1.25rem;
 }
@@ -879,7 +911,7 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   padding: .8rem;
   margin-bottom: .6rem;
   background: var(--panel-2);
-  border: 1px solid var(--line);
+  border: 0;
   border-left: 3px solid var(--warn);
 }
 .loan-row.is-late { border-left-color: var(--accent); }
@@ -894,7 +926,7 @@ input[type="text"]::placeholder { color: var(--text-mute); }
 .season-stats-bar {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  border: 1px solid var(--line);
+  border: 0;
   background: var(--panel);
   margin-bottom: 1.5rem;
 }
@@ -913,7 +945,7 @@ input[type="text"]::placeholder { color: var(--text-mute); }
 .season-stat:last-child { border-right: none; }
 .ss-num { font-size: 1.5rem; font-weight: 800; color: var(--text); letter-spacing: 0; }
 
-.schedule-list { display: flex; flex-direction: column; border: 1px solid var(--line); }
+.schedule-list { display: flex; flex-direction: column; border: 0; }
 .schedule-row {
   display: grid;
   grid-template-columns: 40px 1fr auto auto;
@@ -1035,7 +1067,7 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   display: flex;
   flex-direction: column;
   background: var(--panel);
-  border: 1px solid var(--line-2);
+  border: 0;
   border-top: 4px solid var(--accent);
 }
 .modal-wide { max-width: 620px; }
@@ -1210,12 +1242,12 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   gap: .25rem;
   padding: .8rem .9rem;
   background: var(--panel-2);
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--line-2);
+  border: 0;
+  border-left: 3px solid transparent;
   cursor: pointer;
   transition: border-color var(--t) linear, background-color var(--t) linear;
 }
-.difficulty-card:hover { border-left-color: var(--text-dim); }
+.difficulty-card:hover { border-left-color: var(--text-mute); }
 .difficulty-card.selected { border-left-color: var(--accent); background: var(--panel-3); }
 .difficulty-name {
   font-size: 12px; font-weight: 800;
@@ -1252,8 +1284,8 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   padding: .85rem .9rem;
   text-align: left;
   background: var(--panel-2);
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--line-2);
+  border: 0;
+  border-left: 3px solid transparent;
   transition: border-color var(--t) linear, background-color var(--t) linear;
 }
 .quick-series-btn:hover { border-left-color: var(--accent); background: var(--panel-3); }
@@ -1270,8 +1302,8 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   gap: .35rem;
   padding: 1.1rem;
   background: var(--panel-2);
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--line-2);
+  border: 0;
+  border-left: 3px solid transparent;
   cursor: pointer;
   transition: border-color var(--t) linear, background-color var(--t) linear;
 }
@@ -1297,10 +1329,10 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   gap: 1rem;
   padding: 1rem;
   background: var(--panel-2);
-  border: 1px solid var(--line);
+  border: 0;
   border-left: 3px solid var(--accent);
 }
-.save-slot-empty { border-left-color: var(--line-2); }
+.save-slot-empty { border-left-color: transparent; }
 .save-slot-info { font-size: 13px; line-height: 1.5; }
 .save-slot-info strong { font-weight: 800; }
 .save-slot-actions { display: flex; gap: .5rem; flex: none; }
@@ -1322,7 +1354,7 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   max-width: 360px;
   padding: 12px 16px;
   background: var(--panel-3);
-  border: 1px solid var(--line-2);
+  border: 0;
   border-left: 4px solid var(--text-dim);
   color: var(--text);
   font-size: 13px;

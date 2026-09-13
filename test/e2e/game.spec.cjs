@@ -12,7 +12,7 @@ test.beforeEach(async ({ page }) => {
   }));
 });
 
-test('phase 0.75 UI stays flat and free of decorative icons and em dashes', async ({ page }) => {
+test('phase 0.90 UI stays flat and free of decorative icons and em dashes', async ({ page }) => {
   await page.goto('/');
   const audit = await page.evaluate(async () => {
     const paths = [
@@ -39,6 +39,53 @@ test('phase 0.75 UI stays flat and free of decorative icons and em dashes', asyn
     iconData: false,
   });
 });
+
+for (const [label, viewport] of [
+  ['desktop', { width: 1440, height: 900 }],
+  ['laptop', { width: 1024, height: 768 }],
+  ['tablet', { width: 768, height: 900 }],
+  ['mobile', { width: 375, height: 812 }],
+]) {
+  test(`phase 0.90 dashboard uses borderless editorial panels (${label})`, async ({ page }, testInfo) => {
+    await page.setViewportSize(viewport);
+    await page.goto('/');
+    await page.locator('#btn-start-new').click();
+    await page.locator('#inp-team-name').fill('Apex Test Racing');
+    await page.locator('#inp-driver-name').fill('Taylor Tester');
+    await page.locator('#inp-car-name').fill('Test Mule');
+    await page.locator('#btn-create-team').click();
+    await page.locator('#btn-begin-career').click();
+    await expect(page.locator('.dashboard-grid .card')).toHaveCount(6);
+    await page.waitForTimeout(250);
+    await page.evaluate(() => document.getElementById('toast-container').replaceChildren());
+    await page.keyboard.press('Tab');
+    const audit = await page.evaluate(() => {
+      const cards = [...document.querySelectorAll('.dashboard-grid .card')];
+      const borders = cards.map(card => {
+        const s = getComputedStyle(card);
+        return [s.borderTopWidth, s.borderRightWidth, s.borderBottomWidth, s.borderLeftWidth];
+      });
+      const marker = getComputedStyle(cards[0], '::before');
+      const header = getComputedStyle(cards[0].querySelector('.card-header'));
+      const focus = getComputedStyle(document.activeElement).outlineStyle;
+      return {
+        borders,
+        markerWidth: marker.width,
+        markerColor: marker.backgroundColor,
+        headerBorder: header.borderBottomWidth,
+        bodyOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        focus,
+      };
+    });
+    expect(audit.borders.flat().every(width => width === '0px')).toBe(true);
+    expect(audit.markerWidth).toBe('34px');
+    expect(audit.markerColor).toBe('rgb(239, 28, 66)');
+    expect(audit.headerBorder).toBe('0px');
+    expect(audit.bodyOverflow).toBe(0);
+    expect(audit.focus).not.toBe('none');
+    await page.screenshot({ path: testInfo.outputPath(`phase-090-${label}.png`), fullPage: true });
+  });
+}
 
 test('a new career completes both setup steps and creates a 20-entry field', async ({ page }) => {
   const pageErrors = [];
