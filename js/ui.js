@@ -957,7 +957,6 @@ function renderLeaderboard(results, highlightPlayer) {
 
 // ─── Race Results modal ───────────────────────────────────────
 function renderRaceResultsModal(results, events, playerResult) {
-  const series  = SERIES[game.currentSeries];
   const topRows = results.slice(0, 10).map(r => `
     <div class="result-row ${r.isPlayer ? 'player-result' : ''}">
       <span class="res-pos ${r.position <= 3 ? 'podium' : ''}">${r.position}</span>
@@ -978,7 +977,6 @@ function renderRaceResultsModal(results, events, playerResult) {
       playerSection = `
         <div class="race-win-banner">
           <div class="race-win-rail"></div>
-          <div class="race-win-series">${series.name} · Victory Lane</div>
           <h3 class="race-win-title" id="race-win-title">Race Winner</h3>
           <div class="race-win-driver">${winnerDriver}</div>
           <div class="race-win-team">${winnerTeam}</div>

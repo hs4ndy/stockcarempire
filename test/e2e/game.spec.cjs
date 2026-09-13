@@ -77,6 +77,7 @@ for (const [label, viewport] of [
         markerColor: marker.backgroundColor,
         headerDivider: gameHeader.borderBottomWidth,
         navDivider: gameNav.borderBottomWidth,
+        navAccentCount: document.querySelectorAll('.nav-flag-accent').length,
         headerBorder: header.borderBottomWidth,
         bodyOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
         focus,
@@ -87,6 +88,7 @@ for (const [label, viewport] of [
     expect(audit.markerColor).toBe('rgb(239, 28, 66)');
     expect(audit.headerDivider).toBe('1px');
     expect(audit.navDivider).toBe('1px');
+    expect(audit.navAccentCount).toBe(0);
     expect(audit.headerBorder).toBe('0px');
     expect(audit.bodyOverflow).toBe(0);
     expect(audit.focus).not.toBe('none');
@@ -131,6 +133,8 @@ test('a win opens a dedicated race winner menu', async ({ page }, testInfo) => {
   const modal = page.locator('#results-modal');
   await expect(modal).toBeVisible();
   await expect(modal.locator('.race-win-title')).toHaveText('Race Winner');
+  await expect(modal).not.toContainText('Victory Lane');
+  await expect(modal.locator('.race-win-series')).toHaveCount(0);
   await expect(modal.locator('.race-win-driver')).toHaveText('Taylor Winner');
   await expect(modal.locator('.race-win-team')).toHaveText('Victory Test Racing');
   await expect(modal.locator('.race-win-stats')).toContainText('$15,000');
