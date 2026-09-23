@@ -197,6 +197,7 @@ function launch3DRace(config, onComplete) {
       </div>
 
       <div class="r3d-warning hidden" id="r3d-warn"></div>
+      ${config.practiceTips ? '<div class="r3d-practice-tip" id="r3d-practice-tip" role="status" aria-live="polite">A and D steer. S brakes. The car accelerates automatically.</div>' : ''}
       <div class="r3d-countdown" id="r3d-countdown"></div>
       <div class="r3d-finish" id="r3d-finish" style="display:none"></div>
 
@@ -240,6 +241,9 @@ class Race3DEngine {
   constructor(canvas, config, onComplete) {
     this.canvas       = canvas;
     this.config       = config;
+    this.raceLength   = Number.isFinite(config.finishDistance) &&
+      config.finishDistance >= 1000 && config.finishDistance <= R3D.TRACK_LEN
+      ? config.finishDistance : R3D.TRACK_LEN;
     this.isGrassroots = (config.seriesId || SERIES.find(s => s.fieldSize === config.fieldSize)?.id) === 'grassroots';
     this.speedScale = this.isGrassroots ? 0.9 : 1;
     this.trackHalfWidth = R3D.HALF_W * (this.isGrassroots ? .94 : 1);
@@ -443,7 +447,7 @@ class Race3DEngine {
         alphaTest: 0.35, alphaToCoverage: true }),
     };
     // Visual runout extends past the cameras' 4,000-unit far plane at both
-    // endpoints. Classification still uses the original 15,000-unit finish.
+    // endpoints. Normal races still use the original 15,000-unit finish.
     const runoutModules = Math.ceil(4200 / track.moduleLength);
     const moduleCount = Math.ceil(TL / track.moduleLength) + 2 * runoutModules;
     this.trackGroup = new THREE.Group();
@@ -476,10 +480,10 @@ class Race3DEngine {
     s.add(this.trackGroup);
 
     // One Blender-authored finish: dark steel truss, two-sided mesh lettering
-    // and flush checkered paint centered on the unchanged classification plane.
+    // and flush checkered paint centered on this race's finish plane.
     this.finishGroup = new THREE.Group();
     this.finishGroup.name = 'track:finish';
-    this.finishGroup.position.z = TL;
+    this.finishGroup.position.z = this.raceLength;
     for (const [name, data] of Object.entries(track.finishParts)) {
       const mesh = new THREE.Mesh(buildGeometry(data), trackMaterials[name]);
       mesh.name = 'finish:' + name;
@@ -818,7 +822,7 @@ class Race3DEngine {
     this._updateCamera(dt);
     this._updateHUD(dt);
 
-    const endgameGlobal = this.player.z / R3D.TRACK_LEN >= R3D.ENDGAME_FRAC;
+    const endgameGlobal = this.player.z / (this.raceLength || R3D.TRACK_LEN) >= R3D.ENDGAME_FRAC;
     const maxWrecks = endgameGlobal ? R3D.MAX_WRECKS + 3 : R3D.MAX_WRECKS;
     if (this.wreckCount < maxWrecks) {
       this.wreckCooldown -= dt;
@@ -987,7 +991,7 @@ class Race3DEngine {
 
   _raceAggression(car, teamWorking = false) {
     const calm = R3D.CALM_FRAC / Math.max(0.5, teamWorking ? 1 : this.diff.aiAggro);
-    const phase = r3dSmooth((car.z / R3D.TRACK_LEN - calm) /
+    const phase = r3dSmooth((car.z / (this.raceLength || R3D.TRACK_LEN) - calm) /
       Math.max(0.01, R3D.ENDGAME_FRAC - calm));
     const temperament = clamp(((car.raceNerve || 1) - 1) * 0.45, -0.08, 0.08);
     return clamp(0.38 + phase * 0.44 + temperament, 0.3, 0.9);
@@ -998,7 +1002,7 @@ class Race3DEngine {
     if (!car.isTeammate || !p || p.dnf || p.finished || p.spinning ||
         car.dnf || car.finished || car.spinning) return false;
     if (Math.abs(p.z - car.z) >= R3D.TEAM_HELP_Z) return false;
-    if (Math.max(p.z, car.z) / R3D.TRACK_LEN >= R3D.TEAM_RACE_END) return false;
+    if (Math.max(p.z, car.z) / (this.raceLength || R3D.TRACK_LEN) >= R3D.TEAM_RACE_END) return false;
 
     const active = this.cars.filter(c => !c.dnf && !c.finished && !c.spinning);
     const frontCount = Math.max(3, Math.ceil(active.length * R3D.TEAM_FRONT_FRAC));
@@ -1011,7 +1015,7 @@ class Race3DEngine {
     const lead = this._leadZ ?? Math.max(...this.cars.filter(c => !c.dnf && !c.finished).map(c => c.z));
     // Cooperation is a way to catch the leaders. Drivers contest the finish,
     // and drivers already in the leading group take their own opportunities.
-    return lead - car.z > 65 && car.z / R3D.TRACK_LEN < 0.80 + (this.diff.racecraft || 0) * 0.07;
+    return lead - car.z > 65 && car.z / (this.raceLength || R3D.TRACK_LEN) < 0.80 + (this.diff.racecraft || 0) * 0.07;
   }
 
   _laneSafe(car, x) {
@@ -1437,7 +1441,7 @@ class Race3DEngine {
   }
 
   _checkFinish() {
-    const TL = R3D.TRACK_LEN;
+    const TL = this.raceLength || R3D.TRACK_LEN;
     // Several cars can cross on the same frame - at 200+ units/sec a frame is
     // worth ~10 units of track. They must be credited in the order they are
     // actually down the road, NOT in array order: the player sits at index 0,
@@ -1495,7 +1499,7 @@ class Race3DEngine {
     const lanes = [-6, 0, 6];
     const cands = this.cars.filter(c =>
       !c.isPlayer && !c.spinning && !c.finished && !c.dnf &&
-      c.z > p.z + notice && c.z < R3D.TRACK_LEN - notice &&
+      c.z > p.z + notice && c.z < (this.raceLength || R3D.TRACK_LEN) - notice &&
       lanes.some(x => Math.abs(c.x - x) > 4 &&
         !this.wrecks.some(w => Math.abs(w.x - x) < 3 && Math.abs(w.z - c.z) < 100) &&
         !this.cars.some(o => o !== c && o.spinning && Math.abs(o.x - x) < 3 && Math.abs(o.z - c.z) < 100)));
@@ -1716,7 +1720,20 @@ class Race3DEngine {
 
     // Progress
     const prog = document.getElementById('r3d-prog-fill');
-    if (prog) prog.style.width = clamp(p.z / R3D.TRACK_LEN * 100, 0, 100).toFixed(1) + '%';
+    if (prog) prog.style.width = clamp(p.z / (this.raceLength || R3D.TRACK_LEN) * 100, 0, 100).toFixed(1) + '%';
+
+    const practiceTip = document.getElementById('r3d-practice-tip');
+    if (practiceTip) {
+      const fraction = p.z / (this.raceLength || R3D.TRACK_LEN);
+      const tip = fraction < 0.25
+        ? 'A and D steer. S brakes. The car accelerates automatically.'
+        : fraction < 0.55
+          ? 'Follow a car to build Draft. Pull out when you have a run.'
+          : fraction < 0.82
+            ? 'Check the rear-view mirror before changing lanes. Position and speed are on the HUD.'
+            : 'The finish is close. Hold your line and watch the cars around you.';
+      if (practiceTip.textContent !== tip) practiceTip.textContent = tip;
+    }
 
     // Minimap (throttled ~20fps)
     this._mapAcc += dt;
@@ -1726,7 +1743,7 @@ class Race3DEngine {
       for (const car of this.cars) {
         if (!car._dot) continue;
         if (car.dnf) { car._dot.style.opacity = '0.25'; }
-        const topPct  = clamp(100 - (car.z / R3D.TRACK_LEN) * 100, 0, 100);
+        const topPct  = clamp(100 - (car.z / (this.raceLength || R3D.TRACK_LEN)) * 100, 0, 100);
         const leftPct = clamp(50 + (car.x / hw) * 42, 4, 96);
         car._dot.style.top  = topPct + '%';
         car._dot.style.left = leftPct + '%';
@@ -1780,7 +1797,8 @@ class Race3DEngine {
   _showFinish(pos) {
     const el = document.getElementById('r3d-finish');
     if (!el) return;
-    const msg = pos === 1 ? 'Victory Lane' : pos <= 3 ? 'Podium Finish' : `P${pos} Finish`;
+    const msg = this.config.practiceTips ? 'Practice Complete'
+      : pos === 1 ? 'Victory Lane' : pos <= 3 ? 'Podium Finish' : `P${pos} Finish`;
     el.innerHTML = `
       <div class="r3d-finish-box">
         <div class="r3d-finish-pos">${pos}${ordinal(pos)} Place</div>

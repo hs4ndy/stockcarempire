@@ -25,6 +25,7 @@ function enterGame() {
     showScreen('game');
     updateHeader();
     showTab('dashboard');
+    offerCareerTutorial();
   } catch (e) {
     console.error('Failed to load game UI:', e);
     toast('Save file could not be loaded. Starting fresh.', 'error');
@@ -824,6 +825,7 @@ function showLoadModal() {
 function handleSaveToSlot(slot) {
   saveToSlot(slot);
   document.getElementById('save-slot-modal')?.remove();
+  updateHeader();
   toast(`Saved to Slot ${slot + 1}!`, 'success');
 }
 

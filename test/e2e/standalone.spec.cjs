@@ -36,6 +36,14 @@ test('standalone game launches directly from a local file without network assets
   expect(report).toEqual({
     title: 'Stock Car Empire Beta', road: true, wall: true, fence: true, legacyPlayer: true,
   });
+  await page.goto(standalone);
+  await page.locator('#btn-start-new').click();
+  await page.locator('#inp-team-name').fill('Offline Team');
+  await page.locator('#inp-driver-name').fill('Offline Driver');
+  await page.locator('#inp-car-name').fill('Offline Car');
+  await page.locator('#btn-create-team').click();
+  await page.locator('#btn-begin-career').click();
+  await expect(page.locator('#career-tutorial-title')).toHaveText('Learn the ropes');
   expect(remoteRequests).toEqual([]);
   expect(errors).toEqual([]);
 });

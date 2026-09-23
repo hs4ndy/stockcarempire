@@ -1076,6 +1076,87 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   border: 0;
   border-top: 4px solid var(--accent);
 }
+
+/* Career guide: focus an area of the real screen without requiring an action. */
+.career-tutorial {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  overflow: hidden;
+  pointer-events: none;
+}
+.career-tutorial.is-offer { background: rgba(0, 0, 0, 0.72); }
+.career-tutorial-shield {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+}
+.career-tutorial-spotlight {
+  position: absolute;
+  z-index: 1;
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 200vmax rgba(0, 0, 0, 0.38);
+  pointer-events: auto;
+}
+.career-tutorial-panel {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  width: min(520px, calc(100vw - 28px));
+  max-height: min(46vh, 340px);
+  overflow-y: auto;
+  padding: 18px 20px;
+  background: var(--panel);
+  border-top: 4px solid var(--accent);
+  color: var(--text);
+  pointer-events: auto;
+}
+.career-tutorial-panel.at-top { top: 16px; bottom: auto; }
+.is-offer .career-tutorial-panel {
+  top: 50%;
+  bottom: auto;
+  transform: translate(-50%, -50%);
+  max-height: calc(100vh - 32px);
+}
+.career-tutorial-kicker {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+.career-tutorial-panel h2 {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+.career-tutorial-panel p {
+  margin: 10px 0 16px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.career-tutorial-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.career-tutorial-actions .btn { min-height: 38px; }
+.career-tutorial-actions [data-tutorial-action="save"] { margin-right: auto; }
+.career-tutorial-panel :focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+@media (max-width: 520px) {
+  .career-tutorial-panel { padding: 15px; max-height: min(49vh, 350px); }
+  .career-tutorial-panel h2 { font-size: 1.45rem; }
+  .career-tutorial-panel p { font-size: 13px; }
+  .career-tutorial-actions .btn { font-size: 11px; }
+}
 .modal-wide { max-width: 620px; }
 .modal-header {
   display: flex;
@@ -1723,6 +1804,25 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.r3d-practice-tip {
+  position: absolute;
+  top: 145px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(470px, calc(100% - 28px));
+  padding: 10px 14px;
+  background: rgba(13, 13, 15, 0.9);
+  border-top: 3px solid var(--accent);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+}
+@media (max-width: 680px) {
+  .r3d-practice-tip { top: 100px; font-size: 11px; }
 }
 
 .r3d-countdown {
@@ -2848,6 +2948,7 @@ function newGame(teamName, driverName, firstCarName) {
     history: [],             // { year, series, finalPos, wins }
     notifications: [],
     achievements: [],
+    tutorial: { status: 'offered' }, // per-career onboarding; older saves have no tutorial field
   };
 
   // Init standings with player
@@ -4321,6 +4422,7 @@ function launch3DRace(config, onComplete) {
       </div>
 
       <div class="r3d-warning hidden" id="r3d-warn"></div>
+      ${config.practiceTips ? '<div class="r3d-practice-tip" id="r3d-practice-tip" role="status" aria-live="polite">A and D steer. S brakes. The car accelerates automatically.</div>' : ''}
       <div class="r3d-countdown" id="r3d-countdown"></div>
       <div class="r3d-finish" id="r3d-finish" style="display:none"></div>
 
@@ -4364,6 +4466,9 @@ class Race3DEngine {
   constructor(canvas, config, onComplete) {
     this.canvas       = canvas;
     this.config       = config;
+    this.raceLength   = Number.isFinite(config.finishDistance) &&
+      config.finishDistance >= 1000 && config.finishDistance <= R3D.TRACK_LEN
+      ? config.finishDistance : R3D.TRACK_LEN;
     this.isGrassroots = (config.seriesId || SERIES.find(s => s.fieldSize === config.fieldSize)?.id) === 'grassroots';
     this.speedScale = this.isGrassroots ? 0.9 : 1;
     this.trackHalfWidth = R3D.HALF_W * (this.isGrassroots ? .94 : 1);
@@ -4567,7 +4672,7 @@ class Race3DEngine {
         alphaTest: 0.35, alphaToCoverage: true }),
     };
     // Visual runout extends past the cameras' 4,000-unit far plane at both
-    // endpoints. Classification still uses the original 15,000-unit finish.
+    // endpoints. Normal races still use the original 15,000-unit finish.
     const runoutModules = Math.ceil(4200 / track.moduleLength);
     const moduleCount = Math.ceil(TL / track.moduleLength) + 2 * runoutModules;
     this.trackGroup = new THREE.Group();
@@ -4600,10 +4705,10 @@ class Race3DEngine {
     s.add(this.trackGroup);
 
     // One Blender-authored finish: dark steel truss, two-sided mesh lettering
-    // and flush checkered paint centered on the unchanged classification plane.
+    // and flush checkered paint centered on this race's finish plane.
     this.finishGroup = new THREE.Group();
     this.finishGroup.name = 'track:finish';
-    this.finishGroup.position.z = TL;
+    this.finishGroup.position.z = this.raceLength;
     for (const [name, data] of Object.entries(track.finishParts)) {
       const mesh = new THREE.Mesh(buildGeometry(data), trackMaterials[name]);
       mesh.name = 'finish:' + name;
@@ -4942,7 +5047,7 @@ class Race3DEngine {
     this._updateCamera(dt);
     this._updateHUD(dt);
 
-    const endgameGlobal = this.player.z / R3D.TRACK_LEN >= R3D.ENDGAME_FRAC;
+    const endgameGlobal = this.player.z / (this.raceLength || R3D.TRACK_LEN) >= R3D.ENDGAME_FRAC;
     const maxWrecks = endgameGlobal ? R3D.MAX_WRECKS + 3 : R3D.MAX_WRECKS;
     if (this.wreckCount < maxWrecks) {
       this.wreckCooldown -= dt;
@@ -5111,7 +5216,7 @@ class Race3DEngine {
 
   _raceAggression(car, teamWorking = false) {
     const calm = R3D.CALM_FRAC / Math.max(0.5, teamWorking ? 1 : this.diff.aiAggro);
-    const phase = r3dSmooth((car.z / R3D.TRACK_LEN - calm) /
+    const phase = r3dSmooth((car.z / (this.raceLength || R3D.TRACK_LEN) - calm) /
       Math.max(0.01, R3D.ENDGAME_FRAC - calm));
     const temperament = clamp(((car.raceNerve || 1) - 1) * 0.45, -0.08, 0.08);
     return clamp(0.38 + phase * 0.44 + temperament, 0.3, 0.9);
@@ -5122,7 +5227,7 @@ class Race3DEngine {
     if (!car.isTeammate || !p || p.dnf || p.finished || p.spinning ||
         car.dnf || car.finished || car.spinning) return false;
     if (Math.abs(p.z - car.z) >= R3D.TEAM_HELP_Z) return false;
-    if (Math.max(p.z, car.z) / R3D.TRACK_LEN >= R3D.TEAM_RACE_END) return false;
+    if (Math.max(p.z, car.z) / (this.raceLength || R3D.TRACK_LEN) >= R3D.TEAM_RACE_END) return false;
 
     const active = this.cars.filter(c => !c.dnf && !c.finished && !c.spinning);
     const frontCount = Math.max(3, Math.ceil(active.length * R3D.TEAM_FRONT_FRAC));
@@ -5135,7 +5240,7 @@ class Race3DEngine {
     const lead = this._leadZ ?? Math.max(...this.cars.filter(c => !c.dnf && !c.finished).map(c => c.z));
     // Cooperation is a way to catch the leaders. Drivers contest the finish,
     // and drivers already in the leading group take their own opportunities.
-    return lead - car.z > 65 && car.z / R3D.TRACK_LEN < 0.80 + (this.diff.racecraft || 0) * 0.07;
+    return lead - car.z > 65 && car.z / (this.raceLength || R3D.TRACK_LEN) < 0.80 + (this.diff.racecraft || 0) * 0.07;
   }
 
   _laneSafe(car, x) {
@@ -5561,7 +5666,7 @@ class Race3DEngine {
   }
 
   _checkFinish() {
-    const TL = R3D.TRACK_LEN;
+    const TL = this.raceLength || R3D.TRACK_LEN;
     // Several cars can cross on the same frame - at 200+ units/sec a frame is
     // worth ~10 units of track. They must be credited in the order they are
     // actually down the road, NOT in array order: the player sits at index 0,
@@ -5619,7 +5724,7 @@ class Race3DEngine {
     const lanes = [-6, 0, 6];
     const cands = this.cars.filter(c =>
       !c.isPlayer && !c.spinning && !c.finished && !c.dnf &&
-      c.z > p.z + notice && c.z < R3D.TRACK_LEN - notice &&
+      c.z > p.z + notice && c.z < (this.raceLength || R3D.TRACK_LEN) - notice &&
       lanes.some(x => Math.abs(c.x - x) > 4 &&
         !this.wrecks.some(w => Math.abs(w.x - x) < 3 && Math.abs(w.z - c.z) < 100) &&
         !this.cars.some(o => o !== c && o.spinning && Math.abs(o.x - x) < 3 && Math.abs(o.z - c.z) < 100)));
@@ -5840,7 +5945,20 @@ class Race3DEngine {
 
     // Progress
     const prog = document.getElementById('r3d-prog-fill');
-    if (prog) prog.style.width = clamp(p.z / R3D.TRACK_LEN * 100, 0, 100).toFixed(1) + '%';
+    if (prog) prog.style.width = clamp(p.z / (this.raceLength || R3D.TRACK_LEN) * 100, 0, 100).toFixed(1) + '%';
+
+    const practiceTip = document.getElementById('r3d-practice-tip');
+    if (practiceTip) {
+      const fraction = p.z / (this.raceLength || R3D.TRACK_LEN);
+      const tip = fraction < 0.25
+        ? 'A and D steer. S brakes. The car accelerates automatically.'
+        : fraction < 0.55
+          ? 'Follow a car to build Draft. Pull out when you have a run.'
+          : fraction < 0.82
+            ? 'Check the rear-view mirror before changing lanes. Position and speed are on the HUD.'
+            : 'The finish is close. Hold your line and watch the cars around you.';
+      if (practiceTip.textContent !== tip) practiceTip.textContent = tip;
+    }
 
     // Minimap (throttled ~20fps)
     this._mapAcc += dt;
@@ -5850,7 +5968,7 @@ class Race3DEngine {
       for (const car of this.cars) {
         if (!car._dot) continue;
         if (car.dnf) { car._dot.style.opacity = '0.25'; }
-        const topPct  = clamp(100 - (car.z / R3D.TRACK_LEN) * 100, 0, 100);
+        const topPct  = clamp(100 - (car.z / (this.raceLength || R3D.TRACK_LEN)) * 100, 0, 100);
         const leftPct = clamp(50 + (car.x / hw) * 42, 4, 96);
         car._dot.style.top  = topPct + '%';
         car._dot.style.left = leftPct + '%';
@@ -5904,7 +6022,8 @@ class Race3DEngine {
   _showFinish(pos) {
     const el = document.getElementById('r3d-finish');
     if (!el) return;
-    const msg = pos === 1 ? 'Victory Lane' : pos <= 3 ? 'Podium Finish' : `P${pos} Finish`;
+    const msg = this.config.practiceTips ? 'Practice Complete'
+      : pos === 1 ? 'Victory Lane' : pos <= 3 ? 'Podium Finish' : `P${pos} Finish`;
     el.innerHTML = `
       <div class="r3d-finish-box">
         <div class="r3d-finish-pos">${pos}${ordinal(pos)} Place</div>
@@ -7394,6 +7513,262 @@ function attachTabListeners(tabName) {
 
 </script>
 <script>
+/* js/tutorial.js */
+// Career onboarding is stored in each save. The current step stays in memory
+// so an interrupted tutorial starts from the beginning on the next load.
+const CAREER_TUTORIAL_STEPS = [
+  {
+    tab: 'dashboard', target: '.cmd-strip', title: 'Your command center',
+    copy: 'This strip tracks your championship position, cash, series, and next race. The dashboard is where you check your team before each event.',
+  },
+  {
+    tab: 'dashboard', target: '.dashboard-grid .card:nth-child(3)', title: 'Watch your budget',
+    copy: 'The Finances card shows sponsor income and staff costs per race. Keep enough cash for entry fees, repairs, and the people you hire.',
+  },
+  {
+    tab: 'garage', target: '.nav-btn[data-tab="garage"]', title: 'Build your garage',
+    copy: 'Use Garage to inspect condition, repair and upgrade cars, and change their paint colors and numbers. Your first car is already assigned to you.',
+  },
+  {
+    tab: 'team', target: '.nav-btn[data-tab="team"]', title: 'Hire your people',
+    copy: 'Team is where you hire drivers for extra cars and support staff for your operation. Salaries become ongoing costs, so check your budget first.',
+  },
+  {
+    tab: 'market', target: '.nav-btn[data-tab="market"]', title: 'Grow the operation',
+    copy: 'Market lets you buy more cars, sign sponsors, and manage financing. You can drive a new car yourself or assign a hired driver to put both cars in the field.',
+  },
+  {
+    tab: 'schedule', target: '.nav-btn[data-tab="schedule"]', title: 'Plan the season',
+    copy: 'Schedule lists upcoming tracks and completed races. Track characteristics affect how valuable speed and handling are in the race simulation.',
+  },
+  {
+    tab: 'standings', target: '.nav-btn[data-tab="standings"]', title: 'Follow the championship',
+    copy: 'Standings shows how you and the rest of the field rank. Points across the season determine the championship and possible promotion.',
+  },
+  {
+    tab: 'carstats', target: '.nav-btn[data-tab="carstats"]', title: 'Review your career',
+    copy: 'Career keeps your longer-term record, including seasons, wins, and progress as a driver and team owner.',
+  },
+  {
+    tab: 'settings', target: '.nav-btn[data-tab="settings"]', title: 'Set your challenge and save',
+    copy: 'Settings lets you change racing difficulty before the next race. Choose a save slot here or with the Save button to enable automatic saving.',
+  },
+  {
+    screen: 'race-setup', target: '#screen-race-setup .btn-row', title: 'Choose how to race',
+    copy: 'Race Weekend shows the track, entry fee, and your car choice. Drive in 3D or select Simulate for an instant result. Your official season stays untouched during the practice next.',
+  },
+  {
+    tab: 'dashboard', target: '.dashboard-grid .card:first-child', title: 'Practice behind the wheel',
+    copy: 'Try a short exhibition sprint. Steer with A and D, brake with S, and use the Draft meter and rear-view mirror to read the pack. Practice has no career consequences.',
+    practice: true,
+  },
+  {
+    tab: 'dashboard', target: '.cmd-strip', title: 'You are ready',
+    copy: 'Your first official race is still ahead. Explore any tab, choose a save slot, and enter Race Weekend when you are ready.',
+    finish: true,
+  },
+];
+
+let careerTutorialStep = 0;
+let careerTutorialPracticeDone = false;
+
+function offerCareerTutorial() {
+  const status = game?.tutorial?.status;
+  if (status !== 'offered' && status !== 'in-progress') return;
+  careerTutorialStep = 0;
+  careerTutorialPracticeDone = false;
+  if (status === 'offered') {
+    renderCareerTutorialOffer();
+  } else {
+    renderCareerTutorialStep();
+  }
+}
+
+function renderCareerTutorialOffer() {
+  document.getElementById('career-tutorial')?.remove();
+  document.body.insertAdjacentHTML('beforeend', `
+    <div id="career-tutorial" class="career-tutorial is-offer">
+      <div class="career-tutorial-shield"></div>
+      <section class="career-tutorial-panel" role="dialog" aria-modal="true" aria-labelledby="career-tutorial-title" aria-describedby="career-tutorial-copy">
+        <div class="career-tutorial-kicker">NEW CAREER</div>
+        <h2 id="career-tutorial-title">Learn the ropes</h2>
+        <p id="career-tutorial-copy">Take a quick tour of your team, money, cars, and races, then drive a short practice sprint. Your career begins either way.</p>
+        <div class="career-tutorial-actions">
+          <button class="btn btn-ghost" data-tutorial-action="skip">Skip Tutorial</button>
+          <button class="btn btn-primary" data-tutorial-action="start">Start Tutorial</button>
+        </div>
+      </section>
+    </div>`);
+  wireCareerTutorialButtons();
+  document.querySelector('#career-tutorial [data-tutorial-action="start"]')?.focus();
+}
+
+function startCareerTutorial() {
+  if (!game?.tutorial) return;
+  game.tutorial.status = 'in-progress';
+  saveGame();
+  careerTutorialStep = 0;
+  renderCareerTutorialStep();
+}
+
+function skipCareerTutorial() {
+  if (!game?.tutorial || game.tutorial.status !== 'offered') return;
+  game.tutorial.status = 'skipped';
+  saveGame();
+  document.getElementById('career-tutorial')?.remove();
+  showScreen('game');
+  showTab('dashboard');
+}
+
+function renderCareerTutorialStep() {
+  const step = CAREER_TUTORIAL_STEPS[careerTutorialStep];
+  if (!step || game?.tutorial?.status !== 'in-progress') return;
+  if (step.screen === 'race-setup') {
+    handleOpenRaceWeekend();
+  } else {
+    showScreen('game');
+    showTab(step.tab);
+  }
+
+  document.getElementById('career-tutorial')?.remove();
+  const nextLabel = step.finish ? 'Finish Tutorial'
+    : step.practice && !careerTutorialPracticeDone ? 'Start Practice' : 'Next';
+  document.body.insertAdjacentHTML('beforeend', `
+    <div id="career-tutorial" class="career-tutorial">
+      <div class="career-tutorial-shield"></div>
+      <div class="career-tutorial-spotlight" aria-hidden="true"></div>
+      <section class="career-tutorial-panel" role="dialog" aria-modal="true" aria-labelledby="career-tutorial-title" aria-describedby="career-tutorial-copy">
+        <div class="career-tutorial-kicker">CAREER GUIDE <span>${careerTutorialStep + 1} / ${CAREER_TUTORIAL_STEPS.length}</span></div>
+        <h2 id="career-tutorial-title">${step.title}</h2>
+        <p id="career-tutorial-copy">${step.copy}</p>
+        <div class="career-tutorial-actions">
+          <button class="btn btn-ghost" data-tutorial-action="save">Save Career</button>
+          <button class="btn btn-ghost" data-tutorial-action="back" ${careerTutorialStep === 0 ? 'disabled' : ''}>Back</button>
+          <button class="btn btn-primary" data-tutorial-action="next">${nextLabel}</button>
+        </div>
+      </section>
+    </div>`);
+  wireCareerTutorialButtons();
+  const target = document.querySelector(step.target);
+  target?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  requestAnimationFrame(updateCareerTutorialSpotlight);
+  setTimeout(updateCareerTutorialSpotlight, 220);
+  document.querySelector('#career-tutorial [data-tutorial-action="next"]')?.focus();
+}
+
+function wireCareerTutorialButtons() {
+  const root = document.getElementById('career-tutorial');
+  root?.querySelector('[data-tutorial-action="start"]')?.addEventListener('click', startCareerTutorial);
+  root?.querySelector('[data-tutorial-action="skip"]')?.addEventListener('click', skipCareerTutorial);
+  root?.querySelector('[data-tutorial-action="back"]')?.addEventListener('click', () => {
+    if (careerTutorialStep > 0) {
+      careerTutorialStep--;
+      renderCareerTutorialStep();
+    }
+  });
+  root?.querySelector('[data-tutorial-action="next"]')?.addEventListener('click', advanceCareerTutorial);
+  root?.querySelector('[data-tutorial-action="save"]')?.addEventListener('click', () => {
+    if (!document.getElementById('save-slot-modal')) showSaveModal();
+    document.querySelector('#save-slot-modal button')?.focus();
+  });
+}
+
+function advanceCareerTutorial() {
+  const step = CAREER_TUTORIAL_STEPS[careerTutorialStep];
+  if (step.finish) {
+    game.tutorial.status = 'completed';
+    saveGame();
+    document.getElementById('career-tutorial')?.remove();
+    showScreen('game');
+    showTab('dashboard');
+    document.querySelector('.nav-btn[data-tab="dashboard"]')?.focus();
+    return;
+  }
+  if (step.practice && !careerTutorialPracticeDone) {
+    startCareerTutorialPractice();
+    return;
+  }
+  careerTutorialStep++;
+  renderCareerTutorialStep();
+}
+
+function startCareerTutorialPractice() {
+  if (typeof THREE === 'undefined') {
+    toast('The 3D race could not load. Check your connection and try again.', 'error');
+    return;
+  }
+  document.getElementById('career-tutorial')?.remove();
+  const car = game.cars[0];
+  const colors = ['#d54b45', '#438ac0', '#d6a341', '#5aa786', '#9a71b8', '#d37d52'];
+  const aiEntries = Array.from({ length: 11 }, (_, i) => ({
+    entrantId: `tutorial-${i + 1}`,
+    name: `Practice Driver ${i + 1}`,
+    color: colors[i % colors.length],
+    number: i + 2,
+    power: 0.48 + (i % 4) * 0.055,
+  }));
+  showScreen('game-race');
+  launch3DRace({
+    playerColor: car.color,
+    playerNumber: car.number,
+    playerName: game.driverName,
+    playerPower: 0.60,
+    fieldSize: 12,
+    seriesId: 'grassroots',
+    difficulty: game.difficulty || DEFAULT_DIFFICULTY,
+    aiEntries,
+    finishDistance: 3500,
+    practiceTips: true,
+  }, () => {
+    careerTutorialPracticeDone = true;
+    careerTutorialStep++;
+    renderCareerTutorialStep();
+  });
+}
+
+function updateCareerTutorialSpotlight() {
+  const overlay = document.getElementById('career-tutorial');
+  if (!overlay || overlay.classList.contains('is-offer')) return;
+  const spotlight = overlay.querySelector('.career-tutorial-spotlight');
+  const panel = overlay.querySelector('.career-tutorial-panel');
+  const target = document.querySelector(CAREER_TUTORIAL_STEPS[careerTutorialStep]?.target);
+  if (!spotlight || !panel || !target) return;
+  const rect = target.getBoundingClientRect();
+  const left = Math.max(8, rect.left - 6);
+  const top = Math.max(8, rect.top - 6);
+  const right = Math.min(window.innerWidth - 8, rect.right + 6);
+  const bottom = Math.min(window.innerHeight - 8, rect.bottom + 6);
+  if (right <= left || bottom <= top) return;
+  spotlight.style.left = `${left}px`;
+  spotlight.style.top = `${top}px`;
+  spotlight.style.width = `${right - left}px`;
+  spotlight.style.height = `${bottom - top}px`;
+  panel.classList.toggle('at-top', top > window.innerHeight * 0.45);
+}
+
+window.addEventListener('resize', updateCareerTutorialSpotlight);
+window.addEventListener('scroll', updateCareerTutorialSpotlight, true);
+document.addEventListener('keydown', e => {
+  const root = document.getElementById('career-tutorial');
+  if (!root || document.getElementById('save-slot-modal')) return;
+  if (e.key === 'Escape') { e.preventDefault(); return; }
+  if (e.key !== 'Tab') return;
+  const buttons = [...root.querySelectorAll('button:not(:disabled)')];
+  const first = buttons[0], last = buttons[buttons.length - 1];
+  if (!buttons.includes(document.activeElement)) {
+    e.preventDefault();
+    first?.focus();
+  } else if (e.shiftKey && document.activeElement === first) {
+    e.preventDefault();
+    last?.focus();
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault();
+    first?.focus();
+  }
+});
+
+</script>
+<script>
 /* js/main.js */
 // ============================================================
 // STOCK CAR EMPIRE - Main Entry Point & Event Handling
@@ -7422,6 +7797,7 @@ function enterGame() {
     showScreen('game');
     updateHeader();
     showTab('dashboard');
+    offerCareerTutorial();
   } catch (e) {
     console.error('Failed to load game UI:', e);
     toast('Save file could not be loaded. Starting fresh.', 'error');
@@ -8221,6 +8597,7 @@ function showLoadModal() {
 function handleSaveToSlot(slot) {
   saveToSlot(slot);
   document.getElementById('save-slot-modal')?.remove();
+  updateHeader();
   toast(`Saved to Slot ${slot + 1}!`, 'success');
 }
 

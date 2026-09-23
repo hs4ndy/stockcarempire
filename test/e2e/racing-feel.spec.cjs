@@ -230,6 +230,7 @@ test('three complete career races preserve on-track classification in saved resu
   await page.locator('#inp-car-name').fill('Test Mule');
   await page.locator('#btn-create-team').click();
   await page.locator('#btn-begin-career').click();
+  await page.locator('#career-tutorial [data-tutorial-action="skip"]').click();
   // Pick a real save slot in this isolated browser context. This also keeps
   // the unsaved-career reminder from interrupting an accelerated next race.
   await page.keyboard.press('Control+s');

@@ -55,6 +55,7 @@ for (const [label, viewport] of [
     await page.locator('#inp-car-name').fill('Test Mule');
     await page.locator('#btn-create-team').click();
     await page.locator('#btn-begin-career').click();
+    await page.locator('#career-tutorial [data-tutorial-action="skip"]').click();
     await expect(page.locator('.dashboard-grid .card')).toHaveCount(6);
     await page.waitForTimeout(250);
     await page.evaluate(() => document.getElementById('toast-container').replaceChildren());
@@ -115,6 +116,7 @@ test('a win opens a dedicated race winner menu', async ({ page }, testInfo) => {
   await page.locator('#inp-car-name').fill('Victory Car');
   await page.locator('#btn-create-team').click();
   await page.locator('#btn-begin-career').click();
+  await page.locator('#career-tutorial [data-tutorial-action="skip"]').click();
 
   await page.evaluate(() => {
     const winner = {
@@ -183,6 +185,7 @@ test('a new career completes both setup steps and creates a 20-entry field', asy
   await page.locator('#btn-create-team').click();
   await expect(page.locator('#setup-difficulty')).toBeVisible();
   await page.locator('#btn-begin-career').click();
+  await page.locator('#career-tutorial [data-tutorial-action="skip"]').click();
 
   await expect(page.getByText('of 20 entries', { exact: true })).toBeVisible();
   await expect(page.locator('#screen-game')).toBeVisible();

@@ -266,6 +266,7 @@ function newGame(teamName, driverName, firstCarName) {
     history: [],             // { year, series, finalPos, wins }
     notifications: [],
     achievements: [],
+    tutorial: { status: 'offered' }, // per-career onboarding; older saves have no tutorial field
   };
 
   // Init standings with player
