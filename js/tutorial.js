@@ -39,7 +39,7 @@ const CAREER_TUTORIAL_STEPS = [
   },
   {
     screen: 'race-setup', target: '#screen-race-setup .btn-row', title: 'Choose how to race',
-    copy: 'Race Weekend shows the track, entry fee, and your car choice. Drive in 3D or select Simulate for an instant result. Your official season stays untouched during the practice next.',
+    copy: 'Race Weekend shows the track, entry fee, and your car choice. Choose Drive Race for a 3D sprint or Simulate Race for an instant result. Next, you can practice without affecting your season.',
   },
   {
     tab: 'dashboard', target: '.dashboard-grid .card:first-child', title: 'Practice behind the wheel',

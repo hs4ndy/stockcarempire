@@ -134,7 +134,7 @@ function renderDashboard() {
   const expenses     = weeklyExpenses();
   const income       = weeklySponsorIncome();
 
-  const topStandings = sorted.slice(0, 8).map((e, i) => {
+  const topStandings = sorted.slice(0, 5).map((e, i) => {
     const cls = e.isPlayer ? 'standing-row player-row'
               : e.isTeamCar ? 'standing-row team-row'
               : 'standing-row';
@@ -203,7 +203,7 @@ function renderDashboard() {
         <div class="team-stat"><span>Entry Fee</span><span class="red">${fmt$(series.entryFee)}</span></div>
         <div class="team-stat"><span>1st Prize</span><span class="green">${fmt$(series.prize[0])}</span></div>
         <div class="btn-row mt">
-          <button class="btn btn-primary" onclick="handleOpenRaceWeekend()">Race Weekend</button>
+          <button class="btn btn-primary" onclick="handleOpenRaceWeekend()">Enter Race Weekend</button>
         </div>
       `}
     </div>
@@ -216,7 +216,7 @@ function renderDashboard() {
       </div>
       <p class="muted-text small" style="margin-bottom:.75rem">${racesCompleted} / ${game.season.calendar.length} races complete</p>
       <div class="standings-mini">${topStandings}</div>
-      ${sorted.length > 8 ? `<p class="muted-text small mt"><a class="link" onclick="showTab('standings')">Full standings</a></p>` : ''}
+      ${sorted.length > 5 ? `<button class="btn btn-sm btn-ghost section-action" onclick="showTab('standings')">View Full Standings</button>` : ''}
     </div>
 
     <!-- Finances -->
@@ -226,8 +226,14 @@ function renderDashboard() {
       <div class="team-stat"><span>Sponsor Income</span><span class="green">+${fmt$(income)}/race</span></div>
       <div class="team-stat"><span>Staff Costs</span><span class="red">-${fmt$(expenses)}/race</span></div>
       <div class="team-stat"><span>Net</span><span class="${net >= 0 ? 'green' : 'red'}">${net >= 0 ? '+' : ''}${fmt$(net)}/race</span></div>
-      <div class="team-stat"><span>Sponsors</span><span>${game.activeSponsors.length} / ${sponsorSlots()}</span></div>
-      <div class="team-stat"><span>Staff</span><span>${game.staff.length + game.hiredDrivers.length} on payroll</span></div>
+      <details class="ui-details">
+        <summary>Budget details</summary>
+        <div class="ui-details-body">
+          <div class="team-stat"><span>Sponsors</span><span>${game.activeSponsors.length} / ${sponsorSlots()}</span></div>
+          <div class="team-stat"><span>Staff</span><span>${game.staff.length + game.hiredDrivers.length} on payroll</span></div>
+          <p class="section-copy">Entry fees and repairs are paid separately.</p>
+        </div>
+      </details>
       ${totalDebt() > 0 ? `
         <div class="team-stat"><span>Bank Debt</span><span class="red">${fmt$(totalDebt())}</span></div>
         <a class="link mt" onclick="showTab('market')">Manage loans</a>`
@@ -249,7 +255,7 @@ function renderDashboard() {
           <span class="car-mini-score">${condPct}%</span>
         </div>`;
       }).join('')}
-      <a class="link mt" onclick="showTab('garage')">Manage</a>
+      <button class="btn btn-sm btn-ghost section-action" onclick="showTab('garage')">Manage Cars</button>
     </div>
 
     <!-- Driver Profile -->
@@ -263,12 +269,17 @@ function renderDashboard() {
         <div class="team-stat"><span>Role</span><span>Team Manager</span></div>
       ` : `<div class="team-stat"><span>Role</span><span>Driver / Owner</span></div>`}
       ${statBar('Driver Skill', Math.round(game.playerSkill))}
-      <div class="team-stat" style="margin-top:.5rem"><span>Seasons Raced</span><span>${game.history.length}</span></div>
+      <details class="ui-details">
+      <summary>Recent season history</summary>
+      <div class="ui-details-body">
+      <div class="team-stat"><span>Seasons Raced</span><span>${game.history.length}</span></div>
       ${game.history.length > 0 ? game.history.slice(-3).map(h => `
         <div class="team-stat">
           <span>Yr ${h.year} ${h.series.split(' ')[0]}</span>
           <span>${h.finalPos}${ordinal(h.finalPos)} · ${h.wins}W</span>
-        </div>`).join('') : ''}
+        </div>`).join('') : '<p class="section-copy">Finish your first season to start your career record.</p>'}
+      </div>
+      </details>
     </div>
 
     <!-- Season Calendar snapshot -->
@@ -283,7 +294,7 @@ function renderDashboard() {
           <span>Race ${r.raceNum} · ${t?.name || '?'}</span>
           <span style="color:${col};font-weight:700">${posStr}${pos2 ? ' · ' + fmt$(r.earnings) : ''}</span>
         </div>`;
-      }).join('') || '<p class="muted-text small">No races completed yet.</p>'}
+      }).join('') || '<p class="muted-text small">Your results will appear here after your first race.</p>'}
     </div>
 
   </div>`;
@@ -327,41 +338,50 @@ function renderGarage() {
         <span class="car-name"><span class="car-num">#${car.number || 1}</span> ${car.name}</span>
         <span class="car-class-badge">${cls.name}</span>
       </div>
-      <div class="team-stat">
-        <span>Car Number</span>
-        <span><button class="btn btn-sm btn-ghost" onclick="handleSetCarNumber('${car.id}')">#${car.number || 1} - Change</button></span>
-      </div>
+      <div class="team-stat"><span>Driver</span><span class="${noDriver ? 'red' : ''}">${driverName}</span></div>
       <div class="car-stats">
+        ${condBar(car.condition)}
+      </div>
+      <details class="ui-details">
+        <summary>Performance and race record</summary>
+        <div class="ui-details-body">
         ${statBar('Speed', car.speed)}
         ${statBar('Handling', car.handling)}
         ${statBar('Reliability', car.reliability)}
-        ${condBar(car.condition)}
-      </div>
       <div class="car-meta">
-        <div class="team-stat"><span>Driver</span><span class="${noDriver ? 'red' : ''}">${driverName}</span></div>
         <div class="team-stat"><span>Races</span><span>${car.races}</span></div>
         <div class="team-stat"><span>Wins</span><span>${car.wins}</span></div>
         <div class="team-stat"><span>Upgrades</span><span>${car.appliedUpgrades.length}/${maxUpgrades}</span></div>
       </div>
+        </div>
+      </details>
       <div class="car-actions">
-        ${car.condition < 100 ? `<button class="btn btn-sm btn-warning" onclick="handleRepair('${car.id}', ${repairCost})">Repair (${fmt$(repairCost)})</button>` : `<button class="btn btn-sm" disabled>Perfect Condition</button>`}
-        <button class="btn btn-sm btn-primary" onclick="showUpgradeModal('${car.id}')">Upgrades</button>
+        ${car.condition < 100 ? `<button class="btn btn-sm btn-warning" onclick="handleRepair('${car.id}', ${repairCost})">Repair (${fmt$(repairCost)})</button>` : `<span class="badge badge-green">Full Condition</span>`}
+        <button class="btn btn-sm btn-primary" onclick="showUpgradeModal('${car.id}')">Upgrade Car</button>
+      </div>
+      <details class="ui-details">
+        <summary>Customize and manage car</summary>
+        <div class="ui-details-body">
+      <div class="btn-row">
+        <button class="btn btn-sm btn-ghost" onclick="handleSetCarNumber('${car.id}')">Change Number</button>
         <button class="btn btn-sm btn-ghost" onclick="handleRenameCar('${car.id}')">Rename</button>
         ${game.cars.length > 1 ? `<button class="btn btn-sm btn-danger" onclick="handleSellCar('${car.id}')">Sell</button>` : ''}
       </div>
       <div class="car-color-row">
         <span class="stat-label">Car Color</span>
         ${['#e8001d','#3498db','#2ecc71','#f39c12','#9b59b6','#ffffff','#222222','#ff6600','#00cccc','#ff69b4'].map(c =>
-          `<button class="color-swatch${(car.color||'#e8001d')===c?' active':''}" style="background:${c}" onclick="setCarColor('${car.id}','${c}');renderTab('garage')" title="${c}"></button>`
+          `<button class="color-swatch${(car.color||'#e8001d')===c?' active':''}" style="background:${c}" data-color="${c}" onclick="handleSetCarColor('${car.id}','${c}')" title="Paint ${c}" aria-label="Paint ${c}" aria-pressed="${(car.color||'#e8001d')===c}"></button>`
         ).join('')}
       </div>
+        </div>
+      </details>
     </div>`;
   }).join('');
 
   return `
   <div class="page-header">
     <h2>Garage</h2>
-    <button class="btn btn-primary" onclick="showTab('market')">Buy New Car (${fmt$(cls.buyCost)})</button>
+    <button class="btn btn-primary" onclick="showTab('market')">Browse Cars</button>
   </div>
   <div class="car-grid">${carCards}</div>`;
 }
@@ -392,8 +412,8 @@ function renderUpgradeModal(carId) {
       if (installed)       action = `<span class="badge badge-green">Fitted</span>`;
       else if (!unlocked)  action = `<span class="badge badge-gray">Locked</span>`;
       else if (full)       action = `<span class="badge badge-gray">Tier Full</span>`;
-      else if (!affordable)action = `<button class="btn btn-sm" disabled title="Not enough money">${fmt$(upg.cost)}</button>`;
-      else                 action = `<button class="btn btn-sm btn-primary" onclick="handleUpgrade('${carId}','${upg.id}')">${fmt$(upg.cost)}</button>`;
+      else if (!affordable)action = `<button class="btn btn-sm" disabled title="You need ${fmt$(upg.cost)} to buy this part">Buy (${fmt$(upg.cost)})</button>`;
+      else                 action = `<button class="btn btn-sm btn-primary" onclick="handleUpgrade('${carId}','${upg.id}')">Buy (${fmt$(upg.cost)})</button>`;
 
       return `<div class="upgrade-row${installed ? ' installed' : ''}${!unlocked ? ' locked' : ''}">
         <div class="upgrade-info">
@@ -540,7 +560,7 @@ function renderTeam() {
     <div>
       <div class="card">
         <div class="card-header">Hire Drivers</div>
-        <p class="muted-text small">Hire drivers for your extra cars. Signing fee = 4 weeks' salary. You can carry ${MAX_HIRED_DRIVERS} drivers (${game.hiredDrivers.length} signed).</p>
+        <p class="section-copy">Hire a driver for an extra car. The signing fee equals four weeks of salary. ${game.hiredDrivers.length} of ${MAX_HIRED_DRIVERS} driver slots filled.</p>
         ${seatWarning}
         ${driverRows}
       </div>
@@ -644,11 +664,11 @@ function renderMarket() {
     <div class="staff-row">
       <div class="staff-info">
         <span class="staff-name">${d.name}</span>
-        <div class="staff-meta">Base: ${fmt$(d.weekly)}/race · Bonus: ${fmt$(d.bonus)} if ${d.cond}</div>
+        <div class="staff-meta">${fmt$(d.weekly)} per race · ${fmt$(d.bonus)} bonus if ${d.cond}</div>
       </div>
       ${game.activeSponsors.length < sponsorSlots()
         ? `<button class="btn btn-sm btn-primary" onclick="handleSignSponsor('${d.id}')">Sign Deal</button>`
-        : `<button class="btn btn-sm" disabled>Max sponsors</button>`}
+        : `<button class="btn btn-sm" disabled>Sponsor Slots Full</button>`}
     </div>`).join('') || '<p class="muted-text">No new sponsors available right now.</p>';
 
   const activeSponsors = game.activeSponsors.map(sid => {
@@ -657,9 +677,9 @@ function renderMarket() {
     return `<div class="staff-row">
       <div class="staff-info">
         <span class="staff-name">${d.name}</span>
-        <div class="staff-meta">Base: ${fmt$(d.weekly)}/race · Bonus: ${fmt$(d.bonus)} if ${d.cond}</div>
+        <div class="staff-meta">${fmt$(d.weekly)} per race · ${fmt$(d.bonus)} bonus if ${d.cond}</div>
       </div>
-      <button class="btn btn-sm btn-danger" onclick="handleDropSponsor('${d.id}')">Drop</button>
+      <button class="btn btn-sm btn-danger" onclick="handleDropSponsor('${d.id}')">End Deal</button>
     </div>`;
   }).join('') || '<p class="muted-text">No active sponsors.</p>';
 
@@ -721,9 +741,13 @@ function renderMarket() {
       </div>
       <div class="card-header mt">Your Loans</div>
       ${loanRows}
-      <div class="card-header mt">Available Credit</div>
-      <p class="muted-text small">Repay within the term or the balance starts compounding at ${Math.round(LOAN_LATE_RATE * 100)}% per race. Credit grows with your reputation.</p>
+      <details class="ui-details" ${game.money < 0 ? 'open' : ''}>
+      <summary>Explore loan options</summary>
+      <div class="ui-details-body">
+      <p class="section-copy">Repay on time to avoid ${Math.round(LOAN_LATE_RATE * 100)}% interest per race on the remaining balance. Your reputation affects your credit limit.</p>
       ${offerRows}
+      </div>
+      </details>
     </div>`;
 
   // ── Charity ─────────────────────────────────────────────
@@ -741,7 +765,7 @@ function renderMarket() {
       </div>
       ${canGive && afford
         ? `<button class="btn btn-sm btn-primary" onclick="handleDonate('${c.id}')">Donate</button>`
-        : `<button class="btn btn-sm" disabled>${!canGive ? 'Given' : 'Too costly'}</button>`}
+        : `<button class="btn btn-sm" disabled>${!canGive ? 'Already Donated' : 'Not Enough Cash'}</button>`}
     </div>`;
   }).join('');
 
@@ -756,7 +780,10 @@ function renderMarket() {
         <div class="stat-bar-wrap"><div class="stat-bar ${rep >= 60 ? 'bar-green' : rep >= 40 ? 'bar-yellow' : 'bar-red'}" style="width:${clamp(rep,0,100)}%"></div></div>
         <span class="stat-value">${rep}</span>
       </div>
-      ${charityRows}
+      <details class="ui-details">
+        <summary>Choose a cause</summary>
+        <div class="ui-details-body">${charityRows}</div>
+      </details>
     </div>`;
 
   return `
@@ -765,13 +792,18 @@ function renderMarket() {
     <div>
       <div class="card">
         <div class="card-header">Buy a Car</div>
-        <p class="muted-text">${cls.description}</p>
+        <p class="section-copy">${cls.description}</p>
         <div class="team-stat"><span>Cost</span><span class="highlight">${fmt$(cls.buyCost)}</span></div>
+        <div class="team-stat"><span>Your Cars</span><span>${game.cars.length} / ${MAX_TEAM_CARS}</span></div>
+        <details class="ui-details">
+        <summary>Car specifications and resale</summary>
+        <div class="ui-details-body">
         <div class="team-stat"><span>Sell Value</span><span>${fmt$(cls.sellValue)}</span></div>
         <div class="team-stat"><span>Base Speed</span><span>${cls.baseStats.speed}</span></div>
         <div class="team-stat"><span>Base Handling</span><span>${cls.baseStats.handling}</span></div>
         <div class="team-stat"><span>Base Reliability</span><span>${cls.baseStats.reliability}</span></div>
-        <div class="team-stat"><span>Your Cars</span><span>${game.cars.length} / ${MAX_TEAM_CARS}</span></div>
+        </div>
+        </details>
         ${game.cars.length >= MAX_TEAM_CARS
           ? `<button class="btn mt" disabled>Team full (${MAX_TEAM_CARS} cars)</button>`
           : canBuy
@@ -787,7 +819,7 @@ function renderMarket() {
       </div>
       <div class="card mt">
         <div class="card-header">Available Sponsors</div>
-        <p class="muted-text small">Sponsors pay you every race. You can run ${sponsorSlots()} deals at once.</p>
+        <p class="section-copy">Sign a sponsor to earn money each race. ${game.activeSponsors.length} of ${sponsorSlots()} sponsor slots filled.</p>
         ${sponsorRows}
       </div>
       ${charityCard}
@@ -896,22 +928,30 @@ function renderRaceSetup() {
         <span class="badge badge-${trackTypeBadge(track.type)}">${formatTrackType(track.type)}</span>
       </div>
       <div class="race-details-grid">
-        <div class="team-stat"><span>Track Length</span><span>${track.length} miles</span></div>
-        <div class="team-stat"><span>Laps</span><span>${track.laps}</span></div>
         <div class="team-stat"><span>Entry Fee</span><span>${fmt$(series.entryFee)}</span></div>
         <div class="team-stat"><span>1st Prize</span><span>${fmt$(series.prize[0])}</span></div>
+      </div>
+      <details class="ui-details">
+        <summary>Simulation track details</summary>
+        <div class="ui-details-body race-details-grid">
+        <div class="team-stat"><span>Track Length</span><span>${track.length} miles</span></div>
+        <div class="team-stat"><span>Laps</span><span>${track.laps}</span></div>
         <div class="team-stat"><span>Speed Emphasis</span><span>${speedEmphasis}%</span></div>
         <div class="team-stat"><span>Handling Emphasis</span><span>${handlingEmphasis}%</span></div>
-      </div>
+        </div>
+      </details>
     </div>
     <div class="card mt">
       <div class="card-header">Car Selection</div>
       ${carSection}
     </div>
-    <div class="btn-row mt">
-      <button class="btn btn-primary btn-lg" id="btn-start-race" onclick="handleStartRace()">Race</button>
-      <button class="btn btn-ghost btn-lg" onclick="handleSimulateRace()">Simulate</button>
-      <button class="btn btn-ghost" onclick="showScreen('game')">Back</button>
+    <div class="race-choice-group">
+      <p class="section-copy">Drive a 3D sprint yourself, or simulate this event for an instant result. Both count toward your season.</p>
+      <div class="btn-row">
+      <button class="btn btn-primary btn-lg" id="btn-start-race" onclick="handleStartRace()">Drive Race</button>
+      <button class="btn btn-ghost btn-lg" onclick="handleSimulateRace()">Simulate Race</button>
+      <button class="btn btn-ghost" onclick="showScreen('game')">Back to Dashboard</button>
+      </div>
     </div>
   </div>`;
 }

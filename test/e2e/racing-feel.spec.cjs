@@ -236,7 +236,7 @@ test('three complete career races preserve on-track classification in saved resu
   await page.keyboard.press('Control+s');
   await page.locator('#save-slot-modal').getByRole('button', { name: 'Save Here' }).first().click();
   for (let run = 0; run < 3; run++) {
-    await page.getByRole('button', { name: 'Race Weekend', exact: true }).click();
+    await page.getByRole('button', { name: 'Enter Race Weekend', exact: true }).click();
     await page.locator('#btn-start-race').click();
     await page.waitForFunction(() => window._r3d?.racing);
     const summary = await page.evaluate(() => {

@@ -164,7 +164,14 @@ function handleSetDifficulty(id) {
 
 function handleSetCarColor(carId, color) {
   setCarColor(carId, color);
-  renderTab(activeTab());
+  // Update paint choices in place so the open section and keyboard focus stay put.
+  const card = document.getElementById('car-' + carId);
+  if (!card) return;
+  card.querySelectorAll('.color-swatch').forEach(button => {
+    const selected = button.dataset.color === color;
+    button.classList.toggle('active', selected);
+    button.setAttribute('aria-pressed', String(selected));
+  });
 }
 
 function handleSetCarNumber(carId) {
