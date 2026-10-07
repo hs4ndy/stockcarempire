@@ -433,9 +433,8 @@ function postRaceUpdate(playerResult, earnings, allResults) {
     });
   });
 
-  // Deduct weekly staff costs
-  const weeklyStaff = game.staff.reduce((s, st) => s + st.weeklyCost, 0);
-  game.money -= weeklyStaff;
+  // Charge the same staff and hired-driver payroll shown in the budget.
+  game.money -= weeklyExpenses();
 
   // Sponsor payouts - base pay scales with how many cars you fielded
   const sponsorMult = sponsorCarMultiplier();
@@ -470,8 +469,7 @@ function skipRace() {
   game.lastLoanNotes = tickLoans();
   game.season.raceIndex += 1;
   // Weekly costs still apply
-  const weeklyStaff = game.staff.reduce((s, st) => s + st.weeklyCost, 0);
-  game.money -= weeklyStaff;
+  game.money -= weeklyExpenses();
   // Sponsor base pay still comes in
   const skipMult = sponsorCarMultiplier();
   let sponsorPay = 0;

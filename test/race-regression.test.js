@@ -103,6 +103,63 @@ test('Grassroots race purses and sponsor income support early career growth', ()
   assert.equal(winningWeekendIncome, 23700, 'win purse plus all three base and bonus payments');
 });
 
+for (const event of ['completed', 'skipped']) {
+  for (const roster of [
+    { name: 'empty roster', staff: [], drivers: [] },
+    { name: 'staff only', staff: [300, 500], drivers: [] },
+    { name: 'drivers only', staff: [], drivers: [700, 900] },
+    { name: 'staff and drivers', staff: [300, 500], drivers: [700, 900] },
+  ]) {
+    test(`${event} event charges budget payroll once for ${roster.name}`, () => {
+      const context = makeContext();
+      const payroll = roster.staff.concat(roster.drivers).reduce((sum, cost) => sum + cost, 0);
+      const result = readJson(context, `(() => {
+        newGame('Payroll Test', 'Taylor Tester', 'Test Car');
+        game.money = 100;
+        game.activeSponsors = [];
+        game.staff = ${JSON.stringify(roster.staff)}.map(weeklyCost => ({ weeklyCost }));
+        // Unentered drivers still receive their contracted weekly wages.
+        game.hiredDrivers = ${JSON.stringify(roster.drivers)}.map((weeklyCost, index) =>
+          ({ driverId: 'payroll-' + index, carId: 'unentered-' + index, weeklyCost }));
+        const budget = weeklyExpenses();
+        const beforeIndex = game.season.raceIndex;
+        const pr = { entrantId: 'player', carId: game.cars[0].id, position: 1, isPlayer: true };
+        if (${JSON.stringify(event)} === 'completed') postRaceUpdate(pr, 1000, [pr]);
+        else skipRace();
+        return { budget, money: game.money, advanced: game.season.raceIndex - beforeIndex };
+      })()`);
+      assert.equal(result.budget, payroll);
+      assert.equal(result.money, 100 + (event === 'completed' ? 1000 : 0) - payroll);
+      assert.equal(result.advanced, 1);
+    });
+  }
+}
+
+test('releasing a hired driver removes their wages from subsequent event payroll', () => {
+  const context = makeContext();
+  const result = readJson(context, `(() => {
+    newGame('Payroll Test', 'Taylor Tester', 'Test Car');
+    game.activeSponsors = [];
+    const driver = HIREABLE_DRIVERS[0];
+    const startingMoney = driver.weeklyCost * 4 + 10000;
+    game.money = startingMoney;
+    const hired = hireDriver(driver.id, game.cars[0].id);
+    const afterSigning = game.money;
+    const contractedPayroll = weeklyExpenses();
+    fireDriver(driver.id);
+    const releasedPayroll = weeklyExpenses();
+    skipRace();
+    return { hired: hired.ok, signingFee: startingMoney - afterSigning,
+      weeklyCost: driver.weeklyCost, contractedPayroll, releasedPayroll,
+      afterSigning, afterEvent: game.money };
+  })()`);
+  assert.equal(result.hired, true);
+  assert.equal(result.signingFee, result.weeklyCost * 4);
+  assert.equal(result.contractedPayroll, result.weeklyCost);
+  assert.equal(result.releasedPayroll, 0);
+  assert.equal(result.afterEvent, result.afterSigning);
+});
+
 test('tow and push taper continuously across gap and alignment boundaries', () => {
   const context = physicsContext();
   const checks = readJson(context, `[1.449, 1.45, 1.451, 3.799, 3.8, 3.801].map(x => {

@@ -13,6 +13,6 @@
 
 The header's New Career action deletes the active career's bound save slot before returning to the opening screen. Its confirmation must explicitly name that deletion.
 
-The budget calculation includes support-staff and hired-driver wages, but postRaceUpdate currently deducts only support-staff wages. Treat this as an accounting issue to resolve separately; do not silently change the economy in a copy pass.
+The budget and event updates use the same payroll calculation: support-staff wages plus all hired-driver wages. Payroll is charged once per completed or skipped event, even when a hired driver's car does not race. Signing fees remain separate upfront charges.
 
 Explicit saving must report success only when saveToSlot succeeds. On failure, keep the save dialog open and retain the previous slot binding.
