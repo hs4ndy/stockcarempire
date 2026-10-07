@@ -62,6 +62,8 @@ function toast(msg, type = 'info', duration = 4000) {
   const container = document.getElementById('toast-container');
   const el = document.createElement('div');
   el.className = `toast toast-${type}`;
+  el.setAttribute('role', type === 'error' ? 'alert' : 'status');
+  el.setAttribute('aria-atomic', 'true');
   el.textContent = msg;
   container.appendChild(el);
   setTimeout(() => el.classList.add('show'), 50);
@@ -198,7 +200,7 @@ function renderDashboard() {
           <span class="race-spotlight-name">${track?.name || 'TBD'}</span>
           <span class="race-spotlight-meta">${series.name} · Year ${game.season.year} · Race ${race.raceNum} of ${game.season.calendar.length}</span>
         </div>
-        <div class="team-stat"><span>Entry Fee</span><span class="red">${fmt$(series.entryFee)}</span></div>
+        <div class="team-stat"><span>Entry Fee per Car</span><span class="red">${fmt$(series.entryFee)}</span></div>
         <div class="team-stat"><span>1st Prize</span><span class="green">${fmt$(series.prize[0])}</span></div>
         <div class="btn-row mt">
           <button class="btn btn-primary" onclick="handleOpenRaceWeekend()">Enter Race Weekend</button>
@@ -472,7 +474,7 @@ function renderTeam() {
       </div>
       <button class="btn btn-sm btn-danger" onclick="handleFireDriver('${d.id}')">Release</button>
     </div>`;
-  }).join('') || '<p class="muted-text">No hired drivers - you drive yourself.</p>';
+  }).join('') || '<p class="muted-text">No hired drivers. Hire one below for an unassigned car.</p>';
 
   const staffRows = game.staff.map(s => {
     const type = STAFF_TYPES.find(t => t.id === s.typeId);
@@ -481,7 +483,7 @@ function renderTeam() {
         <span class="staff-name">${s.name}</span>
         <div class="staff-meta">${type?.bonus || ''} • ${fmt$(s.weeklyCost)}/week</div>
       </div>
-      <button class="btn btn-sm btn-danger" onclick="handleFireStaff('${s.id}')">Fire</button>
+      <button class="btn btn-sm btn-danger" onclick="handleFireStaff('${s.id}')">Release Staff</button>
     </div>`;
   }).join('') || '<p class="muted-text">No support staff hired.</p>';
 
@@ -501,10 +503,10 @@ function renderTeam() {
       <div class="staff-info">
         <span class="staff-name">${d.name}</span>
         <div class="staff-meta">Skill ${d.skill} • Aggression ${d.aggression}</div>
-        <div class="staff-meta muted-text">${fmt$(d.weeklyCost)}/week • Signing: ${fmt$(signingFee)}</div>
+        <div class="staff-meta muted-text">${fmt$(d.weeklyCost)}/week • Signing fee: ${fmt$(signingFee)}</div>
       </div>
       ${canAfford ? `<button class="btn btn-sm btn-primary" onclick="openHireDriverModal('${d.id}')">Hire</button>`
-                  : `<button class="btn btn-sm" disabled>Can't afford</button>`}
+                  : `<button class="btn btn-sm" disabled>Not Enough Cash</button>`}
     </div>`;
   }).join('');
 
@@ -520,7 +522,7 @@ function renderTeam() {
         <div class="staff-meta muted-text">${fmt$(cost)}/week • Signing fee: ${fmt$(sigFee)} • Hired: ${current}/${type.max}</div>
       </div>
       ${canHire ? `<button class="btn btn-sm btn-primary" onclick="handleHireStaff('${type.id}')">Hire (${fmt$(sigFee)})</button>`
-               : `<button class="btn btn-sm" disabled>${current >= type.max ? 'Max Hired' : 'Can\'t afford'}</button>`}
+               : `<button class="btn btn-sm" disabled>${current >= type.max ? 'Staff Limit Reached' : 'Not Enough Cash'}</button>`}
     </div>`;
   }).join('');
 
@@ -540,7 +542,7 @@ function renderTeam() {
     <div>
       <div class="card">
         <div class="card-header">Hire Drivers</div>
-        <p class="section-copy">Hire a driver for an extra car. The signing fee equals four weeks of salary. ${game.hiredDrivers.length} of ${MAX_HIRED_DRIVERS} driver slots filled.</p>
+        <p class="section-copy">Hire a driver for an unassigned car. The signing fee is paid upfront and equals four weeks of salary. ${game.hiredDrivers.length} of ${MAX_HIRED_DRIVERS} driver slots filled.</p>
         ${seatWarning}
         ${driverRows}
       </div>
@@ -636,6 +638,7 @@ function renderMarket() {
   const series   = SERIES[game.currentSeries];
   const cls      = CAR_CLASSES[series.carClass];
   const canBuy   = game.money >= cls.buyCost;
+  const bonusConditions = { top10: 'finish in the top 10', top5: 'finish in the top 5', top3: 'finish in the top 3', win: 'win the race' };
 
   const availableSponsors = SPONSOR_DEALS.filter(d =>
     d.level <= game.currentSeries && !game.activeSponsors.includes(d.id)
@@ -644,7 +647,7 @@ function renderMarket() {
     <div class="staff-row">
       <div class="staff-info">
         <span class="staff-name">${d.name}</span>
-        <div class="staff-meta">${fmt$(d.weekly)} per race · ${fmt$(d.bonus)} bonus if ${d.cond}</div>
+        <div class="staff-meta">${fmt$(d.weekly)} per race · ${fmt$(d.bonus)} bonus if you ${bonusConditions[d.cond] || d.cond}</div>
       </div>
       ${game.activeSponsors.length < sponsorSlots()
         ? `<button class="btn btn-sm btn-primary" onclick="handleSignSponsor('${d.id}')">Sign Deal</button>`
@@ -657,7 +660,7 @@ function renderMarket() {
     return `<div class="staff-row">
       <div class="staff-info">
         <span class="staff-name">${d.name}</span>
-        <div class="staff-meta">${fmt$(d.weekly)} per race · ${fmt$(d.bonus)} bonus if ${d.cond}</div>
+        <div class="staff-meta">${fmt$(d.weekly)} per race · ${fmt$(d.bonus)} bonus if you ${bonusConditions[d.cond] || d.cond}</div>
       </div>
       <button class="btn btn-sm btn-danger" onclick="handleDropSponsor('${d.id}')">End Deal</button>
     </div>`;
@@ -701,7 +704,7 @@ function renderMarket() {
       </div>
       ${canTake
         ? `<button class="btn btn-sm btn-primary" onclick="handleTakeLoan('${o.id}')">Borrow</button>`
-        : `<button class="btn btn-sm" disabled>${loans.length >= 3 ? 'Max loans' : 'No credit'}</button>`}
+        : `<button class="btn btn-sm" disabled>${loans.length >= 3 ? 'Loan Limit Reached' : 'No Credit Available'}</button>`}
     </div>`;
   }).join('');
 
@@ -908,7 +911,7 @@ function renderRaceSetup() {
         <span class="badge badge-${trackTypeBadge(track.type)}">${formatTrackType(track.type)}</span>
       </div>
       <div class="race-details-grid">
-        <div class="team-stat"><span>Entry Fee</span><span>${fmt$(series.entryFee)}</span></div>
+        <div class="team-stat"><span>Entry Fee per Car</span><span>${fmt$(series.entryFee)}</span></div>
         <div class="team-stat"><span>1st Prize</span><span>${fmt$(series.prize[0])}</span></div>
       </div>
       <details class="ui-details">
@@ -1308,7 +1311,7 @@ function renderSettings() {
   <div class="card mb">
     <div class="card-header">Difficulty</div>
     <div class="card-body">
-      <p class="muted-text small">How hard the field races you. Applies from your next race onward.</p>
+      <p class="muted-text small">Choose how strongly the AI races you. Changes apply to your next race.</p>
       <div class="difficulty-grid lg">
         ${DIFFICULTIES.map(d => `
           <button type="button" class="difficulty-card${d.id === curDiff ? ' selected' : ''}"
@@ -1324,10 +1327,10 @@ function renderSettings() {
     <div class="card-header">Auto Save</div>
     <div class="card-body">
       <div class="team-stat"><span>Auto-saving to</span><span class="${unsaved ? 'red' : 'green'}">${slotLabel}</span></div>
-      <p class="muted-text small">Nothing is written to a slot until you pick one. After that the game keeps saving there automatically after every race.</p>
+      <p class="muted-text small">${unsaved ? 'Choose a slot to save this career and enable automatic saving.' : 'Career changes and race results are saved to this slot automatically.'}</p>
       <div class="btn-row mt">
-        <button class="btn btn-primary" onclick="handleSaveGame()">${unsaved ? 'Choose a Slot' : 'Save Now'}</button>
-        <button class="btn btn-ghost" onclick="showLoadModal()">Load a Game</button>
+        <button class="btn btn-primary" onclick="handleSaveGame()">${unsaved ? 'Choose Save Slot' : 'Save Career'}</button>
+        <button class="btn btn-ghost" onclick="showLoadModal()">Load Career</button>
       </div>
     </div>
   </div>`;
@@ -1345,7 +1348,7 @@ function renderSaveModal() {
     <div class="save-slot">
       <div class="save-slot-info">${info}</div>
       <div class="save-slot-actions">
-        <button class="btn btn-sm btn-primary" onclick="handleSaveToSlot(${i})">Save Here</button>
+        <button class="btn btn-sm btn-primary" onclick="handleSaveToSlot(${i})">Save to Slot ${i + 1}</button>
         ${filled ? `<button class="btn btn-sm btn-danger" onclick="handleDeleteSlot(${i})">Delete</button>` : ''}
       </div>
     </div>`;
@@ -1355,10 +1358,10 @@ function renderSaveModal() {
   <div class="modal-overlay" id="save-slot-modal">
     <div class="modal">
       <div class="modal-header">
-        <h3>Save Game</h3>
+        <h3>Save Career</h3>
         <button class="modal-close" onclick="closeSaveModal()">Close</button>
       </div>
-      <div class="modal-body save-slots">${slots}</div>
+      <div class="modal-body save-slots"><p>Saving to an occupied slot replaces the career in it.</p>${slots}</div>
     </div>
   </div>`;
 }
@@ -1387,11 +1390,11 @@ function renderLoadModal() {
   <div class="modal-overlay" id="save-slot-modal">
     <div class="modal">
       <div class="modal-header">
-        <h3>Load a Game</h3>
+        <h3>Load Career</h3>
         <button class="modal-close" onclick="closeSaveModal()">Close</button>
       </div>
       <div class="modal-body save-slots">
-        ${!hasAnySave ? '<p class="muted-text">No saved games found.</p>' : slots}
+        ${!hasAnySave ? '<p class="muted-text">No saved careers. Start a new career, then choose a save slot.</p>' : slots}
       </div>
     </div>
   </div>`;

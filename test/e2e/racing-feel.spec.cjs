@@ -234,7 +234,7 @@ test('three complete career races preserve on-track classification in saved resu
   // Pick a real save slot in this isolated browser context. This also keeps
   // the unsaved-career reminder from interrupting an accelerated next race.
   await page.keyboard.press('Control+s');
-  await page.locator('#save-slot-modal').getByRole('button', { name: 'Save Here' }).first().click();
+  await page.locator('#save-slot-modal').getByRole('button', { name: 'Save to Slot 1', exact: true }).click();
   for (let run = 0; run < 3; run++) {
     await page.getByRole('button', { name: 'Enter Race Weekend', exact: true }).click();
     await page.locator('#btn-start-race').click();

@@ -57,6 +57,19 @@ for (const [name, viewport] of [
     await expect(settingsChoice).toBeFocused();
 
     await page.locator('#btn-hdr-save').click();
+    const failedSave = await page.evaluate(() => {
+      const original = Storage.prototype.setItem;
+      Storage.prototype.setItem = () => { throw new DOMException('Storage unavailable', 'QuotaExceededError'); };
+      try {
+        handleSaveToSlot(0);
+        return { slot: currentSlot, dialogOpen: !!document.getElementById('save-slot-modal') };
+      } finally {
+        Storage.prototype.setItem = original;
+      }
+    });
+    expect(failedSave).toEqual({ slot: null, dialogOpen: true });
+    await expect(page.getByRole('alert')).toContainText('Saving could not be completed.');
+    await expect(page.getByRole('status').filter({ hasText: 'Career saved to Slot' })).toHaveCount(0);
     await page.locator('[onclick="handleSaveToSlot(0)"]').click();
     await expect(page.locator('#main-content')).toContainText('Slot 1');
     await expect(page.locator('#main-content')).not.toContainText('Not saved yet');
@@ -74,6 +87,14 @@ for (const [name, viewport] of [
     await page.evaluate(() => document.getElementById('toast-container').replaceChildren());
     await page.screenshot({ path: testInfo.outputPath(`save-${name}.png`), fullPage: true, animations: 'disabled' });
     await page.locator('#save-slot-modal .modal-close').click();
+    let newCareerWarning;
+    page.once('dialog', async dialog => {
+      newCareerWarning = dialog.message();
+      await dialog.dismiss();
+    });
+    await page.locator('[onclick="handleNewGamePrompt()"]').click();
+    expect(newCareerWarning).toContain('deletes your current career from Slot 1');
+    expect(await page.evaluate(() => localStorage.getItem('sce_slot_0'))).not.toBeNull();
     await page.evaluate(() => document.body.insertAdjacentHTML('beforeend', renderPremierChoiceModal()));
     const careerChoice = page.getByRole('button', { name: /Become a Manager/ });
     await careerChoice.focus();

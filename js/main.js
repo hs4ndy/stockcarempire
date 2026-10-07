@@ -204,7 +204,7 @@ function handleOpenRaceWeekend() {
 
 // Races can no longer be skipped - run them or simulate them.
 function handleSkipRace() {
-  toast('Races cannot be skipped. Run the race or use Simulate.', 'warning');
+  toast('Enter Race Weekend and choose Drive Race or Simulate Race to continue the season.', 'warning');
 }
 
 function handleEndSeason() {
@@ -289,7 +289,7 @@ function handleHireStaff(typeId) {
 
 function handleFireStaff(staffId) {
   const s = game.staff.find(st => st.id === staffId);
-  if (!confirm(`Fire ${s?.name}?`)) return;
+  if (!confirm(`Release ${s?.name} from your staff? Their salary payments will stop.`)) return;
   fireStaff(staffId);
   toast('Staff member released.', 'info');
   renderTab('team');
@@ -390,9 +390,9 @@ function handleSignSponsor(sponsorId) {
 
 function handleDropSponsor(sponsorId) {
   const d = SPONSOR_DEALS.find(s => s.id === sponsorId);
-  if (!confirm(`Drop ${d?.name}?`)) return;
+  if (!confirm(`End your deal with ${d?.name}? You will stop receiving its race payouts.`)) return;
   dropSponsor(sponsorId);
-  toast('Sponsor deal dropped.', 'info');
+  toast('Sponsor deal ended.', 'info');
   renderTab('market');
 }
 
@@ -453,7 +453,7 @@ function handleStartRace() {
   // Entry fee is charged per car actually entered, not per car owned
   const entryFee = series.entryFee * Math.max(1, enteredCars(playerCarId).length);
   if (game.money < entryFee) {
-    toast(`Not enough money for entry fee (${fmt$(entryFee)}).`, 'error');
+    toast(`You need ${fmt$(entryFee)} to enter these cars. Visit Market for financing, or enter fewer cars.`, 'error');
     return;
   }
   game.money -= entryFee;
@@ -624,7 +624,7 @@ function handleSimulateRace() {
   // Deduct entry fee - only for cars actually entered
   const entryFee = series.entryFee * Math.max(1, enteredCars(playerCarId).length);
   if (game.money < entryFee) {
-    toast(`Not enough money for entry fee (${fmt$(entryFee)}).`, 'error');
+    toast(`You need ${fmt$(entryFee)} to enter these cars. Visit Market for financing, or enter fewer cars.`, 'error');
     return;
   }
   game.money -= entryFee;
@@ -839,11 +839,16 @@ function showLoadModal() {
 }
 
 function handleSaveToSlot(slot) {
-  saveToSlot(slot);
+  const previousSlot = currentSlot;
+  if (!saveToSlot(slot)) {
+    currentSlot = previousSlot;
+    toast('Saving could not be completed. Browser storage may be full or unavailable. Check storage and try again.', 'error', 7000);
+    return;
+  }
   document.getElementById('save-slot-modal')?.remove();
   updateHeader();
   if (activeTab() === 'settings') renderTab('settings');
-  toast(`Saved to Slot ${slot + 1}!`, 'success');
+  toast(`Career saved to Slot ${slot + 1}.`, 'success');
 }
 
 function handleLoadFromSlot(slot) {
@@ -851,12 +856,12 @@ function handleLoadFromSlot(slot) {
     document.getElementById('save-slot-modal')?.remove();
     enterGame();
   } else {
-    toast('Could not load save.', 'error');
+    toast('This career could not be loaded. Try another save slot.', 'error');
   }
 }
 
 function handleDeleteSlot(slot) {
-  if (!confirm(`Delete save in Slot ${slot + 1}?`)) return;
+  if (!confirm(`Delete the career in Slot ${slot + 1}? This cannot be undone.`)) return;
   deleteSlot(slot);
   document.getElementById('save-slot-modal')?.remove();
   showLoadModal();
@@ -867,7 +872,10 @@ function closeSaveModal() {
 }
 
 function handleNewGamePrompt() {
-  if (!confirm('Start a new game? All current progress will be lost.')) return;
+  const warning = currentSlot === null
+    ? 'Start a new career? Your unsaved career will be lost.'
+    : `Start a new career? This deletes your current career from Slot ${currentSlot + 1}. Other save slots are kept.`;
+  if (!confirm(warning)) return;
   deleteSave();
   location.reload();
 }
