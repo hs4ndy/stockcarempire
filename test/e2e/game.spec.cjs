@@ -71,6 +71,12 @@ for (const [label, viewport] of [
       const gameHeader = getComputedStyle(document.querySelector('.game-header'));
       const gameNav = getComputedStyle(document.querySelector('.game-nav'));
       const focus = getComputedStyle(document.activeElement).outlineStyle;
+      const panelRects = cards.map(card => {
+        const r = card.getBoundingClientRect();
+        return { top: r.top, bottom: r.bottom };
+      });
+      const metricTops = [...document.querySelectorAll('.cmd-cell')]
+        .map(cell => cell.getBoundingClientRect().top);
       return {
         borders,
         markerWidth: parseFloat(marker.width),
@@ -82,6 +88,8 @@ for (const [label, viewport] of [
         headerBorder: header.borderBottomWidth,
         bodyOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
         focus,
+        panelRects,
+        metricTops,
       };
     });
     expect(audit.borders.flat().every(width => width === '0px')).toBe(true);
@@ -93,6 +101,15 @@ for (const [label, viewport] of [
     expect(audit.headerBorder).toBe('0px');
     expect(audit.bodyOverflow).toBe(0);
     expect(audit.focus).not.toBe('none');
+    if (viewport.width > 640) {
+      for (const [a, b] of [[0, 1], [2, 3]]) {
+        expect(Math.abs(audit.panelRects[a].top - audit.panelRects[b].top)).toBeLessThan(1);
+        expect(Math.abs(audit.panelRects[a].bottom - audit.panelRects[b].bottom)).toBeLessThan(1);
+      }
+      expect(new Set(audit.metricTops).size).toBe(1);
+    } else {
+      expect(audit.panelRects.every((r, i) => i === 0 || r.top > audit.panelRects[i - 1].bottom)).toBe(true);
+    }
     await page.screenshot({ path: testInfo.outputPath(`phase-090-${label}.png`), fullPage: true });
 
     await page.locator('.nav-btn[data-tab="settings"]').click();

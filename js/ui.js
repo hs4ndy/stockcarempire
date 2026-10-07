@@ -183,52 +183,67 @@ function renderDashboard() {
   <div class="dashboard-grid">
 
     <!-- Next Race / Season End -->
-    <div class="card">
+    <div class="card dashboard-card dashboard-race">
       <div class="card-header">${seasonOver ? 'Season Complete' : 'Next Race'}</div>
       ${seasonOver ? `
+        <div class="dashboard-race-overview">
         <div class="race-spotlight">
           <span class="race-spotlight-name">Final Standing: ${pos}${ordinal(pos)}</span>
           <span class="race-spotlight-meta">${series.name} · Year ${game.season.year}</span>
         </div>
         ${pos <= series.promotionSpots && series.level < 2
-          ? `<div style="margin-bottom:.75rem"><span class="badge badge-green">PROMOTION ELIGIBLE</span></div>` : ''}
+          ? `<div><span class="badge badge-green">PROMOTION ELIGIBLE</span></div>` : ''}
         ${series.relegationSpots > 0 && pos > totalEntrants - series.relegationSpots
-          ? `<div style="margin-bottom:.75rem"><span class="badge badge-red">RELEGATION ZONE</span></div>` : ''}
+          ? `<div><span class="badge badge-red">RELEGATION ZONE</span></div>` : ''}
+        </div>
+        <div class="dashboard-card-footer">
         <button class="btn btn-primary" onclick="handleEndSeason()">Begin Off-Season</button>
+        </div>
       ` : `
+        <div class="dashboard-race-overview">
         <div class="race-spotlight">
           <span class="race-spotlight-name">${track?.name || 'TBD'}</span>
           <span class="race-spotlight-meta">${series.name} · Year ${game.season.year} · Race ${race.raceNum} of ${game.season.calendar.length}</span>
         </div>
+        <div class="dashboard-race-costs">
         <div class="team-stat"><span>Entry Fee per Car</span><span class="red">${fmt$(series.entryFee)}</span></div>
         <div class="team-stat"><span>1st Prize</span><span class="green">${fmt$(series.prize[0])}</span></div>
-        <div class="btn-row mt">
+        </div>
+        </div>
+        <div class="dashboard-card-footer">
           <button class="btn btn-primary" onclick="handleOpenRaceWeekend()">Enter Race Weekend</button>
         </div>
       `}
     </div>
 
     <!-- Championship Standings -->
-    <div class="card">
+    <div class="card dashboard-card dashboard-standings">
       <div class="card-header">Championship Standings</div>
+      <div class="dashboard-season-progress">
       <div class="season-progress-bar-wrap">
         <div class="season-progress-bar" style="width:${Math.round(racesCompleted / game.season.calendar.length * 100)}%"></div>
       </div>
-      <p class="muted-text small" style="margin-bottom:.75rem">${racesCompleted} / ${game.season.calendar.length} races complete</p>
+      <p class="muted-text small">${racesCompleted} / ${game.season.calendar.length} races complete</p>
+      </div>
       <div class="standings-mini">${topStandings}</div>
+      <div class="dashboard-card-footer">
       ${sorted.length > 5 ? `<button class="btn btn-sm btn-ghost section-action" onclick="showTab('standings')">View Full Standings</button>` : ''}
       <details class="ui-details">
         <summary>Recent results</summary>
         <div class="ui-details-body">${recentResults}</div>
       </details>
+      </div>
     </div>
 
     <!-- Finances -->
-    <div class="card">
+    <div class="card dashboard-card dashboard-finances">
       <div class="card-header">Finances</div>
+      <div class="dashboard-finance-summary">
       <div class="team-stat"><span>Sponsor Income</span><span class="green">+${fmt$(income)}/race</span></div>
       <div class="team-stat"><span>Staff Costs</span><span class="red">-${fmt$(expenses)}/race</span></div>
-      <div class="team-stat"><span>Net</span><span class="${net >= 0 ? 'green' : 'red'}">${net >= 0 ? '+' : ''}${fmt$(net)}/race</span></div>
+      <div class="team-stat dashboard-net"><span>Net</span><span class="${net >= 0 ? 'green' : 'red'}">${net >= 0 ? '+' : ''}${fmt$(net)}/race</span></div>
+      </div>
+      <div class="dashboard-card-footer">
       <details class="ui-details">
         <summary>Budget details</summary>
         <div class="ui-details-body">
@@ -241,22 +256,26 @@ function renderDashboard() {
         <div class="team-stat"><span>Bank Debt</span><span class="red">${fmt$(totalDebt())}</span></div>
         <button class="btn btn-sm btn-ghost section-action" onclick="showTab('market')">Manage Loans</button>`
       : game.money < 0 ? `<button class="btn btn-sm btn-ghost section-action" onclick="showTab('market')">Visit the Bank</button>` : ''}
+      </div>
     </div>
 
     <!-- Garage -->
-    <div class="card">
+    <div class="card dashboard-card dashboard-garage">
       <div class="card-header">Your Garage</div>
+      <div class="dashboard-car-list">
       ${game.cars.map(car => {
         const condPct = Math.round(car.condition);
         const condColor = condPct >= 70 ? 'var(--green)' : condPct >= 40 ? 'var(--gold)' : 'var(--red)';
         return `<div class="car-mini-row">
           <span class="car-mini-name">${car.name}</span>
-          <div style="flex:1;height:4px;background:#1a1a1a;border-radius:0;overflow:hidden">
+          <div class="dashboard-condition-bar">
             <div style="width:${condPct}%;height:100%;background:${condColor}"></div>
           </div>
           <span class="car-mini-score">${condPct}%</span>
         </div>`;
       }).join('')}
+      </div>
+      <div class="dashboard-card-footer">
       <button class="btn btn-sm btn-ghost section-action" onclick="showTab('garage')">Manage Cars</button>
       <details class="ui-details">
       <summary>Driver profile and history</summary>
@@ -277,6 +296,7 @@ function renderDashboard() {
         </div>`).join('') : '<p class="section-copy">Finish your first season to start your career record.</p>'}
       </div>
       </details>
+      </div>
     </div>
 
   </div>`;
