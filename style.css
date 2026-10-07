@@ -3,6 +3,7 @@
    Phase 0.90: borderless editorial panels and a tighter race-weekend shell.
    The simulation and screen
    structure intentionally remain independent of this visual layer.
+   Accent rails are retained as part of the approved FC26-inspired identity.
    ============================================================ */
 
 /* ---- Design tokens ---------------------------------------- */
@@ -20,19 +21,21 @@
   /* Text */
   --text:      #f5f7fb;
   --text-dim:  #a8b1c2;
-  --text-mute: #68748a;
+  --text-mute: #929eb2;
 
   /* Accent + functional (flat) */
   --accent:        #ef1c42;
+  --accent-solid:  #d91338;
   --accent-press:  #bd1232;
   --accent-ink:    #FFFFFF;
+  --danger-text:   #ff637b;
   --good:          #5dd99c;
   --warn:          #ffd166;
   --focus:         #6dd7ff;
 
   /* JS inline-style aliases (do not rename - referenced from ui.js) */
   --green: var(--good);
-  --red:   var(--accent);
+  --red:   var(--danger-text);
   --gold:  var(--warn);
 
   --font: 'Barlow', 'Helvetica Neue', Arial, system-ui, sans-serif;
@@ -45,6 +48,10 @@
 /* ---- Reset ------------------------------------------------- */
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
+html { color-scheme: dark; scrollbar-color: var(--line-2) var(--bg); scrollbar-width: thin; }
+::selection { background: var(--accent-solid); color: var(--accent-ink); }
+input, textarea { caret-color: var(--focus); }
+input::placeholder { color: var(--text-mute); opacity: 1; }
 body {
   background: var(--bg);
   color: var(--text);
@@ -64,6 +71,7 @@ h1, h2, h3, h4, p { margin: 0; }
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
+summary:focus-visible,
 a:focus-visible,
 [tabindex]:focus-visible {
   outline: 3px solid var(--focus);
@@ -79,11 +87,9 @@ a:focus-visible,
   font-feature-settings: "tnum" 1;
 }
 
-/* ---- The one global animation ----------------------------- */
-@keyframes sce-rise { from { opacity: 0; } to { opacity: 1; } }
+/* A restrained screen transition; individual panels stay visible. */
+@keyframes sce-rise { from { opacity: .85; } to { opacity: 1; } }
 .screen:not(.hidden) { animation: sce-rise var(--t) ease-out both; }
-#main-content > * { animation: sce-rise var(--t) ease-out both; }
-.modal { animation: sce-rise var(--t) ease-out both; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -110,7 +116,7 @@ a:focus-visible,
 .muted-text { color: var(--text-dim); }
 .small { font-size: 12px; }
 .green { color: var(--good); }
-.red { color: var(--accent); }
+.red { color: var(--danger-text); }
 .gold { color: var(--warn); }
 .highlight { color: var(--text); font-weight: 700; }
 .link { color: var(--text); border-bottom: 1px solid var(--accent); cursor: pointer; padding-bottom: 1px; }
@@ -126,6 +132,7 @@ a:focus-visible,
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-height: 40px;
   gap: .4em;
   padding: 9px 16px;
   font-family: var(--font-display);
@@ -142,14 +149,14 @@ a:focus-visible,
 }
 .btn:hover { background: var(--panel-3); border-color: var(--text-dim); }
 
-.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn-primary { background: var(--accent-solid); border-color: var(--accent-solid); color: var(--accent-ink); }
 .btn-primary:hover { background: var(--accent-press); border-color: var(--accent-press); }
 
 .btn-ghost { background: transparent; border-color: var(--line-2); color: var(--text-dim); }
 .btn-ghost:hover { background: transparent; border-color: var(--text-dim); color: var(--text); }
 
-.btn-danger { background: transparent; border-color: var(--accent); color: var(--accent); }
-.btn-danger:hover { background: var(--accent); color: var(--accent-ink); }
+.btn-danger { background: transparent; border-color: var(--accent); color: var(--danger-text); }
+.btn-danger:hover { background: var(--accent-solid); color: var(--accent-ink); }
 
 .btn-warning { background: transparent; border-color: var(--warn); color: var(--warn); }
 .btn-warning:hover { background: var(--warn); color: #0D0D0F; }
@@ -293,7 +300,7 @@ a:focus-visible,
   transition: background-color var(--t) linear, border-color var(--t) linear, color var(--t) linear;
 }
 .btn-game:hover { border-color: var(--text); background: var(--panel-2); }
-.btn-game-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn-game-primary { background: var(--accent-solid); border-color: var(--accent-solid); color: var(--accent-ink); }
 .btn-game-primary:hover { background: var(--accent-press); border-color: var(--accent-press); }
 .btn-game-chevron { display: none; }
 
@@ -667,7 +674,6 @@ input[type="text"]::placeholder { color: var(--text-mute); }
 .stat-bar {
   height: 100%;
   width: 0;
-  transition: width .3s ease-out;
 }
 .bar-green  { background: var(--good); }
 .bar-yellow { background: var(--warn); }
@@ -682,7 +688,11 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   padding: .45rem 0;
   border-bottom: 1px solid var(--line);
   font-size: 13px;
+  min-width: 0;
 }
+.team-stat > span { min-width: 0; overflow-wrap: anywhere; }
+.team-stat > span:first-child { flex: none; overflow-wrap: normal; }
+.team-stat > span:last-child { text-align: right; font-variant-numeric: tabular-nums; }
 .team-stat:last-child { border-bottom: none; }
 .team-stat > span:first-child { color: var(--text-dim); }
 
@@ -732,7 +742,7 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   overflow: hidden;
   margin-bottom: .4rem;
 }
-.season-progress-bar { height: 100%; background: var(--accent); transition: width .3s ease-out; }
+.season-progress-bar { height: 100%; background: var(--accent); }
 
 .standings-row {
   display: grid;
@@ -795,8 +805,9 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   justify-content: space-between;
   gap: .75rem;
   margin-bottom: 1rem;
+  flex-wrap: wrap;
 }
-.car-name { font-size: 1.05rem; font-weight: 800; }
+.car-name { font-size: 1.05rem; font-weight: 800; overflow-wrap: anywhere; }
 .car-class-badge {
   font-size: 10px;
   font-weight: 600;
@@ -822,7 +833,8 @@ input[type="text"]::placeholder { color: var(--text-mute); }
 }
 .car-color-row .stat-label { width: 100%; margin-bottom: .2rem; }
 .color-swatch {
-  width: 20px; height: 20px;
+  width: 32px; height: 32px;
+  flex: none;
   border: 1px solid var(--line-2);
   padding: 0;
   transition: border-color var(--t) linear;
@@ -856,7 +868,7 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   color: var(--text-dim);
 }
 .badge-green  { color: var(--good);  border-color: var(--good); }
-.badge-red    { color: var(--accent); border-color: var(--accent); }
+.badge-red    { color: var(--danger-text); border-color: var(--accent); }
 .badge-yellow,
 .badge-orange { color: var(--warn);  border-color: var(--warn); }
 .badge-blue,
@@ -933,7 +945,8 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   border-bottom: 1px solid var(--line);
 }
 .staff-row:last-child { border-bottom: none; }
-.staff-info { display: flex; flex-direction: column; gap: .2rem; }
+.staff-info { display: flex; flex-direction: column; gap: .2rem; min-width: 0; overflow-wrap: anywhere; }
+.staff-row > .btn { flex: none; }
 .staff-name { font-weight: 700; font-size: 14px; }
 .staff-meta { font-size: 12px; color: var(--text-dim); }
 /* Hired driver progress toward their personal ceiling */
@@ -943,7 +956,7 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   background: var(--panel-3);
   overflow: hidden;
 }
-.driver-growth-fill { height: 100%; background: var(--good); transition: width .3s ease-out; }
+.driver-growth-fill { height: 100%; background: var(--good); }
 
 /* ============================================================
    BANK / LOANS
@@ -960,7 +973,7 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   border-left: 3px solid var(--warn);
 }
 .loan-row.is-late { border-left-color: var(--accent); }
-.loan-info { display: flex; flex-direction: column; gap: .2rem; }
+.loan-info { display: flex; flex-direction: column; gap: .2rem; min-width: 0; overflow-wrap: anywhere; }
 .loan-name { font-weight: 700; font-size: 14px; }
 .loan-row.is-late .loan-name { color: var(--accent); }
 .loan-actions { display: flex; gap: .4rem; flex: none; }
@@ -1037,6 +1050,7 @@ input[type="text"]::placeholder { color: var(--text-mute); }
 }
 .radio-row:last-child { border-bottom: none; }
 .radio-row input { accent-color: var(--accent); }
+.radio-row span { min-width: 0; overflow-wrap: anywhere; }
 
 /* ============================================================
    LIVE RACE (text) SCREEN
@@ -1205,7 +1219,7 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   padding: 1.1rem 1.35rem;
   border-bottom: 1px solid var(--line);
 }
-.modal-header h3 { font-size: 1.1rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; }
+.modal-header h3 { font-size: 1.1rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; min-width: 0; overflow-wrap: anywhere; }
 .modal-body { padding: 1.35rem; overflow-y: auto; }
 .modal-body p { color: var(--text-dim); margin-bottom: .75rem; }
 .modal-body .form-label { margin-top: .5rem; }
@@ -1217,6 +1231,8 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   gap: .6rem;
 }
 .modal-close {
+  min-height: 40px;
+  flex: none;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -1436,6 +1452,7 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   border: 0;
   border-left: 3px solid transparent;
   cursor: pointer;
+  text-align: left;
   transition: border-color var(--t) linear, background-color var(--t) linear;
 }
 .difficulty-card:hover { border-left-color: var(--text-mute); }
@@ -1444,7 +1461,7 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   font-size: 12px; font-weight: 800;
   letter-spacing: 0.08em; text-transform: uppercase;
 }
-.difficulty-card.selected .difficulty-name { color: var(--accent); }
+.difficulty-card.selected .difficulty-name { color: var(--text); }
 .difficulty-blurb { font-size: 11px; color: var(--text-dim); line-height: 1.4; }
 
 /* Larger presentation - Settings and new-career setup */
@@ -1496,6 +1513,7 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   border: 0;
   border-left: 3px solid transparent;
   cursor: pointer;
+  text-align: left;
   transition: border-color var(--t) linear, background-color var(--t) linear;
 }
 .career-card:hover { border-left-color: var(--text-dim); }
@@ -1524,7 +1542,7 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   border-left: 3px solid var(--accent);
 }
 .save-slot-empty { border-left-color: transparent; }
-.save-slot-info { font-size: 13px; line-height: 1.5; }
+.save-slot-info { font-size: 13px; line-height: 1.5; min-width: 0; overflow-wrap: anywhere; }
 .save-slot-info strong { font-weight: 800; }
 .save-slot-actions { display: flex; gap: .5rem; flex: none; }
 
@@ -1966,6 +1984,14 @@ input[type="text"]::placeholder { color: var(--text-mute); }
   .page-header h2 { font-size: 1.25rem; }
 }
 @media (max-width: 640px) {
+  .btn, .modal-close { min-height: 44px; }
+  .color-swatch { width: 44px; height: 44px; }
+  .car-color-row { gap: 8px; }
+  .loan-row, .save-slot { flex-direction: column; align-items: stretch; }
+  .loan-actions, .save-slot-actions { flex-wrap: wrap; }
+  .loan-actions .btn, .save-slot-actions .btn { flex: 1; }
+  .race-info-box { flex-wrap: wrap; }
+  .race-details-grid { grid-template-columns: 1fr; }
   .dashboard-grid,
   .two-col-grid { grid-template-columns: 1fr; }
   .cmd-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }

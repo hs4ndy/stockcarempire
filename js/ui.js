@@ -1142,21 +1142,21 @@ function renderPremierChoiceModal() {
       <div class="modal-body">
         <p>You've reached the top tier of stock car racing. How do you want to continue your career?</p>
         <div class="career-choices">
-          <div class="career-card" onclick="selectCareerChoice('driver')">
-            <div class="career-index">01</div>
-            <div class="career-title">Stay as Driver</div>
-            <div class="career-desc">Drive one of your own cars each race. Compete for the championship yourself.</div>
-          </div>
-          <div class="career-card" onclick="selectCareerChoice('manager')">
-            <div class="career-index">02</div>
-            <div class="career-title">Become a Manager</div>
-            <div class="career-desc">Step back from driving. Run the team from the pit wall. Hire drivers for all your cars.</div>
-          </div>
-          <div class="career-card" onclick="selectCareerChoice('hired')">
-            <div class="career-index">03</div>
-            <div class="career-title">Drive for Another Team</div>
-            <div class="career-desc">Join an established team, collect a weekly salary, and leave the management headaches behind.</div>
-          </div>
+          <button type="button" class="career-card" aria-pressed="false" onclick="selectCareerChoice('driver')">
+            <span class="career-index">01</span>
+            <span class="career-title">Stay as Driver</span>
+            <span class="career-desc">Drive one of your own cars each race. Compete for the championship yourself.</span>
+          </button>
+          <button type="button" class="career-card" aria-pressed="false" onclick="selectCareerChoice('manager')">
+            <span class="career-index">02</span>
+            <span class="career-title">Become a Manager</span>
+            <span class="career-desc">Step back from driving. Run the team from the pit wall. Hire drivers for all your cars.</span>
+          </button>
+          <button type="button" class="career-card" aria-pressed="false" onclick="selectCareerChoice('hired')">
+            <span class="career-index">03</span>
+            <span class="career-title">Drive for Another Team</span>
+            <span class="career-desc">Join an established team, collect a weekly salary, and leave the management headaches behind.</span>
+          </button>
         </div>
         <div id="hired-team-select" class="hidden mt">
           <label class="form-label">Choose a team to drive for:</label>
@@ -1331,11 +1331,11 @@ function renderSettings() {
       <p class="muted-text small">How hard the field races you. Applies from your next race onward.</p>
       <div class="difficulty-grid lg">
         ${DIFFICULTIES.map(d => `
-          <div class="difficulty-card${d.id === curDiff ? ' selected' : ''}"
-               onclick="handleSetDifficulty('${d.id}')">
+          <button type="button" class="difficulty-card${d.id === curDiff ? ' selected' : ''}"
+               data-diff="${d.id}" aria-pressed="${d.id === curDiff}" onclick="handleSetDifficulty('${d.id}')">
             <span class="difficulty-name">${d.name}</span>
             <span class="difficulty-blurb">${d.blurb}</span>
-          </div>`).join('')}
+          </button>`).join('')}
       </div>
     </div>
   </div>
@@ -1431,11 +1431,11 @@ function renderQuickRaceModal() {
         <div class="card-header">Difficulty</div>
         <div class="difficulty-grid">
           ${DIFFICULTIES.map(d => `
-            <div class="difficulty-card${d.id === quickRaceDifficulty ? ' selected' : ''}"
-                 data-diff="${d.id}" onclick="setQuickRaceDifficulty('${d.id}')">
+            <button type="button" class="difficulty-card${d.id === quickRaceDifficulty ? ' selected' : ''}"
+                 data-diff="${d.id}" aria-pressed="${d.id === quickRaceDifficulty}" onclick="setQuickRaceDifficulty('${d.id}')">
               <span class="difficulty-name">${d.name}</span>
               <span class="difficulty-blurb">${d.blurb}</span>
-            </div>`).join('')}
+            </button>`).join('')}
         </div>
         <div class="card-header mt">Series</div>
         <div class="quick-series">

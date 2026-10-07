@@ -66,16 +66,18 @@ function renderSetupDifficultyCards() {
   const grid = document.getElementById('setup-difficulty-grid');
   if (!grid) return;
   grid.innerHTML = DIFFICULTIES.map(d => `
-    <div class="difficulty-card${d.id === setupDifficulty ? ' selected' : ''}"
-         data-diff="${d.id}" onclick="setSetupDifficulty('${d.id}')">
+    <button type="button" class="difficulty-card${d.id === setupDifficulty ? ' selected' : ''}"
+         data-diff="${d.id}" aria-pressed="${d.id === setupDifficulty}" onclick="setSetupDifficulty('${d.id}')">
       <span class="difficulty-name">${d.name}</span>
       <span class="difficulty-blurb">${d.blurb}</span>
-    </div>`).join('');
+    </button>`).join('');
 }
 
 function setSetupDifficulty(id) {
+  const keepFocus = document.activeElement?.matches('#setup-difficulty-grid .difficulty-card');
   setupDifficulty = id;
   renderSetupDifficultyCards();
+  if (keepFocus) document.querySelector(`#setup-difficulty-grid [data-diff="${id}"]`)?.focus();
 }
 
 function showSetupDifficulty() {
@@ -127,6 +129,7 @@ function setQuickRaceDifficulty(id) {
   quickRaceDifficulty = id;
   document.querySelectorAll('#quick-race-modal .difficulty-card').forEach(el => {
     el.classList.toggle('selected', el.dataset.diff === id);
+    el.setAttribute('aria-pressed', String(el.dataset.diff === id));
   });
 }
 
@@ -155,11 +158,13 @@ function handleStartQuickRace(fieldSize) {
 
 // ─── Settings / Career ────────────────────────────────────────
 function handleSetDifficulty(id) {
+  const keepFocus = document.activeElement?.matches('#main-content .difficulty-card');
   const d = difficultyById(id);
   game.difficulty = d.id;
   saveGame();
   toast(`Difficulty set to ${d.name}.`, 'success');
   renderTab(activeTab());
+  if (keepFocus) document.querySelector(`#main-content .difficulty-card[data-diff="${d.id}"]`)?.focus();
 }
 
 function handleSetCarColor(carId, color) {
@@ -790,8 +795,12 @@ function showPremierChoiceModal() {
 
 function selectCareerChoice(path) {
   selectedCareerPath = path;
-  document.querySelectorAll('.career-card').forEach(c => c.classList.remove('selected'));
+  document.querySelectorAll('.career-card').forEach(c => {
+    c.classList.remove('selected');
+    c.setAttribute('aria-pressed', 'false');
+  });
   document.querySelector(`.career-card[onclick*="${path}"]`)?.classList.add('selected');
+  document.querySelector(`.career-card[onclick*="${path}"]`)?.setAttribute('aria-pressed', 'true');
   document.getElementById('btn-confirm-career').disabled = false;
 
   const hiredSection = document.getElementById('hired-team-select');
@@ -833,6 +842,7 @@ function handleSaveToSlot(slot) {
   saveToSlot(slot);
   document.getElementById('save-slot-modal')?.remove();
   updateHeader();
+  if (activeTab() === 'settings') renderTab('settings');
   toast(`Saved to Slot ${slot + 1}!`, 'success');
 }
 
