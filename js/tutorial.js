@@ -3,7 +3,7 @@
 const CAREER_TUTORIAL_STEPS = [
   {
     tab: 'dashboard', target: '.cmd-strip', title: 'Your command center',
-    copy: 'This strip tracks your championship position, cash, series, and next race. The dashboard is where you check your team before each event.',
+    copy: 'Check your championship position, points, and cash here. The Next Race panel shows your series and upcoming event.',
   },
   {
     tab: 'dashboard', target: '.dashboard-grid .card:nth-child(3)', title: 'Watch your budget',

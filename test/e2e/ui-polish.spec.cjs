@@ -40,7 +40,13 @@ for (const [name, viewport] of [
       await page.locator(`.nav-btn[data-tab="${tab}"]`).click();
       if (tab === 'garage') await page.getByText('Customize and manage car', { exact: true }).click();
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
-      if (tab === 'garage' || tab === 'settings') {
+      if (tab === 'dashboard') {
+        expect(await page.locator('.car-mini-row').first().evaluate(el => {
+          const row = el.getBoundingClientRect();
+          return [...el.children].every(child => child.getBoundingClientRect().right <= row.right);
+        })).toBe(true);
+      }
+      if (tab === 'dashboard' || tab === 'garage' || tab === 'settings') {
         await page.screenshot({ path: testInfo.outputPath(`${tab}-${name}.png`), fullPage: true, animations: 'disabled' });
       }
     }

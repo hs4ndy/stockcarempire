@@ -148,7 +148,15 @@ function renderDashboard() {
   const racesCompleted = game.season.calendar.filter(r => r.status === 'completed').length;
 
   const net = income - expenses;
-  const nextRaceLabel = seasonOver ? 'N/A' : `${race.raceNum} / ${game.season.calendar.length}`;
+  const recentResults = game.season.calendar.filter(r => r.status === 'completed').slice(-5).reverse().map(r => {
+    const t = TRACKS.find(tr => tr.id === r.trackId);
+    const position = r.playerResult?.position;
+    const color = position === 1 ? 'var(--gold)' : position <= 5 ? 'var(--green)' : 'var(--text-dim)';
+    return `<div class="team-stat">
+      <span>Race ${r.raceNum} · ${t?.name || '?'}</span>
+      <span style="color:${color};font-weight:700">${position ? `P${position} · ${fmt$(r.earnings)}` : 'Skipped'}</span>
+    </div>`;
+  }).join('') || '<p class="muted-text small">Your results will appear here after your first race.</p>';
 
   return `
   <!-- Command Strip -->
@@ -166,17 +174,7 @@ function renderDashboard() {
     <div class="cmd-cell">
       <span class="cmd-label">Cash</span>
       <span class="cmd-value gold">${fmt$(game.money)}</span>
-      <span class="cmd-sub ${net >= 0 ? 'green' : 'red'}">${net >= 0 ? '+' : ''}${fmt$(net)} / race</span>
-    </div>
-    <div class="cmd-cell">
-      <span class="cmd-label">Series</span>
-      <span class="cmd-value" style="color:${series.color};font-size:1.1rem">${series.name}</span>
-      <span class="cmd-sub">Year ${game.season.year}</span>
-    </div>
-    <div class="cmd-cell">
-      <span class="cmd-label">Next Race</span>
-      <span class="cmd-value">${nextRaceLabel}</span>
-      <span class="cmd-sub">${seasonOver ? 'Season complete' : (track?.name || 'N/A')}</span>
+      <span class="cmd-sub">Available budget</span>
     </div>
   </div>
 
@@ -198,7 +196,7 @@ function renderDashboard() {
       ` : `
         <div class="race-spotlight">
           <span class="race-spotlight-name">${track?.name || 'TBD'}</span>
-          <span class="race-spotlight-meta">${formatTrackType(track?.type)} · ${track?.length} mi · ${track?.laps} laps</span>
+          <span class="race-spotlight-meta">${series.name} · Year ${game.season.year} · Race ${race.raceNum} of ${game.season.calendar.length}</span>
         </div>
         <div class="team-stat"><span>Entry Fee</span><span class="red">${fmt$(series.entryFee)}</span></div>
         <div class="team-stat"><span>1st Prize</span><span class="green">${fmt$(series.prize[0])}</span></div>
@@ -217,12 +215,15 @@ function renderDashboard() {
       <p class="muted-text small" style="margin-bottom:.75rem">${racesCompleted} / ${game.season.calendar.length} races complete</p>
       <div class="standings-mini">${topStandings}</div>
       ${sorted.length > 5 ? `<button class="btn btn-sm btn-ghost section-action" onclick="showTab('standings')">View Full Standings</button>` : ''}
+      <details class="ui-details">
+        <summary>Recent results</summary>
+        <div class="ui-details-body">${recentResults}</div>
+      </details>
     </div>
 
     <!-- Finances -->
     <div class="card">
       <div class="card-header">Finances</div>
-      <div class="team-stat"><span>Cash</span><span class="highlight">${fmt$(game.money)}</span></div>
       <div class="team-stat"><span>Sponsor Income</span><span class="green">+${fmt$(income)}/race</span></div>
       <div class="team-stat"><span>Staff Costs</span><span class="red">-${fmt$(expenses)}/race</span></div>
       <div class="team-stat"><span>Net</span><span class="${net >= 0 ? 'green' : 'red'}">${net >= 0 ? '+' : ''}${fmt$(net)}/race</span></div>
@@ -236,15 +237,14 @@ function renderDashboard() {
       </details>
       ${totalDebt() > 0 ? `
         <div class="team-stat"><span>Bank Debt</span><span class="red">${fmt$(totalDebt())}</span></div>
-        <a class="link mt" onclick="showTab('market')">Manage loans</a>`
-      : game.money < 0 ? `<a class="link mt" onclick="showTab('market')">Visit the bank</a>` : ''}
+        <button class="btn btn-sm btn-ghost section-action" onclick="showTab('market')">Manage Loans</button>`
+      : game.money < 0 ? `<button class="btn btn-sm btn-ghost section-action" onclick="showTab('market')">Visit the Bank</button>` : ''}
     </div>
 
     <!-- Garage -->
     <div class="card">
       <div class="card-header">Your Garage</div>
       ${game.cars.map(car => {
-        const score = effectiveCarScore(car);
         const condPct = Math.round(car.condition);
         const condColor = condPct >= 70 ? 'var(--green)' : condPct >= 40 ? 'var(--gold)' : 'var(--red)';
         return `<div class="car-mini-row">
@@ -256,11 +256,9 @@ function renderDashboard() {
         </div>`;
       }).join('')}
       <button class="btn btn-sm btn-ghost section-action" onclick="showTab('garage')">Manage Cars</button>
-    </div>
-
-    <!-- Driver Profile -->
-    <div class="card">
-      <div class="card-header">Driver Profile</div>
+      <details class="ui-details">
+      <summary>Driver profile and history</summary>
+      <div class="ui-details-body">
       <div class="team-stat"><span>Driver</span><span class="highlight">${game.driverName || game.teamName}</span></div>
       ${game.driverMode === 'hired' ? `
         <div class="team-stat"><span>Team</span><span>${game.season.aiTeams.find(t=>t.id===game.hiredTeamId)?.name || 'N/A'}</span></div>
@@ -269,9 +267,6 @@ function renderDashboard() {
         <div class="team-stat"><span>Role</span><span>Team Manager</span></div>
       ` : `<div class="team-stat"><span>Role</span><span>Driver / Owner</span></div>`}
       ${statBar('Driver Skill', Math.round(game.playerSkill))}
-      <details class="ui-details">
-      <summary>Recent season history</summary>
-      <div class="ui-details-body">
       <div class="team-stat"><span>Seasons Raced</span><span>${game.history.length}</span></div>
       ${game.history.length > 0 ? game.history.slice(-3).map(h => `
         <div class="team-stat">
@@ -280,21 +275,6 @@ function renderDashboard() {
         </div>`).join('') : '<p class="section-copy">Finish your first season to start your career record.</p>'}
       </div>
       </details>
-    </div>
-
-    <!-- Season Calendar snapshot -->
-    <div class="card">
-      <div class="card-header">Recent Results</div>
-      ${game.season.calendar.filter(r => r.status === 'completed').slice(-5).reverse().map(r => {
-        const t = TRACKS.find(tr => tr.id === r.trackId);
-        const pos2 = r.playerResult?.position;
-        const posStr = pos2 ? `P${pos2}` : 'Skipped';
-        const col = pos2 === 1 ? 'var(--gold)' : pos2 <= 5 ? 'var(--green)' : pos2 ? 'var(--text)' : '#555';
-        return `<div class="team-stat">
-          <span>Race ${r.raceNum} · ${t?.name || '?'}</span>
-          <span style="color:${col};font-weight:700">${posStr}${pos2 ? ' · ' + fmt$(r.earnings) : ''}</span>
-        </div>`;
-      }).join('') || '<p class="muted-text small">Your results will appear here after your first race.</p>'}
     </div>
 
   </div>`;

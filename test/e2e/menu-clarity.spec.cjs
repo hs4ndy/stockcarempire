@@ -24,12 +24,22 @@ for (const [name, viewport] of [
     const initialGame = await page.evaluate(() => JSON.stringify(game));
 
     await expect(page.getByRole('button', { name: 'Enter Race Weekend', exact: true })).toBeVisible();
+    await page.getByText('Recent results', { exact: true }).click();
+    await expect(page.getByText('Your results will appear here after your first race.', { exact: true })).toBeVisible();
+    await page.getByText('Recent results', { exact: true }).click();
+    await page.getByText('Driver profile and history', { exact: true }).click();
+    await expect(page.getByText('Driver Skill', { exact: true })).toBeVisible();
+    await page.getByText('Driver profile and history', { exact: true }).click();
     const budget = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Budget details' }) });
     await expect(budget).not.toHaveAttribute('open');
     await budget.locator('summary').focus();
     await page.keyboard.press('Enter');
     await expect(budget).toHaveAttribute('open', '');
     await expect(budget).toContainText('Entry fees and repairs are paid separately.');
+    await page.evaluate(() => {
+      document.getElementById('toast-container').replaceChildren();
+      window.scrollTo(0, 0);
+    });
     await page.screenshot({ path: testInfo.outputPath(`dashboard-${name}.png`), fullPage: true, animations: 'disabled' });
 
     for (const tab of ['garage', 'team', 'market', 'settings']) {

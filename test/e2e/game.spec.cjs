@@ -56,7 +56,7 @@ for (const [label, viewport] of [
     await page.locator('#btn-create-team').click();
     await page.locator('#btn-begin-career').click();
     await page.locator('#career-tutorial [data-tutorial-action="skip"]').click();
-    await expect(page.locator('.dashboard-grid .card')).toHaveCount(6);
+    await expect(page.locator('.dashboard-grid .card')).toHaveCount(4);
     await page.waitForTimeout(250);
     await page.evaluate(() => document.getElementById('toast-container').replaceChildren());
     await page.keyboard.press('Tab');
