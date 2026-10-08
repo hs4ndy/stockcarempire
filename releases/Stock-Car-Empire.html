@@ -346,7 +346,8 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .quick-series, .career-choices { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
 .quick-series-btn, .career-card { display: flex; flex-direction: column; gap: 6px; text-align: left; padding: 20px; background: var(--panel-2); border-radius: 6px; transition: background-color var(--t), color var(--t); }
 .quick-series-btn:hover, .career-card:hover, .career-card.selected { background: var(--text); color: var(--bg); }
-.quick-series-name, .career-title { font-size: 18px; font-weight: 600; } .quick-series-meta, .career-desc { font-size: 14px; color: var(--text-dim); }
+.quick-series-name, .career-title { font-size: 18px; font-weight: 600; } .quick-series-name { color: var(--series-color); } .quick-series-meta, .career-desc { font-size: 14px; color: var(--text-dim); }
+.quick-series-btn:hover .quick-series-name, .quick-series-btn.selected .quick-series-name { color: var(--bg); }
 .quick-series-btn:hover .quick-series-meta, .career-card:hover .career-desc, .career-card.selected .career-desc { color: #454a4e; }
 .career-index { font: 600 24px/1 var(--font-display); }
 
@@ -952,7 +953,6 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
       <figcaption>Grassroots Cup <span>Challenger Series</span> Premier Cup Series</figcaption>
     </figure>
   </div>
-  <div class="intro-footer"><span>Stock Car Empire Beta</span><span>Team management + 3D racing</span></div>
 
   <div class="intro-checker-strip bottom"></div>
 </div>
@@ -6415,11 +6415,14 @@ function renderQuickRaceModal() {
         <div class="card-header mt">Series</div>
         <div class="quick-series">
           ${SERIES.map(s => `
-            <button class="quick-series-btn" onclick="handleStartQuickRace(${s.fieldSize})">
-              <span class="quick-series-name" style="color:${s.color}">${s.name}</span>
+            <button type="button" class="quick-series-btn" data-field-size="${s.fieldSize}" aria-pressed="false" onclick="selectQuickRaceSeries(${s.fieldSize})">
+              <span class="quick-series-name" style="--series-color:${s.color}">${s.name}</span>
               <span class="quick-series-meta">${s.fieldSize}-car field · ${s.description}</span>
             </button>`).join('')}
         </div>
+      </div>
+      <div class="modal-footer quick-race-footer">
+        <button type="button" class="primary-btn" id="btn-quick-race-confirm" onclick="confirmQuickRace()" disabled>Confirm Race</button>
       </div>
     </div>
   </div>`;
@@ -6809,11 +6812,13 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
 
 // ─── Quick Race ───────────────────────────────────────────────
 function showQuickRaceScreen() {
+  quickRaceSeries = null;
   document.body.insertAdjacentHTML('beforeend', renderQuickRaceModal());
 }
 
 // Quick Race difficulty is chosen in the modal before launching
 let quickRaceDifficulty = DEFAULT_DIFFICULTY;
+let quickRaceSeries = null;
 
 function setQuickRaceDifficulty(id) {
   quickRaceDifficulty = id;
@@ -6821,6 +6826,22 @@ function setQuickRaceDifficulty(id) {
     el.classList.toggle('selected', el.dataset.diff === id);
     el.setAttribute('aria-pressed', String(el.dataset.diff === id));
   });
+}
+
+function selectQuickRaceSeries(fieldSize) {
+  quickRaceSeries = fieldSize;
+  document.querySelectorAll('#quick-race-modal .quick-series-btn').forEach(el => {
+    const selected = Number(el.dataset.fieldSize) === fieldSize;
+    el.classList.toggle('selected', selected);
+    el.setAttribute('aria-pressed', String(selected));
+  });
+  const confirmButton = document.getElementById('btn-quick-race-confirm');
+  if (confirmButton) confirmButton.disabled = false;
+}
+
+function confirmQuickRace() {
+  if (quickRaceSeries === null) return;
+  handleStartQuickRace(quickRaceSeries);
 }
 
 function handleStartQuickRace(fieldSize) {

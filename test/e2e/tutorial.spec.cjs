@@ -129,6 +129,8 @@ test('practice has its own short finish and never changes career progress', asyn
   await page.goto('/');
   await page.locator('#btn-quick-race').click();
   await page.locator('.quick-series-btn').first().click();
+  await page.locator('.quick-series-btn').first().click();
+  await page.locator("#btn-quick-race-confirm").click();
   await page.waitForFunction(() => Boolean(window._r3d));
   expect(await page.evaluate(() => ({
     length: window._r3d.raceLength,

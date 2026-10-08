@@ -17,6 +17,8 @@ for (const difficulty of ['beginner','amateur','semipro','pro']) {
     await page.locator('#btn-quick-race').click();
     await page.locator(`#quick-race-modal [data-diff="${difficulty}"]`).click();
     await page.locator('.quick-series-btn').last().click();
+    await page.locator('.quick-series-btn').last().click();
+    await page.locator("#btn-quick-race-confirm").click();
     await page.waitForFunction(() => window._r3d?.racing && !window._r3d.paceMode);
     await page.evaluate(() => {
       const e = window._r3d; cancelAnimationFrame(e._raf);

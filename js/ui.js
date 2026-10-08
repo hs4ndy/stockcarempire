@@ -1441,11 +1441,14 @@ function renderQuickRaceModal() {
         <div class="card-header mt">Series</div>
         <div class="quick-series">
           ${SERIES.map(s => `
-            <button class="quick-series-btn" onclick="handleStartQuickRace(${s.fieldSize})">
-              <span class="quick-series-name" style="color:${s.color}">${s.name}</span>
+            <button type="button" class="quick-series-btn" data-field-size="${s.fieldSize}" aria-pressed="false" onclick="selectQuickRaceSeries(${s.fieldSize})">
+              <span class="quick-series-name" style="--series-color:${s.color}">${s.name}</span>
               <span class="quick-series-meta">${s.fieldSize}-car field · ${s.description}</span>
             </button>`).join('')}
         </div>
+      </div>
+      <div class="modal-footer quick-race-footer">
+        <button type="button" class="primary-btn" id="btn-quick-race-confirm" onclick="confirmQuickRace()" disabled>Confirm Race</button>
       </div>
     </div>
   </div>`;

@@ -119,11 +119,13 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
 
 // ─── Quick Race ───────────────────────────────────────────────
 function showQuickRaceScreen() {
+  quickRaceSeries = null;
   document.body.insertAdjacentHTML('beforeend', renderQuickRaceModal());
 }
 
 // Quick Race difficulty is chosen in the modal before launching
 let quickRaceDifficulty = DEFAULT_DIFFICULTY;
+let quickRaceSeries = null;
 
 function setQuickRaceDifficulty(id) {
   quickRaceDifficulty = id;
@@ -131,6 +133,22 @@ function setQuickRaceDifficulty(id) {
     el.classList.toggle('selected', el.dataset.diff === id);
     el.setAttribute('aria-pressed', String(el.dataset.diff === id));
   });
+}
+
+function selectQuickRaceSeries(fieldSize) {
+  quickRaceSeries = fieldSize;
+  document.querySelectorAll('#quick-race-modal .quick-series-btn').forEach(el => {
+    const selected = Number(el.dataset.fieldSize) === fieldSize;
+    el.classList.toggle('selected', selected);
+    el.setAttribute('aria-pressed', String(selected));
+  });
+  const confirmButton = document.getElementById('btn-quick-race-confirm');
+  if (confirmButton) confirmButton.disabled = false;
+}
+
+function confirmQuickRace() {
+  if (quickRaceSeries === null) return;
+  handleStartQuickRace(quickRaceSeries);
 }
 
 function handleStartQuickRace(fieldSize) {

@@ -12,6 +12,8 @@ test(`Series cars share geometry and retain identities in the ${fieldSize}-car s
   await page.goto('/');
   await page.locator('#btn-quick-race').click();
   await page.locator('.quick-series-btn').nth(series).click();
+  await page.locator('.quick-series-btn').nth(series).click();
+  await page.locator("#btn-quick-race-confirm").click();
   await page.waitForFunction(() => window._r3d?.mirrorRT && window._r3d.racing && !window._r3d.paceMode);
   // Record real RAF pacing after launch. This is diagnostic, not a universal
   // FPS assertion: GPU, power mode and automated browser scheduling vary.

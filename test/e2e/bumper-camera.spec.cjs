@@ -11,6 +11,8 @@ test('bumper trains never put a forward car inside the rear-view image', async (
   await page.goto('/');
   await page.locator('#btn-quick-race').click();
   await page.locator('.quick-series-btn').last().click();
+  await page.locator('.quick-series-btn').last().click();
+  await page.locator("#btn-quick-race-confirm").click();
   await page.waitForFunction(() => window._r3d?.mirrorRT);
   const results = await page.evaluate(() => {
     const e = window._r3d, r = e.renderer, p = e.player;
