@@ -92,7 +92,7 @@ for (const [name, viewport] of [
       newCareerWarning = dialog.message();
       await dialog.dismiss();
     });
-    await page.locator('[onclick="handleNewGamePrompt()"]').click();
+    await page.locator('[onclick="handleNewGamePrompt()"]:visible').first().click();
     expect(newCareerWarning).toContain('deletes your current career from Slot 1');
     expect(await page.evaluate(() => localStorage.getItem('sce_slot_0'))).not.toBeNull();
     await page.evaluate(() => document.body.insertAdjacentHTML('beforeend', renderPremierChoiceModal()));

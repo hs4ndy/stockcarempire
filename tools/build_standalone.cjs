@@ -19,16 +19,22 @@ function readRelative(source) {
 }
 
 let html = fs.readFileSync(sourceHtml, 'utf8');
-const css = fs.readFileSync(path.join(root, 'style.css'), 'utf8');
 
-// A local copy must not depend on Google Fonts. The existing system fallbacks
-// in style.css preserve legibility when the original web fonts are unavailable.
+// Bundle the local typefaces and imagery, then remove obsolete network hints.
 html = html.replace(/\s*<link rel="preconnect"[^>]*>\s*/g, '\n');
 html = html.replace(/\s*<link href="https:\/\/fonts\.googleapis\.com[^>]*>\s*/g, '\n');
-html = html.replace(
-  /<link rel="stylesheet" href="style\.css">/,
-  `<style>\n${css}\n</style>`,
-);
+html = html.replace(/\s*<link rel="preload"[^>]*>\s*/g, '\n');
+html = html.replace(/(<img\b[^>]*\bsrc=")([^"<>]+)(")/g, (_match, before, source, after) => {
+  if (/^(?:data:|https?:)/i.test(source)) throw new Error(`Cannot embed image: ${source}`);
+  const extension = path.extname(source).toLowerCase();
+  const mime = { '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp' }[extension];
+  if (!mime) throw new Error(`Unsupported image format: ${source}`);
+  return `${before}data:${mime};base64,${fs.readFileSync(path.resolve(root, source)).toString('base64')}${after}`;
+});
+html = html.replace(/<link rel="stylesheet" href="([^"]+)">/g, (_tag, source) => {
+  if (/^https?:/i.test(source)) throw new Error(`Cannot embed stylesheet: ${source}`);
+  return `<style>\n${fs.readFileSync(path.resolve(root, source), 'utf8')}\n</style>`;
+});
 html = html.replace(/<script\s+src="([^"]+)"\s*><\/script>/g, (_tag, source) => {
   const code = readRelative(source);
   if (/<\/script/i.test(code)) {
@@ -42,5 +48,8 @@ if (/<script\s+src=/i.test(html) || /<link[^>]+href=/i.test(html)) {
 }
 
 fs.mkdirSync(outDir, { recursive: true });
-fs.writeFileSync(outFile, html, 'utf8');
+// Publish a complete file in one rename; interrupted writes cannot truncate it.
+const temporaryFile = path.join(outDir, '.Stock-Car-Empire.html.tmp');
+fs.writeFileSync(temporaryFile, html, 'utf8');
+fs.renameSync(temporaryFile, outFile);
 console.log(`Built ${path.relative(root, outFile)} (${Math.ceil(fs.statSync(outFile).size / 1024)} KiB)`);

@@ -4,12 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Stock Car Empire Beta</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/fonts/fonts.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<a class="skip-link" href="#main-content">Skip to career content</a>
 
 <!-- ═══════════════════════════════════════════════════════ -->
 <!--  INTRO SCREEN                                          -->
@@ -43,9 +42,14 @@
           <span>Quick Race</span>
         </button>
       </div>
-
+      <p class="intro-description">Build your team. Work the draft. Race your way to the Premier Cup.</p>
     </div>
+    <figure class="intro-showcase">
+      <img src="assets/cars/gen7-lineup.png" alt="Three Stock Car Empire race cars in white, charcoal, and blue" width="1600" height="1050" fetchpriority="high">
+      <figcaption>Grassroots Cup <span>Challenger Series</span> Premier Cup Series</figcaption>
+    </figure>
   </div>
+  <div class="intro-footer"><span>Stock Car Empire Beta</span><span>Team management + 3D racing</span></div>
 
   <div class="intro-checker-strip bottom"></div>
 </div>
@@ -161,7 +165,7 @@
   </header>
 
   <!-- Navigation - race program tab strip -->
-  <nav class="game-nav">
+  <nav class="game-nav" aria-label="Career navigation">
     <button class="nav-btn active" data-tab="dashboard">
       <span class="nav-label">Dashboard</span>
     </button>
@@ -190,7 +194,7 @@
   </nav>
 
   <!-- Dynamic main content -->
-  <main id="main-content">
+  <main id="main-content" tabindex="-1">
     <!-- Rendered by JS -->
   </main>
 

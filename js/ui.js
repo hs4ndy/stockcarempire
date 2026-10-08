@@ -4,18 +4,26 @@
 
 // ─── Screen router ───────────────────────────────────────────
 function showScreen(name) {
+  document.body.dataset.screen = name;
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
   document.getElementById('screen-' + name)?.classList.remove('hidden');
 }
 
 function showTab(tabName) {
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.querySelector(`.nav-btn[data-tab="${tabName}"]`)?.classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    b.classList.remove('active');
+    b.removeAttribute('aria-current');
+  });
+  const active = document.querySelector(`.nav-btn[data-tab="${tabName}"]`);
+  active?.classList.add('active');
+  active?.setAttribute('aria-current', 'page');
+  active?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
   renderTab(tabName);
 }
 
 function renderTab(tabName) {
   const main = document.getElementById('main-content');
+  main.dataset.tab = tabName;
   switch (tabName) {
     case 'dashboard':  main.innerHTML = renderDashboard();   break;
     case 'garage':     main.innerHTML = renderGarage();      break;
@@ -136,7 +144,7 @@ function renderDashboard() {
   const expenses     = weeklyExpenses();
   const income       = weeklySponsorIncome();
 
-  const topStandings = sorted.slice(0, 5).map((e, i) => {
+  const topStandings = sorted.slice(0, 3).map((e, i) => {
     const cls = e.isPlayer ? 'standing-row player-row'
               : e.isTeamCar ? 'standing-row team-row'
               : 'standing-row';
@@ -161,11 +169,14 @@ function renderDashboard() {
   }).join('') || '<p class="muted-text small">Your results will appear here after your first race.</p>';
 
   return `
-  <!-- Command Strip -->
+  <div class="page-header dashboard-heading">
+    <h2>Dashboard</h2>
+    <p>${series.name} <span>Season ${game.season.year}</span></p>
+  </div>
   <div class="cmd-strip">
     <div class="cmd-cell">
       <span class="cmd-label">Championship</span>
-      <span class="cmd-value gold">${pos}${ordinal(pos)}</span>
+      <span class="cmd-value">${pos}${ordinal(pos)}</span>
       <span class="cmd-sub">of ${totalEntrants} entries</span>
     </div>
     <div class="cmd-cell">
@@ -175,7 +186,7 @@ function renderDashboard() {
     </div>
     <div class="cmd-cell">
       <span class="cmd-label">Cash</span>
-      <span class="cmd-value gold">${fmt$(game.money)}</span>
+      <span class="cmd-value">${fmt$(game.money)}</span>
       <span class="cmd-sub">Available budget</span>
     </div>
   </div>
@@ -201,9 +212,10 @@ function renderDashboard() {
         </div>
       ` : `
         <div class="dashboard-race-overview">
+        <div class="event-round">Race <strong>${race.raceNum}</strong><span>/ ${game.season.calendar.length}</span></div>
         <div class="race-spotlight">
           <span class="race-spotlight-name">${track?.name || 'TBD'}</span>
-          <span class="race-spotlight-meta">${series.name} · Year ${game.season.year} · Race ${race.raceNum} of ${game.season.calendar.length}</span>
+          <span class="race-spotlight-meta">${formatTrackType(track.type)} · ${track.length} miles</span>
         </div>
         <div class="dashboard-race-costs">
         <div class="team-stat"><span>Entry Fee per Car</span><span class="red">${fmt$(series.entryFee)}</span></div>
@@ -227,7 +239,7 @@ function renderDashboard() {
       </div>
       <div class="standings-mini">${topStandings}</div>
       <div class="dashboard-card-footer">
-      ${sorted.length > 5 ? `<button class="btn btn-sm btn-ghost section-action" onclick="showTab('standings')">View Full Standings</button>` : ''}
+      ${sorted.length > 3 ? `<button class="btn btn-sm btn-ghost section-action" onclick="showTab('standings')">View Full Standings</button>` : ''}
       <details class="ui-details">
         <summary>Recent results</summary>
         <div class="ui-details-body">${recentResults}</div>
@@ -548,29 +560,29 @@ function renderTeam() {
 
   return `
   <div class="page-header"><h2>Team Management</h2></div>
-  <div class="two-col-grid">
-    <div>
+  <div class="two-col-grid team-roster-grid">
       <div class="card">
         <div class="card-header">Your Drivers</div>
         ${yourDriverRows}
       </div>
-      <div class="card mt">
+      <div class="card">
         <div class="card-header">Your Support Staff</div>
         ${staffRows}
       </div>
-    </div>
-    <div>
+  </div>
+  <div class="two-col-grid team-recruitment-grid mt">
       <div class="card">
         <div class="card-header">Hire Drivers</div>
         <p class="section-copy">Hire a driver for an unassigned car. The signing fee is paid upfront and equals four weeks of salary. ${game.hiredDrivers.length} of ${MAX_HIRED_DRIVERS} driver slots filled.</p>
         ${seatWarning}
-        ${driverRows}
+        <p class="recruitment-caption"><span>${availableDrivers.length} drivers available</span><span>Scroll to browse</span></p>
+        <div class="recruitment-list" tabindex="0" aria-label="Available drivers">${driverRows}</div>
       </div>
-      <div class="card mt">
+      <div class="card">
         <div class="card-header">Hire Support Staff</div>
-        ${staffHireRows}
+        <p class="recruitment-caption"><span>${STAFF_TYPES.length} staff roles</span><span>Scroll to browse</span></p>
+        <div class="recruitment-list" tabindex="0" aria-label="Available support staff">${staffHireRows}</div>
       </div>
-    </div>
   </div>`;
 }
 
@@ -851,8 +863,8 @@ function renderStandings() {
   }).join('');
 
   return `
-  <div class="page-header"><h2>${series.name} - Championship Standings</h2></div>
-  <div class="card">
+  <div class="page-header"><h2>Standings</h2><p>${series.name}</p></div>
+  <div class="standings-table">
     <div class="standings-header standings-row">
       <span class="st-pos">Pos</span>
       <span class="st-name">Driver / Team</span>
@@ -909,7 +921,7 @@ function renderRaceSetup() {
       ${openCars.map(c => `
         <label class="radio-row">
           <input type="radio" name="drive-car" value="${c.id}" ${c === driverCar ? 'checked' : ''}>
-          <span>#${c.number || 1} ${c.name} - Speed ${c.speed}, Handling ${c.handling}, Condition ${Math.round(c.condition)}%</span>
+          <span class="race-car-choice"><strong>#${c.number || 1} ${c.name}</strong><span>Speed ${c.speed} · Handling ${c.handling} · Condition ${Math.round(c.condition)}%</span></span>
         </label>`).join('') || '<p class="form-warning">Every car has a hired driver in it - release a driver to drive one yourself.</p>'}
       ${taken.size ? `
         <div class="card-header mt">Entered By Your Drivers</div>
@@ -1029,10 +1041,8 @@ function renderRaceResultsModal(results, events, playerResult) {
           </div>
         </div>`;
     } else {
-      const label = pos <= 3 ? 'PODIUM FINISH' : `P${pos} FINISH`;
       playerSection = `
         <div class="player-result-hero">
-          <div class="big-pos-label">${label}</div>
           <div>
             <div class="big-pos">${pos}${ordinal(pos)} place</div>
             <div class="big-prize green">${fmt$(playerResult.prize)} earned</div>
@@ -1078,8 +1088,8 @@ function renderEndSeasonModal(info) {
       <div class="modal modal-wide champ-modal">
         <div class="champ-banner">
           <div class="champ-checker"></div>
-          <div class="champ-eyebrow">${info.seriesName} · Season ${info.year}</div>
           <div class="champ-title">CHAMPION</div>
+          <div class="champ-eyebrow">${info.seriesName} · Season ${info.year}</div>
           <div class="champ-driver">${info.driver}</div>
           <div class="champ-checker"></div>
         </div>
@@ -1235,7 +1245,7 @@ function renderCareerStats() {
     </div>`).join('') || '<p class="muted-text">No completed seasons yet.</p>';
 
   return `
-  <div class="page-header"><h2>Career - ${game.driverName || game.teamName}</h2></div>
+  <div class="page-header"><h2>Career</h2><p>${game.driverName || game.teamName}</p></div>
 
   <div class="cmd-strip">
     <div class="cmd-cell">
@@ -1353,6 +1363,11 @@ function renderSettings() {
         <button class="btn btn-ghost" onclick="showLoadModal()">Load Career</button>
       </div>
     </div>
+  </div>
+  <div class="card mb">
+    <div class="card-header">Start over</div>
+    <p class="section-copy">${unsaved ? 'Starting a new career discards this unsaved career.' : `Starting a new career deletes the current career from Slot ${currentSlot + 1}. Other slots are kept.`}</p>
+    <button class="btn btn-danger" onclick="handleNewGamePrompt()">New Career</button>
   </div>`;
 }
 

@@ -22,6 +22,7 @@ test('Draft label stays fixed while the meter rises and falls across aerodynamic
   const states = await page.evaluate(() => {
     const e = window._r3d;
     e.paused = true;
+    document.getElementById('r3d-draft-fill').style.transition = 'none';
     return [
       { draftMomentum: 0, towStrength: 0, pushStrength: 0, receivedPush: 0 },
       { draftMomentum: 20, towStrength: 0.8, pushStrength: 0, receivedPush: 0 },
@@ -34,12 +35,12 @@ test('Draft label stays fixed while the meter rises and falls across aerodynamic
       e._updateHUD(1 / 60);
       return {
         label: document.getElementById('r3d-draft').textContent,
-        fill: document.getElementById('r3d-draft-fill').style.width,
+        fill: Math.round(document.getElementById('r3d-draft-fill').getBoundingClientRect().width / document.querySelector('.r3d-draft-meter').getBoundingClientRect().width * 100),
       };
     });
   });
   expect(states.map(s => s.label)).toEqual(Array(6).fill('Draft'));
-  expect(states.map(s => s.fill)).toEqual(['0%', '47%', '100%', '70%', '23%', '0%']);
+  expect(states.map(s => s.fill)).toEqual([0, 47, 100, 70, 23, 0]);
 });
 
 test('arcade camera creates speed sensation without inflating the dash past about 220', async ({ page }) => {

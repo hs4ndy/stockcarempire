@@ -3,3 +3,4 @@ node_modules/
 debug.log
 playwright-report/
 test-results/
+.impeccable/review/

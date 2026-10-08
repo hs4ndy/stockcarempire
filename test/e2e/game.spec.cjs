@@ -12,7 +12,7 @@ test.beforeEach(async ({ page }) => {
   }));
 });
 
-test('phase 0.90 UI stays flat and free of decorative icons and em dashes', async ({ page }) => {
+test('sports career UI stays flat and free of decorative icons and em dashes', async ({ page }) => {
   await page.goto('/');
   const audit = await page.evaluate(async () => {
     const paths = [
@@ -46,7 +46,7 @@ for (const [label, viewport] of [
   ['tablet', { width: 768, height: 900 }],
   ['mobile', { width: 375, height: 812 }],
 ]) {
-  test(`phase 0.90 dashboard uses full-width panel rails (${label})`, async ({ page }, testInfo) => {
+  test(`sports career dashboard preserves responsive panel alignment (${label})`, async ({ page }, testInfo) => {
     await page.setViewportSize(viewport);
     await page.goto('/');
     await page.locator('#btn-start-new').click();
@@ -66,7 +66,7 @@ for (const [label, viewport] of [
         const s = getComputedStyle(card);
         return [s.borderTopWidth, s.borderRightWidth, s.borderBottomWidth, s.borderLeftWidth];
       });
-      const marker = getComputedStyle(cards[0], '::before');
+      const selection = getComputedStyle(document.querySelector('.nav-btn.active'));
       const header = getComputedStyle(cards[0].querySelector('.card-header'));
       const gameHeader = getComputedStyle(document.querySelector('.game-header'));
       const gameNav = getComputedStyle(document.querySelector('.game-nav'));
@@ -79,9 +79,8 @@ for (const [label, viewport] of [
         .map(cell => cell.getBoundingClientRect().top);
       return {
         borders,
-        markerWidth: parseFloat(marker.width),
-        cardWidth: cards[0].clientWidth,
-        markerColor: marker.backgroundColor,
+        selectionColor: selection.backgroundColor,
+        selectionInk: selection.color,
         headerDivider: gameHeader.borderBottomWidth,
         navDivider: gameNav.borderBottomWidth,
         navAccentCount: document.querySelectorAll('.nav-flag-accent').length,
@@ -93,8 +92,8 @@ for (const [label, viewport] of [
       };
     });
     expect(audit.borders.flat().every(width => width === '0px')).toBe(true);
-    expect(audit.markerWidth).toBeGreaterThanOrEqual(audit.cardWidth - 1);
-    expect(audit.markerColor).toBe('rgb(239, 28, 66)');
+    expect(audit.selectionColor).toBe('rgb(245, 245, 242)');
+    expect(audit.selectionInk).toBe('rgb(19, 21, 23)');
     expect(audit.headerDivider).toBe('1px');
     expect(audit.navDivider).toBe('1px');
     expect(audit.navAccentCount).toBe(0);
@@ -110,18 +109,10 @@ for (const [label, viewport] of [
     } else {
       expect(audit.panelRects.every((r, i) => i === 0 || r.top > audit.panelRects[i - 1].bottom)).toBe(true);
     }
-    await page.screenshot({ path: testInfo.outputPath(`phase-090-${label}.png`), fullPage: true });
+    await page.screenshot({ path: testInfo.outputPath(`sports-career-${label}.png`), fullPage: true });
 
     await page.locator('.nav-btn[data-tab="settings"]').click();
-    const pageRail = await page.evaluate(() => {
-      const pageHeader = document.querySelector('.page-header');
-      const pageMarker = getComputedStyle(pageHeader, '::after');
-      return {
-        markerWidth: parseFloat(pageMarker.width),
-        headerWidth: pageHeader.clientWidth,
-      };
-    });
-    expect(pageRail.markerWidth).toBeGreaterThanOrEqual(pageRail.headerWidth - 1);
+    await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
   });
 }
 

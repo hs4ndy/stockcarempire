@@ -157,7 +157,8 @@ function launch3DRace(config, onComplete) {
     <div id="r3d-hud">
       <button class="r3d-pause-btn" id="r3d-pause-btn" title="Pause (Esc)">PAUSE</button>
 
-      <div id="r3d-mirror-wrap"><div class="r3d-mirror-label">REAR VIEW</div></div>
+      <div id="r3d-mirror-wrap"></div>
+      <div class="r3d-mirror-label">Rear view</div>
 
       <div class="r3d-order" id="r3d-order"></div>
 
@@ -1714,13 +1715,13 @@ class Race3DEngine {
       draftEl.style.color = !on ? 'var(--text-mute)' : isPush ? 'var(--warn)' : 'var(--accent)';
     }
     if (fillEl) {
-      fillEl.style.width = (frac * 100).toFixed(0) + '%';
+      fillEl.style.transform = `scaleX(${(Math.round(frac * 100) / 100).toFixed(2)})`;
       fillEl.style.background = isPush ? 'var(--warn)' : 'var(--accent)';
     }
 
     // Progress
     const prog = document.getElementById('r3d-prog-fill');
-    if (prog) prog.style.width = clamp(p.z / (this.raceLength || R3D.TRACK_LEN) * 100, 0, 100).toFixed(1) + '%';
+    if (prog) prog.style.transform = `scaleX(${clamp(p.z / (this.raceLength || R3D.TRACK_LEN), 0, 1).toFixed(3)})`;
 
     const practiceTip = document.getElementById('r3d-practice-tip');
     if (practiceTip) {

@@ -74,7 +74,6 @@ function renderCareerTutorialOffer() {
     <div id="career-tutorial" class="career-tutorial is-offer">
       <div class="career-tutorial-shield"></div>
       <section class="career-tutorial-panel" role="dialog" aria-modal="true" aria-labelledby="career-tutorial-title" aria-describedby="career-tutorial-copy">
-        <div class="career-tutorial-kicker">NEW CAREER</div>
         <h2 id="career-tutorial-title">Learn the ropes</h2>
         <p id="career-tutorial-copy">Take a quick tour of your team, money, cars, and races, then drive a short practice sprint. Your career begins either way.</p>
         <div class="career-tutorial-actions">
@@ -122,8 +121,8 @@ function renderCareerTutorialStep() {
       <div class="career-tutorial-shield"></div>
       <div class="career-tutorial-spotlight" aria-hidden="true"></div>
       <section class="career-tutorial-panel" role="dialog" aria-modal="true" aria-labelledby="career-tutorial-title" aria-describedby="career-tutorial-copy">
-        <div class="career-tutorial-kicker">CAREER GUIDE <span>${careerTutorialStep + 1} / ${CAREER_TUTORIAL_STEPS.length}</span></div>
         <h2 id="career-tutorial-title">${step.title}</h2>
+        <div class="career-tutorial-progress">Career guide · Step ${careerTutorialStep + 1} of ${CAREER_TUTORIAL_STEPS.length}</div>
         <p id="career-tutorial-copy">${step.copy}</p>
         <div class="career-tutorial-actions">
           <button class="btn btn-ghost" data-tutorial-action="save">Save Career</button>

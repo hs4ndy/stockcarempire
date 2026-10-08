@@ -1,6 +1,6 @@
 # Stock Car Empire: Codex handoff
 
-Updated 2026-10-07. Application baseline: `6eb9b656cdc7382853ca02b5912e52bca580d815`, before this documentation update. Verified against source, recent history, the remote branch tip, and GitHub commit status. Actual repository files are authoritative; user requirements describe intent, not necessarily implemented behavior.
+Updated 2026-10-08. This session replaces the phase 0.90 interface with a full FC25/26-inspired redesign; parent baseline is `5af567fb24a904655aee9b236d85de1aeb97defd`. Actual repository files are authoritative; user requirements describe intent, not necessarily implemented behavior.
 
 ## Status and working rules
 
@@ -9,7 +9,7 @@ Updated 2026-10-07. Application baseline: `6eb9b656cdc7382853ca02b5912e52bca580d
 - User prefers a professional personal-agent tone, addressed as sir. State uncertainty and distinguish verified facts from inference. Reproduce reported bugs before fixing them.
 - Standing request: immediately push finished, verified work **as Codex**. Use `git -c user.name=Codex -c user.email=noreply@openai.com commit -m "..."`, then `git push origin claude/stock-car-empire-game-JjCMm`. Check the remote tip first; never force-push by default. Recent commits use this identity and the latest application commit passed Vercel.
 - Preserve user-owned local changes: modified `assets/cars/empire-sc01.blend`, untracked `assets/cars/empire-sc01.blend1`, and untracked `releases/Stock-Car-Empire-local - Copy.zip`. Do not overwrite or stage these casually. Stage explicit task files, not everything.
-- No implementation task is active after this handoff. Wait for the user's next selection.
+- Current task: full app redesign, including in-race UI, retaining the red brand accent. User confirmed direct implementation in code and no excluded screens. Preserve gameplay and save behavior. After this task is finished, wait for feedback.
 
 ## Architecture and source map
 
@@ -39,13 +39,21 @@ Vanilla HTML/CSS/JavaScript, shared globals, and string-rendered UI. No React, b
 
 UI passes applied the user's image references: essential decisions first, supporting information on demand, meaningful spacing, and human-readable actions. Impeccable and UI/UX Pro Max guided refinement, with existing styling taking precedence over generic recommendations. The user approved the cleaned-up dashboard. No gameplay changes were included in its layout cleanup.
 
+October 8 replaces that earlier visual baseline throughout the app. Research used EA's official FC25/26 career deep dives. The user chose red and direct code implementation. Impeccable's independent full review requested seven material fixes; its final verdict scored all seven **resolved**, disposition **ship** at the scope of those fixes. Evidence includes 177 captures across five career widths (1440, 1024, 768, user's 728, 375) plus portrait/landscape racing, populated fixtures, every tutorial step, practice/finish, and dialog/result variants. Captures and detector output are local ignored evidence under `.impeccable/review/`.
+
 ### UI decisions
 
-FC26-inspired, not a replica: dark flat neutral panels, Barlow/Barlow Condensed, red accent rails, white type, restrained semantic green/gold/red. Retain approved diagonal main-menu lines. No gradients, decorative icons/emoji, em dashes, or excessive animation.
+FC25/26-inspired sports career hub: charcoal/graphite surfaces, locally bundled Barlow/Barlow Condensed, white active selections, red primary actions, restrained semantic colors, rounded 8px surfaces and 6px controls. The old red panel rails and miniature labels were removed. Diagonal main-menu lines remain, with the existing Gen-7 car render alongside the menu. No gradients, decorative icons/emoji, em dashes, or excessive animation.
 
-Rollout began with phases 0.5 and 0.75; committed CSS now identifies **phase 0.90**. Full phases 1-3 remain future scope without settled implementation specifications; do not invent them or claim phase 1 is finished. Preserve current identity, content, and functionality in refinements. `PRODUCT.md` and `DESIGN.md` are absent; Impeccable init was offered, not performed.
+Earlier phase numbering is historical; the current user authorized a complete visual replacement. `PRODUCT.md` records confirmed product truths and `.impeccable/surfaces/index-html.md` records the chosen direction. The final design system is documented in `DESIGN.md` and `.impeccable/design.json`. Future refinements must preserve that system unless another redesign is requested.
+
+The Team screen now puts owned drivers/staff above two recruitment panels with bounded, keyboard-focusable scrolling lists. All candidates remain available. The desktop Career strip uses five columns, mobile uses two. Settings includes the New Career action because that header action is hidden on small screens. This retains its existing destructive behavior and warning. Navigation now exposes `aria-current`, with a keyboard skip link to main content.
+
+Race HUD colors, typography, rounding, spacing, pause and finish surfaces use the shared system. Mirror render-target sizing, viewport/DPR logic, cameras, physics and race logic were not changed.
 
 Dashboard DOM order: Next Race/Season Complete, Standings, Finances, Garage. Tutorial depends on `.cmd-strip`, `.dashboard-grid .card:first-child`, and `.dashboard-grid .card:nth-child(3)`; preserve these or update tutorial/tests together. Native `<details>` retains budgets, history, car specifications/customization, and other secondary content.
+
+The dashboard now previews the top three standings and links to the full field. Race entry stays near costs, inside the first viewport at all five tested widths. Running-order labels and practice instructions use Barlow body, with condensed display reserved for major HUD numbers/headings. The mirror caption sits below its unchanged renderer wrapper. Draft/progress fills use `scaleX`, avoiding width animations. Recruitment count/cues persist above each scroller, and internal tab changes scroll the selected tab into view.
 
 ### Tutorial
 
@@ -79,7 +87,7 @@ Practice is a disposable 3,500-unit sprint (`finishDistance`), power 0.60, retur
 Tests are now committed. The lost historical `/tmp` THREE-stub harness is obsolete as a validation strategy. Browser tests use actual Chromium/WebGL and route the CDN to the identical installed Three.js r134 build. Dependencies: `three` 0.134.0 and Playwright 1.56.1.
 
 ```powershell
-npm ci
+pnpm install --frozen-lockfile
 npm run check
 npm test
 npm run test:browser
@@ -92,6 +100,10 @@ Playwright automatically starts/reuses the static server, uses one worker, and r
 
 October 7 completed checks: syntax checks and **45 Node tests passed** after payroll; **11 targeted browser checks passed** after final dashboard cleanup, covering flat/no-icons/no-gradients, 1440/1024/768/375 layouts, panel edges, long names/full garage, disclosures/keyboard, season-end controls, menu actions, mobile tutorial navigation/save-restart, and offline launch. The full browser suite was not rerun in that cleanup. This documentation task verified files/history, not another full test run.
 
+October 8: syntax and **45 Node tests passed** after the final HUD changes. The complete 49-test browser run passed 48 and identified a direct-source `file://` font CORS regression. Fonts now ship as local embedded `assets/fonts/fonts.css`; the failed direct-file grandstand check passed on rerun. After the review fixes, 32 targeted UI/race/tutorial/offline tests passed; a separate mobile tab assertion rejected a harmless 0.47px boundary rounding, so it now allows 1px and tabs also have 16px scroll margins. The final 9-test redesign/offline capture run passed, including all five career widths and all three race sizes. No known test failure remains; the entire 49-test suite was not repeated after the final visual fixes.
+
+Font source TTFs and OFL licenses live in `assets/fonts/`; `node tools/build_fonts.cjs` regenerates the data-URL stylesheet. This keeps HTTP, raw source file launches, and standalone typography consistent. The intro render's PNG pixels are unchanged; only provenance metadata was added. The standalone builder publishes through an atomic rename, preventing interrupted writes from truncating the output.
+
 Keep offline artifacts synchronized after source changes:
 
 ```powershell
@@ -99,16 +111,16 @@ node tools/build_standalone.cjs
 Compress-Archive -LiteralPath 'releases/Stock-Car-Empire.html' -DestinationPath 'releases/Stock-Car-Empire-local.zip' -Force
 ```
 
-Builder embeds CSS/scripts/Three.js/runtime asset bundles, removes remote Google Fonts links, and uses system-font fallbacks offline. Both release files contain the latest payroll/dashboard changes; do not overwrite the user's untracked ZIP copy.
+Builder embeds CSS/scripts/Three.js/runtime asset bundles plus local fonts and the intro PNG. Online and offline versions retain the same typography and imagery without font-network requests. Rebuild both release files after source changes; do not overwrite the user's untracked ZIP copy.
 
-GitHub remote tip was verified at `6eb9b65`. Its **Vercel commit check is success**, verified October 7: https://vercel.com/hs4ndys-projects/stockcarempire/123rCq9bosbz92TpunyQgpL4CGpJ. This supersedes the earlier pending/unconfirmed report. Production-domain routing, project settings, and environment configuration were not independently inspected. No `vercel.json` is present. A passing commit check does not alone prove which revision a particular production URL serves.
+Before the October 8 redesign commit, remote tip was verified at `5af567f`. Historical October 7 application baseline `6eb9b65` had a successful Vercel check: https://vercel.com/hs4ndys-projects/stockcarempire/123rCq9bosbz92TpunyQgpL4CGpJ. Do not treat that as deployment evidence for the redesign. Production-domain routing, project settings, and environment configuration were not independently inspected. No `vercel.json` is present. A passing commit check does not alone prove which revision a particular production URL serves.
 
 ## Roadmap / next steps
 
 1. Wait for the user's selected task; inspect current source and reproduce before editing. For apparently stale deployments, compare GitHub SHA, Vercel deployment SHA/status, and production alias before repushing.
 2. Proposed maintenance: autosave error propagation and partial saves; discuss preserving bound saves when starting a career. Identified follow-ups, not authorized implementations here.
 3. User-requested future features: **Normal/Advanced/Hardcore career difficulty**, independent of racing difficulty; random choice-driven career/life events affecting reputation, team availability, morale/driving, and relationships. Specific effects/balance still need planning.
-4. Tutorial is delivered, not an unstarted roadmap item. Later UI phases require fresh scope; current FC26-inspired flat direction is approved. Durable product/design documentation was offered separately.
+4. Tutorial is delivered. The October 8 full redesign supersedes the old phase 0.90 styling. Product and design documentation are now part of the redesign deliverable. Await user visual feedback after verified delivery.
 5. Racing/asset refinements can follow feedback while retaining the straight sprint and speed sensation. Oval/road-course geometry, multiplayer/cloud saves, live fuel/pit strategy, and achievements are gaps, not authorized immediate tasks.
 
 This replaces the obsolete September 5 Claude handoff. `HANDOFF_SOURCE.md` remains the historical `ca0245c` snapshot, not current source. Git preserves the old handoff. Its claims about missing tooling/tests/assets, stub-only rendering, fonts, deployment uncertainty, and tutorial absence are stale.
