@@ -6,7 +6,7 @@ Updated 2026-10-08. This session replaces the phase 0.90 interface with a full F
 
 - Repository: https://github.com/hs4ndy/stockcarempire. Workspace: `C:\Users\harri\OneDrive\Desktop\stockcarempire`.
 - Active/pushed branch: `claude/stock-car-empire-game-JjCMm`. Keep it unless instructed otherwise; do not assume `main` or `origin/HEAD`.
-- User prefers a professional personal-agent tone, addressed as sir. State uncertainty and distinguish verified facts from inference. Reproduce reported bugs before fixing them.
+- User prefers a professional personal-agent tone, addressed as sir. State uncertainty and distinguish verified facts from inference. Reproduce reported bugs before fixing them. Work at the pace needed for quality; accelerate only when specifically requested.
 - Standing request: immediately push finished, verified work **as Codex**. Use `git -c user.name=Codex -c user.email=noreply@openai.com commit -m "..."`, then `git push origin claude/stock-car-empire-game-JjCMm`. Check the remote tip first; never force-push by default. Recent commits use this identity and the latest application commit passed Vercel.
 - Preserve user-owned local changes: modified `assets/cars/empire-sc01.blend`, untracked `assets/cars/empire-sc01.blend1`, and untracked `releases/Stock-Car-Empire-local - Copy.zip`. Do not overwrite or stage these casually. Stage explicit task files, not everything.
 - Current task: full app redesign, including in-race UI, retaining the red brand accent. User confirmed direct implementation in code and no excluded screens. Preserve gameplay and save behavior. After this task is finished, wait for feedback.
@@ -26,6 +26,18 @@ Vanilla HTML/CSS/JavaScript, shared globals, and string-rendered UI. No React, b
 - References: `docs/interface-terms.md`, `docs/racing-tuning.md`, `test/RACE_BALANCE.md`. Current code supersedes older tuning numbers.
 
 ## Completed work this session
+
+### Follow-up after the approved redesign
+
+User requested removal of the header's team, cash, series, race, and season fields, plus all track type/length labels. Header now contains only branding and actions. Dashboard, Schedule, and Race Weekend no longer show fictional track type, mileage, or lap counts. Simulation speed/handling weights remain available as car setup information because they affect simulated results; gameplay/data are unchanged.
+
+Team Management now has Drivers/Support Staff view controls, a roster beside a single recruitment list, aligned signing fees/salaries/actions, responsive stacking, and a contextual available-cash value. The player's assigned car appears in the roster. Hired-driver development is disclosed on demand. All hiring/release functions are retained; unavailable car seats, the driver cap, staff caps, and insufficient funds have disabled controls. View switching changes UI state only, never saves or career state.
+
+Career follows the user's annotated image: one Championship Finish value replaces Finish plus YES/Title (explicitly confirmed); the redundant Seasons metric is removed from Last Season; Purse and Prize Money are labeled Cash Earned; Season Purses Won is labeled Total Cash Earned. **Amounts/calculations are unchanged:** Last Season and All Time use recorded season-award payouts; This Season uses recorded player race earnings. Existing history does not store all past race earnings, so the All Time value is not a reconstructed total of every historic cash inflow.
+
+Three browser cases cover Team view-state invariance, actual driver/staff hiring and release, prerequisites/insufficient-cash states, and populated Career at desktop/728px/375px. The full browser suite includes these cases and the updated header/disclosure expectations. Follow-up evidence is `team-refinement-*-<desktop|user|mobile>.png` in the ignored review folder. Follow-up screenshots supersede prior Team and Career evidence.
+
+Follow-up validation: syntax checks and all 45 Node tests passed. The full 52-case browser run passed 51 and exposed one mobile overflow with a 40-character unbroken team name. Page-header context now wraps within its container; the old phone rule hiding branding is removed. Recruitment height adapts to the desktop viewport and uses 500px on stacked layouts. Final confirmation: **11 browser cases passed** (all five career widths, offline file, all three Team fixtures, and both long-name/save/keyboard cases). The desktop recruitment panel is asserted inside the first viewport. Offline ZIP/HTML SHA-256 hashes match. No gameplay, economy, race renderer, or save-format changes.
 
 | Commit | Delivered |
 | --- | --- |

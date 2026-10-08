@@ -41,18 +41,6 @@ function renderTab(tabName) {
 // ─── Update header info ──────────────────────────────────────
 function updateHeader() {
   if (!game) return;
-  document.getElementById('hdr-money').textContent  = fmt$(game.money);
-  document.getElementById('hdr-team').textContent   = game.teamName;
-  const series = SERIES[game.currentSeries];
-  document.getElementById('hdr-series').textContent = series.shortName;
-  document.getElementById('hdr-series').style.color = series.color;
-  const race = currentRace();
-  const raceLabel = race
-    ? `Race ${game.season.raceIndex + 1}/${game.season.calendar.length}`
-    : 'Season End';
-  document.getElementById('hdr-race').textContent = raceLabel;
-  document.getElementById('hdr-year').textContent = `Year ${game.season.year}`;
-
   // Flag an unsaved career - auto-save only runs once a slot is chosen.
   const saveBtn = document.getElementById('btn-hdr-save');
   if (saveBtn) {
@@ -215,7 +203,6 @@ function renderDashboard() {
         <div class="event-round">Race <strong>${race.raceNum}</strong><span>/ ${game.season.calendar.length}</span></div>
         <div class="race-spotlight">
           <span class="race-spotlight-name">${track?.name || 'TBD'}</span>
-          <span class="race-spotlight-meta">${formatTrackType(track.type)} · ${track.length} miles</span>
         </div>
         <div class="dashboard-race-costs">
         <div class="team-stat"><span>Entry Fee per Car</span><span class="red">${fmt$(series.entryFee)}</span></div>
@@ -312,19 +299,6 @@ function renderDashboard() {
     </div>
 
   </div>`;
-}
-
-function trackTypeBadge(type) {
-  switch(type) {
-    case 'short_oval':   return 'orange';
-    case 'intermediate': return 'blue';
-    case 'superspeedway':return 'red';
-    case 'road_course':  return 'green';
-    default: return 'gray';
-  }
-}
-function formatTrackType(type) {
-  return type?.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase()) || '';
 }
 
 // ─── Garage ──────────────────────────────────────────────────
@@ -478,8 +452,23 @@ function renderUpgradeModal(carId) {
 }
 
 // ─── Team ────────────────────────────────────────────────────
+let teamView = 'drivers';
+
+function showTeamView(view) {
+  teamView = view === 'staff' ? 'staff' : 'drivers';
+  renderTab('team');
+  document.querySelector(`[data-team-view="${teamView}"]`)?.focus({ preventScroll: true });
+}
+
 function renderTeam() {
   const hiredIds = new Set(game.hiredDrivers.map(h => h.driverId));
+  const playerCar = game.cars.find(c => c.assignedDriverId === 'player');
+  const playerRow = playerCar && game.driverMode === 'driver' ? `<div class="staff-row">
+    <div class="staff-info"><span class="staff-name">${game.driverName} <span class="muted-text small">(You)</span></span>
+      <span class="staff-meta">#${playerCar.number || 1} ${playerCar.name}</span>
+      <span class="staff-meta">Skill ${Math.round(game.playerSkill)}</span>
+    </div>
+  </div>` : '';
 
   const yourDriverRows = game.hiredDrivers.map(h => {
     const d   = HIREABLE_DRIVERS.find(dr => dr.id === h.driverId);
@@ -489,24 +478,24 @@ function renderTeam() {
     const start = h.startSkill != null ? h.startSkill : d.skill;
     const gained = Math.floor(skill) - Math.floor(start);
     const ceiling = h.potential != null ? h.potential : d.skill;
-    const pct = Math.round((skill / Math.max(1, ceiling)) * 100);
     return `<div class="staff-row">
       <div class="staff-info">
         <span class="staff-name">${d.name}</span>
         <div class="staff-meta">
           Skill ${Math.floor(skill)}${gained > 0 ? ` <span class="green">+${gained}</span>` : ''}
-          • Aggression ${d.aggression} • ${fmt$(h.weeklyCost)}/week
+          · ${fmt$(h.weeklyCost)}/week
         </div>
         <div class="staff-meta muted-text">
-          Driving: ${car ? `#${car.number || 1} ${car.name}` : 'Unassigned'}
-          • ${h.racesRun || 0} race${(h.racesRun || 0) === 1 ? '' : 's'}
-          • potential ${ceiling}
+          ${car ? `#${car.number || 1} ${car.name}` : 'Unassigned'}
         </div>
-        <div class="driver-growth"><div class="driver-growth-fill" style="width:${clamp(pct,0,100)}%"></div></div>
+        <details class="driver-development"><summary>Development</summary>
+          <p>Aggression ${d.aggression} · Potential ${ceiling} · ${h.racesRun || 0} races run</p>
+        </details>
       </div>
       <button class="btn btn-sm btn-danger" onclick="handleFireDriver('${d.id}')">Release</button>
     </div>`;
-  }).join('') || '<p class="muted-text">No hired drivers. Hire one below for an unassigned car.</p>';
+  }).join('');
+  const driverRoster = playerRow + yourDriverRows || '<p class="team-empty">No drivers assigned. Recruit a driver for an available car.</p>';
 
   const staffRows = game.staff.map(s => {
     const type = STAFF_TYPES.find(t => t.id === s.typeId);
@@ -517,28 +506,30 @@ function renderTeam() {
       </div>
       <button class="btn btn-sm btn-danger" onclick="handleFireStaff('${s.id}')">Release Staff</button>
     </div>`;
-  }).join('') || '<p class="muted-text">No support staff hired.</p>';
+  }).join('') || '<p class="team-empty">No support staff yet. Recruit a specialist to improve your team.</p>';
 
   const availableDrivers = HIREABLE_DRIVERS.filter(d => !hiredIds.has(d.id));
   const openSeats = freeCarsForHire().length;
   const seatWarning = game.cars.length === 0
     ? `<p class="form-warning">No car - buy a car before hiring a driver.</p>`
     : openSeats === 0
-      ? `<p class="form-warning">No free car - every car already has a driver. Buy another car to hire more.</p>`
+      ? `<p class="form-warning">Every car has a driver. <button class="link" onclick="showTab('market')">Buy another car</button> to recruit.</p>`
       : '';
 
   const driverRows = availableDrivers.map(d => {
     const signingFee = d.weeklyCost * 4;
     const canAfford  = game.money >= signingFee;
+    const disabledReason = game.hiredDrivers.length >= MAX_HIRED_DRIVERS ? 'Driver Limit Reached'
+      : openSeats === 0 ? 'No Free Car' : !canAfford ? 'Not Enough Cash' : '';
 
     return `<div class="staff-row">
       <div class="staff-info">
         <span class="staff-name">${d.name}</span>
         <div class="staff-meta">Skill ${d.skill} • Aggression ${d.aggression}</div>
-        <div class="staff-meta muted-text">${fmt$(d.weeklyCost)}/week • Signing fee: ${fmt$(signingFee)}</div>
       </div>
-      ${canAfford ? `<button class="btn btn-sm btn-primary" onclick="openHireDriverModal('${d.id}')">Hire</button>`
-                  : `<button class="btn btn-sm" disabled>Not Enough Cash</button>`}
+      <div class="recruit-cost"><strong><span class="recruit-cost-label">Signing fee </span>${fmt$(signingFee)}</strong><span>${fmt$(d.weeklyCost)}/week</span></div>
+      ${!disabledReason ? `<button class="btn btn-sm btn-primary" aria-label="Hire ${d.name}" onclick="openHireDriverModal('${d.id}')">Hire</button>`
+                  : `<button class="btn btn-sm" disabled>${disabledReason}</button>`}
     </div>`;
   }).join('');
 
@@ -550,39 +541,37 @@ function renderTeam() {
     return `<div class="staff-row">
       <div class="staff-info">
         <span class="staff-name">${type.name}</span>
-        <div class="staff-meta">${type.description}</div>
-        <div class="staff-meta muted-text">${fmt$(cost)}/week • Signing fee: ${fmt$(sigFee)} • Hired: ${current}/${type.max}</div>
+        <div class="staff-meta">${type.bonus}</div>
+        <div class="staff-meta muted-text">${current}/${type.max} hired</div>
       </div>
-      ${canHire ? `<button class="btn btn-sm btn-primary" onclick="handleHireStaff('${type.id}')">Hire (${fmt$(sigFee)})</button>`
+      <div class="recruit-cost"><strong><span class="recruit-cost-label">Signing fee </span>${fmt$(sigFee)}</strong><span>${fmt$(cost)}/week</span></div>
+      ${canHire ? `<button class="btn btn-sm btn-primary" aria-label="Hire ${type.name}" onclick="handleHireStaff('${type.id}')">Hire</button>`
                : `<button class="btn btn-sm" disabled>${current >= type.max ? 'Staff Limit Reached' : 'Not Enough Cash'}</button>`}
     </div>`;
   }).join('');
 
   return `
-  <div class="page-header"><h2>Team Management</h2></div>
-  <div class="two-col-grid team-roster-grid">
-      <div class="card">
-        <div class="card-header">Your Drivers</div>
-        ${yourDriverRows}
-      </div>
-      <div class="card">
-        <div class="card-header">Your Support Staff</div>
-        ${staffRows}
-      </div>
+  <div class="page-header"><h2>Team Management</h2><p>${game.teamName}</p></div>
+  <div class="team-toolbar">
+    <div class="team-views" role="group" aria-label="Manage team members">
+      <button class="btn ${teamView === 'drivers' ? 'team-view-active' : 'btn-ghost'}" data-team-view="drivers" aria-pressed="${teamView === 'drivers'}" onclick="showTeamView('drivers')">Drivers</button>
+      <button class="btn ${teamView === 'staff' ? 'team-view-active' : 'btn-ghost'}" data-team-view="staff" aria-pressed="${teamView === 'staff'}" onclick="showTeamView('staff')">Support Staff</button>
+    </div>
+    <p class="team-budget">Available cash <strong>${fmt$(game.money)}</strong></p>
   </div>
-  <div class="two-col-grid team-recruitment-grid mt">
-      <div class="card">
-        <div class="card-header">Hire Drivers</div>
-        <p class="section-copy">Hire a driver for an unassigned car. The signing fee is paid upfront and equals four weeks of salary. ${game.hiredDrivers.length} of ${MAX_HIRED_DRIVERS} driver slots filled.</p>
-        ${seatWarning}
-        <p class="recruitment-caption"><span>${availableDrivers.length} drivers available</span><span>Scroll to browse</span></p>
-        <div class="recruitment-list" tabindex="0" aria-label="Available drivers">${driverRows}</div>
-      </div>
-      <div class="card">
-        <div class="card-header">Hire Support Staff</div>
-        <p class="recruitment-caption"><span>${STAFF_TYPES.length} staff roles</span><span>Scroll to browse</span></p>
-        <div class="recruitment-list" tabindex="0" aria-label="Available support staff">${staffHireRows}</div>
-      </div>
+  <div class="team-workspace">
+    <section class="card team-roster" aria-labelledby="team-roster-title">
+      <h3 class="card-header" id="team-roster-title">${teamView === 'drivers' ? 'Your Drivers' : 'Your Support Staff'}</h3>
+      ${teamView === 'drivers' ? driverRoster : staffRows}
+    </section>
+    <section class="card team-recruitment" aria-labelledby="team-recruitment-title">
+      <h3 class="card-header" id="team-recruitment-title">${teamView === 'drivers' ? 'Recruit Drivers' : 'Recruit Support Staff'}</h3>
+      <p class="section-copy">Signing fees are paid upfront. Salaries are paid each race.</p>
+      ${teamView === 'drivers' ? seatWarning : ''}
+      <p class="recruitment-caption"><span>${teamView === 'drivers' ? `${availableDrivers.length} available · ${game.hiredDrivers.length}/${MAX_HIRED_DRIVERS} hired` : `${STAFF_TYPES.length} staff roles`}</span><span>Scroll to browse</span></p>
+      <div class="recruitment-columns" aria-hidden="true"><span>${teamView === 'drivers' ? 'Driver' : 'Specialist'}</span><span>Signing fee / salary</span><span></span></div>
+      <div class="recruitment-list" tabindex="0" aria-label="${teamView === 'drivers' ? 'Available drivers' : 'Available support staff'}">${teamView === 'drivers' ? driverRows : staffHireRows}</div>
+    </section>
   </div>`;
 }
 
@@ -640,7 +629,6 @@ function renderSchedule() {
       <span class="race-num">${race.raceNum}</span>
       <div class="race-details">
         <span class="race-track">${track?.name || 'Unknown'}</span>
-        <span class="race-type muted-text">${formatTrackType(track?.type)} · ${track?.length}mi · ${track?.laps} laps</span>
       </div>
       ${statusBadge}
       <span class="race-result muted-text">${resultInfo}</span>
@@ -940,17 +928,14 @@ function renderRaceSetup() {
       <div class="card-header">Race Weekend</div>
       <div class="race-info-box big">
         <span class="race-track-name big">${track.name}</span>
-        <span class="badge badge-${trackTypeBadge(track.type)}">${formatTrackType(track.type)}</span>
       </div>
       <div class="race-details-grid">
         <div class="team-stat"><span>Entry Fee per Car</span><span>${fmt$(series.entryFee)}</span></div>
         <div class="team-stat"><span>1st Prize</span><span>${fmt$(series.prize[0])}</span></div>
       </div>
       <details class="ui-details">
-        <summary>Simulation track details</summary>
+        <summary>Simulation car setup</summary>
         <div class="ui-details-body race-details-grid">
-        <div class="team-stat"><span>Track Length</span><span>${track.length} miles</span></div>
-        <div class="team-stat"><span>Laps</span><span>${track.laps}</span></div>
         <div class="team-stat"><span>Speed Emphasis</span><span>${speedEmphasis}%</span></div>
         <div class="team-stat"><span>Handling Emphasis</span><span>${handlingEmphasis}%</span></div>
         </div>
@@ -1223,11 +1208,9 @@ function renderCareerStats() {
       <div class="card-header">Last Season - ${last.series}, Year ${last.year}</div>
       <div class="card-body">
         <div class="champ-stats">
-          <div><span class="champ-stat-num">${last.finalPos}${ordinal(last.finalPos)}</span><span class="champ-stat-label">Finish</span></div>
+          <div><span class="champ-stat-num">${last.finalPos}${ordinal(last.finalPos)}</span><span class="champ-stat-label">Championship Finish</span></div>
           <div><span class="champ-stat-num">${last.wins || 0}</span><span class="champ-stat-label">Wins</span></div>
-          <div><span class="champ-stat-num">${last.champion ? 'YES' : 'NO'}</span><span class="champ-stat-label">Title</span></div>
-          <div><span class="champ-stat-num">${fmt$(last.payout || 0)}</span><span class="champ-stat-label">Purse</span></div>
-          <div><span class="champ-stat-num">${seasons}</span><span class="champ-stat-label">Seasons</span></div>
+          <div><span class="champ-stat-num">${fmt$(last.payout || 0)}</span><span class="champ-stat-label">Cash Earned</span></div>
         </div>
       </div>
     </div>` : `
@@ -1302,7 +1285,7 @@ function renderCareerStats() {
           <div class="team-stat"><span>Top 5 Finishes</span><span>${seasonTop5}</span></div>
           <div class="team-stat"><span>Top 10 Finishes</span><span>${seasonTop10}</span></div>
           <div class="team-stat"><span>Points</span><span>${seasonPts}</span></div>
-          <div class="team-stat"><span>Prize Money</span><span class="green">${fmt$(earnings)}</span></div>
+          <div class="team-stat"><span>Cash Earned</span><span class="green">${fmt$(earnings)}</span></div>
         </div>
       </div>
     </div>
@@ -1317,7 +1300,7 @@ function renderCareerStats() {
           <div class="team-stat"><span>Win Rate</span><span>${winRate}%</span></div>
           <div class="team-stat"><span>Championships</span><span class="gold">${titles}</span></div>
           <div class="team-stat"><span>Seasons Completed</span><span>${seasons}</span></div>
-          <div class="team-stat"><span>Season Purses Won</span><span class="green">${fmt$(careerPayouts)}</span></div>
+          <div class="team-stat"><span>Total Cash Earned</span><span class="green">${fmt$(careerPayouts)}</span></div>
         </div>
       </div>
       <div class="card mb">

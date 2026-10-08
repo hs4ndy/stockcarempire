@@ -43,7 +43,8 @@ for (const [name, viewport] of [
       await page.locator(`.nav-btn[data-tab="${tab}"]`).click();
       await expect(page.locator(`.nav-btn[data-tab="${tab}"]`)).toHaveAttribute('aria-current', 'page');
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
-      await expect(page.locator('#hdr-team')).toBeVisible();
+      await expect(page.locator('.header-telemetry')).toHaveCount(0);
+      await expect(page.locator('.header-brand')).toBeVisible();
       await capture(page, `${tab}-${name}`);
       if (tab === 'dashboard') {
         const action = await page.getByRole('button', {name:'Enter Race Weekend',exact:true}).boundingBox();

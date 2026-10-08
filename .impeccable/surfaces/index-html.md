@@ -26,3 +26,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 ## Finish record
 
 The full finish review returned seven material fixes. Final verdict: all seven resolved, disposition ship at that fix-list scope. The final evidence spans five career widths plus desktop/mobile/landscape HUD, populated management and career history, dialog/result variants, all tutorial steps and practice completion. Shared tokens are documented from the final code in DESIGN.md and .impeccable/design.json. The intro PNG carries its source provenance; pixels are unchanged.
+
+## Approved-design follow-up
+
+The user approved the visual world, then requested less detail: remove shell career telemetry and track type/mileage labels, correct the annotated Career copy, and rebuild Team. Preserve the approved fonts, colors, action grammar, and gameplay. Team now uses Drivers/Support Staff views with a roster beside recruitment, aligned costs/actions, and development disclosed on demand. Career combines Finish and Title into Championship Finish (user confirmed), removes the repeated Seasons metric, and uses the requested Cash Earned labels. This refinement has its own browser evidence under `team-refinement-*`; the earlier seven-fix verdict describes the preceding redesign.

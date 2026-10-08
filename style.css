@@ -32,7 +32,7 @@ body:not([data-screen="game"]) .skip-link { display: none; }
 .highlight { color: var(--text); font-weight: 700; }
 .link { text-decoration: underline; cursor: pointer; } .link:hover { color: var(--accent); }
 .mt { margin-top: var(--space-5); } .mb { margin-bottom: var(--space-5); }
-:is(.telem-value, .cmd-value, .stat-value, .pts-val, .st-pts, .st-pos, .res-pos, .res-prize, .ss-num, .big-pos, .car-mini-score, .champ-stat-num, .r3d-tele-grid, .event-round) { font-variant-numeric: tabular-nums; }
+:is(.cmd-value, .stat-value, .pts-val, .st-pts, .st-pos, .res-pos, .res-prize, .ss-num, .big-pos, .car-mini-score, .champ-stat-num, .r3d-tele-grid, .event-round, .recruit-cost, .team-budget) { font-variant-numeric: tabular-nums; }
 
 /* Actions: red advances, white selects, restrained secondary controls. */
 .btn, .btn-game, .modal-close {
@@ -107,12 +107,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .header-brand-text { display: flex; flex-direction: column; line-height: .95; }
 .header-brand-main { font: 600 14px/1 var(--font-display); text-transform: uppercase; }
 .header-brand-sub { font: 800 26px/1 var(--font-display); text-transform: uppercase; }
-.header-telemetry { display: flex; align-items: center; flex: 1; gap: 28px; min-width: 0; }
-.telem-cell { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
-.telem-cell:first-child { max-width: 260px; margin-right: auto; }
-.telem-label { color: var(--text-mute); font-size: 11px; }
-.telem-value { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.header-actions { display: flex; gap: 8px; flex: none; }
+.header-actions { display: flex; gap: 8px; flex: none; margin-left: auto; }
 .btn.btn-unsaved { border-color: var(--warn); color: var(--warn); }
 .btn.btn-unsaved:hover { background: var(--warn); color: var(--bg); }
 .game-nav { display: flex; align-items: center; gap: 6px; padding: 10px max(32px, calc((100% - var(--maxw) + 64px) / 2)); background: var(--bg); border-bottom: 1px solid var(--line); position: sticky; top: var(--shell-height); z-index: 39; overflow-x: auto; scrollbar-width: thin; }
@@ -124,7 +119,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 #main-content:focus { outline: none; }
 .page-header { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 12px 24px; margin-bottom: 24px; }
 .page-header h2 { font: 700 40px/1.05 var(--font-display); letter-spacing: -.01em; min-width: 0; overflow-wrap: anywhere; }
-.page-header p { color: var(--text-dim); font-size: 15px; }
+.page-header p { color: var(--text-dim); font-size: 15px; min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
 .dashboard-heading p span { display: inline-block; margin-left: 16px; color: var(--text-mute); }
 .card, .car-card { background: var(--panel); border-radius: var(--radius); padding: 24px; min-width: 0; }
 .card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; font-size: 18px; line-height: 1.3; font-weight: 600; }
@@ -157,7 +152,6 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .event-round strong { font: 700 24px/1 var(--font-display); color: var(--text); } .event-round span { color: var(--text-mute); }
 .race-spotlight { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
 .race-spotlight-name { font: 700 44px/1.05 var(--font-display); letter-spacing: -.01em; max-width: 20ch; overflow-wrap: anywhere; text-wrap: balance; }
-.race-spotlight-meta { color: var(--text-dim); font-size: 14px; }
 .dashboard-race-costs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; padding: 20px 0 0; border-top: 1px solid var(--line-2); }
 .dashboard-race-costs .team-stat { flex-direction: column; align-items: flex-start; gap: 4px; border: 0; padding: 0; }
 .dashboard-race-costs .team-stat > span:last-child { font-weight: 600; font-size: 22px; text-align: left; }
@@ -227,14 +221,30 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .upgrade-name, .staff-name, .loan-name { font-size: 16px; font-weight: 600; }
 .upgrade-effect { color: var(--good); font-size: 14px; } .upgrade-prereq, .staff-meta { color: var(--text-dim); font-size: 14px; }
 .staff-row > .btn { flex: none; }
-.team-roster-grid, .team-recruitment-grid { align-items: start; }
+.team-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; padding-bottom: 24px; }
+.team-views { display: flex; gap: 8px; }
+.btn.team-view-active, .btn.team-view-active:hover { background: var(--text); color: var(--bg); border-color: var(--text); }
+.team-budget { color: var(--text-dim); font-size: 14px; }
+.team-budget strong { color: var(--text); font-weight: 600; margin-left: 12px; }
+.team-workspace { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.5fr); gap: 24px; align-items: start; }
+.team-empty { padding: 12px 0; color: var(--text-dim); font-size: 15px; max-width: 36ch; }
+.team-recruitment .staff-row, .recruitment-columns { display: grid; grid-template-columns: minmax(0, 1fr) 128px 144px; gap: 20px; }
+.recruitment-columns { color: var(--text-mute); font-size: 12px; padding-top: 12px; }
+.team-recruitment .staff-row { align-items: center; }
+.recruit-cost { display: flex; flex-direction: column; gap: 4px; font-size: 15px; }
+.recruit-cost strong { font-weight: 600; }
+.recruit-cost .recruit-cost-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.recruit-cost span { color: var(--text-dim); font-size: 14px; }
+.team-recruitment .staff-row > .btn { padding-inline: 12px; width: 100%; }
+.driver-development { color: var(--text-dim); font-size: 13px; }
+.driver-development summary { cursor: pointer; padding: 6px 0; }
+.driver-development p { padding-bottom: 6px; }
 .recruitment-list { max-height: 560px; overflow-y: auto; padding-right: 12px; scrollbar-gutter: stable; }
+.team-recruitment .recruitment-list { max-height: clamp(240px, calc(100svh - 510px), 560px); }
 .recruitment-caption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; padding-bottom: 12px; font-size: 13px; color: var(--text-dim); border-bottom: 1px solid var(--line); }
 .recruitment-list::-webkit-scrollbar { width: 10px; }
 .recruitment-list::-webkit-scrollbar-track { background: var(--panel-2); }
 .recruitment-list::-webkit-scrollbar-thumb { background: var(--line-2); border: 2px solid var(--panel-2); border-radius: 6px; }
-.team-recruitment-grid .section-copy { max-width: 65ch; }
-.driver-growth { width: min(160px, 100%); height: 4px; background: var(--panel-3); margin-top: 8px; } .driver-growth-fill { height: 100%; background: var(--good); }
 .loan-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px; margin-top: 12px; background: var(--panel-2); border-radius: 4px; }
 .loan-row.is-late .loan-name { color: var(--danger-text); } .loan-actions { display: flex; gap: 8px; flex: none; }
 
@@ -246,7 +256,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .schedule-row:last-child { border-bottom: 0; } .schedule-row.next-race { background: var(--panel-3); }
 .race-num { text-align: center; font: 600 24px/1 var(--font-display); color: var(--text-mute); }
 .race-details { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.race-track { font-size: 16px; font-weight: 600; overflow-wrap: anywhere; } .race-type { font-size: 14px; } .race-result { font-size: 14px; text-align: right; }
+.race-track { font-size: 16px; font-weight: 600; overflow-wrap: anywhere; } .race-result { font-size: 14px; text-align: right; }
 #screen-race-setup { min-height: 100svh; padding: 48px 32px; } .race-setup-page { max-width: 960px; margin: 0 auto; }
 .race-info-box { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin: 24px 0; }
 .race-track-name, .race-track-name.big { font: 700 44px/1.05 var(--font-display); overflow-wrap: anywhere; min-width: 0; }
@@ -726,20 +736,19 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 
 /* Content-led responsive composition. */
 @media (max-width: 1180px) {
-  .telem-cell:nth-child(5) { display: none; }
-  .header-telemetry { gap: 20px; } .game-header { gap: 24px; }
+  .game-header { gap: 24px; }
   .difficulty-grid.lg { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 1040px) {
-  .telem-cell:nth-child(4) { display: none; }
   .game-header, .game-nav { padding-inline: 24px; }
   #main-content { padding: 24px 24px 48px; } .nav-btn { padding-inline: 14px; }
 }
 @media (max-width: 800px) {
-  .telem-cell:nth-child(3), .telem-money { display: none; }
   .game-header { gap: 20px; } .header-brand-main { font-size: 12px; } .header-brand-sub { font-size: 22px; }
   .header-actions .btn { padding-inline: 12px; font-size: 14px; }
   .two-col-grid, .race-main { grid-template-columns: 1fr; }
+  .team-workspace { grid-template-columns: 1fr; gap: 20px; }
+  .team-recruitment .recruitment-list { max-height: 500px; }
   .dashboard-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
   .card, .car-card { padding: 20px; } .race-spotlight-name { font-size: 36px; }
   .intro-layout { grid-template-columns: 1fr; gap: 40px; max-width: 600px; }
@@ -753,13 +762,17 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 @media (max-width: 640px) {
   :root { --shell-height: 72px; }
   .game-header { padding: 12px 16px; gap: 16px; }
-  .header-telemetry { flex: 1; } .telem-label { display: none; }
-  .telem-cell:first-child { max-width: none; width: 100%; } .telem-value { font-size: 14px; }
   .header-actions .btn { padding: 8px 12px; }
   .header-actions .btn:last-child { display: none; }
   .game-nav { padding: 8px 16px; gap: 4px; } .nav-btn { height: 44px; padding: 8px 14px; } .nav-label { font-size: 15px; }
   #main-content { padding: 24px 16px 48px; }
   .page-header { margin-bottom: 20px; } .page-header h2 { font-size: 34px; } .page-header p { font-size: 14px; }
+  .team-toolbar { padding-bottom: 20px; }
+  .team-views .btn { padding-inline: 16px; }
+  .team-recruitment .staff-row { grid-template-columns: minmax(0, 1fr) 140px; gap: 12px; }
+  .team-recruitment .staff-info { grid-column: 1 / -1; }
+  .team-recruitment .recruitment-columns { display: none; }
+  .recruit-cost .recruit-cost-label { position: static; width: auto; height: auto; clip-path: none; font-size: 12px; font-weight: 400; }
   .dashboard-heading p span { margin-left: 12px; }
   .cmd-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 16px 0; margin-bottom: 20px; }
   .cmd-cell { padding: 0 12px; } .cmd-cell:last-child { padding-right: 0; }
@@ -805,7 +818,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 }
 @media (max-width: 420px) {
   .difficulty-grid, #setup-difficulty .difficulty-grid.lg, .difficulty-grid.lg { grid-template-columns: 1fr; }
-  .difficulty-card { min-height: 0; } .header-brand { display: none; }
+  .difficulty-card { min-height: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }

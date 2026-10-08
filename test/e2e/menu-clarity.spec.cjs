@@ -75,7 +75,7 @@ for (const [name, viewport] of [
     await page.getByRole('button', { name: 'Enter Race Weekend', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Drive Race', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Simulate Race', exact: true })).toBeVisible();
-    await page.getByText('Simulation track details', { exact: true }).click();
+    await page.getByText('Simulation car setup', { exact: true }).click();
     await expect(page.getByText('Speed Emphasis', { exact: true })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
     await page.getByRole('button', { name: 'Back to Dashboard', exact: true }).click();
