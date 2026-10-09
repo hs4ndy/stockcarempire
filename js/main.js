@@ -13,8 +13,6 @@ let racePlayback = {
   skipRequested: false,
 };
 
-let selectedCareerPath = null;
-
 // ─── Startup ─────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   showScreen('intro');
@@ -422,21 +420,33 @@ function validateRaceEntry(playerCarId) {
   if (!game.cars || game.cars.length === 0) {
     return { error: 'No car - you must buy a car before you can race.' };
   }
-  if (game.driverMode === 'hired') return { error: null, idle: [] };
+  if (!game.cars.some(c => c.id === playerCarId && !hireForCar(c.id))) {
+    return { error: 'You need an available car to drive. Release a driver or buy another car before racing.' };
+  }
 
   const idle = game.cars.filter(c =>
     c.id !== playerCarId && !hireForCar(c.id)
   );
-  // Only a problem if it leaves nobody at all on the grid
-  if (idle.length === game.cars.length) {
-    return { error: 'No driver available - assign yourself or hire a driver before racing.' };
-  }
   return { error: null, idle };
 }
 
 // Cars that will actually take the green: yours plus any with a hired driver
 function enteredCars(playerCarId) {
   return game.cars.filter(c => c.id === playerCarId || hireForCar(c.id));
+}
+
+// Every career race includes the player driving an unoccupied owned car.
+function selectPlayerRaceCar() {
+  const available = game.cars.filter(c => !hireForCar(c.id));
+  const selectedId = document.querySelector('input[name="drive-car"]:checked')?.value;
+  const car = available.find(c => c.id === selectedId)
+    || available.find(c => c.assignedDriverId === 'player') || available[0];
+  if (!car) return null;
+  game.cars.forEach(c => {
+    if (c === car) c.assignedDriverId = 'player';
+    else if (c.assignedDriverId === 'player') c.assignedDriverId = null;
+  });
+  return car.id;
 }
 
 // Tell the player which cars are staying home, without blocking them
@@ -449,19 +459,9 @@ function noteIdleCars(idle) {
 function handleStartRace() {
   const race   = currentRace();
   const series = SERIES[game.currentSeries];
-  const isHiredMode = game.driverMode === 'hired';
 
   // Determine which car the player is driving
-  let playerCarId = null;
-  if (game.driverMode === 'driver') {
-    const radioSelected = document.querySelector('input[name="drive-car"]:checked');
-    playerCarId = radioSelected?.value
-      || (game.cars.find(c => c.assignedDriverId === 'player') || game.cars[0])?.id;
-    game.cars.forEach(c => {
-      if (c.id === playerCarId) c.assignedDriverId = 'player';
-      else if (c.assignedDriverId === 'player') c.assignedDriverId = null;
-    });
-  }
+  const playerCarId = selectPlayerRaceCar();
 
   // Cars without a driver just sit this one out
   const check = validateRaceEntry(playerCarId);
@@ -525,7 +525,6 @@ function handleStartRace() {
 
   game.season.aiTeams.forEach(team => {
     team.cars.forEach(car => {
-      if (isHiredMode && team.id === game.hiredTeamId) return;
       aiEntries.push({
         entrantId: car.id,
         name:      nextDriverName(car.driverName),
@@ -568,7 +567,7 @@ function handleStartRace() {
     (playerPosition, trackOrder) => {
       // 3D race complete - playerPosition is 1-indexed finish position
       // Run background sim to get AI standings (player result will be overridden)
-      const simResult = simulateRace({ playerCarId, trackId: race.trackId, isHiredMode });
+      const simResult = simulateRace({ playerCarId, trackId: race.trackId });
 
       // Your team-mates raced on track alongside you, so their real finishing
       // order has to carry over too - otherwise the car you pushed to the win
@@ -624,16 +623,7 @@ function handleSimulateRace() {
   if (!race) return;
 
   // Determine player car
-  let playerCarId = null;
-  if (game.driverMode === 'driver') {
-    const radioSelected = document.querySelector('input[name="drive-car"]:checked');
-    playerCarId = radioSelected?.value
-      || (game.cars.find(c => c.assignedDriverId === 'player') || game.cars[0])?.id;
-    game.cars.forEach(c => {
-      if (c.id === playerCarId) c.assignedDriverId = 'player';
-      else if (c.assignedDriverId === 'player') c.assignedDriverId = null;
-    });
-  }
+  const playerCarId = selectPlayerRaceCar();
 
   const check = validateRaceEntry(playerCarId);
   if (check.error) { toast(check.error, 'error', 6000); return; }
@@ -648,7 +638,7 @@ function handleSimulateRace() {
   game.money -= entryFee;
 
   // Run full simulation
-  const simResult = simulateRace({ playerCarId, trackId: race.trackId, isHiredMode: game.driverMode === 'hired' });
+  const simResult = simulateRace({ playerCarId, trackId: race.trackId });
   const pr = simResult.playerResult;
   if (!pr) { toast('Simulation error.', 'error'); return; }
 
@@ -804,43 +794,6 @@ function handleCloseResults() {
   renderTab('dashboard');
   reportLoanNotes();
   checkSaveReminder();     // back in the lobby - nudge if nothing is saved
-}
-
-// ─── Premier Cup Series career choice ────────────────────────────────
-function showPremierChoiceModal() {
-  document.body.insertAdjacentHTML('beforeend', renderPremierChoiceModal());
-}
-
-function selectCareerChoice(path) {
-  selectedCareerPath = path;
-  document.querySelectorAll('.career-card').forEach(c => {
-    c.classList.remove('selected');
-    c.setAttribute('aria-pressed', 'false');
-  });
-  document.querySelector(`.career-card[onclick*="${path}"]`)?.classList.add('selected');
-  document.querySelector(`.career-card[onclick*="${path}"]`)?.setAttribute('aria-pressed', 'true');
-  document.getElementById('btn-confirm-career').disabled = false;
-
-  const hiredSection = document.getElementById('hired-team-select');
-  if (path === 'hired') {
-    hiredSection?.classList.remove('hidden');
-  } else {
-    hiredSection?.classList.add('hidden');
-  }
-}
-
-function confirmCareerChoice() {
-  if (!selectedCareerPath) return;
-  let aiTeamId = null;
-  if (selectedCareerPath === 'hired') {
-    aiTeamId = document.getElementById('select-ai-team')?.value;
-    if (!aiTeamId) { toast('Select a team.', 'warning'); return; }
-  }
-  chooseCareerPath(selectedCareerPath, aiTeamId);
-  document.getElementById('premier-choice-modal')?.remove();
-  toast('Career path set! Good luck in the Premier Cup Series.', 'success');
-  updateHeader();
-  renderTab('dashboard');
 }
 
 // ─── Settings / save ─────────────────────────────────────────

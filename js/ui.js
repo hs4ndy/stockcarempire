@@ -280,12 +280,7 @@ function renderDashboard() {
       <summary>Driver profile and history</summary>
       <div class="ui-details-body">
       <div class="team-stat"><span>Driver</span><span class="highlight">${game.driverName || game.teamName}</span></div>
-      ${game.driverMode === 'hired' ? `
-        <div class="team-stat"><span>Team</span><span>${game.season.aiTeams.find(t=>t.id===game.hiredTeamId)?.name || 'N/A'}</span></div>
-        <div class="team-stat"><span>Salary</span><span class="green">${fmt$(game.hiredSalary || 0)}/week</span></div>
-      ` : game.driverMode === 'manager' ? `
-        <div class="team-stat"><span>Role</span><span>Team Manager</span></div>
-      ` : `<div class="team-stat"><span>Role</span><span>Driver / Owner</span></div>`}
+      <div class="team-stat"><span>Role</span><span>Driver / Owner</span></div>
       ${statBar('Driver Skill', Math.round(game.playerSkill))}
       <div class="team-stat"><span>Seasons Raced</span><span>${game.history.length}</span></div>
       ${game.history.length > 0 ? game.history.slice(-3).map(h => `
@@ -463,7 +458,7 @@ function showTeamView(view) {
 function renderTeam() {
   const hiredIds = new Set(game.hiredDrivers.map(h => h.driverId));
   const playerCar = game.cars.find(c => c.assignedDriverId === 'player');
-  const playerRow = playerCar && game.driverMode === 'driver' ? `<div class="staff-row">
+  const playerRow = playerCar ? `<div class="staff-row">
     <div class="staff-info"><span class="staff-name">${game.driverName} <span class="muted-text small">(You)</span></span>
       <span class="staff-meta">#${playerCar.number || 1} ${playerCar.name}</span>
       <span class="staff-meta">Skill ${Math.round(game.playerSkill)}</span>
@@ -877,51 +872,33 @@ function renderRaceSetup() {
   const handlingEmphasis = 100 - speedEmphasis;
 
   // Which cars can the player enter?
-  const cars = game.driverMode === 'hired' ? [] : game.cars;
+  const cars = game.cars;
+  // A car with a hired driver in it is not available for you to drive.
+  const taken = new Map();
+  (game.hiredDrivers || []).forEach(h => {
+    const drv = HIREABLE_DRIVERS.find(d => d.id === h.driverId);
+    if (drv) taken.set(h.carId, drv.name);
+  });
+  const openCars = cars.filter(c => !taken.has(c.id));
+  const idleCars = cars.filter(c => taken.has(c.id) === false && c.assignedDriverId !== 'player');
 
-  const isHired    = game.driverMode === 'hired';
-  const isManager  = game.driverMode === 'manager';
-
-  let carSection = '';
-  if (isHired) {
-    const team = game.season.aiTeams.find(t => t.id === game.hiredTeamId);
-    carSection = `<p>You will drive for <strong>${team?.name || 'your team'}</strong>.</p>`;
-  } else if (isManager) {
-    carSection = `<p>Your team enters all cars. Drivers are assigned automatically.</p>
-    ${game.cars.map(c => {
-      const d = c.assignedDriverId && c.assignedDriverId !== 'player'
-        ? HIREABLE_DRIVERS.find(dr => dr.id === c.assignedDriverId)?.name : 'No Driver';
-      return `<div class="team-stat"><span>${c.name}</span><span>${d || 'Needs driver'}</span></div>`;
-    }).join('')}`;
-  } else {
-    // A car with a hired driver in it is not available for you to drive.
-    const taken = new Map();
-    (game.hiredDrivers || []).forEach(h => {
-      const drv = HIREABLE_DRIVERS.find(d => d.id === h.driverId);
-      if (drv) taken.set(h.carId, drv.name);
-    });
-    const openCars = cars.filter(c => !taken.has(c.id));
-    const idleCars = cars.filter(c => taken.has(c.id) === false && c.assignedDriverId !== 'player');
-
-    const driverCar = openCars.find(c => c.assignedDriverId === 'player') || openCars[0];
-    carSection = `
-      <p class="muted-text">Select which car you will drive:</p>
-      ${openCars.map(c => `
-        <label class="radio-row">
-          <input type="radio" name="drive-car" value="${c.id}" ${c === driverCar ? 'checked' : ''}>
-          <span class="race-car-choice"><strong>#${c.number || 1} ${c.name}</strong><span>Speed ${c.speed} · Handling ${c.handling} · Condition ${Math.round(c.condition)}%</span></span>
-        </label>`).join('') || '<p class="form-warning">Every car has a hired driver in it - release a driver to drive one yourself.</p>'}
-      ${taken.size ? `
-        <div class="card-header mt">Entered By Your Drivers</div>
-        ${[...taken.entries()].map(([carId, nm]) => {
-          const c = game.cars.find(x => x.id === carId);
-          return `<div class="team-stat"><span>#${c?.number || 1} ${c?.name || 'Car'}</span><span>${nm}</span></div>`;
-        }).join('')}` : ''}
-      ${idleCars.length > 1 || (idleCars.length === 1 && idleCars[0] !== driverCar) ? `
-        <p class="form-warning">Some cars have no driver assigned and will not be entered. Assign a driver in the Team tab.</p>` : ''}
-    `;
-  }
-
+  const driverCar = openCars.find(c => c.assignedDriverId === 'player') || openCars[0];
+  const carSection = `
+    <p class="muted-text">Select which car you will drive:</p>
+    ${openCars.map(c => `
+      <label class="radio-row">
+        <input type="radio" name="drive-car" value="${c.id}" ${c === driverCar ? 'checked' : ''}>
+        <span class="race-car-choice"><strong>#${c.number || 1} ${c.name}</strong><span>Speed ${c.speed} · Handling ${c.handling} · Condition ${Math.round(c.condition)}%</span></span>
+      </label>`).join('') || '<p class="form-warning">Every car has a hired driver in it - release a driver to drive one yourself.</p>'}
+    ${taken.size ? `
+      <div class="card-header mt">Entered By Your Drivers</div>
+      ${[...taken.entries()].map(([carId, nm]) => {
+        const c = game.cars.find(x => x.id === carId);
+        return `<div class="team-stat"><span>#${c?.number || 1} ${c?.name || 'Car'}</span><span>${nm}</span></div>`;
+      }).join('')}` : ''}
+    ${idleCars.length > 1 || (idleCars.length === 1 && idleCars[0] !== driverCar) ? `
+      <p class="form-warning">Some cars have no driver assigned and will not be entered. Assign a driver in the Team tab.</p>` : ''}
+  `;
   return `
   <div class="race-setup-page">
     <div class="card">
@@ -997,6 +974,7 @@ function renderLeaderboard(results, highlightPlayer) {
 
 // ─── Race Results modal ───────────────────────────────────────
 function renderRaceResultsModal(results, events, playerResult) {
+  if (!playerResult?.isPlayer) throw new Error('Race results require the player driving for their team.');
   const topRows = results.slice(0, 10).map(r => `
     <div class="result-row ${r.isPlayer ? 'player-result' : ''}">
       <span class="res-pos ${r.position <= 3 ? 'podium' : ''}">${r.position}</span>
@@ -1006,37 +984,34 @@ function renderRaceResultsModal(results, events, playerResult) {
       ${r.dnf ? '<span class="badge badge-red">DNF</span>' : ''}
     </div>`).join('');
 
-  const isWinner = playerResult?.position === 1;
+  const isWinner = playerResult.position === 1;
   let playerSection = '';
-  if (playerResult) {
-    const pos = playerResult.position;
-    if (isWinner) {
-      const nameParts = String(playerResult.displayName || '').split(' / ');
-      const winnerDriver = nameParts[nameParts.length - 1] || game.driverName || 'You';
-      const winnerTeam = nameParts.length > 1 ? nameParts[0] : game.teamName;
-      playerSection = `
-        <div class="race-win-banner">
-          <div class="race-win-rail"></div>
-          <h3 class="race-win-title" id="race-win-title">Race Winner</h3>
-          <div class="race-win-driver">${winnerDriver}</div>
-          <div class="race-win-team">${winnerTeam}</div>
-          <div class="race-win-stats">
-            <div class="race-win-stat"><strong>${fmt$(playerResult.prize)}</strong><span>Race Purse</span></div>
-            <div class="race-win-stat"><strong>${playerResult.points}</strong><span>Championship Points</span></div>
-          </div>
-        </div>`;
-    } else {
-      playerSection = `
-        <div class="player-result-hero">
-          <div>
-            <div class="big-pos">${pos}${ordinal(pos)} place</div>
-            <div class="big-prize green">${fmt$(playerResult.prize)} earned</div>
-            <div class="muted-text">${playerResult.points} championship points</div>
-          </div>
-        </div>`;
-    }
+  const pos = playerResult.position;
+  if (isWinner) {
+    const nameParts = String(playerResult.displayName || '').split(' / ');
+    const winnerDriver = nameParts[nameParts.length - 1] || game.driverName || 'You';
+    const winnerTeam = nameParts.length > 1 ? nameParts[0] : game.teamName;
+    playerSection = `
+      <div class="race-win-banner">
+        <div class="race-win-rail"></div>
+        <h3 class="race-win-title" id="race-win-title">Race Winner</h3>
+        <div class="race-win-driver">${winnerDriver}</div>
+        <div class="race-win-team">${winnerTeam}</div>
+        <div class="race-win-stats">
+          <div class="race-win-stat"><strong>${fmt$(playerResult.prize)}</strong><span>Race Purse</span></div>
+          <div class="race-win-stat"><strong>${playerResult.points}</strong><span>Championship Points</span></div>
+        </div>
+      </div>`;
+  } else {
+    playerSection = `
+      <div class="player-result-hero">
+        <div>
+          <div class="big-pos">${pos}${ordinal(pos)} place</div>
+          <div class="big-prize green">${fmt$(playerResult.prize)} earned</div>
+          <div class="muted-text">${playerResult.points} championship points</div>
+        </div>
+      </div>`;
   }
-
   return `
   <div class="modal-overlay" id="results-modal" role="dialog" aria-modal="true" aria-labelledby="${isWinner ? 'race-win-title' : 'race-results-title'}">
     <div class="modal modal-wide${isWinner ? ' race-win-modal' : ''}">
@@ -1055,7 +1030,7 @@ function renderRaceResultsModal(results, events, playerResult) {
   </div>`;
 }
 
-// ─── End of Season / Premier Choice ─────────────────────────
+// ─── End of Season ──────────────────────────────────────────
 function renderEndSeasonModal(info) {
   const purse = (info.playerPayout || 0) + (info.teamPayout || 0);
 
@@ -1122,47 +1097,6 @@ function renderEndSeasonModal(info) {
       </div>
       <div class="modal-footer">
         <button class="btn btn-primary" onclick="handleDismissEndSeason()">Start Next Season</button>
-      </div>
-    </div>
-  </div>`;
-}
-
-function renderPremierChoiceModal() {
-  const aiTeams = game.season.aiTeams.slice(0, 6);
-  const teamOpts = aiTeams.map(t =>
-    `<option value="${t.id}">${t.name}</option>`
-  ).join('');
-
-  return `
-  <div class="modal-overlay" id="premier-choice-modal">
-    <div class="modal modal-wide">
-      <div class="modal-header"><h3>Welcome to the Premier Cup Series</h3></div>
-      <div class="modal-body">
-        <p>You've reached the top tier of stock car racing. How do you want to continue your career?</p>
-        <div class="career-choices">
-          <button type="button" class="career-card" aria-pressed="false" onclick="selectCareerChoice('driver')">
-            <span class="career-index">01</span>
-            <span class="career-title">Stay as Driver</span>
-            <span class="career-desc">Drive one of your own cars each race. Compete for the championship yourself.</span>
-          </button>
-          <button type="button" class="career-card" aria-pressed="false" onclick="selectCareerChoice('manager')">
-            <span class="career-index">02</span>
-            <span class="career-title">Become a Manager</span>
-            <span class="career-desc">Step back from driving. Run the team from the pit wall. Hire drivers for all your cars.</span>
-          </button>
-          <button type="button" class="career-card" aria-pressed="false" onclick="selectCareerChoice('hired')">
-            <span class="career-index">03</span>
-            <span class="career-title">Drive for Another Team</span>
-            <span class="career-desc">Join an established team, collect a weekly salary, and leave the management headaches behind.</span>
-          </button>
-        </div>
-        <div id="hired-team-select" class="hidden mt">
-          <label class="form-label">Choose a team to drive for:</label>
-          <select id="select-ai-team" class="form-select">${teamOpts}</select>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary" id="btn-confirm-career" onclick="confirmCareerChoice()" disabled>Confirm Choice</button>
       </div>
     </div>
   </div>`;
@@ -1271,9 +1205,7 @@ function renderCareerStats() {
           ${statBar('Driver Skill', Math.round(game.playerSkill))}
           <div class="team-stat"><span>Team</span><span>${game.teamName}</span></div>
           <div class="team-stat"><span>Series</span><span>${SERIES[game.currentSeries].name}</span></div>
-          <div class="team-stat"><span>Role</span><span>${
-            game.driverMode === 'hired' ? 'Hired Driver'
-            : game.driverMode === 'manager' ? 'Team Manager' : 'Driver / Owner'}</span></div>
+          <div class="team-stat"><span>Role</span><span>Driver / Owner</span></div>
         </div>
       </div>
 

@@ -253,7 +253,7 @@ Horizontal Barlow labels with graphite hover and off-white active state. Desktop
 
 ### Selection Tiles
 
-Difficulty and career choices group name and description in one clickable graphite tile. Off-white fill with charcoal text identifies a selected choice; supporting selected descriptions darken for contrast. Difficulty tiles use (20px) padding, a control radius, and a (116px) desktop minimum height.
+Difficulty and Quick Race series choices group name and description in one clickable graphite tile. Off-white fill with charcoal text identifies a selected choice; supporting selected descriptions darken for contrast. Difficulty tiles use (20px) padding, a control radius, and a (116px) desktop minimum height. Careers always combine driving and team ownership; there is no career-role chooser.
 
 ### Native Disclosures
 

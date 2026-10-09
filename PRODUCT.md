@@ -10,6 +10,8 @@ web
 
 A browser stock-car career game combining team management with playable 3D racing and statistical race simulation. Players make race, garage, staffing, sponsorship, and financial decisions while progressing through three series.
 
+User-confirmed October 8 follow-up: every career combines driving and team ownership. Owner-only and hired-player careers are removed, including their Premier chooser and alternate race handling. Older saves migrate to the combined career without resetting assets or progress. Hired teammate drivers remain supported. Career races require the player in an available owned car, including simulated events.
+
 ## Capabilities and Constraints
 
 Source-verified: vanilla HTML/CSS/JavaScript with shared globals; Three.js r134; no backend. Five origin-local save slots. New careers start with $50,000 and one car. Playable racing is a keyboard-controlled straight sprint, with auto-throttle, A/D steering and S braking. Existing calendar track types also inform simulation. Offline single-file and ZIP releases must stay synchronized.

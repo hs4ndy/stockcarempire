@@ -320,14 +320,13 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .difficulty-card:hover { background: var(--panel-3); } .difficulty-card.selected { background: var(--text); color: var(--bg); }
 .difficulty-name { font-size: 18px; font-weight: 600; } .difficulty-blurb { font-size: 14px; color: var(--text-dim); line-height: 1.5; }
 .difficulty-card.selected .difficulty-blurb { color: #454a4e; }
-.quick-series, .career-choices { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
-.quick-series-btn, .career-card { display: flex; flex-direction: column; gap: 6px; text-align: left; padding: 20px; background: var(--panel-2); border-radius: 6px; transition: background-color var(--t), color var(--t); }
-.quick-series-btn:hover, .quick-series-btn.selected, .career-card:hover, .career-card.selected { background: var(--text); color: var(--bg); }
-.quick-series-name, .career-title { font-size: 18px; font-weight: 600; } .quick-series-name { color: var(--series-color); } .quick-series-meta, .career-desc { font-size: 14px; color: var(--text-dim); }
+.quick-series { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+.quick-series-btn { display: flex; flex-direction: column; gap: 6px; text-align: left; padding: 20px; background: var(--panel-2); border-radius: 6px; transition: background-color var(--t), color var(--t); }
+.quick-series-btn:hover, .quick-series-btn.selected { background: var(--text); color: var(--bg); }
+.quick-series-name { font-size: 18px; font-weight: 600; color: var(--series-color); } .quick-series-meta { font-size: 14px; color: var(--text-dim); }
 .quick-series-btn:hover .quick-series-name, .quick-series-btn.selected .quick-series-name { color: var(--bg); }
-.quick-series-btn:hover .quick-series-meta, .quick-series-btn.selected .quick-series-meta, .career-card:hover .career-desc, .career-card.selected .career-desc { color: #454a4e; }
+.quick-series-btn:hover .quick-series-meta, .quick-series-btn.selected .quick-series-meta { color: #454a4e; }
 .quick-race-footer .btn { width: 100%; }
-.career-index { font: 600 24px/1 var(--font-display); }
 
 /* Tutorial and notifications use the app's typography and controls. */
 .career-tutorial { position: fixed; inset: 0; z-index: 90; overflow: hidden; pointer-events: none; }
@@ -384,9 +383,6 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 
 }
 .r3d-order-head {
-  display: grid;
-  grid-template-columns: 30px 1fr;
-  gap: 14px;
   padding: 7px 10px;
   background: var(--bg);
   border-bottom: 1px solid var(--line-2);

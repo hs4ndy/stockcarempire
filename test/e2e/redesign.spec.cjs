@@ -64,7 +64,7 @@ for (const [name, viewport] of [
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
     await page.getByRole('button', { name: 'Back to Dashboard' }).click();
     await page.evaluate(() => {
-      const results = simulateRace({ playerCarId: game.cars[0].id, trackId: currentRace().trackId, isHiredMode: false });
+      const results = simulateRace({ playerCarId: game.cars[0].id, trackId: currentRace().trackId });
       document.body.insertAdjacentHTML('beforeend', renderRaceResultsModal(results.results, results.events, results.playerResult));
     });
     await capture(page, 'results-' + name);

@@ -1783,7 +1783,7 @@ class Race3DEngine {
         <span class="r3d-order-name">${nm}</span>
       </div>`;
     }).join('');
-    el.innerHTML = `<div class="r3d-order-head"><span>POS</span><span>Leaderboard</span></div>${rows}`;
+    el.innerHTML = `<div class="r3d-order-head">Leaderboard</div>${rows}`;
   }
 
   _warn(msg) {

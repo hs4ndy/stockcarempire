@@ -29,7 +29,7 @@ for (const [series, name] of [[0, 'Grassroots'], [1, 'Challenger'], [2, 'Premier
     expect(lateral.left).toBeLessThan(50);
     expect(lateral.right).toBeGreaterThan(50);
     expect(lateral.centre).toBe(50);
-    await expect(page.locator('.r3d-order-head')).toContainText('Leaderboard');
+    await expect(page.locator('.r3d-order-head')).toHaveText('Leaderboard');
     await expect(page.locator('.r3d-mirror-label')).toHaveCount(0);
     await expect(page.locator('.r3d-progress-label')).toHaveText('StartFinish');
     const sizes = await page.evaluate(() => {

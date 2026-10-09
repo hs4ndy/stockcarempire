@@ -39,6 +39,15 @@ function loadFromSlot(slot) {
     if (!raw) return false;
     const loaded = JSON.parse(raw);
     if (!loaded || !loaded.teamName || !loaded.cars || !loaded.season) return false;
+    // Careers always combine driving and team ownership. Retire legacy role
+    // fields without resetting the player's assets or championship progress.
+    for (const key of ['driverMode', 'hiredTeamId', 'hiredSalary', 'premierChoicePending']) {
+      delete loaded[key];
+    }
+    const availableCars = loaded.cars.filter(c => !(loaded.hiredDrivers || []).some(h => h.carId === c.id));
+    if (!availableCars.some(c => c.assignedDriverId === 'player') && availableCars.length) {
+      availableCars[0].assignedDriverId = 'player';
+    }
     game = loaded;
     currentSlot = slot;
     return true;
@@ -95,7 +104,7 @@ function makeCar(name, classId, overrideStats, opts = {}) {
     reliability: stats.reliability,
     condition:   100,       // 0–100; degrades with racing
     appliedUpgrades: [],    // upgrade ids applied
-    assignedDriverId: null, // null = player drives
+    assignedDriverId: null, // null = unassigned; 'player' = player's seat
     wins: 0,
     races: 0,
     totalPoints: 0,
@@ -245,8 +254,6 @@ function newGame(teamName, driverName, firstCarName) {
     playerSkill: 60,     // 0–100, improves slowly
     reputation: 50,      // 0–100; affected by race behavior
     currentSeries: 0,
-    driverMode: 'driver', // 'driver' | 'manager' | 'hired' (Premier Cup Series choice)
-    hiredTeamId: null,    // if 'hired', which AI team
 
     cars: [firstCar],
     hiredDrivers: [],    // { driverId, carId }
@@ -1027,17 +1034,4 @@ function ordinal(n) {
   const s = ['th','st','nd','rd'];
   const v = n % 100;
   return (s[(v-20)%10] || s[v] || s[0]);
-}
-
-// ─── Premier Cup Series career choice ───────────────────────────────
-function chooseCareerPath(path, aiTeamId) {
-  // path: 'driver' | 'manager' | 'hired'
-  game.driverMode = path;
-  if (path === 'hired') {
-    game.hiredTeamId = aiTeamId;
-    // Player no longer owns their team; get a salary
-    game.hiredSalary = 8000; // weekly salary
-  }
-  game.premierChoicePending = false;
-  saveGame();
 }

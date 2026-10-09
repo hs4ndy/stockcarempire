@@ -43,6 +43,64 @@ function readJson(context, expression) {
   return JSON.parse(vm.runInContext(`JSON.stringify(${expression})`, context));
 }
 
+for (const legacyRole of ['driver', 'manager', 'hired']) {
+  test(`legacy ${legacyRole} saves become driver-owner careers without losing progress`, () => {
+    const context = makeContext();
+    vm.runInContext(`
+      newGame('Legacy Racing', 'Legacy Driver', 'Legacy Car');
+      game.money = 712345;
+      game.currentSeries = 2;
+      game.history = [{year: 1, series: 'Grassroots Cup', wins: 4, finalPos: 2, payout: 90000}];
+      game.season.year = 4;
+      game.season.raceIndex = 3;
+      game.cars[0].assignedDriverId = null;
+      game.driverMode = ${JSON.stringify(legacyRole)};
+      game.hiredTeamId = game.season.aiTeams[0].id;
+      game.hiredSalary = 8000;
+      game.premierChoicePending = true;
+      const original = JSON.stringify(game);
+      localStorage.setItem('sce_slot_2', original);
+      const loadedOk = loadFromSlot(2);
+    `, context);
+    assert.equal(vm.runInContext('loadedOk', context), true);
+    const original = readJson(context, 'JSON.parse(original)');
+    const expected = structuredClone(original);
+    for (const key of ['driverMode', 'hiredTeamId', 'hiredSalary', 'premierChoicePending']) delete expected[key];
+    expected.cars[0].assignedDriverId = 'player';
+    assert.deepEqual(readJson(context, 'game'), expected);
+    // Loading does not overwrite the saved slot until the next save.
+    assert.deepEqual(readJson(context, "JSON.parse(localStorage.getItem('sce_slot_2'))"), original);
+    vm.runInContext('saveGame()', context);
+    assert.deepEqual(readJson(context, "JSON.parse(localStorage.getItem('sce_slot_2'))"), expected);
+    assert.match(vm.runInContext('renderCareerStats()', context), /Driver \/ Owner/);
+    assert.doesNotMatch(vm.runInContext('renderRaceSetup()', context), /drive for|assigned automatically/);
+    assert.equal(vm.runInContext('typeof chooseCareerPath', context), 'undefined');
+    assert.equal(vm.runInContext('typeof renderPremierChoiceModal', context), 'undefined');
+  });
+}
+
+test('career simulation requires the player in an available owned car and retains teammates', () => {
+  const context = makeContext();
+  vm.runInContext(`
+    newGame('Owner Driver Racing', 'Player Driver', 'Player Car');
+    game.money = 500000;
+    buyCar('Teammate Car');
+    hireDriver(HIREABLE_DRIVERS[0].id, game.cars[1].id);
+    const ownCarId = game.cars[0].id;
+    const teammateCarId = game.cars[1].id;
+    const entries = buildEntryList(ownCarId, currentRace().trackId);
+  `, context);
+  assert.equal(vm.runInContext("entries.filter(e => e.isPlayer).length", context), 1);
+  assert.equal(vm.runInContext("entries.find(e => e.isPlayer).teamName", context), 'Owner Driver Racing');
+  assert.equal(vm.runInContext("entries.filter(e => e.id === teammateCarId).length", context), 1);
+  assert.throws(() => vm.runInContext('buildEntryList(null, currentRace().trackId)', context), /player must drive/);
+  assert.throws(() => vm.runInContext('buildEntryList(teammateCarId, currentRace().trackId)', context), /player must drive/);
+  const result = readJson(context, 'simulateRace({playerCarId: ownCarId, trackId: currentRace().trackId})');
+  assert.equal(result.playerResult.carId, vm.runInContext('ownCarId', context));
+  assert.equal(result.results.length, 20);
+  assert.throws(() => vm.runInContext('renderRaceResultsModal([], [], null)', context), /require the player/);
+});
+
 function physicsContext(seed = 17) {
   const context = makeContext(seed);
   vm.runInContext(`
@@ -729,7 +787,6 @@ test('race weekend presents track emphasis as normalized percentages', () => {
   const context = makeContext();
   vm.runInContext(`game = {
     currentSeries: 0,
-    driverMode: 'driver',
     cars: [{ id: 'p1', number: 1, name: 'Baseline', speed: 42, handling: 45, condition: 100, assignedDriverId: 'player' }],
     hiredDrivers: [],
     season: { raceIndex: 0, calendar: [{ trackId: 't05' }], aiTeams: [] },

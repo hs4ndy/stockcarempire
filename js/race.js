@@ -6,17 +6,16 @@
  * Simulate a full race and return structured results.
  *
  * @param {object} opts
- *   playerCarId   - which of the player's cars is racing (null if manager/hired mode)
+ *   playerCarId   - which of the player's own cars they are driving
  *   trackId       - the track being raced
- *   isHiredMode   - true if player drives for an AI team
  * @returns {object}  { results, events, playerResult }
  */
-function simulateRace({ playerCarId, trackId, isHiredMode }) {
+function simulateRace({ playerCarId, trackId }) {
   const track = TRACKS.find(t => t.id === trackId);
   const series = SERIES[game.currentSeries];
 
   // Build the full entry list
-  const entries = buildEntryList(playerCarId, trackId, isHiredMode);
+  const entries = buildEntryList(playerCarId, trackId);
 
   // Calculate initial performance scores
   entries.forEach(e => {
@@ -104,12 +103,15 @@ function simulateRace({ playerCarId, trackId, isHiredMode }) {
 }
 
 // ─── Build entry list ────────────────────────────────────────
-function buildEntryList(playerCarId, trackId, isHiredMode) {
+function buildEntryList(playerCarId, trackId) {
   const series  = SERIES[game.currentSeries];
   const entries = [];
+  if (!game.cars.some(c => c.id === playerCarId) || hireForCar(playerCarId)) {
+    throw new Error('The player must drive an available car owned by their team.');
+  }
 
   // Player entry
-  if (!isHiredMode && playerCarId) {
+  if (playerCarId) {
     const car = game.cars.find(c => c.id === playerCarId);
     if (car) {
       entries.push({
@@ -129,23 +131,6 @@ function buildEntryList(playerCarId, trackId, isHiredMode) {
         hasCrchief:  game.staff.some(s => s.typeId === 'crew_chief'),
         hasEngineer: game.staff.some(s => s.typeId === 'engineer'),
         analysts:    analystCount(),
-      });
-    }
-  }
-
-  if (isHiredMode) {
-    // Player is driving for an AI team - treat like a strong entry
-    const aiTeam = game.season.aiTeams.find(t => t.id === game.hiredTeamId);
-    if (aiTeam) {
-      const power = (aiTeam.cars[0]?.power || 0.55) + game.playerSkill / 100 * 0.2;
-      entries.push({
-        id:          'player',
-        displayName: `${aiTeam.name} / ${game.driverName || 'You'}`,
-        teamName:    aiTeam.name,
-        teamColor:   aiTeam.color,
-        isPlayer:    true,
-        dnf:         false,
-        syntheticPower: clamp(power, 0.3, 0.98),
       });
     }
   }
@@ -178,7 +163,6 @@ function buildEntryList(playerCarId, trackId, isHiredMode) {
   // AI team entries
   game.season.aiTeams.forEach(team => {
     team.cars.forEach(car => {
-      if (isHiredMode && team.id === game.hiredTeamId) return; // skip - player fills this slot
       entries.push({
         id:          car.id,
         displayName: `${team.name} / ${car.driverName}`,
