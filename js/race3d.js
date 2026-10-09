@@ -158,7 +158,6 @@ function launch3DRace(config, onComplete) {
       <button class="r3d-pause-btn" id="r3d-pause-btn" title="Pause (Esc)">PAUSE</button>
 
       <div id="r3d-mirror-wrap"></div>
-      <div class="r3d-mirror-label">Rear view</div>
 
       <div class="r3d-order" id="r3d-order"></div>
 
@@ -194,7 +193,7 @@ function launch3DRace(config, onComplete) {
 
       <div class="r3d-progress-wrap">
         <div class="r3d-progress-fill" id="r3d-prog-fill"></div>
-        <div class="r3d-progress-label"><span>RACE DISTANCE</span><span>FINISH</span></div>
+        <div class="r3d-progress-label"><span>Start</span><span>Finish</span></div>
       </div>
 
       <div class="r3d-warning hidden" id="r3d-warn"></div>
@@ -1745,7 +1744,8 @@ class Race3DEngine {
         if (!car._dot) continue;
         if (car.dnf) { car._dot.style.opacity = '0.25'; }
         const topPct  = clamp(100 - (car.z / (this.raceLength || R3D.TRACK_LEN)) * 100, 0, 100);
-        const leftPct = clamp(50 + (car.x / hw) * 42, 4, 96);
+        // The forward-facing camera looks along +Z, so world +X is screen-left.
+        const leftPct = clamp(50 - (car.x / hw) * 42, 4, 96);
         car._dot.style.top  = topPct + '%';
         car._dot.style.left = leftPct + '%';
       }
@@ -1783,7 +1783,7 @@ class Race3DEngine {
         <span class="r3d-order-name">${nm}</span>
       </div>`;
     }).join('');
-    el.innerHTML = `<div class="r3d-order-head"><span>POS</span><span>LIVE ORDER</span></div>${rows}`;
+    el.innerHTML = `<div class="r3d-order-head"><span>POS</span><span>Leaderboard</span></div>${rows}`;
   }
 
   _warn(msg) {

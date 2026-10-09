@@ -94,10 +94,9 @@ for (const [name, viewport] of [
       const mirror = document.getElementById('r3d-mirror-wrap').getBoundingClientRect();
       const pause = document.getElementById('r3d-pause-btn').getBoundingClientRect();
       const tele = document.querySelector('.r3d-telemetry').getBoundingClientRect();
-      const label = document.querySelector('.r3d-mirror-label').getBoundingClientRect();
-      return { clear: mirror.right < pause.left, visible: mirror.width > 100 && mirror.height > 50, fits: tele.right <= innerWidth && tele.bottom <= innerHeight, labelOutside: label.top >= mirror.bottom && label.height < 30 };
+      return { clear: mirror.right < pause.left, visible: mirror.width > 100 && mirror.height > 50, fits: tele.right <= innerWidth && tele.bottom <= innerHeight, labelRemoved: !document.querySelector('.r3d-mirror-label') };
     });
-    expect(bounds).toEqual({ clear: true, visible: true, fits: true, labelOutside: true });
+    expect(bounds).toEqual({ clear: true, visible: true, fits: true, labelRemoved: true });
     await capture(page, 'race-' + name);
     await page.locator('#r3d-pause-btn').click();
     await expect(page.locator('#r3d-pause-overlay')).toHaveClass(/active/);

@@ -131,7 +131,7 @@ components:
 
 The user-selected FC25/26 sports presentation becomes a charcoal career interface with clear names, compact data rows, and decisive red actions. Barlow Condensed gives major titles and numbers a sporting presence; Barlow keeps decisions, costs, and supporting copy readable.
 
-The same materials carry into racing: opaque graphite broadcast panels frame telemetry and running order while the road remains visible. Management surfaces use tonal separation and restrained corners; selection is off-white, and status colors retain functional meaning.
+The same materials carry into racing: translucent graphite broadcast panels frame telemetry and running order while the road remains visible through their backgrounds. Management surfaces use tonal separation and restrained corners; selection is off-white, and status colors retain functional meaning.
 
 **Key Characteristics:**
 
@@ -208,7 +208,7 @@ The header contains the brand and save/new-career actions; career telemetry belo
 
 Dialogs retain bounded headers and footers with an independently scrolling body. Team Management uses Drivers and Support Staff view controls with off-white active selections. The chosen roster sits beside recruitment in (.85fr/1.5fr) columns, stacking at (800px). Recruitment lists have a stable scrollbar gutter, visible counts and scroll hints, and bounded vertical scrolling. Wide-layout recruitment height follows (`clamp(240px, calc(100svh - 510px), 560px)`); stacked layouts use (500px). Names, signing fees/salaries, and actions align in columns; at (640px), names span the row above costs and actions. Driver development is a native disclosure. Career history statistics auto-fit around a (90px) minimum; Last Season shows Championship Finish, Wins, and Cash Earned, with non-wrapping numeric values. This is a local history pattern, not a universal no-wrap requirement for all finance values.
 
-The race HUD uses edge-mounted telemetry and running order with a centered mirror. At (1040px), the minimap disappears; at (860px), side panels narrow; at (680px), running order disappears and telemetry becomes a bottom bar; at (520px), mirror width is constrained around the pause control. A (620px) height breakpoint shortens the mirror and running order. Mirror viewport bounds are renderer inputs: its caption sits outside that wrapper.
+The race HUD uses edge-mounted telemetry and a Leaderboard with a centered mirror. At (1040px), the minimap disappears; at (860px), side panels narrow; at (680px), running order disappears and telemetry becomes a bottom bar; at (520px), mirror width is constrained around the pause control. A (620px) height breakpoint shortens the mirror and running order. Actual mirror viewport bounds remain renderer inputs; the mirror has no caption.
 
 ## Elevation & Depth
 
@@ -265,7 +265,7 @@ Graphite dialogs use the same controls and condensed heading roles. Standard dia
 
 ### Broadcast Telemetry
 
-Opaque graphite panels share the control radius. Barlow supporting labels accompany condensed position and speed numerals; the player's order row is red. Draft and distance meters scale horizontally from the left, transitioning via transforms at (120ms linear) and (200ms linear), respectively. Reduced-motion preference collapses transition and animation durations and disables smooth scrolling.
+Graphite panels share the control radius and use (76%) background opacity, with opaque text and (80%) red for the player's order row and warnings. Major HUD dimensions are approximately (8%) smaller than the initial redesign; labels stay readable and pause controls retain a (44px) minimum height. Barlow supporting labels accompany condensed position and speed numerals. Draft and distance meters scale horizontally from the left, transitioning via transforms at (120ms linear) and (200ms linear), respectively. The distance labels are Start and Finish. Field-map horizontal positions match the forward-facing camera. Reduced-motion preference collapses transition and animation durations and disables smooth scrolling.
 
 ## Do's and Don'ts
 
