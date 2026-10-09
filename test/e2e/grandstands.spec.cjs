@@ -12,7 +12,6 @@ for (const [series, decks, mode] of [[0,1,'desktop'],[1,2,'desktop'],[2,4,'deskt
     await page.goto(mode==='file'?pathToFileURL(path.resolve(__dirname,'../../index.html')).href:'/');
     await page.locator('#btn-quick-race').click();
     await page.locator('.quick-series-btn').nth(series).click();
-    await page.locator('.quick-series-btn').nth(series).click();
     await page.locator("#btn-quick-race-confirm").click();
     await page.waitForFunction(()=>window._r3d?.racing && window._r3d?.grandstandGroup?.children.every(m=>!m.material.map || m.material.map.image?.naturalWidth>0));
     await page.waitForFunction(()=>window._r3d?.environmentGroup?.children.every(m=>m.material.map.image?.naturalWidth===512));

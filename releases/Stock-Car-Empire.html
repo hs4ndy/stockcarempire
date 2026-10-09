@@ -345,10 +345,11 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .difficulty-card.selected .difficulty-blurb { color: #454a4e; }
 .quick-series, .career-choices { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
 .quick-series-btn, .career-card { display: flex; flex-direction: column; gap: 6px; text-align: left; padding: 20px; background: var(--panel-2); border-radius: 6px; transition: background-color var(--t), color var(--t); }
-.quick-series-btn:hover, .career-card:hover, .career-card.selected { background: var(--text); color: var(--bg); }
+.quick-series-btn:hover, .quick-series-btn.selected, .career-card:hover, .career-card.selected { background: var(--text); color: var(--bg); }
 .quick-series-name, .career-title { font-size: 18px; font-weight: 600; } .quick-series-name { color: var(--series-color); } .quick-series-meta, .career-desc { font-size: 14px; color: var(--text-dim); }
 .quick-series-btn:hover .quick-series-name, .quick-series-btn.selected .quick-series-name { color: var(--bg); }
-.quick-series-btn:hover .quick-series-meta, .career-card:hover .career-desc, .career-card.selected .career-desc { color: #454a4e; }
+.quick-series-btn:hover .quick-series-meta, .quick-series-btn.selected .quick-series-meta, .career-card:hover .career-desc, .career-card.selected .career-desc { color: #454a4e; }
+.quick-race-footer .btn { width: 100%; }
 .career-index { font: 600 24px/1 var(--font-display); }
 
 /* Tutorial and notifications use the app's typography and controls. */
@@ -6422,7 +6423,7 @@ function renderQuickRaceModal() {
         </div>
       </div>
       <div class="modal-footer quick-race-footer">
-        <button type="button" class="primary-btn" id="btn-quick-race-confirm" onclick="confirmQuickRace()" disabled>Confirm Race</button>
+        <button type="button" class="btn btn-primary btn-lg" id="btn-quick-race-confirm" onclick="confirmQuickRace()" disabled>Confirm Race</button>
       </div>
     </div>
   </div>`;

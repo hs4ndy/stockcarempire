@@ -12,7 +12,6 @@ async function startRace(page) {
   await page.goto('/');
   await page.locator('#btn-quick-race').click();
   await page.locator('.quick-series-btn').last().click();
-  await page.locator('.quick-series-btn').last().click();
   await page.locator("#btn-quick-race-confirm").click();
   await page.waitForFunction(() => window._r3d?.mirrorRT);
 }

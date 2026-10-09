@@ -1448,7 +1448,7 @@ function renderQuickRaceModal() {
         </div>
       </div>
       <div class="modal-footer quick-race-footer">
-        <button type="button" class="primary-btn" id="btn-quick-race-confirm" onclick="confirmQuickRace()" disabled>Confirm Race</button>
+        <button type="button" class="btn btn-primary btn-lg" id="btn-quick-race-confirm" onclick="confirmQuickRace()" disabled>Confirm Race</button>
       </div>
     </div>
   </div>`;
