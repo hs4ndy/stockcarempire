@@ -26,7 +26,7 @@ for (const [name, viewport] of [
     page.on('pageerror', error => errors.push(error.message));
     await page.goto('/');
     await page.evaluate(() => document.fonts.ready);
-    expect(await page.locator('.intro-showcase img').evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
+    await expect(page.locator('.intro-showcase')).toHaveCount(0);
     await capture(page, 'intro-' + name);
     await page.locator('#btn-start-new').click();
     await page.locator('#inp-team-name').fill('Thunder Valley Racing');

@@ -54,21 +54,17 @@ body:not([data-screen="game"]) .skip-link { display: none; }
 .btn-row { display: flex; flex-wrap: wrap; gap: 12px; }
 
 /* Start screen and first career setup. */
-#screen-intro { min-height: 100svh; display: flex; align-items: center; justify-content: center; position: relative; padding: 80px 5vw; overflow: hidden; }
-.intro-layout { width: 100%; max-width: 1440px; display: grid; grid-template-columns: minmax(280px, .8fr) minmax(0, 1.4fr); gap: 5vw; align-items: center; position: relative; z-index: 1; }
-.intro-center { text-align: left; } .intro-logo { margin-bottom: 40px; }
+#screen-intro { min-height: 100svh; display: flex; align-items: center; justify-content: center; position: relative; padding: 32px 24px; overflow: hidden; }
+.intro-layout { width: 100%; max-width: 360px; position: relative; z-index: 1; }
+.intro-center { text-align: center; } .intro-logo { margin-bottom: 32px; }
 .logo-main-wrap { display: flex; flex-direction: column; line-height: .9; }
 .logo-main { font: 600 clamp(24px, 3vw, 40px)/1 var(--font-display); text-transform: uppercase; }
 .logo-empire { margin-top: 8px; font: 800 clamp(64px, 7.3vw, 96px)/.92 var(--font-display); letter-spacing: -.025em; text-transform: uppercase; }
 .logo-beta { display: inline-block; margin-top: 20px; font-size: 12px; color: var(--text-dim); }
 .logo-stripe, .intro-checker-strip { display: none; }
-.intro-buttons { display: flex; flex-direction: column; gap: 10px; max-width: 360px; }
+.intro-buttons { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 320px; margin-inline: auto; }
+.intro-buttons .btn-game { justify-content: center; }
 .btn-game { width: 100%; justify-content: flex-start; min-height: 60px; padding: 16px 24px; font-size: 19px; }
-.intro-description { margin-top: 24px; color: var(--text-dim); max-width: 34ch; }
-.intro-showcase { min-width: 0; background: var(--panel); border-radius: var(--radius); overflow: hidden; }
-.intro-showcase img { display: block; width: 100%; height: auto; aspect-ratio: 1.52; object-fit: cover; }
-.intro-showcase figcaption { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 20px 24px; font-size: 13px; color: var(--text-dim); }
-.intro-showcase figcaption span { color: var(--text); }
 .intro-footer { position: absolute; bottom: 28px; left: 5vw; right: 5vw; display: flex; justify-content: space-between; gap: 24px; color: var(--text-mute); font-size: 13px; }
 .intro-bg-lines { position: absolute; inset: -20%; opacity: .5; transform: skewY(-5deg); overflow: hidden; pointer-events: none; }
 .intro-bg-lines span { position: absolute; left: -10%; width: 120%; height: 1px; background: #303438; transform: rotate(-7deg); }
@@ -753,13 +749,6 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
   .team-recruitment .recruitment-list { max-height: 500px; }
   .dashboard-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
   .card, .car-card { padding: 20px; } .race-spotlight-name { font-size: 36px; }
-  .intro-layout { grid-template-columns: 1fr; gap: 40px; max-width: 600px; }
-  .intro-center { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: center; }
-  .intro-logo { margin: 0; } .logo-main { font-size: 28px; } .logo-empire { font-size: 72px; }
-  .intro-description { grid-column: 1 / -1; margin-top: 0; }
-  .intro-footer { position: static; margin-top: 32px; }
-  #screen-intro { flex-direction: column; align-items: stretch; padding: 40px 24px 24px; }
-  .intro-layout, .intro-footer { margin-inline: auto; width: 100%; max-width: 600px; }
 }
 @media (max-width: 640px) {
   :root { --shell-height: 72px; }
@@ -805,9 +794,6 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
   #screen-race-setup { padding: 24px 16px; } .race-details-grid { grid-template-columns: 1fr; }
   .race-track-name.big { font-size: 36px; } .race-choice-group { padding: 20px; }
   .race-choice-group .btn-row > .btn { flex: 1 1 100%; }
-  .intro-center { display: flex; flex-direction: column; align-items: stretch; gap: 24px; }
-  .intro-buttons { max-width: none; } .intro-showcase figcaption { padding: 16px; font-size: 12px; }
-  .intro-footer { flex-direction: column; gap: 4px; font-size: 12px; }
   .career-tutorial-panel { padding: 20px; max-height: min(49vh, 360px); }
   .career-tutorial-panel h2 { font-size: 28px; } .career-tutorial-panel p { font-size: 15px; }
   .career-tutorial-actions .btn { padding: 8px 12px; font-size: 14px; }
