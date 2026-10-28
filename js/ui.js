@@ -41,6 +41,8 @@ function renderTab(tabName) {
 // ─── Update header info ──────────────────────────────────────
 function updateHeader() {
   if (!game) return;
+  const cash = document.getElementById('header-cash');
+  if (cash) cash.textContent = fmt$(game.money);
   // Flag an unsaved career - auto-save only runs once a slot is chosen.
   const saveBtn = document.getElementById('btn-hdr-save');
   if (saveBtn) {

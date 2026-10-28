@@ -172,9 +172,9 @@ const STAFF_TYPES = [
   {
     id: 'crew_chief',
     name: 'Crew Chief',
-    description: 'Improves race strategy and pit stop timing. Adds a position bonus on race day.',
+    description: 'Improves strategy and performance in simulated races. Does not award finishing positions in driven races.',
     weeklyCost: [1800, 3500, 7000],
-    bonus: 'Earns +1 to +3 positions in race results',
+    bonus: '+2 simulated performance score; no guaranteed finishing places',
     max: 1
   },
   {

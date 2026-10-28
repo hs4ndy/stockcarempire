@@ -104,6 +104,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .header-brand-main { font: 600 14px/1 var(--font-display); text-transform: uppercase; }
 .header-brand-sub { font: 800 26px/1 var(--font-display); text-transform: uppercase; }
 .header-actions { display: flex; gap: 8px; flex: none; margin-left: auto; }
+.header-cash { align-self: center; color: var(--good); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .btn.btn-unsaved { border-color: var(--warn); color: var(--warn); }
 .btn.btn-unsaved:hover { background: var(--warn); color: var(--bg); }
 .game-nav { display: flex; align-items: center; gap: 6px; padding: 10px max(32px, calc((100% - var(--maxw) + 64px) / 2)); background: var(--bg); border-bottom: 1px solid var(--line); position: sticky; top: var(--shell-height); z-index: 39; overflow-x: auto; scrollbar-width: thin; }

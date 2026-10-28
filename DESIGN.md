@@ -157,6 +157,7 @@ Bright text and functional red sit on dark charcoal, with graphite layers separa
 ### Secondary
 
 - **Positive Mint** (`good`): condition, draft strength, improvement, and positive financial values.
+- The career header retains a compact mint cash balance beside Save at desktop and phone widths (user request, October 28).
 - **Caution Sand** (`warn`): costs requiring attention, podiums, championships, and warnings.
 - **Danger Rose** (`danger-text`): destructive controls, failures, and negative states.
 - **Focus Ice** (`focus`): keyboard focus, field focus, and tutorial spotlight perimeter.

@@ -294,9 +294,14 @@ class Race3DEngine {
     this.mirrorCam.position.set(0, 4, 0);
 
     this.renderer = new THREE.WebGLRenderer({ canvas: c, antialias: true });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // Budget rendering work rather than multiplying every screen pixel by four.
+    this.lowPower = (navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4)
+      || (navigator.deviceMemory > 0 && navigator.deviceMemory <= 4);
+    this._pixelRatio = Math.min(window.devicePixelRatio || 1, this.lowPower ? 1 : 1.5,
+      Math.sqrt((this.lowPower ? 1000000 : 2000000) / (w * h)));
+    this.renderer.setPixelRatio(this._pixelRatio);
     this.renderer.setSize(w, h, false);
-    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.enabled = !this.lowPower;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.5));
@@ -313,7 +318,7 @@ class Race3DEngine {
 
     // Max anisotropy keeps the heavily-tiled asphalt/grass sharp at distance
     // instead of shimmering - most visible in the mirror.
-    this._maxAniso = this.renderer.capabilities?.getMaxAnisotropy?.() || 4;
+    this._maxAniso = Math.min(this.lowPower ? 2 : 4, this.renderer.capabilities?.getMaxAnisotropy?.() || 1);
 
     this._initGeometries();
     this._buildTrack();
@@ -361,6 +366,8 @@ class Race3DEngine {
       if (!el) return;
       const nw = el.clientWidth  || window.innerWidth;
       const nh = el.clientHeight || window.innerHeight;
+      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.lowPower ? 1 : 1.5,
+        Math.sqrt((this.lowPower ? 1000000 : 2000000) / (nw * nh))));
       this.renderer.setSize(nw, nh, false);
       this.camera.aspect = nw / nh;
       this.camera.updateProjectionMatrix();
@@ -417,6 +424,51 @@ class Race3DEngine {
   }
 
   // ── Track ────────────────────────────────────────────────────
+  _loadSurfaceTexture(source, fallbackColor, cutout = false) {
+    // A valid tiny image is present before decode, and remains on failure.
+    // Empty/failed GPU textures otherwise multiply the pavement to black.
+    const tex = r3dTex(2, 2, ctx => { ctx.fillStyle = cutout ? 'rgba(0,0,0,0)' : fallbackColor; ctx.fillRect(0, 0, 2, 2); });
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.anisotropy = this._maxAniso;
+    tex.userData.loadState = 'loading';
+    const image = new Image();
+    image.onload = () => {
+      if (this._disposed) return;
+      const limit = Math.min(this.renderer.capabilities.maxTextureSize, this.lowPower ? 1024 : 2048);
+      const scale = Math.min(1, limit / Math.max(image.width, image.height));
+      let decoded = image;
+      if (scale < 1) {
+        decoded = document.createElement('canvas');
+        // Power-of-two dimensions keep repeat/mipmaps valid on WebGL 1 too.
+        decoded.width = 2 ** Math.floor(Math.log2(image.width * scale));
+        decoded.height = 2 ** Math.floor(Math.log2(image.height * scale));
+        decoded.getContext('2d').drawImage(image, 0, 0, decoded.width, decoded.height);
+      }
+      tex.image = decoded; tex.needsUpdate = true; tex.userData.loadState = 'loaded';
+    };
+    image.onerror = () => { if (!this._disposed) tex.userData.loadState = 'fallback'; };
+    image.src = source || '';
+    return tex;
+  }
+
+  _positionTrack() {
+    if (!this.lowPower || !this._trackLayout) return;
+    const {length, count} = this._trackLayout;
+    const center = Math.floor((this.player?.z || 0) / length);
+    if (center === this._trackCenter) return;
+    this._trackCenter = center;
+    const reach = Math.ceil(4200 / length);
+    for (const mesh of this.trackGroup.children) {
+      mesh.count = Math.min(count, reach * 2 + 1);
+      for (let i = 0; i < mesh.count; i++) {
+        this._dummy.position.set(0, 0, (center + i - reach) * length);
+        this._dummy.rotation.set(0, 0, 0); this._dummy.scale.set(1, 1, 1); this._dummy.updateMatrix();
+        mesh.setMatrixAt(i, this._dummy.matrix);
+      }
+      mesh.instanceMatrix.needsUpdate = true;
+    }
+  }
+
   _buildTrack() {
     const s  = this.scene;
     const TL = R3D.TRACK_LEN;
@@ -427,14 +479,10 @@ class Race3DEngine {
     // One shared indexed buffer per material, repeated in 60-unit modules.
     const track = this.isGrassroots ? SC_GRASSROOTS_TRACK_MODEL : SC_TRACK_MODEL;
     const textures = this.isGrassroots ? SC_GRASSROOTS_TRACK_TEXTURES : SC_TRACK_TEXTURES;
-    const loader = new THREE.TextureLoader();
     const load = name => {
       // Data URLs remain valid WebGL sources when index.html is opened via
       // file://. Neighboring file images are rejected by Chrome's CORS rules.
-      const tex = loader.load(textures[name]);
-      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      tex.anisotropy = this._maxAniso;
-      return tex;
+      return this._loadSurfaceTexture(textures[name], name === 'speedway-asphalt' ? '#777777' : '#deded8', name === 'speedway-mesh');
     };
     const trackMaterials = {
       asphalt: new THREE.MeshLambertMaterial({ map: load('speedway-asphalt'), color: 0xbdbdbd, side: THREE.DoubleSide }),
@@ -450,6 +498,7 @@ class Race3DEngine {
     // endpoints. Normal races still use the original 15,000-unit finish.
     const runoutModules = Math.ceil(4200 / track.moduleLength);
     const moduleCount = Math.ceil(TL / track.moduleLength) + 2 * runoutModules;
+    this._trackLayout = {length: track.moduleLength, count: moduleCount};
     this.trackGroup = new THREE.Group();
     this.trackGroup.name = track.name;
     this.trackGroup.userData = { width: track.trackWidth, wallInnerX: track.wallInnerX, fenceHeight: track.fenceHeight };
@@ -509,7 +558,7 @@ class Race3DEngine {
       geometry.setAttribute('normal', new THREE.Float32BufferAttribute(data.normal, 3));
       geometry.setAttribute('uv', new THREE.Float32BufferAttribute(data.uv, 2));
       geometry.setIndex(data.index);
-      const map = new THREE.TextureLoader().load(asset.textures[name]);
+      const map = this._loadSurfaceTexture(asset.textures[name], name === 'grass' ? '#567745' : '#858984');
       map.wrapS = map.wrapT = THREE.RepeatWrapping;
       const mesh = new THREE.InstancedMesh(geometry, new THREE.MeshLambertMaterial({ map }), count);
       mesh.name = 'ground:' + name; mesh.receiveShadow = true; mesh.frustumCulled = false;
@@ -1529,6 +1578,7 @@ class Race3DEngine {
   }
 
   _updateCamera(dt) {
+    this._positionTrack();
     this._positionGrandstands();
     const p  = this.player;
     const sk = this.camShake;
@@ -1574,14 +1624,14 @@ class Race3DEngine {
   // correct lighting) and then blit it through a quad with mirrored UVs.
   _initMirrorTarget(w, h) {
     if (this.mirrorRT) this.mirrorRT.dispose();
-    const Target = this.renderer.capabilities.isWebGL2
+    const Target = this.renderer.capabilities.isWebGL2 && !this.lowPower
       ? THREE.WebGLMultisampleRenderTarget : THREE.WebGLRenderTarget;
     this.mirrorRT = new Target(Math.max(2, w), Math.max(2, h), {
       minFilter: THREE.LinearFilter,
       magFilter: THREE.LinearFilter,
       format:    THREE.RGBAFormat,
     });
-    if (this.renderer.capabilities.isWebGL2) this.mirrorRT.samples = 4;
+    if (this.renderer.capabilities.isWebGL2 && !this.lowPower) this.mirrorRT.samples = 4;
     this.mirrorRTSize = { w, h };
 
     if (!this.mirrorScene) {
@@ -1828,6 +1878,7 @@ class Race3DEngine {
   }
 
   destroy() {
+    this._disposed = true;
     cancelAnimationFrame(this._raf);
     this._raf = null;
     clearTimeout(this._warnTimeout);
