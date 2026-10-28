@@ -1,5 +1,7 @@
 # Stock Car Empire: Codex handoff
 
+Persistent working record: `C:\Users\harri\OneDrive\Documents\vaults\stockcarempire`. Read Project Home.md, AGENTS.md, Current State.md, and Open Checks.md first; verify against source and update the vault automatically at session end. Detailed continuity and session history live in the vault.
+
 Updated 2026-10-08. This session replaces the phase 0.90 interface with a full FC25/26-inspired redesign; parent baseline is `5af567fb24a904655aee9b236d85de1aeb97defd`. Actual repository files are authoritative; user requirements describe intent, not necessarily implemented behavior.
 
 ## Status and working rules
