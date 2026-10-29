@@ -121,6 +121,8 @@ function runRearStart(seed, fieldSize = 36, difficulty = 'beginner', strategy = 
       done: engine.done,
       finish: engine.finishOrder.indexOf(player) + 1,
       startPosition,
+      openingNearby: samples[Math.min(10,samples.length-1)].nearby,
+      openingLeaderGap: samples[Math.min(10,samples.length-1)].leaderGap,
       passStarts,
       medianSpan: median('span'),
       medianDrafting: median('drafting'),
@@ -133,6 +135,14 @@ function runRearStart(seed, fieldSize = 36, difficulty = 'beginner', strategy = 
 }
 
 module.exports = { runRearStart };
+
+if (require.main === module) test('All-Out leaves a strong front starter within drafting reach after the opening',()=>{
+  const report=runRearStart(17,36,'allout','ride',null,{frontTrain:true,teammates:3});
+  assert.equal(report.done,true);
+  assert.ok(report.openingNearby>=10,'the field should not immediately disappear');
+  assert.ok(report.openingLeaderGap<82,'a strong starter can still reach a useful tow');
+  assert.ok(report.finish>1,'passive teammate riding must not become a free win');
+});
 
 if (require.main === module) test('Pro keeps pressure on a powerful front-start teammate train', () => {
   const report=runRearStart(17,36,'pro','ride',null,{frontTrain:true,teammates:3});

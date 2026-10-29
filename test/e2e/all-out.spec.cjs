@@ -10,11 +10,16 @@ for(const [name,file,width] of [['source','index.html',1440],['offline','release
     await page.locator('#btn-start-new').click();
     await page.locator('#inp-team-name').fill('All Out Racing');await page.locator('#inp-driver-name').fill('Challenger');await page.locator('#inp-car-name').fill('Car');await page.locator('#btn-create-team').click();
     await expect(page.locator('#setup-difficulty-grid .difficulty-card')).toHaveCount(5);
+    const fillsRow=selector=>page.locator(selector).evaluate(el=>{
+      const grid=el.parentElement.getBoundingClientRect(),box=el.getBoundingClientRect();return Math.abs(grid.width-box.width)<2;
+    });
+    expect(await fillsRow('#setup-difficulty-grid [data-diff="allout"]')).toBe(true);
     await page.locator('#setup-difficulty-grid [data-diff="allout"]').click();
     await page.locator('#btn-begin-career').click();await page.locator('[data-tutorial-action="skip"]').click();
     expect(await page.evaluate(()=>game.difficulty)).toBe('allout');
     await page.evaluate(()=>{showTab('settings');saveToSlot(4);});
     await expect(page.locator('#main-content [data-diff="allout"]')).toHaveAttribute('aria-pressed','true');
+    expect(await fillsRow('#main-content [data-diff="allout"]')).toBe(true);
     await page.locator('#main-content [data-diff="beginner"]').click();
     // Restore a saved All-Out choice after an in-memory change, without auto-saving over it.
     await page.evaluate(()=>{game.difficulty='allout';saveToSlot(4);game.difficulty='beginner';loadFromSlot(4);showTab('settings');});
@@ -27,6 +32,7 @@ for(const [name,file,width] of [['source','index.html',1440],['offline','release
     await expect(page.locator('#btn-quick-race-confirm')).toBeVisible();
     await page.mouse.move(0,0);await page.waitForTimeout(240);
     await expect(page.locator('#quick-race-modal [data-diff="allout"]')).toHaveAttribute('aria-pressed','true');
+    expect(await fillsRow('#quick-race-modal [data-diff="allout"]')).toBe(true);
     await page.screenshot({path:`.impeccable/review/all-out-quick-${name}.png`,animations:'disabled'});
     await page.locator('#btn-quick-race-confirm').click();await page.waitForFunction(()=>window._r3d?.mirrorRT);
     expect(await page.evaluate(()=>window._r3d.diff.id)).toBe('allout');

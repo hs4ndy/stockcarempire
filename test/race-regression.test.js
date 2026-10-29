@@ -573,7 +573,7 @@ test('AI drafting increases on every difficulty and pack pressure scales to Pro'
     e._updateAI(1/60);
     return {id:diff.id,draft:diff.aiDraft,pressure:diff.packPressure,speed:mate.speed,front};
   })`);
-  for (const r of report) {assert.equal(r.draft,r.id==='allout'?1.30:1.05);assert.equal(r.front,false);}
+  for (const r of report) {assert.equal(r.draft,r.id==='allout'?1.15:1.05);assert.equal(r.front,false);}
   for(let i=1;i<report.length;i++) assert.ok(report[i].speed>report[i-1].speed);
   assert.ok(report.at(-1).speed>210,'a detached Pro car accelerates to reconnect');
 });
@@ -618,7 +618,7 @@ test('All-Out boosts simulated rivals without changing teammates or economy',()=
     return readJson(c,`(()=>{newGame('Team','Driver','Car');game.difficulty='${difficulty}';return {rival:calcPerf({syntheticPower:.6},TRACKS[0]),teammate:calcPerf({syntheticPower:.6,isTeammate:true},TRACKS[0]),money:game.money};})()`);
   };
   const pro=sample('pro'),allout=sample('allout');
-  assert.ok(allout.rival>pro.rival+15);
+  assert.ok(allout.rival>pro.rival+9);
   assert.equal(allout.teammate,pro.teammate);assert.equal(allout.money,pro.money);
 });
 

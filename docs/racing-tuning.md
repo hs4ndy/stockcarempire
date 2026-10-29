@@ -40,8 +40,19 @@ remain winnable; these examples do not establish an exploit-proof win rate.
 
 ### All-Out
 
+Follow-up after human feedback: the initial tuning below was too punishing at the
+start. Current AI speed/power/aggression = 1.09/1.38/1.65, aero = 1.15,
+recovery = 1.15, player draft = .95, player comeback assistance = .35.
+Racecraft, safe pack-pressure maximum and 1.5-second bumper response remain.
+Other difficulties and economy are unchanged. In the same seed-17 strong front
+ride scenario, the ten-second leader gap fell from 375 to 35 units and nearby
+opponents rose from 0 to 35. Both scripted rides still finished last: this is
+evidence of opening competitiveness, not proof of a human winning chance.
+An active front-start script stayed among a median 13 nearby rivals, but also
+finished last. Human balance confirmation remains necessary.
+
 User-requested fifth difficulty above Pro, intentionally severe. Internal save ID
-is `allout`. Existing four modes/default remain unchanged. AI speed/power/aggression
+is `allout`. Existing four modes/default remain unchanged. Initial AI speed/power/aggression
 are 1.16/1.50/1.80, AI aero 1.30, racecraft 1.25, pack pressure 1.00 (the bounded
 maximum), recovery multiplier 1.50, and bumper partnership limit 1.5 seconds. Player draft multiplier is
 0.80 with no positional comeback assistance. Existing physical safety and result

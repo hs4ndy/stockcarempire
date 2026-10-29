@@ -317,6 +317,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 /* Reusable selections. */
 .difficulty-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
 .difficulty-grid.lg { grid-template-columns: repeat(4, minmax(0, 1fr)); } #setup-difficulty .difficulty-grid.lg { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.difficulty-grid > [data-diff="allout"] { grid-column: 1 / -1; }
 .difficulty-card { display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 20px; min-height: 116px; border-radius: 6px; background: var(--panel-2); border: 1px solid transparent; transition: background-color var(--t), color var(--t); }
 .difficulty-card:hover { background: var(--panel-3); } .difficulty-card.selected { background: var(--text); color: var(--bg); }
 .difficulty-name { font-size: 18px; font-weight: 600; } .difficulty-blurb { font-size: 14px; color: var(--text-dim); line-height: 1.5; }

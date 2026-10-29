@@ -256,6 +256,8 @@ Horizontal Barlow labels with graphite hover and off-white active state. Desktop
 
 Difficulty and Quick Race series choices group name and description in one clickable graphite tile. Off-white fill with charcoal text identifies a selected choice; supporting selected descriptions darken for contrast. Difficulty tiles use (20px) padding, a control radius, and a (116px) desktop minimum height. Careers always combine driving and team ownership; there is no career-role chooser.
 
+All-Out spans the full final grid row in Quick Race, new-career setup and Settings. The four earlier choices retain their existing columns; on phones all choices remain a single column. This accommodates the fifth option without an orphaned narrow tile.
+
 ### Native Disclosures
 
 Budget, recent results, car details, and other secondary detail use native disclosure controls. A divided summary row shows readable Show/Hide state; expanded content follows the same text and row grammar.

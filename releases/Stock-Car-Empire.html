@@ -336,6 +336,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 /* Reusable selections. */
 .difficulty-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
 .difficulty-grid.lg { grid-template-columns: repeat(4, minmax(0, 1fr)); } #setup-difficulty .difficulty-grid.lg { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.difficulty-grid > [data-diff="allout"] { grid-column: 1 / -1; }
 .difficulty-card { display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 20px; min-height: 116px; border-radius: 6px; background: var(--panel-2); border: 1px solid transparent; transition: background-color var(--t), color var(--t); }
 .difficulty-card:hover { background: var(--panel-3); } .difficulty-card.selected { background: var(--text); color: var(--bg); }
 .difficulty-name { font-size: 18px; font-weight: 600; } .difficulty-blurb { font-size: 14px; color: var(--text-dim); line-height: 1.5; }
@@ -1414,7 +1415,7 @@ const DIFFICULTIES = [
     aiSpeed: 1.05, aiPower: 1.22, aiAggro: 1.386, aiDraft: 1.05, rideLimit: 3, packPressure: 1.00, playerDraft: 0.98, playerCatchup: 0.70, racecraft: 1.00 },
   { id: 'allout', name: 'All-Out',
     blurb: 'Relentless pace, ruthless drafting and almost no help. Expect to lose.',
-    aiSpeed: 1.16, aiPower: 1.50, aiAggro: 1.80, aiDraft: 1.30, rideLimit: 1.5, packPressure: 1.00, packRecovery: 1.50, playerDraft: 0.80, playerCatchup: 0, racecraft: 1.25 },
+    aiSpeed: 1.09, aiPower: 1.38, aiAggro: 1.65, aiDraft: 1.15, rideLimit: 1.5, packPressure: 1.00, packRecovery: 1.15, playerDraft: 0.95, playerCatchup: 0.35, racecraft: 1.25 },
 ];
 
 const DEFAULT_DIFFICULTY = 'beginner';
