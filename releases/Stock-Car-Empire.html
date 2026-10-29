@@ -899,7 +899,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .dual-views { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; pointer-events: none; }
 .dual-view { position: relative; min-width: 0; border-right: 1px solid rgba(255,255,255,.4); overflow: hidden; }
 .dual-player-label { position: absolute; top: 12px; left: 12px; background: rgba(30,33,36,.76); padding: 6px 8px; font-size: 12px; }
-.dual-mirror { position: absolute; top: 12px; left: 65%; transform: translateX(-50%); width: 38%; height: 64px; border: 2px solid #1e2124; border-radius: 6px; }
+.dual-mirror { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 38%; height: 64px; border: 2px solid #1e2124; border-radius: 6px; }
 .dual-order { top: 52px; left: 12px; width: 150px; font-size: 11px; }
 .dual-order .r3d-order-row { padding: 5px 6px; min-height: 25px; }
 .dual-order .r3d-order-head { padding: 6px; font-size: 10px; }
@@ -914,7 +914,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 @media (max-width: 700px) {
   .dual-views { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
   .dual-view { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.4); }
-  .dual-mirror { height: 48px; top: 8px; left: 70%; }
+  .dual-mirror { height: 48px; top: 8px; left: 50%; }
   .dual-player-label { font-size: 10px; top: 8px; }
   .dual-order { top: 42px; width: 132px; }
   .dual-data { bottom: 42px; gap: 12px; font-size: 11px; }
@@ -938,6 +938,13 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .car-customization + .car-stats { margin-top: 24px; }
 .car-card { display: flex; flex-direction: column; }
 .car-customization + .car-stats { margin-top: auto; padding-top: 24px; }
+
+/* One full-screen progress display; mirrors centered in each player view. */
+.dual-race .dual-progress { left: 50%; transform: translateX(-50%); width: min(460px, 62vw); bottom: 22px; }
+.dual-progress > div { height: 7px; display: grid; gap: 1px; }
+.dual-progress i { height: 3px; }
+.dual-order { top: calc(5.25vw + 24px); }
+@media (max-width: 700px) { .dual-order { top: calc(11vw + 20px); } }
 
 </style>
 </head>
@@ -3358,10 +3365,9 @@ function launch3DRace(config, onComplete) {
       <section class="dual-view" id="dual-view-${n}" aria-label="Player ${n} race view">
         <div class="dual-player-label">Player ${n} · ${n === 1 ? 'A / S / D' : 'J / K / L'}</div>
         <div class="dual-mirror" id="dual-mirror-${n}"></div>
-        <div class="r3d-order dual-order" id="dual-order-${n}"></div>
+        ${n === 1 ? '<div class="r3d-order dual-order" id="dual-order-1"></div>' : ''}
         <div class="dual-data"><span id="dual-pos-${n}"></span><span><strong id="dual-speed-${n}">0</strong> MPH</span><span>Draft <strong id="dual-draft-${n}">0</strong>%</span></div>
-        <div class="dual-progress"><span>Start</span><span>Finish</span><div><i id="dual-progress-${n}"></i></div></div>
-      </section>`).join('')}</div>`);
+      </section>`).join('')}</div><div class="dual-progress" aria-label="Race progress for both players"><span>Start</span><span>Finish</span><div>${[1,2].map(n=>`<i id="dual-progress-${n}" aria-label="Player ${n} progress"></i>`).join('')}</div></div>`);
     document.getElementById('r3d-hint').textContent = 'P1: A / S / D     P2: J / K / L     Esc: Pause';
   }
   const canvas = document.getElementById('r3d-canvas');
@@ -5104,6 +5110,8 @@ class Race3DEngine {
       document.getElementById(`dual-progress-${n}`).style.transform = `scaleX(${clamp(p.z/this.raceLength,0,1)})`;
       const start=clamp(pos-3,0,Math.max(0,ranked.length-5));
       const el=document.getElementById(`dual-order-${n}`);
+      document.getElementById(`dual-progress-${n}`).style.background = r3dHex(p.hex);
+      if (!el) return;
       const html='<div class="r3d-order-head">Leaderboard</div>'+ranked.slice(start,start+5).map((c,k)=>`<div class="r3d-order-row${c===p ? ' is-player' : ''}"><span class="r3d-order-pos">${start+k+1}</span><span class="r3d-order-chip" style="background:${r3dHex(c.hex)}"></span><span class="r3d-order-num">#${c.number}</span><span class="r3d-order-name">${c.label}</span></div>`).join('');
       if(el.innerHTML!==html) el.innerHTML=html;
     });

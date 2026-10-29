@@ -226,10 +226,9 @@ function launch3DRace(config, onComplete) {
       <section class="dual-view" id="dual-view-${n}" aria-label="Player ${n} race view">
         <div class="dual-player-label">Player ${n} · ${n === 1 ? 'A / S / D' : 'J / K / L'}</div>
         <div class="dual-mirror" id="dual-mirror-${n}"></div>
-        <div class="r3d-order dual-order" id="dual-order-${n}"></div>
+        ${n === 1 ? '<div class="r3d-order dual-order" id="dual-order-1"></div>' : ''}
         <div class="dual-data"><span id="dual-pos-${n}"></span><span><strong id="dual-speed-${n}">0</strong> MPH</span><span>Draft <strong id="dual-draft-${n}">0</strong>%</span></div>
-        <div class="dual-progress"><span>Start</span><span>Finish</span><div><i id="dual-progress-${n}"></i></div></div>
-      </section>`).join('')}</div>`);
+      </section>`).join('')}</div><div class="dual-progress" aria-label="Race progress for both players"><span>Start</span><span>Finish</span><div>${[1,2].map(n=>`<i id="dual-progress-${n}" aria-label="Player ${n} progress"></i>`).join('')}</div></div>`);
     document.getElementById('r3d-hint').textContent = 'P1: A / S / D     P2: J / K / L     Esc: Pause';
   }
   const canvas = document.getElementById('r3d-canvas');
@@ -1972,6 +1971,8 @@ class Race3DEngine {
       document.getElementById(`dual-progress-${n}`).style.transform = `scaleX(${clamp(p.z/this.raceLength,0,1)})`;
       const start=clamp(pos-3,0,Math.max(0,ranked.length-5));
       const el=document.getElementById(`dual-order-${n}`);
+      document.getElementById(`dual-progress-${n}`).style.background = r3dHex(p.hex);
+      if (!el) return;
       const html='<div class="r3d-order-head">Leaderboard</div>'+ranked.slice(start,start+5).map((c,k)=>`<div class="r3d-order-row${c===p ? ' is-player' : ''}"><span class="r3d-order-pos">${start+k+1}</span><span class="r3d-order-chip" style="background:${r3dHex(c.hex)}"></span><span class="r3d-order-num">#${c.number}</span><span class="r3d-order-name">${c.label}</span></div>`).join('');
       if(el.innerHTML!==html) el.innerHTML=html;
     });

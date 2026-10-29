@@ -880,7 +880,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .dual-views { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; pointer-events: none; }
 .dual-view { position: relative; min-width: 0; border-right: 1px solid rgba(255,255,255,.4); overflow: hidden; }
 .dual-player-label { position: absolute; top: 12px; left: 12px; background: rgba(30,33,36,.76); padding: 6px 8px; font-size: 12px; }
-.dual-mirror { position: absolute; top: 12px; left: 65%; transform: translateX(-50%); width: 38%; height: 64px; border: 2px solid #1e2124; border-radius: 6px; }
+.dual-mirror { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 38%; height: 64px; border: 2px solid #1e2124; border-radius: 6px; }
 .dual-order { top: 52px; left: 12px; width: 150px; font-size: 11px; }
 .dual-order .r3d-order-row { padding: 5px 6px; min-height: 25px; }
 .dual-order .r3d-order-head { padding: 6px; font-size: 10px; }
@@ -895,7 +895,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 @media (max-width: 700px) {
   .dual-views { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
   .dual-view { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.4); }
-  .dual-mirror { height: 48px; top: 8px; left: 70%; }
+  .dual-mirror { height: 48px; top: 8px; left: 50%; }
   .dual-player-label { font-size: 10px; top: 8px; }
   .dual-order { top: 42px; width: 132px; }
   .dual-data { bottom: 42px; gap: 12px; font-size: 11px; }
@@ -919,3 +919,10 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .car-customization + .car-stats { margin-top: 24px; }
 .car-card { display: flex; flex-direction: column; }
 .car-customization + .car-stats { margin-top: auto; padding-top: 24px; }
+
+/* One full-screen progress display; mirrors centered in each player view. */
+.dual-race .dual-progress { left: 50%; transform: translateX(-50%); width: min(460px, 62vw); bottom: 22px; }
+.dual-progress > div { height: 7px; display: grid; gap: 1px; }
+.dual-progress i { height: 3px; }
+.dual-order { top: calc(5.25vw + 24px); }
+@media (max-width: 700px) { .dual-order { top: calc(11vw + 20px); } }
