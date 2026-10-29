@@ -525,8 +525,7 @@ function handleStartRace() {
 
   // Player power based on their car + skill
   const pCar = game.cars.find(c => c.assignedDriverId === 'player') || game.cars[0];
-  const carScore  = pCar ? (pCar.speed + pCar.handling + pCar.reliability) / 300 : 0.5;
-  const playerPower = clamp(carScore * 0.65 + game.playerSkill / 100 * 0.35, 0.3, 0.95);
+  const playerPower = careerRacePower(pCar, game.playerSkill);
 
   // Build AI entry list for 3D race
   const aiEntries = [];
@@ -556,15 +555,13 @@ function handleStartRace() {
     const hiredName = HIREABLE_DRIVERS.find(d => d.id === hired.driverId)?.name;
     if (!car.driverName) car.driverName = nextDriverName();
     // Teammate pace reflects both the car and how good the driver has become
-    const carScore = (car.speed + car.handling + car.reliability) / 300;
-    const skill    = hired ? hiredDriverSkill(hired) / 100 : 0.5;
     aiEntries.push({
       entrantId:  car.id,
       name:       nextDriverName(hiredName || car.driverName),
       teamName:   game.teamName,
       color:      car.color || pCar?.color || '#e8001d',
       number:     nextNum(car.number),
-      power:      clamp(carScore * 0.68 + skill * 0.27, 0.25, 0.95),
+      power:      careerRacePower(car, hiredDriverSkill(hired)),
       isTeammate: true,
       carId:      car.id,          // lets the 3D result map back to this car
     });

@@ -2656,6 +2656,12 @@ function ordinal(n) {
   return (s[(v-20)%10] || s[v] || s[0]);
 }
 
+// Car development has more influence than driver skill in playable career pace.
+function careerRacePower(car, skill) {
+  const score = car ? (car.speed + car.handling + car.reliability) / 300 : 0.5;
+  return clamp(score * 0.80 + skill / 100 * 0.20, 0.3, 0.99);
+}
+
 </script>
 <script>
 /* js/race.js */
@@ -3169,12 +3175,12 @@ const R3D = {
   CAMERA_FAR_Z:   22,
 
   // ── Drafting: continuous wake, push and carried momentum ───
-  DRAFT_Z:        82,     // useful tow range without linking the whole field
+  DRAFT_Z:        120,     // useful tow range without linking the whole field
   DRAFT_X:        3.6,    // wake half-width at distance; narrower at the bumper
-  DRAFT_BOOST:    27,
+  DRAFT_BOOST:    30,
   DRAFT_BUILD:    1.8,    // exponential response rates, independent of frame rate
-  DRAFT_RELEASE:  1.50,
-  DRAFT_CARRY:    1.35,   // enough time to clear a bumper and use the earned run
+  DRAFT_RELEASE:  1.25,
+  DRAFT_CARRY:    1.60,   // enough time to clear a bumper and use the earned run
   PUSH_Z:         6.5,    // push fades continuously from contact to this gap
   PUSH_X:         1.45,   // accurate bumper alignment earns the strongest push
   PUSH_BONUS:     8,
@@ -3863,7 +3869,7 @@ class Race3DEngine {
         entrantId:  entry.entrantId || null,
         color:      entry.color,
         number:     entry.number || (aiIdx + 1),
-        power:      clamp(entry.power, 0.25, 0.95),
+        power:      clamp(entry.power, 0.25, entry.isTeammate ? 0.99 : 0.95),
         isPlayer:   !!entry.isSecondPlayer,
         isTeammate: !!entry.isTeammate,
         label:      entry.name,
@@ -4131,7 +4137,15 @@ class Race3DEngine {
     const recovery = clamp((leadZ-p.z-R3D.PACK_GAP_START) / (R3D.PACK_GAP-R3D.PACK_GAP_START),0,1);
     const rubberBand = posFrac * R3D.RUBBER_BAND * (this.diff.playerCatchup ?? 1) + recovery * R3D.PACK_CATCHUP;
 
-    const tgt = Math.min(R3D.SPEED_BASE * (0.89 + p.power * 0.18) + p.draftBoost + rubberBand, R3D.SPEED_MAX) * (this.speedScale ?? 1);
+    // Only an isolated follower gets extra rejoin help; leaders and cars
+    // already attached to traffic do not gain a permanent pace advantage.
+    const nextCar = this.cars.reduce((next,c) => !c.dnf && !c.finished && c.z > p.z && (!next || c.z < next.z) ? c : next, null);
+    const gap = nextCar ? nextCar.z - p.z : 0;
+    const basePace = R3D.SPEED_BASE * (0.83 + p.power * 0.28);
+    const rejoin = clamp((gap - 35) / (R3D.DRAFT_Z - 35), 0, 1);
+    const missingPace = nextCar ? clamp(nextCar.speed / (this.speedScale ?? 1) - basePace - rubberBand, 0, 14) : 0;
+    const rejoinBoost = rejoin * (16 + missingPace);
+    const tgt = Math.min(basePace + p.draftBoost + rubberBand + rejoinBoost, R3D.SPEED_MAX) * (this.speedScale ?? 1);
     let braking = false;
     if (this.keys.s) {
       p.speed = Math.max(tgt * 0.38, p.speed - R3D.BRAKE_FORCE * dt);
@@ -7422,8 +7436,7 @@ function handleStartRace() {
 
   // Player power based on their car + skill
   const pCar = game.cars.find(c => c.assignedDriverId === 'player') || game.cars[0];
-  const carScore  = pCar ? (pCar.speed + pCar.handling + pCar.reliability) / 300 : 0.5;
-  const playerPower = clamp(carScore * 0.65 + game.playerSkill / 100 * 0.35, 0.3, 0.95);
+  const playerPower = careerRacePower(pCar, game.playerSkill);
 
   // Build AI entry list for 3D race
   const aiEntries = [];
@@ -7453,15 +7466,13 @@ function handleStartRace() {
     const hiredName = HIREABLE_DRIVERS.find(d => d.id === hired.driverId)?.name;
     if (!car.driverName) car.driverName = nextDriverName();
     // Teammate pace reflects both the car and how good the driver has become
-    const carScore = (car.speed + car.handling + car.reliability) / 300;
-    const skill    = hired ? hiredDriverSkill(hired) / 100 : 0.5;
     aiEntries.push({
       entrantId:  car.id,
       name:       nextDriverName(hiredName || car.driverName),
       teamName:   game.teamName,
       color:      car.color || pCar?.color || '#e8001d',
       number:     nextNum(car.number),
-      power:      clamp(carScore * 0.68 + skill * 0.27, 0.25, 0.95),
+      power:      careerRacePower(car, hiredDriverSkill(hired)),
       isTeammate: true,
       carId:      car.id,          // lets the 3D result map back to this car
     });

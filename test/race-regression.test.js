@@ -229,7 +229,7 @@ test('tow and push taper continuously across gap and alignment boundaries', () =
     assert.ok(Math.abs(checks[i].tow - checks[i - 1].tow) < 0.01);
     assert.ok(Math.abs(checks[i].push - checks[i - 1].push) < 0.01);
   }
-  const gaps = readJson(context, `[6.499, 6.5, 6.501, 91.999, 92, 92.001].map(z =>
+  const gaps = readJson(context, `[6.499, 6.5, 6.501, R3D.DRAFT_Z - .001, R3D.DRAFT_Z, R3D.DRAFT_Z + .001].map(z =>
     r3dWake(car('player', 0, 0), car('b', 0, z)))`);
   assert.ok(Math.abs(gaps[0].tow - gaps[2].tow) < 0.001);
   assert.ok(Math.abs(gaps[0].push - gaps[2].push) < 0.001);
@@ -245,7 +245,7 @@ test('aero is independent of roster order, with capped smooth release and teamma
       b.isTeammate = true;
       const e = engine(reverse ? [c, b, p] : [p, b, c]);
       const trace = [];
-      for (let i = 0; i < 360; i++) {
+      for (let i = 0; i < 420; i++) {
         if (i === 180) p.x = 8;
         e._calcDraft(1 / 60);
         trace.push(p.draftBoost);
@@ -899,4 +899,20 @@ test('strong Pro simulated cars remain competitive without near-guaranteed wins'
  }
  assert.ok(wins<40, `too many simulation wins: ${wins}`);
  assert.ok(total/100>2 && total/100<10, 'competitive results without automatic front finishes');
+});
+
+test('extended wake provides a useful tow beyond the former 82-unit cutoff', () => {
+ const c=physicsContext();
+ const r=readJson(c,`(() => {const p=car('player',0,0,210),b=car('b',0,95,210),e=engine([p,b],'pro');for(let i=0;i<240;i++)e._calcDraft(1/60);return {tow:r3dWake(p,b).tow,boost:p.draftBoost,out:r3dWake(p,{...b,z:121}).tow};})()`);
+ assert.ok(r.tow>0 && r.boost>3); assert.equal(r.out,0);
+});
+test('isolated Pro player can regain the wake without giving the leader a recovery bonus', () => {
+ const c=physicsContext();
+ const r=readJson(c,`(() => {const p=car('player',0,0,210),b=car('b',0,500,240),e=engine([p,b],'pro');let maxSpeed=0;for(let i=0;i<60*40;i++){b.z+=240/60;e._calcDraft(1/60);e._updatePlayer(1/60);maxSpeed=Math.max(maxSpeed,p.speed);}const alone=car('player',0,0,210),lead=engine([alone],'pro');for(let i=0;i<300;i++)lead._updatePlayer(1/60);return {gap:b.z-p.z,maxSpeed,leaderSpeed:alone.speed};})()`);
+ assert.ok(r.gap<120,`did not regain wake: ${r.gap}`);assert.ok(r.maxSpeed<=270);assert.ok(r.leaderSpeed<211);
+});
+test('installed career upgrades have a larger playable pace effect and preserve existing stats', () => {
+ const c=makeContext();
+ const r=readJson(c,`(() => {newGame('Test','Driver','Car');game.money=500000;const car=game.cars[0],before=careerRacePower(car,game.playerSkill),speed=car.speed;const result=upgradeCar(car.id,'engine_tune');const after=careerRacePower(car,game.playerSkill);return {ok:result.ok,before,after,delta:car.speed-speed,paceGain:210*.28*(after-before)};})()`);
+ assert.equal(r.ok,true);assert.equal(r.delta,8);assert.ok(r.after>r.before);assert.ok(r.paceGain>1.2);
 });

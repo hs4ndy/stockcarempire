@@ -1056,3 +1056,9 @@ function ordinal(n) {
   const v = n % 100;
   return (s[(v-20)%10] || s[v] || s[0]);
 }
+
+// Car development has more influence than driver skill in playable career pace.
+function careerRacePower(car, skill) {
+  const score = car ? (car.speed + car.handling + car.reliability) / 300 : 0.5;
+  return clamp(score * 0.80 + skill / 100 * 0.20, 0.3, 0.99);
+}

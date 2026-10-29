@@ -30,12 +30,12 @@ const R3D = {
   CAMERA_FAR_Z:   22,
 
   // ── Drafting: continuous wake, push and carried momentum ───
-  DRAFT_Z:        82,     // useful tow range without linking the whole field
+  DRAFT_Z:        120,     // useful tow range without linking the whole field
   DRAFT_X:        3.6,    // wake half-width at distance; narrower at the bumper
-  DRAFT_BOOST:    27,
+  DRAFT_BOOST:    30,
   DRAFT_BUILD:    1.8,    // exponential response rates, independent of frame rate
-  DRAFT_RELEASE:  1.50,
-  DRAFT_CARRY:    1.35,   // enough time to clear a bumper and use the earned run
+  DRAFT_RELEASE:  1.25,
+  DRAFT_CARRY:    1.60,   // enough time to clear a bumper and use the earned run
   PUSH_Z:         6.5,    // push fades continuously from contact to this gap
   PUSH_X:         1.45,   // accurate bumper alignment earns the strongest push
   PUSH_BONUS:     8,
@@ -724,7 +724,7 @@ class Race3DEngine {
         entrantId:  entry.entrantId || null,
         color:      entry.color,
         number:     entry.number || (aiIdx + 1),
-        power:      clamp(entry.power, 0.25, 0.95),
+        power:      clamp(entry.power, 0.25, entry.isTeammate ? 0.99 : 0.95),
         isPlayer:   !!entry.isSecondPlayer,
         isTeammate: !!entry.isTeammate,
         label:      entry.name,
@@ -992,7 +992,15 @@ class Race3DEngine {
     const recovery = clamp((leadZ-p.z-R3D.PACK_GAP_START) / (R3D.PACK_GAP-R3D.PACK_GAP_START),0,1);
     const rubberBand = posFrac * R3D.RUBBER_BAND * (this.diff.playerCatchup ?? 1) + recovery * R3D.PACK_CATCHUP;
 
-    const tgt = Math.min(R3D.SPEED_BASE * (0.89 + p.power * 0.18) + p.draftBoost + rubberBand, R3D.SPEED_MAX) * (this.speedScale ?? 1);
+    // Only an isolated follower gets extra rejoin help; leaders and cars
+    // already attached to traffic do not gain a permanent pace advantage.
+    const nextCar = this.cars.reduce((next,c) => !c.dnf && !c.finished && c.z > p.z && (!next || c.z < next.z) ? c : next, null);
+    const gap = nextCar ? nextCar.z - p.z : 0;
+    const basePace = R3D.SPEED_BASE * (0.83 + p.power * 0.28);
+    const rejoin = clamp((gap - 35) / (R3D.DRAFT_Z - 35), 0, 1);
+    const missingPace = nextCar ? clamp(nextCar.speed / (this.speedScale ?? 1) - basePace - rubberBand, 0, 14) : 0;
+    const rejoinBoost = rejoin * (16 + missingPace);
+    const tgt = Math.min(basePace + p.draftBoost + rubberBand + rejoinBoost, R3D.SPEED_MAX) * (this.speedScale ?? 1);
     let braking = false;
     if (this.keys.s) {
       p.speed = Math.max(tgt * 0.38, p.speed - R3D.BRAKE_FORCE * dt);
