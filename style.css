@@ -913,3 +913,9 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
   #r3d-mirror-wrap { left: 45%; width: min(320px, calc(100vw - 140px)); }
   .dual-mirror { width: 44%; height: auto; }
 }
+.car-customization > summary { background: var(--accent-solid); color: var(--accent-ink); border-radius: 6px; padding: 12px 16px; min-height: 48px; font-weight: 700; }
+.car-customization > summary:hover { background: var(--accent-press); }
+.car-customization > summary::after { color: inherit; }
+.car-customization + .car-stats { margin-top: 24px; }
+.car-card { display: flex; flex-direction: column; }
+.car-customization + .car-stats { margin-top: auto; padding-top: 24px; }

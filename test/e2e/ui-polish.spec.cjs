@@ -38,7 +38,7 @@ for (const [name, viewport] of [
 
     for (const tab of ['dashboard', 'garage', 'team', 'market', 'settings']) {
       await page.locator(`.nav-btn[data-tab="${tab}"]`).click();
-      if (tab === 'garage') await page.getByText('Customize and manage car', { exact: true }).click();
+      if (tab === 'garage') await page.getByText('Customize Car', { exact: true }).click();
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
       if (tab === 'dashboard') {
         expect(await page.locator('.car-mini-row').first().evaluate(el => {

@@ -62,7 +62,7 @@ for (const [name, viewport] of [
     await page.screenshot({ path: testInfo.outputPath(`garage-collapsed-${name}.png`), fullPage: true, animations: 'disabled' });
     await page.getByText('Performance and race record', { exact: true }).click();
     await expect(page.getByText('Reliability', { exact: true })).toBeVisible();
-    await page.getByText('Customize and manage car', { exact: true }).click();
+    await page.getByText('Customize Car', { exact: true }).click();
     await expect(page.getByRole('button', { name: 'Change Number', exact: true })).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath(`garage-${name}.png`), fullPage: true, animations: 'disabled' });
     expect(await page.evaluate(() => JSON.stringify(game))).toBe(initialGame);

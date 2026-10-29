@@ -330,6 +330,20 @@ function renderGarage() {
         <span class="car-class-badge">${cls.name}</span>
       </div>
       <div class="team-stat"><span>Driver</span><span class="${noDriver ? 'red' : ''}">${driverName}</span></div>
+      <div class="car-actions">
+        ${car.condition < 100 ? `<button class="btn btn-sm btn-warning" onclick="handleRepair('${car.id}', ${repairCost})">Repair (${fmt$(repairCost)})</button>` : `<span class="badge badge-green">Full Condition</span>`}
+        <button class="btn btn-sm btn-primary" onclick="showUpgradeModal('${car.id}')">Upgrade Car</button>
+      </div>
+      <details class="ui-details car-customization">
+        <summary>Customize Car</summary>
+        <div class="ui-details-body">
+      <div class="btn-row">
+        <button class="btn btn-sm btn-ghost" onclick="handleRenameCar('${car.id}')">Rename</button>
+        ${game.cars.length > 1 ? `<button class="btn btn-sm btn-danger" onclick="handleSellCar('${car.id}')">Sell</button>` : ''}
+      </div>
+      ${renderCarCustomizer(car, 0, true)}
+        </div>
+      </details>
       <div class="car-stats">
         ${condBar(car.condition)}
       </div>
@@ -346,20 +360,7 @@ function renderGarage() {
       </div>
         </div>
       </details>
-      <div class="car-actions">
-        ${car.condition < 100 ? `<button class="btn btn-sm btn-warning" onclick="handleRepair('${car.id}', ${repairCost})">Repair (${fmt$(repairCost)})</button>` : `<span class="badge badge-green">Full Condition</span>`}
-        <button class="btn btn-sm btn-primary" onclick="showUpgradeModal('${car.id}')">Upgrade Car</button>
-      </div>
-      <details class="ui-details">
-        <summary>Customize and manage car</summary>
-        <div class="ui-details-body">
-      <div class="btn-row">
-        <button class="btn btn-sm btn-ghost" onclick="handleRenameCar('${car.id}')">Rename</button>
-        ${game.cars.length > 1 ? `<button class="btn btn-sm btn-danger" onclick="handleSellCar('${car.id}')">Sell</button>` : ''}
-      </div>
-      ${renderCarCustomizer(car, 0, true)}
-        </div>
-      </details>
+
     </div>`;
   }).join('');
 

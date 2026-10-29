@@ -3,14 +3,14 @@ for(const [width,file] of [[1440,'index.html'],[375,'releases/Stock-Car-Empire.h
  await page.setViewportSize({width,height:850});await page.route('**/three.min.js',r=>r.fulfill({path:path.resolve('node_modules/three/build/three.min.js')}));
  await page.goto(pathToFileURL(path.resolve(file)).href);
  await page.evaluate(()=>{newGame('Paint Test','Driver','First');game.tutorial.status='skipped';game.money=500000;buyCar('Second');saveToSlot(2);enterGame();showTab('garage');});
- const custom=page.locator('.car-card').first();await custom.getByText('Customize and manage car',{exact:true}).click();
+ const custom=page.locator('.car-card').first();await custom.getByText('Customize Car',{exact:true}).click();
  await custom.locator('input[type="number"]').fill('27');await custom.locator('input[type="number"]').press('Tab');
  await custom.locator('input[type="color"]').evaluate(el=>{el.value='#13b7c9';el.dispatchEvent(new Event('input',{bubbles:true}));});
  await expect(custom.locator('.quick-car-preview strong')).toHaveText('27');
  expect(await page.evaluate(()=>[game.cars[0].number,game.cars[0].color])).toEqual([27,'#13b7c9']);
  await custom.locator('input[type="number"]').fill('2');await custom.locator('input[type="number"]').press('Tab');await expect(custom.locator('input[type="number"]')).toHaveValue('27');
  await page.evaluate(()=>{loadFromSlot(2);showTab('garage');});expect(await page.evaluate(()=>[game.cars[0].number,game.cars[0].color])).toEqual([27,'#13b7c9']);
- await page.locator('.car-card').first().getByText('Customize and manage car',{exact:true}).click();await page.screenshot({path:`.impeccable/review/career-paint-${width}.png`});
+ await page.locator('.car-card').first().getByText('Customize Car',{exact:true}).click();await page.screenshot({path:`.impeccable/review/career-paint-${width}.png`});
  await page.evaluate(()=>handleStartRace());await page.waitForFunction(()=>window._r3d?.mirrorRT);
  expect(await page.evaluate(()=>[window._r3d.player.number,window._r3d.player.hex])).toEqual([27,0x13b7c9]);
  expect(await page.evaluate(()=>{const e=window._r3d,w=document.getElementById('r3d-mirror-wrap');return e.mirrorRT.width/w.clientWidth;})).toBeGreaterThanOrEqual(1.49);
