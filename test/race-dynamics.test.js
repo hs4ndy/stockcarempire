@@ -7,7 +7,7 @@ const vm = require('node:vm');
 const ROOT = path.resolve(__dirname, '..');
 const SOURCE_FILES = ['js/data.js', 'js/game.js', 'js/race.js', 'js/race3d.js', 'js/ui.js'];
 
-function runRearStart(seed, fieldSize = 36, difficulty = 'beginner', strategy = 'managed', baseline = null) {
+function runRearStart(seed, fieldSize = 36, difficulty = 'beginner', strategy = 'managed', baseline = null, options = {}) {
   let state = seed >>> 0;
   const seededMath = Object.create(Math);
   seededMath.random = () => {
@@ -57,9 +57,14 @@ function runRearStart(seed, fieldSize = 36, difficulty = 'beginner', strategy = 
       slots.push({ x: -3.5, z }, { x: 3.5, z: z - 1.6 });
     }
     slots.length = ${fieldSize};
-    const player = car('player', slots.at(-1).x, slots.at(-1).z);
-    const cars = [player, ...slots.slice(0, -1).map((slot, i) =>
+    const playerIndex = ${options.frontTrain ? (options.teammates || 1) : fieldSize - 1};
+    const player = car('player', slots[playerIndex].x, slots[playerIndex].z);
+    const cars = [player, ...slots.filter((_,i)=>i!==playerIndex).map((slot, i) =>
       car('ai-' + i, slot.x, slot.z))];
+    if (${!!options.frontTrain}) {
+      player.power=.95;
+      cars.slice(1,1+${options.teammates || 0}).forEach(c=>{c.isTeammate=true;c.power=.95;});
+    }
     const engine = Object.create(Race3DEngine.prototype);
     Object.assign(engine, {
       cars, player, diff: difficultyById('${difficulty}'),
@@ -77,7 +82,12 @@ function runRearStart(seed, fieldSize = 36, difficulty = 'beginner', strategy = 
     let startPosition = null;
 
     for (let frame = 0; frame < 60 * 140 && !engine.done; frame++) {
-      raceDriverStep(engine, driver, 1/60, '${strategy}');
+      if ('${strategy}' === 'ride') {
+        const mate=cars.filter(c=>c.isTeammate && !c.dnf && !c.finished && c.z>player.z).sort((a,b)=>a.z-b.z)[0];
+        const target=mate ? mate.x+(player.z/R3D.TRACK_LEN>.92 ? 3.2 : 0) : player.x;
+        const err=clamp(target,-9,9)-player.x-player.lv*.22;
+        engine.keys.a=err>.3;engine.keys.d=err<-.3;engine.keys.s=false;
+      } else raceDriverStep(engine, driver, 1/60, '${strategy}');
 
       engine._update(1 / 60);
       for (const car of cars) {
@@ -123,6 +133,14 @@ function runRearStart(seed, fieldSize = 36, difficulty = 'beginner', strategy = 
 }
 
 module.exports = { runRearStart };
+
+if (require.main === module) test('Pro keeps pressure on a powerful front-start teammate train', () => {
+  const report=runRearStart(17,36,'pro','ride',null,{frontTrain:true,teammates:3});
+  assert.equal(report.done,true);
+  assert.ok(report.finish>1,'a fixed late pullout behind three teammates must not be an automatic win');
+  assert.ok(report.medianNearby>=20,'the field must stay close enough to contest the player');
+  assert.ok(report.medianSpan<250,'Pro must not let a leading teammate train detach from the field');
+});
 
 if (require.main === module) test('chasing groups stay connected and contest positions throughout the race', () => {
   const reports = [3, 17, 41].map(seed => runRearStart(seed));

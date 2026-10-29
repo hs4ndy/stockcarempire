@@ -3,6 +3,25 @@
 The implementation in `js/race3d.js` is authoritative. The original Claude
 handoff and source snapshot describe an older revision, not this tuning pass.
 
+## October 29 difficulty follow-up
+
+Every difficulty now has 5% stronger AI aero targets/ceilings and 5% more lateral
+aggression. This is a parameter adjustment, not a measured 5% change in win rate.
+Detached-pack recovery starts earlier and responds to leading pace, most strongly
+on Semi-Pro/Pro; positions are never snapped forward and leaders are not slowed.
+Teammates have no exclusive push-strength multiplier, stop dedicated support after
+six cumulative seconds, and no longer slow themselves to help a following player.
+Defensive awareness includes closer runs while retaining swept-lane safety checks.
+Economy, prizes, car costs, player pace and on-track result classification are unchanged.
+
+Seed-17, 36-car front-start riding diagnostic with a power-0.95 player and three
+power-0.95 teammates: old/new Pro finish 1/4, median nearby opponents 1/35,
+median field span 811/93 units; Semi-Pro finish 1/1, nearby 3/25, span 750/211.
+These are controlled synthetic examples, not human win-rate estimates or a
+guarantee that no future strategy can win. Reproduce with `runRearStart` in
+`test/race-dynamics.test.js` using strategy `ride` and options
+`{frontTrain:true, teammates:3}`. The former baseline was `893942d`.
+
 ## Preserved behavior
 
 - Straight-line, auto-throttle race; continuous A/D steering and S braking.

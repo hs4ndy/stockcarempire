@@ -268,7 +268,8 @@ test('aero is independent of roster order, with capped smooth release and teamma
     return { received: b.receivedPush, leadBoost: b.draftBoost, working: e._teammateCooperation(b) };
   })()`);
   assert.equal(received.working, true);
-  assert.ok(received.received > 8 && received.leadBoost > 0);
+  assert.ok(received.received > 0 && received.received <= 6 && received.leadBoost > 0,
+    'teammates receive the same capped push as any other partner');
 });
 
 test('third car carries an earned draft run while moving out to pass', () => {
@@ -530,6 +531,41 @@ test('teammates cooperate in the pack but race the player at the front and late'
     assert.equal(phase.tactic, 'pass');
     assert.notEqual(phase.target, 0);
   }
+});
+
+test('AI drafting increases on every difficulty and pack pressure scales to Pro', () => {
+  const context = physicsContext();
+  const report = readJson(context, `DIFFICULTIES.map(diff => {
+    const p=car('player',0,6000,260), mate=car('mate',0,5995,210);
+    mate.isTeammate=true;
+    const e=engine([p,mate],diff.id);
+    const front=e._teammateCooperation(mate);
+    mate.z=5700;
+    e._chooseAILine=()=>{};
+    e._updateAI(1/60);
+    return {id:diff.id,draft:diff.aiDraft,pressure:diff.packPressure,speed:mate.speed,front};
+  })`);
+  for (const r of report) {assert.equal(r.draft,1.05);assert.equal(r.front,false);}
+  for(let i=1;i<report.length;i++) assert.ok(report[i].speed>report[i-1].speed);
+  assert.ok(report.at(-1).speed>210,'a detached Pro car accelerates to reconnect');
+});
+
+test('teammate support expires and team identity provides no extra aero advantage', () => {
+  const context = physicsContext();
+  const report = readJson(context, `(() => {
+    const p=car('player',0,5000,210), mate=car('mate',0,5005,210);
+    mate.isTeammate=true;
+    const traffic=Array.from({length:8},(_,i)=>car('ai'+i,4,5200+i*10,210));
+    const e=engine([p,mate,...traffic],'pro');
+    const initial=e._teammateCooperation(mate);
+    for(let i=0;i<8*60;i++)e._chooseAILine(mate,.8,1/60);
+    const expired=e._teammateCooperation(mate);
+    e._calcDraft(1/60);const teamPush=mate.receivedPush;
+    mate.isTeammate=false;e._calcDraft(1/60);
+    return {initial,expired,helping:mate._helping,teamPush,rivalPush:mate.receivedPush};
+  })()`);
+  assert.equal(report.initial,true);assert.equal(report.expired,false);
+  assert.equal(report.helping,false);assert.equal(report.teamPush,report.rivalPush);
 });
 
 test('difficulty above Beginner is strictly tougher in pace, racecraft and comeback help', () => {
