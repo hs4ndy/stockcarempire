@@ -1015,7 +1015,7 @@ class Race3DEngine {
       const basePace = R3D.SPEED_BASE * (0.86 + car.power * 0.15) * dSpd;
       // Recover through acceleration, never position snapping or leader braking.
       const leaderPace = leaderSpeed / (this.speedScale ?? 1);
-      const catchUp = back * (R3D.PACK_CATCHUP * (1 + pressure * 0.5)
+      const catchUp = back * (this.diff.packRecovery ?? 1) * (R3D.PACK_CATCHUP * (1 + pressure * 0.5)
         + Math.max(0, Math.min(leaderPace, R3D.SPEED_MAX) - basePace) * pressure);
       const tgt = Math.min(
         (R3D.SPEED_BASE * (0.86 + car.power * 0.15)) * dSpd + car.draftBoost + catchUp,

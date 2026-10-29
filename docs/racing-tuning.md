@@ -38,6 +38,21 @@ Final seed-17 three-teammate ride diagnostic: Pro P10 with 35 median nearby riva
 Semi-Pro/Amateur/Beginner still P1 in that strong-car fixture. Lower difficulties
 remain winnable; these examples do not establish an exploit-proof win rate.
 
+### All-Out
+
+User-requested fifth difficulty above Pro, intentionally severe. Internal save ID
+is `allout`. Existing four modes/default remain unchanged. AI speed/power/aggression
+are 1.16/1.50/1.80, AI aero 1.30, racecraft 1.25, pack pressure 1.00 (the bounded
+maximum), recovery multiplier 1.50, and bumper partnership limit 1.5 seconds. Player draft multiplier is
+0.80 with no positional comeback assistance. Existing physical safety and result
+classification still apply; no forced losses or finish-place edits.
+
+Shared difficulty lists expose it in new-career setup, Settings and Quick Race.
+The existing simulated-rival difficulty multiplier also uses its AI power value;
+teammate simulation power and economy are unchanged. Seed-17 36-car diagnostics:
+both managed rear-start and power-.95 three-teammate front-start riding finished
+last. These are synthetic examples, not an established human win rate.
+
 ## Preserved behavior
 
 - Straight-line, auto-throttle race; continuous A/D steering and S braking.
