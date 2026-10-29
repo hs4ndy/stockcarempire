@@ -905,3 +905,11 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .quick-car-controls input[type="number"] { background: var(--panel-2); color: var(--text); border: 1px solid var(--line-2); border-radius: 6px; padding: 8px 12px; font-family: var(--font); }
 .dual-race .dual-order { display: block; }
 .dual-race .dual-order .r3d-order-row { grid-template-columns: 20px 5px 28px minmax(0,1fr); gap: 4px; }
+/* Keep a consistent mirror shape instead of unrelated breakpoint heights. */
+#r3d-mirror-wrap { width: min(520px, 42vw); height: auto; aspect-ratio: 4.5 / 1; }
+.dual-mirror { width: 42%; height: auto; aspect-ratio: 4 / 1; }
+@media (max-width: 1024px) { #r3d-mirror-wrap { width: min(380px, 48vw); } }
+@media (max-width: 700px) {
+  #r3d-mirror-wrap { left: 45%; width: min(320px, calc(100vw - 140px)); }
+  .dual-mirror { width: 44%; height: auto; }
+}

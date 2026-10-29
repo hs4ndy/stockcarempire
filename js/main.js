@@ -126,7 +126,6 @@ let quickRaceDifficulty = DEFAULT_DIFFICULTY;
 let quickRaceSeries = null;
 let quickRacePlayers = 1;
 const quickRaceCars = [{number: 1, color: '#e8001d'}, {number: 2, color: '#58a6ff'}];
-const QUICK_COLORS = ['#e8001d','#58a6ff','#3fb950','#e3b341','#f5f5f2','#a47ae8','#ff7e35','#252b33'];
 function setQuickRacePlayers(count) {
   quickRacePlayers = count === 2 ? 2 : 1;
   document.querySelectorAll('[data-players]').forEach(el => el.setAttribute('aria-pressed', String(Number(el.dataset.players) === quickRacePlayers)));
@@ -211,6 +210,23 @@ function handleSetDifficulty(id) {
   toast(`Difficulty set to ${d.name}.`, 'success');
   renderTab(activeTab());
   if (keepFocus) document.querySelector(`#main-content .difficulty-card[data-diff="${d.id}"]`)?.focus();
+}
+
+function setCareerCarAppearance(carId, key, value) {
+  const car = game.cars.find(c => c.id === carId);
+  if (!car) return;
+  if (key === 'number') {
+    const res = setCarNumber(carId, value);
+    if (!res.ok) toast(res.msg, 'error');
+  } else if (key === 'color' && /^#[0-9a-f]{6}$/i.test(value)) setCarColor(carId,value);
+  const root = document.getElementById(`career-custom-${carId}`);
+  if (!root) return;
+  root.querySelector('.quick-car-preview').style.setProperty('--car-color',car.color);
+  root.querySelector('.quick-car-preview strong').textContent=String(car.number).padStart(2,'0');
+  root.querySelector('input[type="number"]').value=car.number;
+  root.querySelector('input[type="color"]').value=car.color;
+  root.querySelectorAll('[data-color]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.color===car.color)));
+  document.querySelector(`#car-${carId} .car-num`).textContent=`#${car.number}`;
 }
 
 function handleSetCarColor(carId, color) {

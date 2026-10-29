@@ -439,3 +439,5 @@ const RACE_EVENTS = {
     'A slow pit stop drops you behind.',
   ]
 };
+
+const QUICK_COLORS = ['#e8001d','#58a6ff','#3fb950','#e3b341','#f5f5f2','#a47ae8','#ff7e35','#252b33'];

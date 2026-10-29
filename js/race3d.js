@@ -205,7 +205,7 @@ function launch3DRace(config, onComplete) {
         <div class="r3d-pause-panel">
           <div class="r3d-pause-title">PAUSED</div>
           <button class="r3d-pause-resume" id="r3d-pause-resume">RESUME</button>
-          <button class="r3d-pause-resume" id="r3d-quit">Quit Race</button>
+          <button class="r3d-pause-resume" id="r3d-quit">QUIT RACE</button>
         </div>
       </div>
     </div>
@@ -1767,10 +1767,11 @@ class Race3DEngine {
     const mh = wrap.clientHeight;
     if (mw < 2 || mh < 2) return;
 
-    const dpr = this.renderer.getPixelRatio();
-    const mirrorScale = this.player2 ? 0.65 : 1;
-    const rtW = Math.max(2, Math.round(mw * dpr * mirrorScale));
-    const rtH = Math.max(2, Math.round(mh * dpr * mirrorScale));
+    // Mirror readability must not inherit the reduced full-screen pixel budget.
+    // Supersample this small surface, then filter down into its CSS rectangle.
+    const mirrorRatio = this.lowPower ? 1.5 : Math.max(1.5, Math.min(2, window.devicePixelRatio || 1));
+    const rtW = Math.max(2, Math.round(mw * mirrorRatio));
+    const rtH = Math.max(2, Math.round(mh * mirrorRatio));
     if (!this.mirrorRT || this.mirrorRTSize.w !== rtW || this.mirrorRTSize.h !== rtH) {
       this._initMirrorTarget(rtW, rtH);
     }

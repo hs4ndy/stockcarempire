@@ -354,16 +354,10 @@ function renderGarage() {
         <summary>Customize and manage car</summary>
         <div class="ui-details-body">
       <div class="btn-row">
-        <button class="btn btn-sm btn-ghost" onclick="handleSetCarNumber('${car.id}')">Change Number</button>
         <button class="btn btn-sm btn-ghost" onclick="handleRenameCar('${car.id}')">Rename</button>
         ${game.cars.length > 1 ? `<button class="btn btn-sm btn-danger" onclick="handleSellCar('${car.id}')">Sell</button>` : ''}
       </div>
-      <div class="car-color-row">
-        <span class="stat-label">Car Color</span>
-        ${['#e8001d','#3498db','#2ecc71','#f39c12','#9b59b6','#ffffff','#222222','#ff6600','#00cccc','#ff69b4'].map(c =>
-          `<button class="color-swatch${(car.color||'#e8001d')===c?' active':''}" style="background:${c}" data-color="${c}" onclick="handleSetCarColor('${car.id}','${c}')" title="Paint ${c}" aria-label="Paint ${c}" aria-pressed="${(car.color||'#e8001d')===c}"></button>`
-        ).join('')}
-      </div>
+      ${renderCarCustomizer(car, 0, true)}
         </div>
       </details>
     </div>`;
@@ -1359,6 +1353,26 @@ function renderLoadModal() {
 }
 
 // ─── Quick Race modal ─────────────────────────────────────────
+// Shared career/Quick Race paint-and-number controls.
+function renderCarCustomizer(car, i, career = false) {
+  const id = career ? `career-custom-${car.id}` : `quick-player-${i+1}`;
+  const prefix = career ? `setCareerCarAppearance('${car.id}',` : `setQuickRaceCar(${i},`;
+  const color = car.color || '#e8001d', number = car.number || 1;
+  return `<section class="quick-car-editor" id="${id}" ${!career && i === 1 && quickRacePlayers === 1 ? 'hidden' : ''}>
+    <h4>${career ? 'Car appearance' : `Player ${i+1}`}</h4>
+    <div class="quick-car-controls">
+      <div class="quick-car-preview" style="--car-color:${color}" aria-hidden="true"><strong>${String(number).padStart(2,'0')}</strong></div>
+      <div><label for="${career ? id+'-number' : 'quick-number-'+i}">Car number</label>
+        <input id="${career ? id+'-number' : 'quick-number-'+i}" type="number" min="1" max="99" step="1" value="${number}" aria-label="${career ? car.name : 'Player '+(i+1)} car number" onchange="${prefix}'number',this.value)">
+      </div>
+    </div>
+    <div class="quick-paint" role="group" aria-label="${career ? car.name : 'Player '+(i+1)} color">
+      ${QUICK_COLORS.map((c,n) => `<button type="button" class="quick-swatch${career ? ' color-swatch' : ''}" style="--paint:${c}" data-color="${c}" aria-label="${['Red','Blue','Green','Gold','White','Purple','Orange','Graphite'][n]}" aria-pressed="${color === c}" onclick="${prefix}'color','${c}')"></button>`).join('')}
+      <label class="quick-custom-paint">Custom<input type="color" value="${color}" aria-label="${career ? car.name : 'Player '+(i+1)} custom color" oninput="${prefix}'color',this.value)"></label>
+    </div>
+  </section>`;
+}
+
 function renderQuickRaceModal() {
   return `
   <div class="modal-overlay" id="quick-race-modal">
@@ -1392,20 +1406,7 @@ function renderQuickRaceModal() {
           <button class="btn" data-players="2" aria-pressed="${quickRacePlayers === 2}" onclick="setQuickRacePlayers(2)">Dual player</button>
         </div>
         <p class="section-copy">One keyboard. Player 1: A / S / D. Player 2: J / K / L. Middle key brakes; the car accelerates automatically.</p>
-        ${quickRaceCars.map((car, i) => `
-          <section class="quick-car-editor" id="quick-player-${i+1}" ${i === 1 && quickRacePlayers === 1 ? 'hidden' : ''}>
-            <h4>Player ${i+1}</h4>
-            <div class="quick-car-controls">
-              <div class="quick-car-preview" style="--car-color:${car.color}" aria-hidden="true"><strong>${String(car.number).padStart(2,'0')}</strong></div>
-              <div><label for="quick-number-${i}">Car number</label>
-                <input id="quick-number-${i}" type="number" min="1" max="99" step="1" value="${car.number}" onchange="setQuickRaceCar(${i},'number',this.value)">
-              </div>
-            </div>
-            <div class="quick-paint" role="group" aria-label="Player ${i+1} color">
-              ${QUICK_COLORS.map((color,n) => `<button type="button" class="quick-swatch" style="--paint:${color}" data-color="${color}" aria-label="${['Red','Blue','Green','Gold','White','Purple','Orange','Graphite'][n]}" aria-pressed="${car.color === color}" onclick="setQuickRaceCar(${i},'color','${color}')"></button>`).join('')}
-              <label class="quick-custom-paint">Custom<input type="color" value="${car.color}" aria-label="Player ${i+1} custom color" oninput="setQuickRaceCar(${i},'color',this.value)"></label>
-            </div>
-          </section>`).join('')}
+        ${quickRaceCars.map((car, i) => renderCarCustomizer(car, i)).join('')}
         <p class="form-warning" id="quick-number-warning" hidden>Choose a different number for each player.</p>
       </div>
       <div class="modal-footer quick-race-footer">

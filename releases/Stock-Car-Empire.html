@@ -924,6 +924,14 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .quick-car-controls input[type="number"] { background: var(--panel-2); color: var(--text); border: 1px solid var(--line-2); border-radius: 6px; padding: 8px 12px; font-family: var(--font); }
 .dual-race .dual-order { display: block; }
 .dual-race .dual-order .r3d-order-row { grid-template-columns: 20px 5px 28px minmax(0,1fr); gap: 4px; }
+/* Keep a consistent mirror shape instead of unrelated breakpoint heights. */
+#r3d-mirror-wrap { width: min(520px, 42vw); height: auto; aspect-ratio: 4.5 / 1; }
+.dual-mirror { width: 42%; height: auto; aspect-ratio: 4 / 1; }
+@media (max-width: 1024px) { #r3d-mirror-wrap { width: min(380px, 48vw); } }
+@media (max-width: 700px) {
+  #r3d-mirror-wrap { left: 45%; width: min(320px, calc(100vw - 140px)); }
+  .dual-mirror { width: 44%; height: auto; }
+}
 
 </style>
 </head>
@@ -1570,6 +1578,8 @@ const RACE_EVENTS = {
     'A slow pit stop drops you behind.',
   ]
 };
+
+const QUICK_COLORS = ['#e8001d','#58a6ff','#3fb950','#e3b341','#f5f5f2','#a47ae8','#ff7e35','#252b33'];
 
 </script>
 <script>
@@ -3321,7 +3331,7 @@ function launch3DRace(config, onComplete) {
         <div class="r3d-pause-panel">
           <div class="r3d-pause-title">PAUSED</div>
           <button class="r3d-pause-resume" id="r3d-pause-resume">RESUME</button>
-          <button class="r3d-pause-resume" id="r3d-quit">Quit Race</button>
+          <button class="r3d-pause-resume" id="r3d-quit">QUIT RACE</button>
         </div>
       </div>
     </div>
@@ -4883,10 +4893,11 @@ class Race3DEngine {
     const mh = wrap.clientHeight;
     if (mw < 2 || mh < 2) return;
 
-    const dpr = this.renderer.getPixelRatio();
-    const mirrorScale = this.player2 ? 0.65 : 1;
-    const rtW = Math.max(2, Math.round(mw * dpr * mirrorScale));
-    const rtH = Math.max(2, Math.round(mh * dpr * mirrorScale));
+    // Mirror readability must not inherit the reduced full-screen pixel budget.
+    // Supersample this small surface, then filter down into its CSS rectangle.
+    const mirrorRatio = this.lowPower ? 1.5 : Math.max(1.5, Math.min(2, window.devicePixelRatio || 1));
+    const rtW = Math.max(2, Math.round(mw * mirrorRatio));
+    const rtH = Math.max(2, Math.round(mh * mirrorRatio));
     if (!this.mirrorRT || this.mirrorRTSize.w !== rtW || this.mirrorRTSize.h !== rtH) {
       this._initMirrorTarget(rtW, rtH);
     }
@@ -5531,16 +5542,10 @@ function renderGarage() {
         <summary>Customize and manage car</summary>
         <div class="ui-details-body">
       <div class="btn-row">
-        <button class="btn btn-sm btn-ghost" onclick="handleSetCarNumber('${car.id}')">Change Number</button>
         <button class="btn btn-sm btn-ghost" onclick="handleRenameCar('${car.id}')">Rename</button>
         ${game.cars.length > 1 ? `<button class="btn btn-sm btn-danger" onclick="handleSellCar('${car.id}')">Sell</button>` : ''}
       </div>
-      <div class="car-color-row">
-        <span class="stat-label">Car Color</span>
-        ${['#e8001d','#3498db','#2ecc71','#f39c12','#9b59b6','#ffffff','#222222','#ff6600','#00cccc','#ff69b4'].map(c =>
-          `<button class="color-swatch${(car.color||'#e8001d')===c?' active':''}" style="background:${c}" data-color="${c}" onclick="handleSetCarColor('${car.id}','${c}')" title="Paint ${c}" aria-label="Paint ${c}" aria-pressed="${(car.color||'#e8001d')===c}"></button>`
-        ).join('')}
-      </div>
+      ${renderCarCustomizer(car, 0, true)}
         </div>
       </details>
     </div>`;
@@ -6536,6 +6541,26 @@ function renderLoadModal() {
 }
 
 // ─── Quick Race modal ─────────────────────────────────────────
+// Shared career/Quick Race paint-and-number controls.
+function renderCarCustomizer(car, i, career = false) {
+  const id = career ? `career-custom-${car.id}` : `quick-player-${i+1}`;
+  const prefix = career ? `setCareerCarAppearance('${car.id}',` : `setQuickRaceCar(${i},`;
+  const color = car.color || '#e8001d', number = car.number || 1;
+  return `<section class="quick-car-editor" id="${id}" ${!career && i === 1 && quickRacePlayers === 1 ? 'hidden' : ''}>
+    <h4>${career ? 'Car appearance' : `Player ${i+1}`}</h4>
+    <div class="quick-car-controls">
+      <div class="quick-car-preview" style="--car-color:${color}" aria-hidden="true"><strong>${String(number).padStart(2,'0')}</strong></div>
+      <div><label for="${career ? id+'-number' : 'quick-number-'+i}">Car number</label>
+        <input id="${career ? id+'-number' : 'quick-number-'+i}" type="number" min="1" max="99" step="1" value="${number}" aria-label="${career ? car.name : 'Player '+(i+1)} car number" onchange="${prefix}'number',this.value)">
+      </div>
+    </div>
+    <div class="quick-paint" role="group" aria-label="${career ? car.name : 'Player '+(i+1)} color">
+      ${QUICK_COLORS.map((c,n) => `<button type="button" class="quick-swatch${career ? ' color-swatch' : ''}" style="--paint:${c}" data-color="${c}" aria-label="${['Red','Blue','Green','Gold','White','Purple','Orange','Graphite'][n]}" aria-pressed="${color === c}" onclick="${prefix}'color','${c}')"></button>`).join('')}
+      <label class="quick-custom-paint">Custom<input type="color" value="${color}" aria-label="${career ? car.name : 'Player '+(i+1)} custom color" oninput="${prefix}'color',this.value)"></label>
+    </div>
+  </section>`;
+}
+
 function renderQuickRaceModal() {
   return `
   <div class="modal-overlay" id="quick-race-modal">
@@ -6569,20 +6594,7 @@ function renderQuickRaceModal() {
           <button class="btn" data-players="2" aria-pressed="${quickRacePlayers === 2}" onclick="setQuickRacePlayers(2)">Dual player</button>
         </div>
         <p class="section-copy">One keyboard. Player 1: A / S / D. Player 2: J / K / L. Middle key brakes; the car accelerates automatically.</p>
-        ${quickRaceCars.map((car, i) => `
-          <section class="quick-car-editor" id="quick-player-${i+1}" ${i === 1 && quickRacePlayers === 1 ? 'hidden' : ''}>
-            <h4>Player ${i+1}</h4>
-            <div class="quick-car-controls">
-              <div class="quick-car-preview" style="--car-color:${car.color}" aria-hidden="true"><strong>${String(car.number).padStart(2,'0')}</strong></div>
-              <div><label for="quick-number-${i}">Car number</label>
-                <input id="quick-number-${i}" type="number" min="1" max="99" step="1" value="${car.number}" onchange="setQuickRaceCar(${i},'number',this.value)">
-              </div>
-            </div>
-            <div class="quick-paint" role="group" aria-label="Player ${i+1} color">
-              ${QUICK_COLORS.map((color,n) => `<button type="button" class="quick-swatch" style="--paint:${color}" data-color="${color}" aria-label="${['Red','Blue','Green','Gold','White','Purple','Orange','Graphite'][n]}" aria-pressed="${car.color === color}" onclick="setQuickRaceCar(${i},'color','${color}')"></button>`).join('')}
-              <label class="quick-custom-paint">Custom<input type="color" value="${car.color}" aria-label="Player ${i+1} custom color" oninput="setQuickRaceCar(${i},'color',this.value)"></label>
-            </div>
-          </section>`).join('')}
+        ${quickRaceCars.map((car, i) => renderCarCustomizer(car, i)).join('')}
         <p class="form-warning" id="quick-number-warning" hidden>Choose a different number for each player.</p>
       </div>
       <div class="modal-footer quick-race-footer">
@@ -6996,7 +7008,6 @@ let quickRaceDifficulty = DEFAULT_DIFFICULTY;
 let quickRaceSeries = null;
 let quickRacePlayers = 1;
 const quickRaceCars = [{number: 1, color: '#e8001d'}, {number: 2, color: '#58a6ff'}];
-const QUICK_COLORS = ['#e8001d','#58a6ff','#3fb950','#e3b341','#f5f5f2','#a47ae8','#ff7e35','#252b33'];
 function setQuickRacePlayers(count) {
   quickRacePlayers = count === 2 ? 2 : 1;
   document.querySelectorAll('[data-players]').forEach(el => el.setAttribute('aria-pressed', String(Number(el.dataset.players) === quickRacePlayers)));
@@ -7081,6 +7092,23 @@ function handleSetDifficulty(id) {
   toast(`Difficulty set to ${d.name}.`, 'success');
   renderTab(activeTab());
   if (keepFocus) document.querySelector(`#main-content .difficulty-card[data-diff="${d.id}"]`)?.focus();
+}
+
+function setCareerCarAppearance(carId, key, value) {
+  const car = game.cars.find(c => c.id === carId);
+  if (!car) return;
+  if (key === 'number') {
+    const res = setCarNumber(carId, value);
+    if (!res.ok) toast(res.msg, 'error');
+  } else if (key === 'color' && /^#[0-9a-f]{6}$/i.test(value)) setCarColor(carId,value);
+  const root = document.getElementById(`career-custom-${carId}`);
+  if (!root) return;
+  root.querySelector('.quick-car-preview').style.setProperty('--car-color',car.color);
+  root.querySelector('.quick-car-preview strong').textContent=String(car.number).padStart(2,'0');
+  root.querySelector('input[type="number"]').value=car.number;
+  root.querySelector('input[type="color"]').value=car.color;
+  root.querySelectorAll('[data-color]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.color===car.color)));
+  document.querySelector(`#car-${carId} .car-num`).textContent=`#${car.number}`;
 }
 
 function handleSetCarColor(carId, color) {
