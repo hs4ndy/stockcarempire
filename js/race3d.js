@@ -205,7 +205,7 @@ function launch3DRace(config, onComplete) {
         <div class="r3d-pause-panel">
           <div class="r3d-pause-title">PAUSED</div>
           <button class="r3d-pause-resume" id="r3d-pause-resume">RESUME</button>
-          <button class="btn btn-danger" id="r3d-quit" style="width:100%;margin-top:12px">Quit Race</button>
+          <button class="r3d-pause-resume" id="r3d-quit">Quit Race</button>
         </div>
       </div>
     </div>
@@ -220,6 +220,18 @@ function launch3DRace(config, onComplete) {
     window._r3dFinish = () => {};
     if (config.onQuit) config.onQuit(); else showScreen('intro');
   });
+  container.classList.toggle('dual-race', !!config.dualPlayer);
+  if (config.dualPlayer) {
+    document.getElementById('r3d-hud').insertAdjacentHTML('beforeend', `<div class="dual-views">${[1,2].map(n => `
+      <section class="dual-view" id="dual-view-${n}" aria-label="Player ${n} race view">
+        <div class="dual-player-label">Player ${n} · ${n === 1 ? 'A / S / D' : 'J / K / L'}</div>
+        <div class="dual-mirror" id="dual-mirror-${n}"></div>
+        <div class="r3d-order dual-order" id="dual-order-${n}"></div>
+        <div class="dual-data"><span id="dual-pos-${n}"></span><span><strong id="dual-speed-${n}">0</strong> MPH</span><span>Draft <strong id="dual-draft-${n}">0</strong>%</span></div>
+        <div class="dual-progress"><span>Start</span><span>Finish</span><div><i id="dual-progress-${n}"></i></div></div>
+      </section>`).join('')}</div>`);
+    document.getElementById('r3d-hint').textContent = 'P1: A / S / D     P2: J / K / L     Esc: Pause';
+  }
   const canvas = document.getElementById('r3d-canvas');
 
   requestAnimationFrame(() => {
@@ -257,6 +269,7 @@ class Race3DEngine {
     this.carModel = this.isGrassroots ? SC_LEGACY_STOCK_CAR_MODEL : SC_STOCK_CAR_MODEL;
     this.onComplete   = onComplete;
     this.keys         = { a: false, d: false, s: false };
+    this.keys2 = { a: false, d: false, s: false };
     this.paused       = false;
     this.cars         = [];
     this.player       = null;
@@ -302,7 +315,7 @@ class Race3DEngine {
 
     this.renderer = new THREE.WebGLRenderer({ canvas: c, antialias: true });
     // Budget rendering work rather than multiplying every screen pixel by four.
-    this.lowPower = (navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4)
+    this.lowPower = !!this.config.dualPlayer || (navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4)
       || (navigator.deviceMemory > 0 && navigator.deviceMemory <= 4);
     this._pixelRatio = Math.min(window.devicePixelRatio || 1, this.lowPower ? 1 : 1.5,
       Math.sqrt((this.lowPower ? 1000000 : 2000000) / (w * h)));
@@ -331,7 +344,8 @@ class Race3DEngine {
     this._buildTrack();
     this._buildEnvironment();
     this._buildCars();
-    this._buildMinimap();
+    if (this.player2) this.camera2 = this.camera.clone();
+    if (!this.player2) this._buildMinimap();
 
     // Apply the real anisotropy limit to every texture now in the scene
     this.scene.traverse(o => {
@@ -344,6 +358,10 @@ class Race3DEngine {
     // Input
     this._kd = e => {
       const k = e.key.toLowerCase();
+      if (k === 'j') this.keys2.a = true;
+      if (k === 'l') this.keys2.d = true;
+      if (k === 'k') this.keys2.s = true;
+      if (['a','s','d','j','k','l'].includes(k)) e.preventDefault();
       if (k === 'a') this.keys.a = true;
       if (k === 'd') this.keys.d = true;
       if (k === 's') this.keys.s = true;
@@ -351,6 +369,9 @@ class Race3DEngine {
     };
     this._ku = e => {
       const k = e.key.toLowerCase();
+      if (k === 'j') this.keys2.a = false;
+      if (k === 'l') this.keys2.d = false;
+      if (k === 'k') this.keys2.s = false;
       if (k === 'a') this.keys.a = false;
       if (k === 'd') this.keys.d = false;
       if (k === 's') this.keys.s = false;
@@ -359,6 +380,7 @@ class Race3DEngine {
     document.addEventListener('keyup',   this._ku);
     this._onBlur = () => {
       this.keys.a = this.keys.d = this.keys.s = false;
+    if (this.keys2) this.keys2.a = this.keys2.d = this.keys2.s = false;
       if (!this.paused && !this.done) this._togglePause();
     };
     window.addEventListener('blur', this._onBlur);
@@ -704,13 +726,31 @@ class Race3DEngine {
         color:      entry.color,
         number:     entry.number || (aiIdx + 1),
         power:      clamp(entry.power, 0.25, 0.95),
-        isPlayer:   false,
+        isPlayer:   !!entry.isSecondPlayer,
         isTeammate: !!entry.isTeammate,
         label:      entry.name,
         teamName:   entry.teamName || null,
         carId:      entry.carId || null,
       }));
     }
+    if (config.dualPlayer) {
+      this.player2 = this.cars.find(c => c.entrantId === 'player2');
+      // Give the two humans adjacent grid slots without adding an extra car.
+      const neighbor = this.cars.filter(c => c !== this.player && c !== this.player2).sort((a,b) =>
+        Math.abs(a.z-this.player.z) - Math.abs(b.z-this.player.z))[0];
+      if (neighbor && this.player2) {
+        const x = this.player2.x, z = this.player2.z;
+        this.player2.x = neighbor.x; this.player2.z = neighbor.z;
+        neighbor.x = x; neighbor.z = z;
+        for (const c of [neighbor,this.player2]) c.mesh.position.set(c.x,0,c.z);
+      }
+    }
+  }
+
+  _withSecond(callback) {
+    const player = this.player, keys = this.keys, camera = this.camera;
+    try { this.player = this.player2; this.keys = this.keys2; this.camera = this.camera2 || camera; return callback(); }
+    finally { this.player = player; this.keys = keys; this.camera = camera; }
   }
 
   _makeCar(x, z, { entrantId, color, number, power, isPlayer, isTeammate, label, teamName, carId }) {
@@ -857,7 +897,7 @@ class Race3DEngine {
     if (this.paceMode) {
       this._updatePaceLap(dt);
       this._animateCars(dt);
-      this._updateCamera(dt);
+      if (!this.player2) this._updateCamera(dt);
       this._updateHUD(dt);
       return;
     }
@@ -870,13 +910,15 @@ class Race3DEngine {
     // meant _updateAI always saw false and cars in a pack kept making lane
     // decisions while locked bumper-to-bumper - a big source of the twitching.
     this._updatePlayer(dt);
+    if (this.player2) this._withSecond(() => this._updatePlayer(dt));
     this._updateAI(dt);
     this._calcDraft(dt);
     this._separateCars(dt);
     this._checkCollisions();
+    if (this.player2) this._withSecond(() => this._checkCollisions());
     this._checkFinish();
     this._animateCars(dt);
-    this._updateCamera(dt);
+    if (!this.player2) this._updateCamera(dt);
     this._updateHUD(dt);
 
     const endgameGlobal = this.player.z / (this.raceLength || R3D.TRACK_LEN) >= R3D.ENDGAME_FRAC;
@@ -893,15 +935,13 @@ class Race3DEngine {
   }
 
   _updatePaceLap(dt) {
-    const hw = (this.trackHalfWidth ?? R3D.HALF_W) - 1.2;
-    const p  = this.player;
-    const input = Number(this.keys.a) - Number(this.keys.d);
-    const desired = input * R3D.LAT_MAX * 0.6;
-    p.lv = p.lv || 0;
-    p.lv += clamp((desired - p.lv) * (1 - Math.exp(-4 * dt)), -R3D.LAT_ACC * dt, R3D.LAT_ACC * dt);
-    p.lv = clamp(p.lv, -R3D.LAT_MAX * 0.6, R3D.LAT_MAX * 0.6);
-    p.x  = clamp(p.x + p.lv * dt, -hw, hw);
-
+    for (const [p, keys] of [[this.player,this.keys], ...(this.player2 ? [[this.player2,this.keys2]] : [])]) {
+      const hw = (this.trackHalfWidth ?? R3D.HALF_W) - 1.2;
+      const desired = (Number(keys.a)-Number(keys.d))*R3D.LAT_MAX*.6;
+      p.lv = (p.lv || 0) + clamp((desired-(p.lv || 0))*(1-Math.exp(-4*dt)),-R3D.LAT_ACC*dt,R3D.LAT_ACC*dt);
+      p.lv=clamp(p.lv,-R3D.LAT_MAX*.6,R3D.LAT_MAX*.6);
+      p.x=clamp(p.x+p.lv*dt,-hw,hw);
+    }
     for (const car of this.cars) {
       // Every row advances together on the formation lap. Letting each car
       // converge from its power-based race speed changed the live order before
@@ -910,11 +950,11 @@ class Race3DEngine {
       car.z += car.speed * dt;
       car.mesh.position.set(car.x, 0, car.z);
     }
-    p.mesh.position.set(p.x, 0, p.z);
   }
 
   _updatePlayer(dt) {
     const p  = this.player;
+    if (p.finished || p.dnf) return;
     const hw = (this.trackHalfWidth ?? R3D.HALF_W) - 1.2;
 
     if (p.spinning) {
@@ -1523,6 +1563,7 @@ class Race3DEngine {
     if (this.done) return;
     this.paused = !this.paused;
     this.keys.a = this.keys.d = this.keys.s = false;
+    if (this.keys2) this.keys2.a = this.keys2.d = this.keys2.s = false;
     this._physicsAcc = 0;
     const overlay  = document.getElementById('r3d-pause-overlay');
     const pauseBtn = document.getElementById('r3d-pause-btn');
@@ -1550,6 +1591,17 @@ class Race3DEngine {
       this.finishOrder.push(car);
     }
     const player = crossed.find(c => c.isPlayer);
+    if (this.player2) {
+      if (this.player.finished && this.player2.finished) {
+        this.done = true;
+        this._updateDualHUD(1);
+        const p1 = this.finishOrder.indexOf(this.player)+1, p2 = this.finishOrder.indexOf(this.player2)+1;
+        const el = document.getElementById('r3d-finish');
+        el.innerHTML = `<div class="r3d-finish-box"><h2>Race Results</h2><p>Player 1 · #${this.player.number} · ${p1}${ordinal(p1)}</p><p>Player 2 · #${this.player2.number} · ${p2}${ordinal(p2)}</p><button class="btn btn-primary btn-lg" onclick="window._r3dFinish(${p1})">Continue</button></div>`;
+        el.style.display = 'flex';
+      }
+      return;
+    }
     if (player) {
       this.done = true;
       const pos = this.finishOrder.indexOf(player) + 1;
@@ -1707,7 +1759,7 @@ class Race3DEngine {
   }
 
   _renderMirror() {
-    const wrap = document.getElementById('r3d-mirror-wrap');
+    const wrap = document.getElementById(this._mirrorWrapId || 'r3d-mirror-wrap');
     if (!wrap || !this.scene || !this.mirrorCam || !this.renderer) return;
     const rect = wrap.getBoundingClientRect();
     const cr   = this.canvas.getBoundingClientRect();
@@ -1716,8 +1768,9 @@ class Race3DEngine {
     if (mw < 2 || mh < 2) return;
 
     const dpr = this.renderer.getPixelRatio();
-    const rtW = Math.round(mw * dpr);
-    const rtH = Math.round(mh * dpr);
+    const mirrorScale = this.player2 ? 0.65 : 1;
+    const rtW = Math.max(2, Math.round(mw * dpr * mirrorScale));
+    const rtH = Math.max(2, Math.round(mh * dpr * mirrorScale));
     if (!this.mirrorRT || this.mirrorRTSize.w !== rtW || this.mirrorRTSize.h !== rtH) {
       this._initMirrorTarget(rtW, rtH);
     }
@@ -1774,6 +1827,7 @@ class Race3DEngine {
 
   // ── HUD ──────────────────────────────────────────────────────
   _updateHUD(dt) {
+    if (this.player2) { this._updateDualHUD(dt); return; }
     const p = this.player;
 
     // Cars that have already taken the flag are still ahead of you. Excluding
@@ -1901,6 +1955,47 @@ class Race3DEngine {
     el.style.display = 'flex';
   }
 
+  _updateDualHUD(dt) {
+    this._dualHUDAcc = (this._dualHUDAcc || 0) + dt;
+    if (this._dualHUDAcc < 0.10) return;
+    this._dualHUDAcc = 0;
+    const ranked = this.cars.filter(c=>!c.dnf).slice().sort((a,b)=>{
+      if(a.finished && b.finished) return this.finishOrder.indexOf(a)-this.finishOrder.indexOf(b);
+      if(a.finished) return -1; if(b.finished) return 1; return b.z-a.z;
+    });
+    [this.player,this.player2].forEach((p,i)=>{
+      const n=i+1, pos=ranked.indexOf(p)+1;
+      document.getElementById(`dual-pos-${n}`).textContent = p.finished ? `Finished P${pos}` : `P${pos} / ${this.cars.length}`;
+      document.getElementById(`dual-speed-${n}`).textContent = Math.round(p.speed*.78+33*(this.speedScale ?? 1));
+      document.getElementById(`dual-draft-${n}`).textContent = Math.round(clamp((p.draftMomentum || 0)/R3D.AERO_MAX,0,1)*100);
+      document.getElementById(`dual-progress-${n}`).style.transform = `scaleX(${clamp(p.z/this.raceLength,0,1)})`;
+      const start=clamp(pos-3,0,Math.max(0,ranked.length-5));
+      const el=document.getElementById(`dual-order-${n}`);
+      const html='<div class="r3d-order-head">Leaderboard</div>'+ranked.slice(start,start+5).map((c,k)=>`<div class="r3d-order-row${c===p ? ' is-player' : ''}"><span class="r3d-order-pos">${start+k+1}</span><span class="r3d-order-chip" style="background:${r3dHex(c.hex)}"></span><span class="r3d-order-num">#${c.number}</span><span class="r3d-order-name">${c.label}</span></div>`).join('');
+      if(el.innerHTML!==html) el.innerHTML=html;
+    });
+  }
+
+  _renderDual(dt) {
+    const r=this.renderer, size=r.getSize(new THREE.Vector2());
+    r.setScissorTest(false); r.setViewport(0,0,size.x,size.y); r.autoClear=false; r.clear();
+    const renderView = (n) => {
+      const pane=document.getElementById(`dual-view-${n}`).getBoundingClientRect(), cr=this.canvas.getBoundingClientRect();
+      const x=Math.round((pane.left-cr.left)*size.x/cr.width), y=Math.round((cr.bottom-pane.bottom)*size.y/cr.height);
+      const w=Math.round(pane.width*size.x/cr.width), h=Math.round(pane.height*size.y/cr.height);
+      this.camera.aspect=w/h; this.camera.updateProjectionMatrix();
+      this._updateCamera(dt);
+      r.setScissorTest(true); r.setScissor(x,y,w,h); r.setViewport(x,y,w,h); r.clear(); r.render(this.scene,this.camera);
+      r.setScissorTest(false);
+      this._mirrorWrapId=`dual-mirror-${n}`;
+      this._renderMirror();
+      this._mirrorWrapId=null;
+    };
+    renderView(1);
+    this._withSecond(()=>renderView(2));
+    r.setScissorTest(false); r.setViewport(0,0,size.x,size.y); r.autoClear=true;
+  }
+
   _loop() {
     this._raf = requestAnimationFrame(() => this._loop());
     const dt = Math.min(this.clock.getDelta(), 0.1);
@@ -1911,6 +2006,7 @@ class Race3DEngine {
       this._physicsAcc -= 1 / 120;
     }
     if (this.renderer && this.scene && this.camera) {
+      if (this.player2) { this._renderDual(dt); return; }
       this.renderer.autoClear = true;
       this.renderer.render(this.scene, this.camera);
       this.renderer.autoClear = false;

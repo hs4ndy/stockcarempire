@@ -124,6 +124,28 @@ function showQuickRaceScreen() {
 // Quick Race difficulty is chosen in the modal before launching
 let quickRaceDifficulty = DEFAULT_DIFFICULTY;
 let quickRaceSeries = null;
+let quickRacePlayers = 1;
+const quickRaceCars = [{number: 1, color: '#e8001d'}, {number: 2, color: '#58a6ff'}];
+const QUICK_COLORS = ['#e8001d','#58a6ff','#3fb950','#e3b341','#f5f5f2','#a47ae8','#ff7e35','#252b33'];
+function setQuickRacePlayers(count) {
+  quickRacePlayers = count === 2 ? 2 : 1;
+  document.querySelectorAll('[data-players]').forEach(el => el.setAttribute('aria-pressed', String(Number(el.dataset.players) === quickRacePlayers)));
+  document.getElementById('quick-player-2').hidden = quickRacePlayers !== 2;
+  document.getElementById('quick-number-warning').hidden = quickRacePlayers !== 2 || quickRaceCars[0].number !== quickRaceCars[1].number;
+}
+function setQuickRaceCar(index, key, value) {
+  const car = quickRaceCars[index];
+  if (key === 'number') car.number = clamp(Math.round(Number(value) || 1), 1, 99);
+  if (key === 'color' && /^#[0-9a-f]{6}$/i.test(value)) car.color = value;
+  const root = document.getElementById(`quick-player-${index + 1}`);
+  root.querySelector('.quick-car-preview').style.setProperty('--car-color', car.color);
+  root.querySelector('.quick-car-preview strong').textContent = String(car.number).padStart(2, '0');
+  root.querySelector('input[type="number"]').value = car.number;
+  root.querySelector('input[type="color"]').value = car.color;
+  root.querySelectorAll('[data-color]').forEach(el => el.setAttribute('aria-pressed',String(el.dataset.color === car.color)));
+  document.getElementById('quick-number-warning').hidden = quickRacePlayers !== 2 || quickRaceCars[0].number !== quickRaceCars[1].number;
+}
+
 
 function setQuickRaceDifficulty(id) {
   quickRaceDifficulty = id;
@@ -146,6 +168,11 @@ function selectQuickRaceSeries(fieldSize) {
 
 function confirmQuickRace() {
   if (quickRaceSeries === null) return;
+  if (quickRacePlayers === 2 && quickRaceCars[0].number === quickRaceCars[1].number) {
+    document.getElementById('quick-number-warning').hidden = false;
+    document.querySelector('#quick-player-2 input').focus();
+    return;
+  }
   handleStartQuickRace(quickRaceSeries);
 }
 
@@ -153,15 +180,18 @@ function handleStartQuickRace(fieldSize) {
   document.getElementById('quick-race-modal')?.remove();
   const AI_COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#c0392b','#16a085','#8e44ad','#2980b9','#27ae60'];
   const aiEntries = [];
+  const usedNumbers = new Set(quickRaceCars.slice(0, quickRacePlayers).map(c => c.number));
+  if (quickRacePlayers === 2) aiEntries.push({entrantId: 'player2', name: 'PLAYER 2', number: quickRaceCars[1].number, color: quickRaceCars[1].color, power: 0.60, isSecondPlayer: true});
   // Unique human driver names for the field
   const namePool = [...AI_DRIVER_NAMES].sort(() => Math.random() - 0.5);
-  for (let i = 0; i < fieldSize - 1; i++) {
+  for (let i = 0; i < fieldSize - quickRacePlayers; i++) {
     const nm = namePool[i % namePool.length] + (i >= namePool.length ? ' Jr.' : '');
-    aiEntries.push({ entrantId: `quick-${i + 1}`, name: nm, color: AI_COLORS[i % AI_COLORS.length], number: i + 2, power: rand(0.35, 0.80) });
+    const number = Array.from({length:99},(_,n)=>n+1).find(n=>!usedNumbers.has(n)); usedNumbers.add(number);
+    aiEntries.push({ entrantId: `quick-${i + 1}`, name: nm, color: AI_COLORS[i % AI_COLORS.length], number, power: rand(0.35, 0.80) });
   }
   showScreen('game-race');
   launch3DRace(
-    { playerColor: '#e8001d', playerNumber: 1, playerPower: 0.60, fieldSize,
+    { playerColor: quickRaceCars[0].color, playerNumber: quickRaceCars[0].number, playerName: quickRacePlayers === 2 ? 'PLAYER 1' : 'YOU', dualPlayer: quickRacePlayers === 2, playerPower: 0.60, fieldSize,
       seriesId: SERIES.find(s => s.fieldSize === fieldSize)?.id || 'grassroots',
       difficulty: quickRaceDifficulty, aiEntries },
     (pos) => {

@@ -877,6 +877,54 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
   .r3d-countdown { font-size: 4.5rem; }
 }
 
+/* Quick Race personalization and local split screen. */
+.r3d-pause-panel .r3d-pause-resume { width: 180px; }
+.quick-player-mode { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.quick-player-mode [aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+.quick-car-editor { padding: 24px 0; border-top: 1px solid var(--line); }
+.quick-car-editor[hidden], #quick-number-warning[hidden] { display: none; }
+.quick-car-editor h4 { margin: 0 0 16px; font-size: 20px; }
+.quick-car-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: center; }
+.quick-car-controls label { display: block; margin-bottom: 8px; }
+.quick-car-controls input { width: 100%; min-height: 48px; font-size: 24px; }
+.quick-car-preview { height: 112px; display: grid; place-items: center; border-radius: 8px; background: var(--car-color); border: 1px solid var(--line-2); }
+.quick-car-preview strong { font: italic 800 64px var(--font-display); color: #fff; -webkit-text-stroke: 2px #111; }
+.quick-paint { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; align-items: center; }
+.quick-swatch { width: 44px; height: 44px; background: var(--paint); border: 2px solid var(--line-2); border-radius: 6px; cursor: pointer; }
+.quick-swatch[aria-pressed="true"] { outline: 2px solid var(--text); outline-offset: 2px; border: 4px solid #111; }
+.quick-custom-paint { display: flex; align-items: center; gap: 8px; }
+.quick-custom-paint input { width: 44px; height: 44px; padding: 2px; cursor: pointer; }
+.dual-race #r3d-mirror-wrap, .dual-race #r3d-order, .dual-race .r3d-map,
+.dual-race .r3d-telemetry, .dual-race .r3d-progress-wrap { display: none; }
+.dual-views { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; pointer-events: none; }
+.dual-view { position: relative; min-width: 0; border-right: 1px solid rgba(255,255,255,.4); overflow: hidden; }
+.dual-player-label { position: absolute; top: 12px; left: 12px; background: rgba(30,33,36,.76); padding: 6px 8px; font-size: 12px; }
+.dual-mirror { position: absolute; top: 12px; left: 65%; transform: translateX(-50%); width: 38%; height: 64px; border: 2px solid #1e2124; border-radius: 6px; }
+.dual-order { top: 52px; left: 12px; width: 150px; font-size: 11px; }
+.dual-order .r3d-order-row { padding: 5px 6px; min-height: 25px; }
+.dual-order .r3d-order-head { padding: 6px; font-size: 10px; }
+.dual-order .r3d-order-name { font-size: 11px; }
+.dual-data { position: absolute; bottom: 48px; left: 50%; transform: translateX(-50%); display: flex; gap: 16px; white-space: nowrap; padding: 8px 12px; background: rgba(30,33,36,.76); border-radius: 6px; font-size: 12px; }
+.dual-data strong, .dual-data > span:first-child { font-weight: 700; }
+.dual-progress { position: absolute; bottom: 26px; left: 19%; width: 62%; display: flex; justify-content: space-between; font-size: 10px; }
+.dual-progress > div { position: absolute; top: 16px; height: 3px; width: 100%; background: rgba(255,255,255,.3); }
+.dual-progress i { display: block; height: 100%; width: 100%; background: var(--accent-solid); transform-origin: left; transform: scaleX(0); }
+.dual-race .r3d-pause-btn { z-index: 3; }
+.dual-race .r3d-countdown, .dual-race .r3d-finish, .dual-race #r3d-pause-overlay { z-index: 5; }
+@media (max-width: 700px) {
+  .dual-views { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+  .dual-view { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.4); }
+  .dual-mirror { height: 48px; top: 8px; left: 70%; }
+  .dual-player-label { font-size: 10px; top: 8px; }
+  .dual-order { top: 42px; width: 132px; }
+  .dual-data { bottom: 42px; gap: 12px; font-size: 11px; }
+  .dual-progress { bottom: 22px; }
+  .dual-race .r3d-pause-btn { top: auto; bottom: 0; right: 0; min-height: 32px; font-size: 11px; padding: 4px 8px; }
+}
+.quick-car-controls input[type="number"] { background: var(--panel-2); color: var(--text); border: 1px solid var(--line-2); border-radius: 6px; padding: 8px 12px; font-family: var(--font); }
+.dual-race .dual-order { display: block; }
+.dual-race .dual-order .r3d-order-row { grid-template-columns: 20px 5px 28px minmax(0,1fr); gap: 4px; }
+
 </style>
 </head>
 <body>
@@ -3273,7 +3321,7 @@ function launch3DRace(config, onComplete) {
         <div class="r3d-pause-panel">
           <div class="r3d-pause-title">PAUSED</div>
           <button class="r3d-pause-resume" id="r3d-pause-resume">RESUME</button>
-          <button class="btn btn-danger" id="r3d-quit" style="width:100%;margin-top:12px">Quit Race</button>
+          <button class="r3d-pause-resume" id="r3d-quit">Quit Race</button>
         </div>
       </div>
     </div>
@@ -3288,6 +3336,18 @@ function launch3DRace(config, onComplete) {
     window._r3dFinish = () => {};
     if (config.onQuit) config.onQuit(); else showScreen('intro');
   });
+  container.classList.toggle('dual-race', !!config.dualPlayer);
+  if (config.dualPlayer) {
+    document.getElementById('r3d-hud').insertAdjacentHTML('beforeend', `<div class="dual-views">${[1,2].map(n => `
+      <section class="dual-view" id="dual-view-${n}" aria-label="Player ${n} race view">
+        <div class="dual-player-label">Player ${n} · ${n === 1 ? 'A / S / D' : 'J / K / L'}</div>
+        <div class="dual-mirror" id="dual-mirror-${n}"></div>
+        <div class="r3d-order dual-order" id="dual-order-${n}"></div>
+        <div class="dual-data"><span id="dual-pos-${n}"></span><span><strong id="dual-speed-${n}">0</strong> MPH</span><span>Draft <strong id="dual-draft-${n}">0</strong>%</span></div>
+        <div class="dual-progress"><span>Start</span><span>Finish</span><div><i id="dual-progress-${n}"></i></div></div>
+      </section>`).join('')}</div>`);
+    document.getElementById('r3d-hint').textContent = 'P1: A / S / D     P2: J / K / L     Esc: Pause';
+  }
   const canvas = document.getElementById('r3d-canvas');
 
   requestAnimationFrame(() => {
@@ -3325,6 +3385,7 @@ class Race3DEngine {
     this.carModel = this.isGrassroots ? SC_LEGACY_STOCK_CAR_MODEL : SC_STOCK_CAR_MODEL;
     this.onComplete   = onComplete;
     this.keys         = { a: false, d: false, s: false };
+    this.keys2 = { a: false, d: false, s: false };
     this.paused       = false;
     this.cars         = [];
     this.player       = null;
@@ -3370,7 +3431,7 @@ class Race3DEngine {
 
     this.renderer = new THREE.WebGLRenderer({ canvas: c, antialias: true });
     // Budget rendering work rather than multiplying every screen pixel by four.
-    this.lowPower = (navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4)
+    this.lowPower = !!this.config.dualPlayer || (navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4)
       || (navigator.deviceMemory > 0 && navigator.deviceMemory <= 4);
     this._pixelRatio = Math.min(window.devicePixelRatio || 1, this.lowPower ? 1 : 1.5,
       Math.sqrt((this.lowPower ? 1000000 : 2000000) / (w * h)));
@@ -3399,7 +3460,8 @@ class Race3DEngine {
     this._buildTrack();
     this._buildEnvironment();
     this._buildCars();
-    this._buildMinimap();
+    if (this.player2) this.camera2 = this.camera.clone();
+    if (!this.player2) this._buildMinimap();
 
     // Apply the real anisotropy limit to every texture now in the scene
     this.scene.traverse(o => {
@@ -3412,6 +3474,10 @@ class Race3DEngine {
     // Input
     this._kd = e => {
       const k = e.key.toLowerCase();
+      if (k === 'j') this.keys2.a = true;
+      if (k === 'l') this.keys2.d = true;
+      if (k === 'k') this.keys2.s = true;
+      if (['a','s','d','j','k','l'].includes(k)) e.preventDefault();
       if (k === 'a') this.keys.a = true;
       if (k === 'd') this.keys.d = true;
       if (k === 's') this.keys.s = true;
@@ -3419,6 +3485,9 @@ class Race3DEngine {
     };
     this._ku = e => {
       const k = e.key.toLowerCase();
+      if (k === 'j') this.keys2.a = false;
+      if (k === 'l') this.keys2.d = false;
+      if (k === 'k') this.keys2.s = false;
       if (k === 'a') this.keys.a = false;
       if (k === 'd') this.keys.d = false;
       if (k === 's') this.keys.s = false;
@@ -3427,6 +3496,7 @@ class Race3DEngine {
     document.addEventListener('keyup',   this._ku);
     this._onBlur = () => {
       this.keys.a = this.keys.d = this.keys.s = false;
+    if (this.keys2) this.keys2.a = this.keys2.d = this.keys2.s = false;
       if (!this.paused && !this.done) this._togglePause();
     };
     window.addEventListener('blur', this._onBlur);
@@ -3772,13 +3842,31 @@ class Race3DEngine {
         color:      entry.color,
         number:     entry.number || (aiIdx + 1),
         power:      clamp(entry.power, 0.25, 0.95),
-        isPlayer:   false,
+        isPlayer:   !!entry.isSecondPlayer,
         isTeammate: !!entry.isTeammate,
         label:      entry.name,
         teamName:   entry.teamName || null,
         carId:      entry.carId || null,
       }));
     }
+    if (config.dualPlayer) {
+      this.player2 = this.cars.find(c => c.entrantId === 'player2');
+      // Give the two humans adjacent grid slots without adding an extra car.
+      const neighbor = this.cars.filter(c => c !== this.player && c !== this.player2).sort((a,b) =>
+        Math.abs(a.z-this.player.z) - Math.abs(b.z-this.player.z))[0];
+      if (neighbor && this.player2) {
+        const x = this.player2.x, z = this.player2.z;
+        this.player2.x = neighbor.x; this.player2.z = neighbor.z;
+        neighbor.x = x; neighbor.z = z;
+        for (const c of [neighbor,this.player2]) c.mesh.position.set(c.x,0,c.z);
+      }
+    }
+  }
+
+  _withSecond(callback) {
+    const player = this.player, keys = this.keys, camera = this.camera;
+    try { this.player = this.player2; this.keys = this.keys2; this.camera = this.camera2 || camera; return callback(); }
+    finally { this.player = player; this.keys = keys; this.camera = camera; }
   }
 
   _makeCar(x, z, { entrantId, color, number, power, isPlayer, isTeammate, label, teamName, carId }) {
@@ -3925,7 +4013,7 @@ class Race3DEngine {
     if (this.paceMode) {
       this._updatePaceLap(dt);
       this._animateCars(dt);
-      this._updateCamera(dt);
+      if (!this.player2) this._updateCamera(dt);
       this._updateHUD(dt);
       return;
     }
@@ -3938,13 +4026,15 @@ class Race3DEngine {
     // meant _updateAI always saw false and cars in a pack kept making lane
     // decisions while locked bumper-to-bumper - a big source of the twitching.
     this._updatePlayer(dt);
+    if (this.player2) this._withSecond(() => this._updatePlayer(dt));
     this._updateAI(dt);
     this._calcDraft(dt);
     this._separateCars(dt);
     this._checkCollisions();
+    if (this.player2) this._withSecond(() => this._checkCollisions());
     this._checkFinish();
     this._animateCars(dt);
-    this._updateCamera(dt);
+    if (!this.player2) this._updateCamera(dt);
     this._updateHUD(dt);
 
     const endgameGlobal = this.player.z / (this.raceLength || R3D.TRACK_LEN) >= R3D.ENDGAME_FRAC;
@@ -3961,15 +4051,13 @@ class Race3DEngine {
   }
 
   _updatePaceLap(dt) {
-    const hw = (this.trackHalfWidth ?? R3D.HALF_W) - 1.2;
-    const p  = this.player;
-    const input = Number(this.keys.a) - Number(this.keys.d);
-    const desired = input * R3D.LAT_MAX * 0.6;
-    p.lv = p.lv || 0;
-    p.lv += clamp((desired - p.lv) * (1 - Math.exp(-4 * dt)), -R3D.LAT_ACC * dt, R3D.LAT_ACC * dt);
-    p.lv = clamp(p.lv, -R3D.LAT_MAX * 0.6, R3D.LAT_MAX * 0.6);
-    p.x  = clamp(p.x + p.lv * dt, -hw, hw);
-
+    for (const [p, keys] of [[this.player,this.keys], ...(this.player2 ? [[this.player2,this.keys2]] : [])]) {
+      const hw = (this.trackHalfWidth ?? R3D.HALF_W) - 1.2;
+      const desired = (Number(keys.a)-Number(keys.d))*R3D.LAT_MAX*.6;
+      p.lv = (p.lv || 0) + clamp((desired-(p.lv || 0))*(1-Math.exp(-4*dt)),-R3D.LAT_ACC*dt,R3D.LAT_ACC*dt);
+      p.lv=clamp(p.lv,-R3D.LAT_MAX*.6,R3D.LAT_MAX*.6);
+      p.x=clamp(p.x+p.lv*dt,-hw,hw);
+    }
     for (const car of this.cars) {
       // Every row advances together on the formation lap. Letting each car
       // converge from its power-based race speed changed the live order before
@@ -3978,11 +4066,11 @@ class Race3DEngine {
       car.z += car.speed * dt;
       car.mesh.position.set(car.x, 0, car.z);
     }
-    p.mesh.position.set(p.x, 0, p.z);
   }
 
   _updatePlayer(dt) {
     const p  = this.player;
+    if (p.finished || p.dnf) return;
     const hw = (this.trackHalfWidth ?? R3D.HALF_W) - 1.2;
 
     if (p.spinning) {
@@ -4591,6 +4679,7 @@ class Race3DEngine {
     if (this.done) return;
     this.paused = !this.paused;
     this.keys.a = this.keys.d = this.keys.s = false;
+    if (this.keys2) this.keys2.a = this.keys2.d = this.keys2.s = false;
     this._physicsAcc = 0;
     const overlay  = document.getElementById('r3d-pause-overlay');
     const pauseBtn = document.getElementById('r3d-pause-btn');
@@ -4618,6 +4707,17 @@ class Race3DEngine {
       this.finishOrder.push(car);
     }
     const player = crossed.find(c => c.isPlayer);
+    if (this.player2) {
+      if (this.player.finished && this.player2.finished) {
+        this.done = true;
+        this._updateDualHUD(1);
+        const p1 = this.finishOrder.indexOf(this.player)+1, p2 = this.finishOrder.indexOf(this.player2)+1;
+        const el = document.getElementById('r3d-finish');
+        el.innerHTML = `<div class="r3d-finish-box"><h2>Race Results</h2><p>Player 1 · #${this.player.number} · ${p1}${ordinal(p1)}</p><p>Player 2 · #${this.player2.number} · ${p2}${ordinal(p2)}</p><button class="btn btn-primary btn-lg" onclick="window._r3dFinish(${p1})">Continue</button></div>`;
+        el.style.display = 'flex';
+      }
+      return;
+    }
     if (player) {
       this.done = true;
       const pos = this.finishOrder.indexOf(player) + 1;
@@ -4775,7 +4875,7 @@ class Race3DEngine {
   }
 
   _renderMirror() {
-    const wrap = document.getElementById('r3d-mirror-wrap');
+    const wrap = document.getElementById(this._mirrorWrapId || 'r3d-mirror-wrap');
     if (!wrap || !this.scene || !this.mirrorCam || !this.renderer) return;
     const rect = wrap.getBoundingClientRect();
     const cr   = this.canvas.getBoundingClientRect();
@@ -4784,8 +4884,9 @@ class Race3DEngine {
     if (mw < 2 || mh < 2) return;
 
     const dpr = this.renderer.getPixelRatio();
-    const rtW = Math.round(mw * dpr);
-    const rtH = Math.round(mh * dpr);
+    const mirrorScale = this.player2 ? 0.65 : 1;
+    const rtW = Math.max(2, Math.round(mw * dpr * mirrorScale));
+    const rtH = Math.max(2, Math.round(mh * dpr * mirrorScale));
     if (!this.mirrorRT || this.mirrorRTSize.w !== rtW || this.mirrorRTSize.h !== rtH) {
       this._initMirrorTarget(rtW, rtH);
     }
@@ -4842,6 +4943,7 @@ class Race3DEngine {
 
   // ── HUD ──────────────────────────────────────────────────────
   _updateHUD(dt) {
+    if (this.player2) { this._updateDualHUD(dt); return; }
     const p = this.player;
 
     // Cars that have already taken the flag are still ahead of you. Excluding
@@ -4969,6 +5071,47 @@ class Race3DEngine {
     el.style.display = 'flex';
   }
 
+  _updateDualHUD(dt) {
+    this._dualHUDAcc = (this._dualHUDAcc || 0) + dt;
+    if (this._dualHUDAcc < 0.10) return;
+    this._dualHUDAcc = 0;
+    const ranked = this.cars.filter(c=>!c.dnf).slice().sort((a,b)=>{
+      if(a.finished && b.finished) return this.finishOrder.indexOf(a)-this.finishOrder.indexOf(b);
+      if(a.finished) return -1; if(b.finished) return 1; return b.z-a.z;
+    });
+    [this.player,this.player2].forEach((p,i)=>{
+      const n=i+1, pos=ranked.indexOf(p)+1;
+      document.getElementById(`dual-pos-${n}`).textContent = p.finished ? `Finished P${pos}` : `P${pos} / ${this.cars.length}`;
+      document.getElementById(`dual-speed-${n}`).textContent = Math.round(p.speed*.78+33*(this.speedScale ?? 1));
+      document.getElementById(`dual-draft-${n}`).textContent = Math.round(clamp((p.draftMomentum || 0)/R3D.AERO_MAX,0,1)*100);
+      document.getElementById(`dual-progress-${n}`).style.transform = `scaleX(${clamp(p.z/this.raceLength,0,1)})`;
+      const start=clamp(pos-3,0,Math.max(0,ranked.length-5));
+      const el=document.getElementById(`dual-order-${n}`);
+      const html='<div class="r3d-order-head">Leaderboard</div>'+ranked.slice(start,start+5).map((c,k)=>`<div class="r3d-order-row${c===p ? ' is-player' : ''}"><span class="r3d-order-pos">${start+k+1}</span><span class="r3d-order-chip" style="background:${r3dHex(c.hex)}"></span><span class="r3d-order-num">#${c.number}</span><span class="r3d-order-name">${c.label}</span></div>`).join('');
+      if(el.innerHTML!==html) el.innerHTML=html;
+    });
+  }
+
+  _renderDual(dt) {
+    const r=this.renderer, size=r.getSize(new THREE.Vector2());
+    r.setScissorTest(false); r.setViewport(0,0,size.x,size.y); r.autoClear=false; r.clear();
+    const renderView = (n) => {
+      const pane=document.getElementById(`dual-view-${n}`).getBoundingClientRect(), cr=this.canvas.getBoundingClientRect();
+      const x=Math.round((pane.left-cr.left)*size.x/cr.width), y=Math.round((cr.bottom-pane.bottom)*size.y/cr.height);
+      const w=Math.round(pane.width*size.x/cr.width), h=Math.round(pane.height*size.y/cr.height);
+      this.camera.aspect=w/h; this.camera.updateProjectionMatrix();
+      this._updateCamera(dt);
+      r.setScissorTest(true); r.setScissor(x,y,w,h); r.setViewport(x,y,w,h); r.clear(); r.render(this.scene,this.camera);
+      r.setScissorTest(false);
+      this._mirrorWrapId=`dual-mirror-${n}`;
+      this._renderMirror();
+      this._mirrorWrapId=null;
+    };
+    renderView(1);
+    this._withSecond(()=>renderView(2));
+    r.setScissorTest(false); r.setViewport(0,0,size.x,size.y); r.autoClear=true;
+  }
+
   _loop() {
     this._raf = requestAnimationFrame(() => this._loop());
     const dt = Math.min(this.clock.getDelta(), 0.1);
@@ -4979,6 +5122,7 @@ class Race3DEngine {
       this._physicsAcc -= 1 / 120;
     }
     if (this.renderer && this.scene && this.camera) {
+      if (this.player2) { this._renderDual(dt); return; }
       this.renderer.autoClear = true;
       this.renderer.render(this.scene, this.camera);
       this.renderer.autoClear = false;
@@ -6419,6 +6563,27 @@ function renderQuickRaceModal() {
               <span class="quick-series-meta">${s.fieldSize}-car field · ${s.description}</span>
             </button>`).join('')}
         </div>
+        <div class="card-header mt">Players</div>
+        <div class="quick-player-mode" role="group" aria-label="Player mode">
+          <button class="btn" data-players="1" aria-pressed="${quickRacePlayers === 1}" onclick="setQuickRacePlayers(1)">Single player</button>
+          <button class="btn" data-players="2" aria-pressed="${quickRacePlayers === 2}" onclick="setQuickRacePlayers(2)">Dual player</button>
+        </div>
+        <p class="section-copy">One keyboard. Player 1: A / S / D. Player 2: J / K / L. Middle key brakes; the car accelerates automatically.</p>
+        ${quickRaceCars.map((car, i) => `
+          <section class="quick-car-editor" id="quick-player-${i+1}" ${i === 1 && quickRacePlayers === 1 ? 'hidden' : ''}>
+            <h4>Player ${i+1}</h4>
+            <div class="quick-car-controls">
+              <div class="quick-car-preview" style="--car-color:${car.color}" aria-hidden="true"><strong>${String(car.number).padStart(2,'0')}</strong></div>
+              <div><label for="quick-number-${i}">Car number</label>
+                <input id="quick-number-${i}" type="number" min="1" max="99" step="1" value="${car.number}" onchange="setQuickRaceCar(${i},'number',this.value)">
+              </div>
+            </div>
+            <div class="quick-paint" role="group" aria-label="Player ${i+1} color">
+              ${QUICK_COLORS.map((color,n) => `<button type="button" class="quick-swatch" style="--paint:${color}" data-color="${color}" aria-label="${['Red','Blue','Green','Gold','White','Purple','Orange','Graphite'][n]}" aria-pressed="${car.color === color}" onclick="setQuickRaceCar(${i},'color','${color}')"></button>`).join('')}
+              <label class="quick-custom-paint">Custom<input type="color" value="${car.color}" aria-label="Player ${i+1} custom color" oninput="setQuickRaceCar(${i},'color',this.value)"></label>
+            </div>
+          </section>`).join('')}
+        <p class="form-warning" id="quick-number-warning" hidden>Choose a different number for each player.</p>
       </div>
       <div class="modal-footer quick-race-footer">
         <button type="button" class="btn btn-primary btn-lg" id="btn-quick-race-confirm" onclick="confirmQuickRace()" disabled>Confirm Race</button>
@@ -6829,6 +6994,28 @@ function showQuickRaceScreen() {
 // Quick Race difficulty is chosen in the modal before launching
 let quickRaceDifficulty = DEFAULT_DIFFICULTY;
 let quickRaceSeries = null;
+let quickRacePlayers = 1;
+const quickRaceCars = [{number: 1, color: '#e8001d'}, {number: 2, color: '#58a6ff'}];
+const QUICK_COLORS = ['#e8001d','#58a6ff','#3fb950','#e3b341','#f5f5f2','#a47ae8','#ff7e35','#252b33'];
+function setQuickRacePlayers(count) {
+  quickRacePlayers = count === 2 ? 2 : 1;
+  document.querySelectorAll('[data-players]').forEach(el => el.setAttribute('aria-pressed', String(Number(el.dataset.players) === quickRacePlayers)));
+  document.getElementById('quick-player-2').hidden = quickRacePlayers !== 2;
+  document.getElementById('quick-number-warning').hidden = quickRacePlayers !== 2 || quickRaceCars[0].number !== quickRaceCars[1].number;
+}
+function setQuickRaceCar(index, key, value) {
+  const car = quickRaceCars[index];
+  if (key === 'number') car.number = clamp(Math.round(Number(value) || 1), 1, 99);
+  if (key === 'color' && /^#[0-9a-f]{6}$/i.test(value)) car.color = value;
+  const root = document.getElementById(`quick-player-${index + 1}`);
+  root.querySelector('.quick-car-preview').style.setProperty('--car-color', car.color);
+  root.querySelector('.quick-car-preview strong').textContent = String(car.number).padStart(2, '0');
+  root.querySelector('input[type="number"]').value = car.number;
+  root.querySelector('input[type="color"]').value = car.color;
+  root.querySelectorAll('[data-color]').forEach(el => el.setAttribute('aria-pressed',String(el.dataset.color === car.color)));
+  document.getElementById('quick-number-warning').hidden = quickRacePlayers !== 2 || quickRaceCars[0].number !== quickRaceCars[1].number;
+}
+
 
 function setQuickRaceDifficulty(id) {
   quickRaceDifficulty = id;
@@ -6851,6 +7038,11 @@ function selectQuickRaceSeries(fieldSize) {
 
 function confirmQuickRace() {
   if (quickRaceSeries === null) return;
+  if (quickRacePlayers === 2 && quickRaceCars[0].number === quickRaceCars[1].number) {
+    document.getElementById('quick-number-warning').hidden = false;
+    document.querySelector('#quick-player-2 input').focus();
+    return;
+  }
   handleStartQuickRace(quickRaceSeries);
 }
 
@@ -6858,15 +7050,18 @@ function handleStartQuickRace(fieldSize) {
   document.getElementById('quick-race-modal')?.remove();
   const AI_COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#c0392b','#16a085','#8e44ad','#2980b9','#27ae60'];
   const aiEntries = [];
+  const usedNumbers = new Set(quickRaceCars.slice(0, quickRacePlayers).map(c => c.number));
+  if (quickRacePlayers === 2) aiEntries.push({entrantId: 'player2', name: 'PLAYER 2', number: quickRaceCars[1].number, color: quickRaceCars[1].color, power: 0.60, isSecondPlayer: true});
   // Unique human driver names for the field
   const namePool = [...AI_DRIVER_NAMES].sort(() => Math.random() - 0.5);
-  for (let i = 0; i < fieldSize - 1; i++) {
+  for (let i = 0; i < fieldSize - quickRacePlayers; i++) {
     const nm = namePool[i % namePool.length] + (i >= namePool.length ? ' Jr.' : '');
-    aiEntries.push({ entrantId: `quick-${i + 1}`, name: nm, color: AI_COLORS[i % AI_COLORS.length], number: i + 2, power: rand(0.35, 0.80) });
+    const number = Array.from({length:99},(_,n)=>n+1).find(n=>!usedNumbers.has(n)); usedNumbers.add(number);
+    aiEntries.push({ entrantId: `quick-${i + 1}`, name: nm, color: AI_COLORS[i % AI_COLORS.length], number, power: rand(0.35, 0.80) });
   }
   showScreen('game-race');
   launch3DRace(
-    { playerColor: '#e8001d', playerNumber: 1, playerPower: 0.60, fieldSize,
+    { playerColor: quickRaceCars[0].color, playerNumber: quickRaceCars[0].number, playerName: quickRacePlayers === 2 ? 'PLAYER 1' : 'YOU', dualPlayer: quickRacePlayers === 2, playerPower: 0.60, fieldSize,
       seriesId: SERIES.find(s => s.fieldSize === fieldSize)?.id || 'grassroots',
       difficulty: quickRaceDifficulty, aiEntries },
     (pos) => {

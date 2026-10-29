@@ -857,3 +857,51 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
   .r3d-order-row:nth-child(n+6) { display: none; }
   .r3d-countdown { font-size: 4.5rem; }
 }
+
+/* Quick Race personalization and local split screen. */
+.r3d-pause-panel .r3d-pause-resume { width: 180px; }
+.quick-player-mode { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.quick-player-mode [aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+.quick-car-editor { padding: 24px 0; border-top: 1px solid var(--line); }
+.quick-car-editor[hidden], #quick-number-warning[hidden] { display: none; }
+.quick-car-editor h4 { margin: 0 0 16px; font-size: 20px; }
+.quick-car-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: center; }
+.quick-car-controls label { display: block; margin-bottom: 8px; }
+.quick-car-controls input { width: 100%; min-height: 48px; font-size: 24px; }
+.quick-car-preview { height: 112px; display: grid; place-items: center; border-radius: 8px; background: var(--car-color); border: 1px solid var(--line-2); }
+.quick-car-preview strong { font: italic 800 64px var(--font-display); color: #fff; -webkit-text-stroke: 2px #111; }
+.quick-paint { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; align-items: center; }
+.quick-swatch { width: 44px; height: 44px; background: var(--paint); border: 2px solid var(--line-2); border-radius: 6px; cursor: pointer; }
+.quick-swatch[aria-pressed="true"] { outline: 2px solid var(--text); outline-offset: 2px; border: 4px solid #111; }
+.quick-custom-paint { display: flex; align-items: center; gap: 8px; }
+.quick-custom-paint input { width: 44px; height: 44px; padding: 2px; cursor: pointer; }
+.dual-race #r3d-mirror-wrap, .dual-race #r3d-order, .dual-race .r3d-map,
+.dual-race .r3d-telemetry, .dual-race .r3d-progress-wrap { display: none; }
+.dual-views { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; pointer-events: none; }
+.dual-view { position: relative; min-width: 0; border-right: 1px solid rgba(255,255,255,.4); overflow: hidden; }
+.dual-player-label { position: absolute; top: 12px; left: 12px; background: rgba(30,33,36,.76); padding: 6px 8px; font-size: 12px; }
+.dual-mirror { position: absolute; top: 12px; left: 65%; transform: translateX(-50%); width: 38%; height: 64px; border: 2px solid #1e2124; border-radius: 6px; }
+.dual-order { top: 52px; left: 12px; width: 150px; font-size: 11px; }
+.dual-order .r3d-order-row { padding: 5px 6px; min-height: 25px; }
+.dual-order .r3d-order-head { padding: 6px; font-size: 10px; }
+.dual-order .r3d-order-name { font-size: 11px; }
+.dual-data { position: absolute; bottom: 48px; left: 50%; transform: translateX(-50%); display: flex; gap: 16px; white-space: nowrap; padding: 8px 12px; background: rgba(30,33,36,.76); border-radius: 6px; font-size: 12px; }
+.dual-data strong, .dual-data > span:first-child { font-weight: 700; }
+.dual-progress { position: absolute; bottom: 26px; left: 19%; width: 62%; display: flex; justify-content: space-between; font-size: 10px; }
+.dual-progress > div { position: absolute; top: 16px; height: 3px; width: 100%; background: rgba(255,255,255,.3); }
+.dual-progress i { display: block; height: 100%; width: 100%; background: var(--accent-solid); transform-origin: left; transform: scaleX(0); }
+.dual-race .r3d-pause-btn { z-index: 3; }
+.dual-race .r3d-countdown, .dual-race .r3d-finish, .dual-race #r3d-pause-overlay { z-index: 5; }
+@media (max-width: 700px) {
+  .dual-views { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+  .dual-view { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.4); }
+  .dual-mirror { height: 48px; top: 8px; left: 70%; }
+  .dual-player-label { font-size: 10px; top: 8px; }
+  .dual-order { top: 42px; width: 132px; }
+  .dual-data { bottom: 42px; gap: 12px; font-size: 11px; }
+  .dual-progress { bottom: 22px; }
+  .dual-race .r3d-pause-btn { top: auto; bottom: 0; right: 0; min-height: 32px; font-size: 11px; padding: 4px 8px; }
+}
+.quick-car-controls input[type="number"] { background: var(--panel-2); color: var(--text); border: 1px solid var(--line-2); border-radius: 6px; padding: 8px 12px; font-family: var(--font); }
+.dual-race .dual-order { display: block; }
+.dual-race .dual-order .r3d-order-row { grid-template-columns: 20px 5px 28px minmax(0,1fr); gap: 4px; }

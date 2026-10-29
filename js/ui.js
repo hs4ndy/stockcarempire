@@ -1386,6 +1386,27 @@ function renderQuickRaceModal() {
               <span class="quick-series-meta">${s.fieldSize}-car field · ${s.description}</span>
             </button>`).join('')}
         </div>
+        <div class="card-header mt">Players</div>
+        <div class="quick-player-mode" role="group" aria-label="Player mode">
+          <button class="btn" data-players="1" aria-pressed="${quickRacePlayers === 1}" onclick="setQuickRacePlayers(1)">Single player</button>
+          <button class="btn" data-players="2" aria-pressed="${quickRacePlayers === 2}" onclick="setQuickRacePlayers(2)">Dual player</button>
+        </div>
+        <p class="section-copy">One keyboard. Player 1: A / S / D. Player 2: J / K / L. Middle key brakes; the car accelerates automatically.</p>
+        ${quickRaceCars.map((car, i) => `
+          <section class="quick-car-editor" id="quick-player-${i+1}" ${i === 1 && quickRacePlayers === 1 ? 'hidden' : ''}>
+            <h4>Player ${i+1}</h4>
+            <div class="quick-car-controls">
+              <div class="quick-car-preview" style="--car-color:${car.color}" aria-hidden="true"><strong>${String(car.number).padStart(2,'0')}</strong></div>
+              <div><label for="quick-number-${i}">Car number</label>
+                <input id="quick-number-${i}" type="number" min="1" max="99" step="1" value="${car.number}" onchange="setQuickRaceCar(${i},'number',this.value)">
+              </div>
+            </div>
+            <div class="quick-paint" role="group" aria-label="Player ${i+1} color">
+              ${QUICK_COLORS.map((color,n) => `<button type="button" class="quick-swatch" style="--paint:${color}" data-color="${color}" aria-label="${['Red','Blue','Green','Gold','White','Purple','Orange','Graphite'][n]}" aria-pressed="${car.color === color}" onclick="setQuickRaceCar(${i},'color','${color}')"></button>`).join('')}
+              <label class="quick-custom-paint">Custom<input type="color" value="${car.color}" aria-label="Player ${i+1} custom color" oninput="setQuickRaceCar(${i},'color',this.value)"></label>
+            </div>
+          </section>`).join('')}
+        <p class="form-warning" id="quick-number-warning" hidden>Choose a different number for each player.</p>
       </div>
       <div class="modal-footer quick-race-footer">
         <button type="button" class="btn btn-primary btn-lg" id="btn-quick-race-confirm" onclick="confirmQuickRace()" disabled>Confirm Race</button>
