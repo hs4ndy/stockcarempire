@@ -1402,16 +1402,16 @@ const AI_DRIVER_NAMES = [
 const DIFFICULTIES = [
   { id: 'beginner', name: 'Beginner',
     blurb: 'Relaxed pace and extra drafting help while you learn the pack.',
-    aiSpeed: 1.00, aiPower: 1.00, aiAggro: 1.05, aiDraft: 1.05, packPressure: 0.05, playerDraft: 1.12, playerCatchup: 1.00, racecraft: 0.05 },
+    aiSpeed: 1.00, aiPower: 1.00, aiAggro: 1.05, aiDraft: 1.05, rideLimit: 8, packPressure: 0.05, playerDraft: 1.12, playerCatchup: 1.00, racecraft: 0.05 },
   { id: 'amateur',  name: 'Amateur',
     blurb: 'The field keeps you honest. You have to work the draft.',
-    aiSpeed: 1.02, aiPower: 1.08, aiAggro: 1.155, aiDraft: 1.05, packPressure: 0.20, playerDraft: 1.02, playerCatchup: 0.90, racecraft: 0.40 },
+    aiSpeed: 1.02, aiPower: 1.08, aiAggro: 1.155, aiDraft: 1.05, rideLimit: 6, packPressure: 0.20, playerDraft: 1.02, playerCatchup: 0.90, racecraft: 0.40 },
   { id: 'semipro',  name: 'Semi-Pro',
     blurb: 'Fast racers who convert draft runs and defend their line.',
-    aiSpeed: 1.035, aiPower: 1.15, aiAggro: 1.281, aiDraft: 1.05, packPressure: 0.75, playerDraft: 1.00, playerCatchup: 0.80, racecraft: 0.75 },
+    aiSpeed: 1.035, aiPower: 1.15, aiAggro: 1.281, aiDraft: 1.05, rideLimit: 4, packPressure: 0.75, playerDraft: 1.00, playerCatchup: 0.80, racecraft: 0.75 },
   { id: 'pro',      name: 'Pro',
     blurb: 'Everyone is fast, works the tow and holds their ground.',
-    aiSpeed: 1.05, aiPower: 1.22, aiAggro: 1.386, aiDraft: 1.05, packPressure: 1.00, playerDraft: 0.98, playerCatchup: 0.70, racecraft: 1.00 },
+    aiSpeed: 1.05, aiPower: 1.22, aiAggro: 1.386, aiDraft: 1.05, rideLimit: 3, packPressure: 1.00, playerDraft: 0.98, playerCatchup: 0.70, racecraft: 1.00 },
 ];
 
 const DEFAULT_DIFFICULTY = 'beginner';
@@ -4158,7 +4158,28 @@ class Race3DEngine {
       return;
     }
 
-    // Ahead: hold a steady line while the player pulls off our bumper.
+    // A prolonged bumper partnership is useful, but not a permanent escort.
+    // Break into clear racing room before the pusher banks a free late pass.
+    // This applies to rivals and teammates, with earlier responses on Pro.
+    const bumperPartner = this.cars.find(c => c !== car && !c.dnf && !c.finished && !c.spinning &&
+      car.z - c.z > 0 && car.z - c.z < R3D.PUSH_Z + 3 && Math.abs(car.x - c.x) < R3D.PUSH_X);
+    car._rideTime = bumperPartner ? (car._rideTime || 0) + dt : Math.max(0, (car._rideTime || 0) - dt * .5);
+    if (car._rideTime >= (this.diff.rideLimit ?? 6) && alternatives.length &&
+        !(car._tactic === 'breakaway' && car.tacticTimer > 0)) {
+      car.targetX = alternatives.sort((a,b) => this._scoreLane(car,b,aggro)-this._scoreLane(car,a,aggro))[0];
+      car._tactic = 'breakaway'; car._helping = false;
+      car._supportTime = 6;
+      car._rideTime = 0;
+      car.tacticTimer = car.laneTimer = 2.6;
+      return;
+    }
+    if (car._tactic === 'breakaway' && car.tacticTimer > 0) {
+      if (!this._laneSafe(car, car.targetX)) {
+        car.targetX = car.x; car._tactic = null; car.tacticTimer = car.laneTimer = 0;
+      } else return;
+    }
+
+    // Ahead: briefly hold a steady line; behind: follow a clear corridor.
     // Behind: follow smoothly only if the intended corridor is clear.
     car._helping = false;
     if (car.isTeammate) {
@@ -4363,7 +4384,11 @@ class Race3DEngine {
         const bonus = R3D.PUSH_BONUS + (teamLink ? R3D.TEAM_PUSH_BONUS : 0);
         car.pushStrength = Math.max(car.pushStrength, wake.push);
         car._pushTarget = Math.max(car._pushTarget, wake.push * bonus);
-        other.receivedPush = Math.max(other.receivedPush, wake.push * bonus * 0.75);
+        // Transfer the pusher's already-earned run through bumper contact.
+        // Otherwise the follower banks full aero while its partner receives
+        // only six units, making a last-second pullout nearly uncontestable.
+        const sharedRun = Math.min(car.draftMomentum || 0, R3D.AERO_MAX) * .5;
+        other.receivedPush = Math.max(other.receivedPush, wake.push * (bonus * 0.75 + sharedRun));
       }
       car._draftDepth = car._wakeLeader ? (car._wakeLeader._draftDepth || 1) + 1 : 1;
       const leader = car._wakeLeader;

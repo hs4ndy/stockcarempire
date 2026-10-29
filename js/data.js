@@ -320,16 +320,16 @@ const AI_DRIVER_NAMES = [
 const DIFFICULTIES = [
   { id: 'beginner', name: 'Beginner',
     blurb: 'Relaxed pace and extra drafting help while you learn the pack.',
-    aiSpeed: 1.00, aiPower: 1.00, aiAggro: 1.05, aiDraft: 1.05, packPressure: 0.05, playerDraft: 1.12, playerCatchup: 1.00, racecraft: 0.05 },
+    aiSpeed: 1.00, aiPower: 1.00, aiAggro: 1.05, aiDraft: 1.05, rideLimit: 8, packPressure: 0.05, playerDraft: 1.12, playerCatchup: 1.00, racecraft: 0.05 },
   { id: 'amateur',  name: 'Amateur',
     blurb: 'The field keeps you honest. You have to work the draft.',
-    aiSpeed: 1.02, aiPower: 1.08, aiAggro: 1.155, aiDraft: 1.05, packPressure: 0.20, playerDraft: 1.02, playerCatchup: 0.90, racecraft: 0.40 },
+    aiSpeed: 1.02, aiPower: 1.08, aiAggro: 1.155, aiDraft: 1.05, rideLimit: 6, packPressure: 0.20, playerDraft: 1.02, playerCatchup: 0.90, racecraft: 0.40 },
   { id: 'semipro',  name: 'Semi-Pro',
     blurb: 'Fast racers who convert draft runs and defend their line.',
-    aiSpeed: 1.035, aiPower: 1.15, aiAggro: 1.281, aiDraft: 1.05, packPressure: 0.75, playerDraft: 1.00, playerCatchup: 0.80, racecraft: 0.75 },
+    aiSpeed: 1.035, aiPower: 1.15, aiAggro: 1.281, aiDraft: 1.05, rideLimit: 4, packPressure: 0.75, playerDraft: 1.00, playerCatchup: 0.80, racecraft: 0.75 },
   { id: 'pro',      name: 'Pro',
     blurb: 'Everyone is fast, works the tow and holds their ground.',
-    aiSpeed: 1.05, aiPower: 1.22, aiAggro: 1.386, aiDraft: 1.05, packPressure: 1.00, playerDraft: 0.98, playerCatchup: 0.70, racecraft: 1.00 },
+    aiSpeed: 1.05, aiPower: 1.22, aiAggro: 1.386, aiDraft: 1.05, rideLimit: 3, packPressure: 1.00, playerDraft: 0.98, playerCatchup: 0.70, racecraft: 1.00 },
 ];
 
 const DEFAULT_DIFFICULTY = 'beginner';

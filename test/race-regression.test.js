@@ -308,7 +308,8 @@ test('longer connected lines earn more speed, including their lead car', () => {
     assert.ok(runs[i].front > runs[i-1].front, 'front car should benefit from the larger line');
     assert.ok(runs[i].mean > runs[i-1].mean, 'longer line should earn a faster average pace');
     assert.ok(runs[i].counts.every(n=>n === runs[i].size));
-    assert.ok(runs[i].mean <= 43, 'train gains remain bounded');
+    assert.ok(runs[i].front <= 43, 'player aero remains capped');
+    assert.ok(runs[i].mean <= 43 * 1.05, 'train gains remain bounded by AI/player aero ceilings');
   }
 });
 
@@ -533,6 +534,33 @@ test('teammates cooperate in the pack but race the player at the front and late'
   }
 });
 
+test('sustained bumper pushing triggers a safe, difficulty-scaled breakaway for every driver', () => {
+  const context=physicsContext();
+  const reports=readJson(context, `DIFFICULTIES.flatMap(diff=>[false,true].map(teammate=>{
+    const p=car('player',0,5000,210), lead=car('lead',0,5004.6,210);
+    lead.isTeammate=teammate;
+    const e=engine([p,lead],diff.id);let response=null;
+    for(let i=0;i<600;i++){e._chooseAILine(lead,.8,1/60);if(lead._tactic==='breakaway'){response=(i+1)/60;break;}}
+    return {diff:diff.id,teammate,response,target:lead.targetX,safe:e._laneSafe(lead,lead.targetX)};
+  }))`);
+  for(const r of reports){assert.ok(r.response>0 && r.response<=8.1);assert.notEqual(r.target,0);assert.equal(r.safe,true);}
+  assert.ok(reports.find(r=>r.diff==='pro').response<reports.find(r=>r.diff==='beginner').response);
+});
+
+test('pushed cars share earned momentum and retain a run when the pusher pulls out', () => {
+  const context=physicsContext();
+  const r=readJson(context, `(()=>{
+    const p=car('player',0,5000,210), lead=car('lead',0,5004.6,210);
+    const e=engine([p,lead],'pro');
+    for(let i=0;i<360;i++)e._calcDraft(1/60);
+    const before=lead.draftMomentum, follower=p.draftMomentum;
+    p.x=6;e._calcDraft(1/60);
+    return {before,follower,after:lead.draftMomentum};
+  })()`);
+  assert.ok(r.before>r.follower*.55,'the leading car must share a substantial part of the earned run');
+  assert.ok(r.after>r.before*.97,'the leader retains earned momentum on separation');
+});
+
 test('AI drafting increases on every difficulty and pack pressure scales to Pro', () => {
   const context = physicsContext();
   const report = readJson(context, `DIFFICULTIES.map(diff => {
@@ -561,7 +589,7 @@ test('teammate support expires and team identity provides no extra aero advantag
     for(let i=0;i<8*60;i++)e._chooseAILine(mate,.8,1/60);
     const expired=e._teammateCooperation(mate);
     e._calcDraft(1/60);const teamPush=mate.receivedPush;
-    mate.isTeammate=false;e._calcDraft(1/60);
+    mate.isTeammate=false;p.draftMomentum=0;e._calcDraft(1/60);
     return {initial,expired,helping:mate._helping,teamPush,rivalPush:mate.receivedPush};
   })()`);
   assert.equal(report.initial,true);assert.equal(report.expired,false);

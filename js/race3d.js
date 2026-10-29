@@ -1115,7 +1115,28 @@ class Race3DEngine {
       return;
     }
 
-    // Ahead: hold a steady line while the player pulls off our bumper.
+    // A prolonged bumper partnership is useful, but not a permanent escort.
+    // Break into clear racing room before the pusher banks a free late pass.
+    // This applies to rivals and teammates, with earlier responses on Pro.
+    const bumperPartner = this.cars.find(c => c !== car && !c.dnf && !c.finished && !c.spinning &&
+      car.z - c.z > 0 && car.z - c.z < R3D.PUSH_Z + 3 && Math.abs(car.x - c.x) < R3D.PUSH_X);
+    car._rideTime = bumperPartner ? (car._rideTime || 0) + dt : Math.max(0, (car._rideTime || 0) - dt * .5);
+    if (car._rideTime >= (this.diff.rideLimit ?? 6) && alternatives.length &&
+        !(car._tactic === 'breakaway' && car.tacticTimer > 0)) {
+      car.targetX = alternatives.sort((a,b) => this._scoreLane(car,b,aggro)-this._scoreLane(car,a,aggro))[0];
+      car._tactic = 'breakaway'; car._helping = false;
+      car._supportTime = 6;
+      car._rideTime = 0;
+      car.tacticTimer = car.laneTimer = 2.6;
+      return;
+    }
+    if (car._tactic === 'breakaway' && car.tacticTimer > 0) {
+      if (!this._laneSafe(car, car.targetX)) {
+        car.targetX = car.x; car._tactic = null; car.tacticTimer = car.laneTimer = 0;
+      } else return;
+    }
+
+    // Ahead: briefly hold a steady line; behind: follow a clear corridor.
     // Behind: follow smoothly only if the intended corridor is clear.
     car._helping = false;
     if (car.isTeammate) {
@@ -1320,7 +1341,11 @@ class Race3DEngine {
         const bonus = R3D.PUSH_BONUS + (teamLink ? R3D.TEAM_PUSH_BONUS : 0);
         car.pushStrength = Math.max(car.pushStrength, wake.push);
         car._pushTarget = Math.max(car._pushTarget, wake.push * bonus);
-        other.receivedPush = Math.max(other.receivedPush, wake.push * bonus * 0.75);
+        // Transfer the pusher's already-earned run through bumper contact.
+        // Otherwise the follower banks full aero while its partner receives
+        // only six units, making a last-second pullout nearly uncontestable.
+        const sharedRun = Math.min(car.draftMomentum || 0, R3D.AERO_MAX) * .5;
+        other.receivedPush = Math.max(other.receivedPush, wake.push * (bonus * 0.75 + sharedRun));
       }
       car._draftDepth = car._wakeLeader ? (car._wakeLeader._draftDepth || 1) + 1 : 1;
       const leader = car._wakeLeader;

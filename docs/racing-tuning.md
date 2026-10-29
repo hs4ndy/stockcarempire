@@ -22,6 +22,22 @@ guarantee that no future strategy can win. Reproduce with `runRearStart` in
 `test/race-dynamics.test.js` using strategy `ride` and options
 `{frontTrain:true, teammates:3}`. The former baseline was `893942d`.
 
+### Follow-up after human Pro feedback
+
+Human testing still found the push-and-pullout pattern easy despite closer rivals.
+AI now tracks sustained bumper partnerships and commits to a safe breakaway lane
+after 8/6/4/3 cumulative seconds on Beginner/Amateur/Semi-Pro/Pro. This precedes
+support and receive-line decisions, so those cannot lock the driver into escorting
+the pusher. Blocked exits are never forced. Time decays slowly when separated.
+The pushed car receives half the pusher's already-earned aero momentum through
+contact, within existing aero ceilings. Thus the leading car also retains a run
+when the pusher pulls out; brief drafting and earned passing runs remain viable.
+Applies equally to teammates, rivals and AI-to-AI partnerships.
+
+Final seed-17 three-teammate ride diagnostic: Pro P10 with 35 median nearby rivals;
+Semi-Pro/Amateur/Beginner still P1 in that strong-car fixture. Lower difficulties
+remain winnable; these examples do not establish an exploit-proof win rate.
+
 ## Preserved behavior
 
 - Straight-line, auto-throttle race; continuous A/D steering and S braking.
