@@ -140,3 +140,8 @@ steering. The car should carry some lateral movement and forward run, with no
 sideways kick. Check a close follower in the mirror and watch whether opponents
 commit to passes as the finish approaches. Subjective handling and hardware-
 specific rendering performance still require the player's review.
+
+## October 29 career balance and usability
+Premier now advertises 40 entries, with four additional last-place $100 payouts and zero points. Older Premier saves gain missing AI entries while retaining existing entrants and points. Played qualifying draws move back two places (clamped to field end); simulated owned entries lose four qualifying-score points and analyst qualifying benefit caps at 14. Simulation-only owned-car pace multiplier is 0.78, applied before qualifying and phases; actual on-track classification is still reconciled from track order. In a 100-seed strong-car Pro fixture, wins changed 88 -> 22 and mean finish 1.39 -> 4.04; not a human/all-setup win-rate claim.
+
+Jake Rivers starts at skill 88/aggression 75; new contracts require reputation 65, $36,000 signing and $9,000 per week. Existing hire skill/salary records are retained. Career race Quit restores a pre-entry JSON snapshot and saves it to an already-bound slot, with no race result, fees, payroll, condition or loan-term advancement. Quick Race quits to intro; practice quits back to its tutorial step.

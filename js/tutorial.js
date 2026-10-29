@@ -22,6 +22,18 @@ const CAREER_TUTORIAL_STEPS = [
     copy: 'Market lets you buy more cars, sign sponsors, and manage financing. You can drive a new car yourself or assign a hired driver to put both cars in the field.',
   },
   {
+    tab: 'market', target: '#market-loans', title: 'Borrow with a repayment plan',
+    copy: 'Loans and Financing is available from the large button at the top of Market. Each offer shows the cash received, total repayment and term in races. Borrowing is optional; check that future earnings can cover repayment.',
+  },
+  {
+    tab: 'market', target: '#market-loans', title: 'Understand debt and credit',
+    copy: 'You can carry up to three loans within your available credit. Reputation affects the limit and existing debt reduces it. Repay early or in parts when you have spare cash. At the deadline, the bank collects what it can; unpaid debt earns interest each race. Loans also advance when you simulate.',
+  },
+  {
+    tab: 'team', target: '.nav-btn[data-tab="team"]', title: 'Budget for every race',
+    copy: 'Signing fees are upfront and salaries continue each race, including simulation. Leave cash for entry fees and repairs before hiring. If you cannot afford an entry or purchase, Market offers loans, subject to available credit. Borrowing does not guarantee profit.',
+  },
+  {
     tab: 'schedule', target: '.nav-btn[data-tab="schedule"]', title: 'Plan the season',
     copy: 'Schedule lists upcoming tracks and completed races. Track characteristics affect how valuable speed and handling are in the race simulation.',
   },
@@ -202,6 +214,7 @@ function startCareerTutorialPractice() {
     aiEntries,
     finishDistance: 3500,
     practiceTips: true,
+    onQuit: () => renderCareerTutorialStep(),
   }, () => {
     careerTutorialPracticeDone = true;
     careerTutorialStep++;

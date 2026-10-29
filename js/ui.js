@@ -79,6 +79,12 @@ function standingName(entry) {
     const drv = game.driverName || 'You';
     return `<strong>${drv}</strong> <span class="st-team">${game.teamName}</span>`;
   }
+  if (entry.isTeamCar) {
+    const hire = hireForCar(entry.id);
+    const driver = HIREABLE_DRIVERS.find(d => d.id === hire?.driverId);
+    if (driver) return `${driver.name} <span class="st-team">${game.teamName}</span>`;
+    return resultName({ displayName: entry.name });
+  }
   // AI entries are stored as "Team Name (Driver Name)"
   const m = /^(.*?)\s*\(([^)]+)\)\s*$/.exec(entry.name || '');
   if (m) return `${m[2]} <span class="st-team">${m[1]}</span>`;
@@ -282,7 +288,7 @@ function renderDashboard() {
       <summary>Driver profile and history</summary>
       <div class="ui-details-body">
       <div class="team-stat"><span>Driver</span><span class="highlight">${game.driverName || game.teamName}</span></div>
-      <div class="team-stat"><span>Role</span><span>Driver / Owner</span></div>
+
       ${statBar('Driver Skill', Math.round(game.playerSkill))}
       <div class="team-stat"><span>Seasons Raced</span><span>${game.history.length}</span></div>
       ${game.history.length > 0 ? game.history.slice(-3).map(h => `
@@ -517,7 +523,7 @@ function renderTeam() {
     const signingFee = d.weeklyCost * 4;
     const canAfford  = game.money >= signingFee;
     const disabledReason = game.hiredDrivers.length >= MAX_HIRED_DRIVERS ? 'Driver Limit Reached'
-      : openSeats === 0 ? 'No Free Car' : !canAfford ? 'Not Enough Cash' : '';
+      : openSeats === 0 ? 'No Free Car' : (game.reputation || 0) < (d.minReputation || 0) ? `Requires ${d.minReputation} Reputation` : !canAfford ? 'Not Enough Cash' : '';
 
     return `<div class="staff-row">
       <div class="staff-info">
@@ -728,7 +734,7 @@ function renderMarket() {
   const creditPct = limit > 0 ? Math.round((debt / limit) * 100) : 0;
   const bankCard = `
     <div class="card mt">
-      <div class="card-header">Bank</div>
+      <div class="card-header" id="market-loans">Loans and Financing</div>
       ${game.money < 0 ? `<p class="form-warning">You are in the red. Borrowing now buys time, but the balance must be cleared before the term runs out.</p>` : ''}
       <div class="team-stat"><span>Cash</span><span class="${game.money < 0 ? 'red' : 'highlight'}">${fmt$(game.money)}</span></div>
       <div class="team-stat"><span>Total Debt</span><span class="${debt > 0 ? 'red' : ''}">${fmt$(debt)}</span></div>
@@ -741,13 +747,13 @@ function renderMarket() {
       </div>
       <div class="card-header mt">Your Loans</div>
       ${loanRows}
-      <details class="ui-details" ${game.money < 0 ? 'open' : ''}>
-      <summary>Explore loan options</summary>
-      <div class="ui-details-body">
+      <section aria-label="Loan options">
+      <h3>Take out a loan</h3>
+      <div>
       <p class="section-copy">Repay on time to avoid ${Math.round(LOAN_LATE_RATE * 100)}% interest per race on the remaining balance. Your reputation affects your credit limit.</p>
       ${offerRows}
       </div>
-      </details>
+      </section>
     </div>`;
 
   // ── Charity ─────────────────────────────────────────────
@@ -787,7 +793,7 @@ function renderMarket() {
     </div>`;
 
   return `
-  <div class="page-header"><h2>Market</h2></div>
+  <div class="page-header"><h2>Market</h2><button class="btn btn-primary" onclick="document.getElementById('market-loans').scrollIntoView({block: 'start'})">Loans and Financing</button></div>
   <div class="two-col-grid">
     <div>
       <div class="card">
@@ -1207,7 +1213,7 @@ function renderCareerStats() {
           ${statBar('Driver Skill', Math.round(game.playerSkill))}
           <div class="team-stat"><span>Team</span><span>${game.teamName}</span></div>
           <div class="team-stat"><span>Series</span><span>${SERIES[game.currentSeries].name}</span></div>
-          <div class="team-stat"><span>Role</span><span>Driver / Owner</span></div>
+
         </div>
       </div>
 

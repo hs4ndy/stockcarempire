@@ -50,6 +50,7 @@ for (const legacyRole of ['driver', 'manager', 'hired']) {
       newGame('Legacy Racing', 'Legacy Driver', 'Legacy Car');
       game.money = 712345;
       game.currentSeries = 2;
+      game.season.aiTeams = generateAITeams(2); rebuildStandings();
       game.history = [{year: 1, series: 'Grassroots Cup', wins: 4, finalPos: 2, payout: 90000}];
       game.season.year = 4;
       game.season.raceIndex = 3;
@@ -72,7 +73,7 @@ for (const legacyRole of ['driver', 'manager', 'hired']) {
     assert.deepEqual(readJson(context, "JSON.parse(localStorage.getItem('sce_slot_2'))"), original);
     vm.runInContext('saveGame()', context);
     assert.deepEqual(readJson(context, "JSON.parse(localStorage.getItem('sce_slot_2'))"), expected);
-    assert.match(vm.runInContext('renderCareerStats()', context), /Driver \/ Owner/);
+    assert.doesNotMatch(vm.runInContext('renderCareerStats()', context), /<span>Role<\/span>/);
     assert.doesNotMatch(vm.runInContext('renderRaceSetup()', context), /drive for|assigned automatically/);
     assert.equal(vm.runInContext('typeof chooseCareerPath', context), 'undefined');
     assert.equal(vm.runInContext('typeof renderPremierChoiceModal', context), 'undefined');
@@ -85,7 +86,7 @@ test('career simulation requires the player in an available owned car and retain
     newGame('Owner Driver Racing', 'Player Driver', 'Player Car');
     game.money = 500000;
     buyCar('Teammate Car');
-    hireDriver(HIREABLE_DRIVERS[0].id, game.cars[1].id);
+    game.reputation = 100; hireDriver(HIREABLE_DRIVERS[0].id, game.cars[1].id);
     const ownCarId = game.cars[0].id;
     const teammateCarId = game.cars[1].id;
     const entries = buildEntryList(ownCarId, currentRace().trackId);
@@ -201,7 +202,7 @@ test('releasing a hired driver removes their wages from subsequent event payroll
     const driver = HIREABLE_DRIVERS[0];
     const startingMoney = driver.weeklyCost * 4 + 10000;
     game.money = startingMoney;
-    const hired = hireDriver(driver.id, game.cars[0].id);
+    game.reputation = 100; const hired = hireDriver(driver.id, game.cars[0].id);
     const afterSigning = game.money;
     const contractedPayroll = weeklyExpenses();
     fireDriver(driver.id);
@@ -870,4 +871,32 @@ test('race weekend presents track emphasis as normalized percentages', () => {
   assert.match(html, /Speed Emphasis<\/span><span>48%/);
   assert.match(html, /Handling Emphasis<\/span><span>52%/);
   assert.doesNotMatch(html, /Emphasis<\/span><span>\d+\/10/);
+});
+
+
+test('Premier field and legacy roster expand to 40 without losing points', () => {
+  const c = makeContext();
+  vm.runInContext(`newGame('Test','Driver','Car'); game.currentSeries=2; game.season.aiTeams=generateAITeams(2); rebuildStandings();
+    game.season.aiTeams[game.season.aiTeams.length-1].cars.pop(); rebuildStandings(); game.season.standings[0].points=123; saveToSlot(1); loadFromSlot(1);`,c);
+  assert.equal(vm.runInContext('game.season.aiTeams.reduce((n,t)=>n+t.cars.length,0)',c),39);
+  assert.equal(vm.runInContext('game.season.standings[0].points',c),123);
+  assert.equal(vm.runInContext('buildEntryList(game.cars[0].id,currentRace().trackId).length',c),40);
+});
+test('Jake requires reputation and first-season teammate standings use driver-first names', () => {
+ const c=makeContext();
+ vm.runInContext(`newGame('Test Team','Player','Car'); game.money=500000; buyCar('Mate'); const rejected=hireDriver('drv01',game.cars[1].id); game.reputation=100; const hired=hireDriver('drv01',game.cars[1].id); applyRaceResults([{entrantId:game.cars[1].id,carId:game.cars[1].id,displayName:'Test Team / Jake Rivers',position:3}]);`,c);
+ assert.equal(vm.runInContext('rejected.ok',c),false); assert.equal(vm.runInContext('hired.ok',c),true);
+ assert.match(vm.runInContext('standingName(game.season.standings.find(e=>e.isTeamCar))',c),/^Jake Rivers <span/);
+ assert.equal(vm.runInContext("HIREABLE_DRIVERS[0].skill",c),88);
+});
+
+test('strong Pro simulated cars remain competitive without near-guaranteed wins', () => {
+ let wins=0, total=0;
+ for(let seed=1;seed<=100;seed++) {
+  const c=makeContext(seed);
+  const pos=vm.runInContext(`newGame('Test','Driver','Car'); game.playerSkill=95; Object.assign(game.cars[0],{speed:95,handling:95,reliability:95,condition:100}); game.difficulty='pro'; simulateRace({playerCarId:game.cars[0].id,trackId:currentRace().trackId}).playerResult.position`,c);
+  wins+=pos===1; total+=pos;
+ }
+ assert.ok(wins<40, `too many simulation wins: ${wins}`);
+ assert.ok(total/100>2 && total/100<10, 'competitive results without automatic front finishes');
 });

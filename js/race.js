@@ -19,7 +19,7 @@ function simulateRace({ playerCarId, trackId }) {
 
   // Calculate initial performance scores
   entries.forEach(e => {
-    e.perfScore = calcPerf(e, track);
+    e.perfScore = calcPerf(e, track) * (e.isPlayer || e.isTeammate ? 0.78 : 1);
   });
 
   // --- Run the simulation in 5 phases ---
@@ -33,7 +33,7 @@ function simulateRace({ playerCarId, trackId }) {
   entries.forEach(e => {
     const ours = e.isPlayer || e.isTeammate;
     const scatter = ours && analystQuali > 0 ? 5 : 8;
-    e.qualifyScore = e.perfScore + rand(-scatter, scatter) + (ours ? analystQuali : 0);
+    e.qualifyScore = e.perfScore + rand(-scatter, scatter) + (ours ? Math.min(analystQuali, 14) - 4 : 0);
   });
   entries.sort((a, b) => b.qualifyScore - a.qualifyScore);
   entries.forEach((e, i) => { e.position = i + 1; });

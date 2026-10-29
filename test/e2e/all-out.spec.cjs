@@ -38,7 +38,7 @@ for(const [name,file,width] of [['source','index.html',1440],['offline','release
     await page.screenshot({path:`.impeccable/review/all-out-quick-${name}.png`,animations:'disabled'});
     await page.locator('#btn-quick-race-confirm').click();await page.waitForFunction(()=>window._r3d?.mirrorRT);
     expect(await page.evaluate(()=>window._r3d.diff.id)).toBe('allout');
-    expect(await page.evaluate(()=>window._r3d.cars.length)).toBe(36);
+    expect(await page.evaluate(()=>window._r3d.cars.length)).toBe(40);
     await page.evaluate(()=>window._r3d.destroy());expect(errors).toEqual([]);
   });
 }

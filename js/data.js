@@ -43,11 +43,11 @@ const SERIES = [
     racesPerSeason: 36,
     carClass: 'premier',
     entryFee: 12000,
-    prize: [200000,150000,120000,100000,85000,75000,65000,55000,50000,45000,40000,36000,32000,28000,25000,22000,20000,18000,16000,14000,12000,10000,8000,6000,4000,3000,2000,1500,1000,750,600,500,400,300,200,100],
-    points: [60,55,51,48,45,42,40,38,36,34,32,30,28,26,24,22,20,18,16,14,12,10,8,6,4,3,2,1,0,0,0,0,0,0,0,0],
+    prize: [200000,150000,120000,100000,85000,75000,65000,55000,50000,45000,40000,36000,32000,28000,25000,22000,20000,18000,16000,14000,12000,10000,8000,6000,4000,3000,2000,1500,1000,750,600,500,400,300,200,100,100,100,100,100],
+    points: [60,55,51,48,45,42,40,38,36,34,32,30,28,26,24,22,20,18,16,14,12,10,8,6,4,3,2,1,0,0,0,0,0,0,0,0,0,0,0,0],
     promotionSpots: 0,
     relegationSpots: 3,
-    fieldSize: 36,
+    fieldSize: 40,
     color: '#e3b341',
     description: 'The pinnacle of stock car racing. The biggest stages, biggest money.'
   }
@@ -248,7 +248,7 @@ function tierCapacity() {
 }
 
 const HIREABLE_DRIVERS = [
-  { id: 'drv01', name: 'Jake Rivers',              skill: 72, aggression: 65, morale: 80, weeklyCost: 3500 },
+  { id: 'drv01', name: 'Jake Rivers',              skill: 88, aggression: 75, morale: 80, weeklyCost: 9000, minReputation: 65 },
   { id: 'drv02', name: 'Maria Santos',             skill: 68, aggression: 50, morale: 85, weeklyCost: 2900 },
   { id: 'drv03', name: 'Bobby "Flash" Thompson',   skill: 65, aggression: 82, morale: 70, weeklyCost: 2500 },
   { id: 'drv04', name: 'Tommy Keane',              skill: 54, aggression: 58, morale: 90, weeklyCost: 1600 },

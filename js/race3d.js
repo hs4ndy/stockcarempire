@@ -205,6 +205,7 @@ function launch3DRace(config, onComplete) {
         <div class="r3d-pause-panel">
           <div class="r3d-pause-title">PAUSED</div>
           <button class="r3d-pause-resume" id="r3d-pause-resume">RESUME</button>
+          <button class="btn btn-danger" id="r3d-quit" style="width:100%;margin-top:12px">Quit Race</button>
         </div>
       </div>
     </div>
@@ -213,6 +214,12 @@ function launch3DRace(config, onComplete) {
     </div>
   `;
 
+  document.getElementById('r3d-quit').addEventListener('click', () => {
+    if (!window._r3d || window._r3d.done) return;
+    window._r3d.destroy(); window._r3d = null;
+    window._r3dFinish = () => {};
+    if (config.onQuit) config.onQuit(); else showScreen('intro');
+  });
   const canvas = document.getElementById('r3d-canvas');
 
   requestAnimationFrame(() => {
@@ -672,7 +679,8 @@ class Race3DEngine {
     for (let i = 1; i < draws; i++) {
       playerSlotIdx = Math.min(playerSlotIdx, Math.floor(Math.random() * slots.length));
     }
-    this._startingPos = playerSlotIdx + 1;     // now genuinely 1 = pole
+    playerSlotIdx = Math.min(slots.length - 1, playerSlotIdx + 2);
+    this._startingPos = playerSlotIdx + 1;     // two-place qualifying setback, bounded by field size
     const ps = slots[playerSlotIdx];
     this.player = this._makeCar(ps.x, ps.z, {
       entrantId:  'player',

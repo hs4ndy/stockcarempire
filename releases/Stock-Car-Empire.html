@@ -1126,11 +1126,11 @@ const SERIES = [
     racesPerSeason: 36,
     carClass: 'premier',
     entryFee: 12000,
-    prize: [200000,150000,120000,100000,85000,75000,65000,55000,50000,45000,40000,36000,32000,28000,25000,22000,20000,18000,16000,14000,12000,10000,8000,6000,4000,3000,2000,1500,1000,750,600,500,400,300,200,100],
-    points: [60,55,51,48,45,42,40,38,36,34,32,30,28,26,24,22,20,18,16,14,12,10,8,6,4,3,2,1,0,0,0,0,0,0,0,0],
+    prize: [200000,150000,120000,100000,85000,75000,65000,55000,50000,45000,40000,36000,32000,28000,25000,22000,20000,18000,16000,14000,12000,10000,8000,6000,4000,3000,2000,1500,1000,750,600,500,400,300,200,100,100,100,100,100],
+    points: [60,55,51,48,45,42,40,38,36,34,32,30,28,26,24,22,20,18,16,14,12,10,8,6,4,3,2,1,0,0,0,0,0,0,0,0,0,0,0,0],
     promotionSpots: 0,
     relegationSpots: 3,
-    fieldSize: 36,
+    fieldSize: 40,
     color: '#e3b341',
     description: 'The pinnacle of stock car racing. The biggest stages, biggest money.'
   }
@@ -1331,7 +1331,7 @@ function tierCapacity() {
 }
 
 const HIREABLE_DRIVERS = [
-  { id: 'drv01', name: 'Jake Rivers',              skill: 72, aggression: 65, morale: 80, weeklyCost: 3500 },
+  { id: 'drv01', name: 'Jake Rivers',              skill: 88, aggression: 75, morale: 80, weeklyCost: 9000, minReputation: 65 },
   { id: 'drv02', name: 'Maria Santos',             skill: 68, aggression: 50, morale: 85, weeklyCost: 2900 },
   { id: 'drv03', name: 'Bobby "Flash" Thompson',   skill: 65, aggression: 82, morale: 70, weeklyCost: 2500 },
   { id: 'drv04', name: 'Tommy Keane',              skill: 54, aggression: 58, morale: 90, weeklyCost: 1600 },
@@ -1575,6 +1575,26 @@ function loadFromSlot(slot) {
     const availableCars = loaded.cars.filter(c => !(loaded.hiredDrivers || []).some(h => h.carId === c.id));
     if (!availableCars.some(c => c.assignedDriverId === 'player') && availableCars.length) {
       availableCars[0].assignedDriverId = 'player';
+    }
+    // Expand older Premier careers without replacing existing entrants or points.
+    if (loaded.currentSeries === 2) {
+      const teams = loaded.season.aiTeams;
+      let count = teams.reduce((n, t) => n + t.cars.length, 0);
+      const names = new Set(teams.flatMap(t => t.cars.map(c => c.driverName)));
+      const nums = new Set([1, ...teams.flatMap(t => t.cars.map(c => c.number)), ...loaded.cars.map(c => c.number)]);
+      for (const team of count < SERIES[2].fieldSize - 1 ? generateAITeams(2) : []) {
+        if (count >= SERIES[2].fieldSize - 1) break;
+        team.cars = team.cars.slice(0, SERIES[2].fieldSize - 1 - count);
+        for (const car of team.cars) {
+          car.driverName = AI_DRIVER_NAMES.find(n => !names.has(n)) || car.driverName;
+          names.add(car.driverName);
+          car.number = Array.from({length: 98}, (_, i) => i + 2).find(n => !nums.has(n));
+          nums.add(car.number);
+          loaded.season.standings.push({id: car.id, teamId: team.id, name: `${team.name} (${car.driverName})`, isPlayer: false, points: 0, wins: 0, top5: 0, top10: 0, races: 0});
+        }
+        count += team.cars.length;
+        teams.push(team);
+      }
     }
     game = loaded;
     currentSlot = slot;
@@ -1904,7 +1924,7 @@ function applyRaceResults(results) {
     if (!entry && r.carId && game.cars.some(c => c.id === r.carId)) {
       entry = {
         id: r.entrantId,
-        name: r.displayName || `${game.teamName} (Driver)`,
+        name: `${game.teamName} (${HIREABLE_DRIVERS.find(d => d.id === hireForCar(r.carId)?.driverId)?.name || String(r.displayName || 'Driver').split(' / ').pop()})`,
         isPlayer: false, isTeamCar: true,
         points: 0, wins: 0, top5: 0, top10: 0, races: 0,
       };
@@ -2166,7 +2186,7 @@ function buyCar(name) {
   if (game.cars.length >= MAX_TEAM_CARS) {
     return { ok: false, msg: `${MAX_TEAM_CARS} cars is the most any team runs.` };
   }
-  if (game.money < cls.buyCost) return { ok: false, msg: 'Not enough money.' };
+  if (game.money < cls.buyCost) return { ok: false, msg: 'Not enough money. Take out a loan in Market > Loans and Financing.' };
   game.money -= cls.buyCost;
   const carName = (name && String(name).trim()) || `Car ${game.cars.length + 1}`;
   // Give it the lowest free number so a new car never collides with an
@@ -2359,7 +2379,7 @@ function upgradeCar(carId, upgradeId) {
     const extra = cap > MAX_PER_TIER ? '' : ' Hire a Data Analyst to open another slot.';
     return { ok: false, msg: `Tier ${upgrade.tier} is full - ${cap} parts is the limit.${extra}` };
   }
-  if (game.money < upgrade.cost) return { ok: false, msg: 'Not enough money.' };
+  if (game.money < upgrade.cost) return { ok: false, msg: 'Not enough money. Take out a loan in Market > Loans and Financing.' };
 
   game.money -= upgrade.cost;
   car.appliedUpgrades.push(upgradeId);
@@ -2414,6 +2434,7 @@ function hireDriver(driverId, carId) {
   const driver = HIREABLE_DRIVERS.find(d => d.id === driverId);
   if (!driver) return { ok: false, msg: 'Driver not found.' };
 
+  if ((game.reputation || 0) < (driver.minReputation || 0)) return { ok: false, msg: `Requires ${driver.minReputation} reputation.` };
   const signingFee = driver.weeklyCost * 4;
   if (game.money < signingFee) return { ok: false, msg: `Signing fee is ${fmt$(signingFee)}.` };
 
@@ -2588,7 +2609,7 @@ function simulateRace({ playerCarId, trackId }) {
 
   // Calculate initial performance scores
   entries.forEach(e => {
-    e.perfScore = calcPerf(e, track);
+    e.perfScore = calcPerf(e, track) * (e.isPlayer || e.isTeammate ? 0.78 : 1);
   });
 
   // --- Run the simulation in 5 phases ---
@@ -2602,7 +2623,7 @@ function simulateRace({ playerCarId, trackId }) {
   entries.forEach(e => {
     const ours = e.isPlayer || e.isTeammate;
     const scatter = ours && analystQuali > 0 ? 5 : 8;
-    e.qualifyScore = e.perfScore + rand(-scatter, scatter) + (ours ? analystQuali : 0);
+    e.qualifyScore = e.perfScore + rand(-scatter, scatter) + (ours ? Math.min(analystQuali, 14) - 4 : 0);
   });
   entries.sort((a, b) => b.qualifyScore - a.qualifyScore);
   entries.forEach((e, i) => { e.position = i + 1; });
@@ -3252,6 +3273,7 @@ function launch3DRace(config, onComplete) {
         <div class="r3d-pause-panel">
           <div class="r3d-pause-title">PAUSED</div>
           <button class="r3d-pause-resume" id="r3d-pause-resume">RESUME</button>
+          <button class="btn btn-danger" id="r3d-quit" style="width:100%;margin-top:12px">Quit Race</button>
         </div>
       </div>
     </div>
@@ -3260,6 +3282,12 @@ function launch3DRace(config, onComplete) {
     </div>
   `;
 
+  document.getElementById('r3d-quit').addEventListener('click', () => {
+    if (!window._r3d || window._r3d.done) return;
+    window._r3d.destroy(); window._r3d = null;
+    window._r3dFinish = () => {};
+    if (config.onQuit) config.onQuit(); else showScreen('intro');
+  });
   const canvas = document.getElementById('r3d-canvas');
 
   requestAnimationFrame(() => {
@@ -3719,7 +3747,8 @@ class Race3DEngine {
     for (let i = 1; i < draws; i++) {
       playerSlotIdx = Math.min(playerSlotIdx, Math.floor(Math.random() * slots.length));
     }
-    this._startingPos = playerSlotIdx + 1;     // now genuinely 1 = pole
+    playerSlotIdx = Math.min(slots.length - 1, playerSlotIdx + 2);
+    this._startingPos = playerSlotIdx + 1;     // two-place qualifying setback, bounded by field size
     const ps = slots[playerSlotIdx];
     this.player = this._makeCar(ps.x, ps.z, {
       entrantId:  'player',
@@ -5083,6 +5112,12 @@ function standingName(entry) {
     const drv = game.driverName || 'You';
     return `<strong>${drv}</strong> <span class="st-team">${game.teamName}</span>`;
   }
+  if (entry.isTeamCar) {
+    const hire = hireForCar(entry.id);
+    const driver = HIREABLE_DRIVERS.find(d => d.id === hire?.driverId);
+    if (driver) return `${driver.name} <span class="st-team">${game.teamName}</span>`;
+    return resultName({ displayName: entry.name });
+  }
   // AI entries are stored as "Team Name (Driver Name)"
   const m = /^(.*?)\s*\(([^)]+)\)\s*$/.exec(entry.name || '');
   if (m) return `${m[2]} <span class="st-team">${m[1]}</span>`;
@@ -5286,7 +5321,7 @@ function renderDashboard() {
       <summary>Driver profile and history</summary>
       <div class="ui-details-body">
       <div class="team-stat"><span>Driver</span><span class="highlight">${game.driverName || game.teamName}</span></div>
-      <div class="team-stat"><span>Role</span><span>Driver / Owner</span></div>
+
       ${statBar('Driver Skill', Math.round(game.playerSkill))}
       <div class="team-stat"><span>Seasons Raced</span><span>${game.history.length}</span></div>
       ${game.history.length > 0 ? game.history.slice(-3).map(h => `
@@ -5521,7 +5556,7 @@ function renderTeam() {
     const signingFee = d.weeklyCost * 4;
     const canAfford  = game.money >= signingFee;
     const disabledReason = game.hiredDrivers.length >= MAX_HIRED_DRIVERS ? 'Driver Limit Reached'
-      : openSeats === 0 ? 'No Free Car' : !canAfford ? 'Not Enough Cash' : '';
+      : openSeats === 0 ? 'No Free Car' : (game.reputation || 0) < (d.minReputation || 0) ? `Requires ${d.minReputation} Reputation` : !canAfford ? 'Not Enough Cash' : '';
 
     return `<div class="staff-row">
       <div class="staff-info">
@@ -5732,7 +5767,7 @@ function renderMarket() {
   const creditPct = limit > 0 ? Math.round((debt / limit) * 100) : 0;
   const bankCard = `
     <div class="card mt">
-      <div class="card-header">Bank</div>
+      <div class="card-header" id="market-loans">Loans and Financing</div>
       ${game.money < 0 ? `<p class="form-warning">You are in the red. Borrowing now buys time, but the balance must be cleared before the term runs out.</p>` : ''}
       <div class="team-stat"><span>Cash</span><span class="${game.money < 0 ? 'red' : 'highlight'}">${fmt$(game.money)}</span></div>
       <div class="team-stat"><span>Total Debt</span><span class="${debt > 0 ? 'red' : ''}">${fmt$(debt)}</span></div>
@@ -5745,13 +5780,13 @@ function renderMarket() {
       </div>
       <div class="card-header mt">Your Loans</div>
       ${loanRows}
-      <details class="ui-details" ${game.money < 0 ? 'open' : ''}>
-      <summary>Explore loan options</summary>
-      <div class="ui-details-body">
+      <section aria-label="Loan options">
+      <h3>Take out a loan</h3>
+      <div>
       <p class="section-copy">Repay on time to avoid ${Math.round(LOAN_LATE_RATE * 100)}% interest per race on the remaining balance. Your reputation affects your credit limit.</p>
       ${offerRows}
       </div>
-      </details>
+      </section>
     </div>`;
 
   // ── Charity ─────────────────────────────────────────────
@@ -5791,7 +5826,7 @@ function renderMarket() {
     </div>`;
 
   return `
-  <div class="page-header"><h2>Market</h2></div>
+  <div class="page-header"><h2>Market</h2><button class="btn btn-primary" onclick="document.getElementById('market-loans').scrollIntoView({block: 'start'})">Loans and Financing</button></div>
   <div class="two-col-grid">
     <div>
       <div class="card">
@@ -6211,7 +6246,7 @@ function renderCareerStats() {
           ${statBar('Driver Skill', Math.round(game.playerSkill))}
           <div class="team-stat"><span>Team</span><span>${game.teamName}</span></div>
           <div class="team-stat"><span>Series</span><span>${SERIES[game.currentSeries].name}</span></div>
-          <div class="team-stat"><span>Role</span><span>Driver / Owner</span></div>
+
         </div>
       </div>
 
@@ -6424,6 +6459,18 @@ const CAREER_TUTORIAL_STEPS = [
     copy: 'Market lets you buy more cars, sign sponsors, and manage financing. You can drive a new car yourself or assign a hired driver to put both cars in the field.',
   },
   {
+    tab: 'market', target: '#market-loans', title: 'Borrow with a repayment plan',
+    copy: 'Loans and Financing is available from the large button at the top of Market. Each offer shows the cash received, total repayment and term in races. Borrowing is optional; check that future earnings can cover repayment.',
+  },
+  {
+    tab: 'market', target: '#market-loans', title: 'Understand debt and credit',
+    copy: 'You can carry up to three loans within your available credit. Reputation affects the limit and existing debt reduces it. Repay early or in parts when you have spare cash. At the deadline, the bank collects what it can; unpaid debt earns interest each race. Loans also advance when you simulate.',
+  },
+  {
+    tab: 'team', target: '.nav-btn[data-tab="team"]', title: 'Budget for every race',
+    copy: 'Signing fees are upfront and salaries continue each race, including simulation. Leave cash for entry fees and repairs before hiring. If you cannot afford an entry or purchase, Market offers loans, subject to available credit. Borrowing does not guarantee profit.',
+  },
+  {
     tab: 'schedule', target: '.nav-btn[data-tab="schedule"]', title: 'Plan the season',
     copy: 'Schedule lists upcoming tracks and completed races. Track characteristics affect how valuable speed and handling are in the race simulation.',
   },
@@ -6604,6 +6651,7 @@ function startCareerTutorialPractice() {
     aiEntries,
     finishDistance: 3500,
     practiceTips: true,
+    onQuit: () => renderCareerTutorialStep(),
   }, () => {
     careerTutorialPracticeDone = true;
     careerTutorialStep++;
@@ -7114,6 +7162,7 @@ function noteIdleCars(idle) {
 }
 
 function handleStartRace() {
+  const preRaceState = JSON.stringify(game);
   const race   = currentRace();
   const series = SERIES[game.currentSeries];
 
@@ -7128,7 +7177,7 @@ function handleStartRace() {
   // Entry fee is charged per car actually entered, not per car owned
   const entryFee = series.entryFee * Math.max(1, enteredCars(playerCarId).length);
   if (game.money < entryFee) {
-    toast(`You need ${fmt$(entryFee)} to enter these cars. Visit Market for financing, or enter fewer cars.`, 'error');
+    toast(`You need ${fmt$(entryFee)} to enter these cars. Take out a loan in Market > Loans and Financing, or enter fewer cars.`, 'error');
     return;
   }
   game.money -= entryFee;
@@ -7218,6 +7267,7 @@ function handleStartRace() {
       fieldSize:    series.fieldSize,
       seriesId:     series.id,
       difficulty:   game.difficulty || DEFAULT_DIFFICULTY,
+      onQuit: () => { game = JSON.parse(preRaceState); saveGame(); showScreen('game'); updateHeader(); showTab('dashboard'); toast('Race cancelled. Entry fees refunded; career unchanged.'); },
       qualifyBoost: analystCount(),   // Data Analysts sharpen the grid draw
       aiEntries:    aiEntries.slice(0, series.fieldSize - 1),
     },
@@ -7289,7 +7339,7 @@ function handleSimulateRace() {
   // Deduct entry fee - only for cars actually entered
   const entryFee = series.entryFee * Math.max(1, enteredCars(playerCarId).length);
   if (game.money < entryFee) {
-    toast(`You need ${fmt$(entryFee)} to enter these cars. Visit Market for financing, or enter fewer cars.`, 'error');
+    toast(`You need ${fmt$(entryFee)} to enter these cars. Take out a loan in Market > Loans and Financing, or enter fewer cars.`, 'error');
     return;
   }
   game.money -= entryFee;

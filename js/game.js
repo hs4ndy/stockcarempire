@@ -48,6 +48,26 @@ function loadFromSlot(slot) {
     if (!availableCars.some(c => c.assignedDriverId === 'player') && availableCars.length) {
       availableCars[0].assignedDriverId = 'player';
     }
+    // Expand older Premier careers without replacing existing entrants or points.
+    if (loaded.currentSeries === 2) {
+      const teams = loaded.season.aiTeams;
+      let count = teams.reduce((n, t) => n + t.cars.length, 0);
+      const names = new Set(teams.flatMap(t => t.cars.map(c => c.driverName)));
+      const nums = new Set([1, ...teams.flatMap(t => t.cars.map(c => c.number)), ...loaded.cars.map(c => c.number)]);
+      for (const team of count < SERIES[2].fieldSize - 1 ? generateAITeams(2) : []) {
+        if (count >= SERIES[2].fieldSize - 1) break;
+        team.cars = team.cars.slice(0, SERIES[2].fieldSize - 1 - count);
+        for (const car of team.cars) {
+          car.driverName = AI_DRIVER_NAMES.find(n => !names.has(n)) || car.driverName;
+          names.add(car.driverName);
+          car.number = Array.from({length: 98}, (_, i) => i + 2).find(n => !nums.has(n));
+          nums.add(car.number);
+          loaded.season.standings.push({id: car.id, teamId: team.id, name: `${team.name} (${car.driverName})`, isPlayer: false, points: 0, wins: 0, top5: 0, top10: 0, races: 0});
+        }
+        count += team.cars.length;
+        teams.push(team);
+      }
+    }
     game = loaded;
     currentSlot = slot;
     return true;
@@ -376,7 +396,7 @@ function applyRaceResults(results) {
     if (!entry && r.carId && game.cars.some(c => c.id === r.carId)) {
       entry = {
         id: r.entrantId,
-        name: r.displayName || `${game.teamName} (Driver)`,
+        name: `${game.teamName} (${HIREABLE_DRIVERS.find(d => d.id === hireForCar(r.carId)?.driverId)?.name || String(r.displayName || 'Driver').split(' / ').pop()})`,
         isPlayer: false, isTeamCar: true,
         points: 0, wins: 0, top5: 0, top10: 0, races: 0,
       };
@@ -638,7 +658,7 @@ function buyCar(name) {
   if (game.cars.length >= MAX_TEAM_CARS) {
     return { ok: false, msg: `${MAX_TEAM_CARS} cars is the most any team runs.` };
   }
-  if (game.money < cls.buyCost) return { ok: false, msg: 'Not enough money.' };
+  if (game.money < cls.buyCost) return { ok: false, msg: 'Not enough money. Take out a loan in Market > Loans and Financing.' };
   game.money -= cls.buyCost;
   const carName = (name && String(name).trim()) || `Car ${game.cars.length + 1}`;
   // Give it the lowest free number so a new car never collides with an
@@ -831,7 +851,7 @@ function upgradeCar(carId, upgradeId) {
     const extra = cap > MAX_PER_TIER ? '' : ' Hire a Data Analyst to open another slot.';
     return { ok: false, msg: `Tier ${upgrade.tier} is full - ${cap} parts is the limit.${extra}` };
   }
-  if (game.money < upgrade.cost) return { ok: false, msg: 'Not enough money.' };
+  if (game.money < upgrade.cost) return { ok: false, msg: 'Not enough money. Take out a loan in Market > Loans and Financing.' };
 
   game.money -= upgrade.cost;
   car.appliedUpgrades.push(upgradeId);
@@ -886,6 +906,7 @@ function hireDriver(driverId, carId) {
   const driver = HIREABLE_DRIVERS.find(d => d.id === driverId);
   if (!driver) return { ok: false, msg: 'Driver not found.' };
 
+  if ((game.reputation || 0) < (driver.minReputation || 0)) return { ok: false, msg: `Requires ${driver.minReputation} reputation.` };
   const signingFee = driver.weeklyCost * 4;
   if (game.money < signingFee) return { ok: false, msg: `Signing fee is ${fmt$(signingFee)}.` };
 

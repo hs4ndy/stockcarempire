@@ -457,6 +457,7 @@ function noteIdleCars(idle) {
 }
 
 function handleStartRace() {
+  const preRaceState = JSON.stringify(game);
   const race   = currentRace();
   const series = SERIES[game.currentSeries];
 
@@ -471,7 +472,7 @@ function handleStartRace() {
   // Entry fee is charged per car actually entered, not per car owned
   const entryFee = series.entryFee * Math.max(1, enteredCars(playerCarId).length);
   if (game.money < entryFee) {
-    toast(`You need ${fmt$(entryFee)} to enter these cars. Visit Market for financing, or enter fewer cars.`, 'error');
+    toast(`You need ${fmt$(entryFee)} to enter these cars. Take out a loan in Market > Loans and Financing, or enter fewer cars.`, 'error');
     return;
   }
   game.money -= entryFee;
@@ -561,6 +562,7 @@ function handleStartRace() {
       fieldSize:    series.fieldSize,
       seriesId:     series.id,
       difficulty:   game.difficulty || DEFAULT_DIFFICULTY,
+      onQuit: () => { game = JSON.parse(preRaceState); saveGame(); showScreen('game'); updateHeader(); showTab('dashboard'); toast('Race cancelled. Entry fees refunded; career unchanged.'); },
       qualifyBoost: analystCount(),   // Data Analysts sharpen the grid draw
       aiEntries:    aiEntries.slice(0, series.fieldSize - 1),
     },
@@ -632,7 +634,7 @@ function handleSimulateRace() {
   // Deduct entry fee - only for cars actually entered
   const entryFee = series.entryFee * Math.max(1, enteredCars(playerCarId).length);
   if (game.money < entryFee) {
-    toast(`You need ${fmt$(entryFee)} to enter these cars. Visit Market for financing, or enter fewer cars.`, 'error');
+    toast(`You need ${fmt$(entryFee)} to enter these cars. Take out a loan in Market > Loans and Financing, or enter fewer cars.`, 'error');
     return;
   }
   game.money -= entryFee;
