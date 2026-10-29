@@ -9,15 +9,17 @@ for(const [name,file,width] of [['source','index.html',1440],['offline','release
     await page.goto(pathToFileURL(path.resolve(__dirname,'../..',file)).href);
     await page.locator('#btn-start-new').click();
     await page.locator('#inp-team-name').fill('All Out Racing');await page.locator('#inp-driver-name').fill('Challenger');await page.locator('#inp-car-name').fill('Car');await page.locator('#btn-create-team').click();
-    await expect(page.locator('#setup-difficulty-grid .difficulty-card')).toHaveCount(5);
+    await expect(page.locator('#setup-difficulty-grid .difficulty-card')).toHaveCount(4);
+    await expect(page.locator('#setup-difficulty-grid [data-diff="allout"]')).toHaveCount(0);
     const fillsRow=selector=>page.locator(selector).evaluate(el=>{
       const grid=el.parentElement.getBoundingClientRect(),box=el.getBoundingClientRect();return Math.abs(grid.width-box.width)<2;
     });
-    expect(await fillsRow('#setup-difficulty-grid [data-diff="allout"]')).toBe(true);
-    await page.locator('#setup-difficulty-grid [data-diff="allout"]').click();
+    await page.locator('#setup-difficulty-grid [data-diff="pro"]').click();
     await page.locator('#btn-begin-career').click();await page.locator('[data-tutorial-action="skip"]').click();
-    expect(await page.evaluate(()=>game.difficulty)).toBe('allout');
-    await page.evaluate(()=>{showTab('settings');saveToSlot(4);});
+    expect(await page.evaluate(()=>game.difficulty)).toBe('pro');
+    await page.evaluate(()=>showTab('settings'));
+    await page.locator('#main-content [data-diff="allout"]').click();
+    await page.evaluate(()=>saveToSlot(4));
     await expect(page.locator('#main-content [data-diff="allout"]')).toHaveAttribute('aria-pressed','true');
     expect(await fillsRow('#main-content [data-diff="allout"]')).toBe(true);
     await page.locator('#main-content [data-diff="beginner"]').click();

@@ -63,7 +63,7 @@ document.getElementById('btn-create-team')?.addEventListener('click', () => {
 function renderSetupDifficultyCards() {
   const grid = document.getElementById('setup-difficulty-grid');
   if (!grid) return;
-  grid.innerHTML = DIFFICULTIES.map(d => `
+  grid.innerHTML = DIFFICULTIES.filter(d => d.id !== 'allout').map(d => `
     <button type="button" class="difficulty-card${d.id === setupDifficulty ? ' selected' : ''}"
          data-diff="${d.id}" aria-pressed="${d.id === setupDifficulty}" onclick="setSetupDifficulty('${d.id}')">
       <span class="difficulty-name">${d.name}</span>
