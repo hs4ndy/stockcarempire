@@ -190,7 +190,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .st-races, .st-wins, .st-top5 { text-align: center; color: var(--text-dim); } .st-pts { text-align: right; font-weight: 600; }
 
 /* Garage, people, upgrades, and finance. */
-.car-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 24px; }
+.car-grid { display: grid; align-items: start; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 24px; }
 .car-card { max-width: 620px; }
 .car-card-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 20px; }
 .car-name { font-size: 22px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }

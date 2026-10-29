@@ -209,7 +209,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .st-races, .st-wins, .st-top5 { text-align: center; color: var(--text-dim); } .st-pts { text-align: right; font-weight: 600; }
 
 /* Garage, people, upgrades, and finance. */
-.car-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 24px; }
+.car-grid { display: grid; align-items: start; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 24px; }
 .car-card { max-width: 620px; }
 .car-card-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 20px; }
 .car-name { font-size: 22px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
@@ -5543,7 +5543,7 @@ function renderGarage() {
     <div class="car-card" id="car-${car.id}">
       <div class="car-card-header">
         <span class="car-name"><span class="car-num">#${car.number || 1}</span> ${car.name}</span>
-        <span class="car-class-badge">${cls.name}</span>
+        <button class="btn btn-sm btn-danger" onclick="handleSellCar('${car.id}')" ${game.cars.length === 1 ? 'disabled title="You must keep at least one car."' : ''}>Sell</button>
       </div>
       <div class="team-stat"><span>Driver</span><span class="${noDriver ? 'red' : ''}">${driverName}</span></div>
       <div class="car-actions">
@@ -5555,7 +5555,6 @@ function renderGarage() {
         <div class="ui-details-body">
       <div class="btn-row">
         <button class="btn btn-sm btn-ghost" onclick="handleRenameCar('${car.id}')">Rename</button>
-        ${game.cars.length > 1 ? `<button class="btn btn-sm btn-danger" onclick="handleSellCar('${car.id}')">Sell</button>` : ''}
       </div>
       ${renderCarCustomizer(car, 0, true)}
         </div>

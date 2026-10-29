@@ -327,7 +327,7 @@ function renderGarage() {
     <div class="car-card" id="car-${car.id}">
       <div class="car-card-header">
         <span class="car-name"><span class="car-num">#${car.number || 1}</span> ${car.name}</span>
-        <span class="car-class-badge">${cls.name}</span>
+        <button class="btn btn-sm btn-danger" onclick="handleSellCar('${car.id}')" ${game.cars.length === 1 ? 'disabled title="You must keep at least one car."' : ''}>Sell</button>
       </div>
       <div class="team-stat"><span>Driver</span><span class="${noDriver ? 'red' : ''}">${driverName}</span></div>
       <div class="car-actions">
@@ -339,7 +339,6 @@ function renderGarage() {
         <div class="ui-details-body">
       <div class="btn-row">
         <button class="btn btn-sm btn-ghost" onclick="handleRenameCar('${car.id}')">Rename</button>
-        ${game.cars.length > 1 ? `<button class="btn btn-sm btn-danger" onclick="handleSellCar('${car.id}')">Sell</button>` : ''}
       </div>
       ${renderCarCustomizer(car, 0, true)}
         </div>
