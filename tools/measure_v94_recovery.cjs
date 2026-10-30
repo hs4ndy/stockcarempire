@@ -15,4 +15,3 @@ const rows=JSON.parse(vm.runInContext(`JSON.stringify(DIFFICULTIES.flatMap(d=>['
 }))))`,c));
 fs.writeFileSync('.impeccable/review/v94-recovery.json',JSON.stringify(rows,null,2));
 console.log(JSON.stringify(rows,null,2));
-

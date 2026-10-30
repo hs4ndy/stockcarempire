@@ -73,3 +73,5 @@ See final session record for exact regression/browser/build results and delivery
 Raw race data: [rebalance-v94-races.csv](rebalance-v94-races.csv). Controlled recovery: [rebalance-v94-recovery.json](rebalance-v94-recovery.json).
 
 Completed diagnostics: 339/339; error/incomplete races: 0.
+
+Application delivery:77fea01bbdd827e46a787e6783e607ec5916c53c committed/pushed. Vercel independently reports READY/production for that exact SHA at https://stockcarempire-d7zhaokkl-hs4ndys-projects.vercel.app . Authenticated runtime/alias fetch returned403 due connection scope; actual served-page behavior remains unverified. Subsequent documentation/diagnostic-whitespace closeout does not change game bytes or the VERSION94 release.
