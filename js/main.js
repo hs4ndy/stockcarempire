@@ -903,3 +903,10 @@ document.addEventListener('keydown', e => {
     handleSaveGame();
   }
 });
+
+function returnToMainMenu() {
+  if (!game) return;
+  if (currentSlot !== null && !saveToSlot(currentSlot)) { toast('Could not save your career. Try saving again before leaving.', 'error'); return; }
+  document.getElementById('btn-continue-career').hidden = false;
+  showScreen('intro');
+}

@@ -574,7 +574,7 @@ test('AI drafting increases on every difficulty and pack pressure scales to Pro'
     e._updateAI(1/60);
     return {id:diff.id,draft:diff.aiDraft,pressure:diff.packPressure,speed:mate.speed,front};
   })`);
-  for (const r of report) {assert.equal(r.draft,r.id==='allout'?1.10:1.05);assert.equal(r.front,false);}
+  for (const r of report) {assert.equal(r.draft,r.id==='allout'?1.08:1.05);assert.equal(r.front,false);}
   for(let i=1;i<report.length;i++) assert.ok(report[i].speed>=report[i-1].speed);
   assert.ok(report.at(-1).speed>210,'a detached Pro car accelerates to reconnect');
 });
@@ -938,4 +938,13 @@ test('AI and human recovery obey the same final speed cap in every series',()=>{
 test('career power remap lifts stock equipment and preserves monotonic upgrade gains',()=>{
  const c=makeContext();const r=readJson(c,`(()=>{newGame('Test','Driver','Car');return {stock:careerRacePower(game.cars[0],60),upper:careerRacePower({speed:99,handling:99,reliability:99},99),levels:[40,50,60,70,80,90,99].map(n=>careerRacePower({speed:n,handling:n,reliability:n},60))};})()`);
  assert.ok(r.stock>.57&&r.stock<.59);assert.equal(r.upper,.99);for(let i=1;i<r.levels.length;i++)assert.ok(r.levels[i]>r.levels[i-1]);
+});
+
+test('owned teammates use the same clean-air power curve as the human',()=>{
+ const c=physicsContext();const r=readJson(c,`(()=>{const p=car('player',0,0),b=car('b',0,10),e=engine([p,b],'pro');b.isTeammate=true;b.power=.99;return e._naturalAIPace(b);})()`);
+ assert.ok(Math.abs(r-210*(.83+.99*.28))<1e-8);
+});
+test('AI recovery references natural pace rather than a boosted leader speed',()=>{
+ const c=physicsContext();const r=readJson(c,`(()=>{const p=car('player',0,6000,270),b=car('b',0,5500,200),e=engine([p,b],'pro');e._chooseAILine=()=>{};for(let i=0;i<300;i++)e._updateAI(1/60);return b.speed;})()`);
+ assert.ok(r<220,'a boosted leader must not ratchet recovery targets toward270');
 });

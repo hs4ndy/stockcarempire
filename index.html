@@ -32,6 +32,7 @@
       </div>
 
       <div class="intro-buttons">
+        <button class="btn btn-primary btn-lg" id="btn-continue-career" onclick="enterGame()" hidden>Continue Career</button>
         <button class="btn-game btn-game-primary" id="btn-start-new">
           <span>New Career</span>
         </button>
@@ -45,7 +46,7 @@
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 92</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 93</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -132,6 +133,7 @@
     <div class="header-actions">
       <span id="header-cash" class="header-cash" aria-label="Available cash"></span>
       <button class="btn btn-sm btn-ghost" id="btn-hdr-save" onclick="handleSaveGame()" title="Save (Ctrl+S)">Save</button>
+      <button class="btn btn-sm btn-ghost" id="btn-hdr-menu" onclick="returnToMainMenu()">Menu</button>
       <button class="btn btn-sm btn-ghost" onclick="handleNewGamePrompt()" title="Start a new career">New Career</button>
     </div>
   </header>

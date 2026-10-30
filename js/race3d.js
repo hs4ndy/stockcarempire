@@ -1022,13 +1022,17 @@ class Race3DEngine {
     p.mesh.rotation.x += (pitch - p.mesh.rotation.x) * (1 - Math.exp(-4 * dt));
   }
 
+  _naturalAIPace(car) {
+    return R3D.SPEED_BASE * (car.isTeammate ? .83 + car.power * .28 : (.86 + car.power * .15) * this.diff.aiSpeed);
+  }
+
   _updateAI(dt) {
     // Where the race leader is, so stragglers know how much ground to make up
     this._leadZ = this.cars.reduce(
       (m, c) => (!c.dnf && !c.finished && c.z > m ? c.z : m), -Infinity);
     if (!isFinite(this._leadZ)) this._leadZ = this.player.z;
-    const leaderSpeed = this.cars.reduce((speed, c) =>
-      !c.dnf && !c.finished && !c.spinning && c.z >= this._leadZ - 5 ? Math.max(speed, c.speed) : speed, 0);
+    const naturalLeaderPace = this.cars.reduce((pace,c) => !c.dnf && !c.finished && !c.spinning && c.z >= this._leadZ - 60
+      ? Math.max(pace, c.isPlayer ? R3D.SPEED_BASE * (.83 + c.power * .28) + c.draftBoost : this._naturalAIPace(c) + c.draftBoost) : pace, 0);
 
     for (const car of this.cars) {
       if (car.isPlayer) continue;
@@ -1062,19 +1066,19 @@ class Race3DEngine {
       // Difficulty lifts both the AI's pace and its ceiling. Individual power
       // creates natural separation; bounded recovery helps detached cars
       // reconnect without changing their positions or slowing the leaders.
-      const dSpd = this.diff.aiSpeed;
       const lead = this._leadZ || car.z;
       const pressure = this.diff.packPressure || 0;
       const gapStart = R3D.PACK_GAP_START * (1 - pressure * 0.8);
       const back = clamp((lead - car.z - gapStart) /
         ((R3D.PACK_GAP - R3D.PACK_GAP_START) * (1 - pressure * 0.6)), 0, 1);
-      const basePace = R3D.SPEED_BASE * (0.86 + car.power * 0.15) * dSpd;
+      const basePace = this._naturalAIPace(car);
       // Recover through acceleration, never position snapping or leader braking.
-      const leaderPace = leaderSpeed / (this.speedScale ?? 1);
+      const leaderPace = Math.max(basePace, naturalLeaderPace);
       const catchUp = back * (this.diff.packRecovery ?? 1) * (R3D.PACK_CATCHUP * (1 + pressure * 0.5)
         + Math.max(0, Math.min(leaderPace, R3D.SPEED_MAX) - basePace) * pressure);
       const tgt = Math.min(
-        (R3D.SPEED_BASE * (0.86 + car.power * 0.15)) * dSpd + car.draftBoost + catchUp,
+        basePace + car.draftBoost + catchUp,
+        Math.max(basePace + car.draftBoost, leaderPace + 6),
         R3D.SPEED_MAX) * (this.speedScale ?? 1);
       car.speed += (tgt - car.speed) * (1 - Math.exp(-2.2 * dt));   // frame-rate independent
 
@@ -1220,7 +1224,7 @@ class Race3DEngine {
         c.z > car.z && c.z - car.z < R3D.DRAFT_Z * 1.4 && Math.abs(c.x - car.x) < 6);
       const partner = partners.sort((a,b) =>
         (a.z-car.z + Math.abs(a.x-car.x)*12) - (b.z-car.z + Math.abs(b.x-car.x)*12))[0];
-      const soloPace = R3D.SPEED_BASE * (0.86 + car.power * 0.15) * this.diff.aiSpeed * (this.speedScale ?? 1);
+      const soloPace = this._naturalAIPace(car) * (this.speedScale ?? 1);
       if (partner && partner.speed > soloPace - 8 && car.speed - partner.speed < 10) {
         if (Math.abs(partner.x - car.x) < .35 || this._laneSafe(car, partner.x)) {
           car.targetX = clamp(partner.x, -hw, hw);
@@ -1366,6 +1370,7 @@ class Race3DEngine {
     const active = this.cars.filter(c => !c.dnf && !c.finished && !c.spinning)
       .slice().sort((a, b) => b.z - a.z);
     for (const car of this.cars) {
+      car._pushContactTime = car.pushStrength > .35 ? (car._pushContactTime || 0) + dt : Math.max(0, (car._pushContactTime || 0) - dt);
       car.towStrength = 0;
       car.pushStrength = 0;
       car.receivedPush = 0;
@@ -1400,8 +1405,10 @@ class Race3DEngine {
         // Transfer the pusher's already-earned run through bumper contact.
         // Otherwise the follower banks full aero while its partner receives
         // only six units, making a last-second pullout nearly uncontestable.
-        const sharedRun = Math.min(car.draftMomentum || 0, R3D.AERO_MAX) * .5;
+        const transfer = .5 + .5 * r3dSmooth(((car._pushContactTime || 0) - 6) / 4);
+        const sharedRun = Math.min(car.draftMomentum || 0, R3D.AERO_MAX) * transfer;
         other.receivedPush = Math.max(other.receivedPush, wake.push * (bonus * 0.75 + sharedRun));
+        if (wake.push > .35 && car._pushContactTime >= 10) other._receivedCarryDuration = 3.2;
       }
       car._draftDepth = car._wakeLeader ? (car._wakeLeader._draftDepth || 1) + 1 : 1;
       const leader = car._wakeLeader;
@@ -1424,12 +1431,14 @@ class Race3DEngine {
       const activeDraft = car.towStrength > 0.12 || car.pushStrength > 0.12 || car.receivedPush > 1;
       if (activeDraft) {
         car._draftCarryMomentum = before;
-        car._draftCarryTimer = R3D.DRAFT_CARRY;
+        car._draftCarryDuration = Math.max(R3D.DRAFT_CARRY, car._receivedCarryDuration || 0);
+        car._draftCarryTimer = car._draftCarryDuration;
       } else if ((car._draftCarryTimer || 0) > 0 && (car._draftCarryMomentum || 0) > 8) {
         car._draftCarryTimer = Math.max(0, car._draftCarryTimer - dt);
-        const carryFrac = car._draftCarryTimer / R3D.DRAFT_CARRY;
+        const carryFrac = car._draftCarryTimer / (car._draftCarryDuration || R3D.DRAFT_CARRY);
         target = Math.max(target, car._draftCarryMomentum * (0.72 + carryFrac * 0.28));
       }
+      if (!activeDraft && !(car._draftCarryTimer > 0)) car._receivedCarryDuration = 0;
       const rate = target > before ? R3D.DRAFT_BUILD : R3D.DRAFT_RELEASE;
       car.draftMomentum = before + (target - before) * (1 - Math.exp(-rate * dt));
       car.draftBoost = car.draftMomentum;

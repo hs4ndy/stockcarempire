@@ -948,6 +948,8 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 
 .intro-version.logo-beta { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); margin: 0; white-space: nowrap; }
 
+#btn-continue-career[hidden] { display: none; }
+
 </style>
 </head>
 <body>
@@ -975,6 +977,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
       </div>
 
       <div class="intro-buttons">
+        <button class="btn btn-primary btn-lg" id="btn-continue-career" onclick="enterGame()" hidden>Continue Career</button>
         <button class="btn-game btn-game-primary" id="btn-start-new">
           <span>New Career</span>
         </button>
@@ -988,7 +991,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 92</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 93</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -1075,6 +1078,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
     <div class="header-actions">
       <span id="header-cash" class="header-cash" aria-label="Available cash"></span>
       <button class="btn btn-sm btn-ghost" id="btn-hdr-save" onclick="handleSaveGame()" title="Save (Ctrl+S)">Save</button>
+      <button class="btn btn-sm btn-ghost" id="btn-hdr-menu" onclick="returnToMainMenu()">Menu</button>
       <button class="btn btn-sm btn-ghost" onclick="handleNewGamePrompt()" title="Start a new career">New Career</button>
     </div>
   </header>
@@ -1483,10 +1487,10 @@ const DIFFICULTIES = [
     aiSpeed: 1.035, aiPower: 1.15, aiAggro: 1.281, aiDraft: 1.05, rideLimit: 4, packPressure: 0.75, playerDraft: 1.00, playerCatchup: 0.80, racecraft: 0.75 },
   { id: 'pro',      name: 'Pro',
     blurb: 'Everyone is fast, works the tow and holds their ground.',
-    aiSpeed: 1.05, aiPower: 1.22, aiAggro: 1.386, aiDraft: 1.05, rideLimit: 3, packPressure: 1.00, playerDraft: 1.02, playerCatchup: 0.70, lastPlaceBoost: 1.26, racecraft: 1.00 },
+    aiSpeed: 1.05, aiPower: 1.22, aiAggro: 1.386, aiDraft: 1.05, rideLimit: 3, packPressure: 1.00, playerDraft: 1.00, playerCatchup: 0.70, lastPlaceBoost: 1.26, racecraft: 1.00 },
   { id: 'allout', name: 'All-Out',
     blurb: 'Relentless pace, ruthless drafting and almost no help. Expect to lose.',
-    aiSpeed: 1.065, aiPower: 1.38, aiAggro: 1.65, aiDraft: 1.10, rideLimit: 1.5, packPressure: 1.00, packRecovery: 1.15, playerDraft: 1.00, playerCatchup: 0.55, racecraft: 1.25 },
+    aiSpeed: 1.055, aiPower: 1.38, aiAggro: 1.65, aiDraft: 1.08, rideLimit: 1.5, packPressure: 1.00, packRecovery: 1.15, playerDraft: 1.06, playerCatchup: 0.68, racecraft: 1.25 },
 ];
 
 const DEFAULT_DIFFICULTY = 'beginner';
@@ -4170,13 +4174,17 @@ class Race3DEngine {
     p.mesh.rotation.x += (pitch - p.mesh.rotation.x) * (1 - Math.exp(-4 * dt));
   }
 
+  _naturalAIPace(car) {
+    return R3D.SPEED_BASE * (car.isTeammate ? .83 + car.power * .28 : (.86 + car.power * .15) * this.diff.aiSpeed);
+  }
+
   _updateAI(dt) {
     // Where the race leader is, so stragglers know how much ground to make up
     this._leadZ = this.cars.reduce(
       (m, c) => (!c.dnf && !c.finished && c.z > m ? c.z : m), -Infinity);
     if (!isFinite(this._leadZ)) this._leadZ = this.player.z;
-    const leaderSpeed = this.cars.reduce((speed, c) =>
-      !c.dnf && !c.finished && !c.spinning && c.z >= this._leadZ - 5 ? Math.max(speed, c.speed) : speed, 0);
+    const naturalLeaderPace = this.cars.reduce((pace,c) => !c.dnf && !c.finished && !c.spinning && c.z >= this._leadZ - 60
+      ? Math.max(pace, c.isPlayer ? R3D.SPEED_BASE * (.83 + c.power * .28) + c.draftBoost : this._naturalAIPace(c) + c.draftBoost) : pace, 0);
 
     for (const car of this.cars) {
       if (car.isPlayer) continue;
@@ -4210,19 +4218,19 @@ class Race3DEngine {
       // Difficulty lifts both the AI's pace and its ceiling. Individual power
       // creates natural separation; bounded recovery helps detached cars
       // reconnect without changing their positions or slowing the leaders.
-      const dSpd = this.diff.aiSpeed;
       const lead = this._leadZ || car.z;
       const pressure = this.diff.packPressure || 0;
       const gapStart = R3D.PACK_GAP_START * (1 - pressure * 0.8);
       const back = clamp((lead - car.z - gapStart) /
         ((R3D.PACK_GAP - R3D.PACK_GAP_START) * (1 - pressure * 0.6)), 0, 1);
-      const basePace = R3D.SPEED_BASE * (0.86 + car.power * 0.15) * dSpd;
+      const basePace = this._naturalAIPace(car);
       // Recover through acceleration, never position snapping or leader braking.
-      const leaderPace = leaderSpeed / (this.speedScale ?? 1);
+      const leaderPace = Math.max(basePace, naturalLeaderPace);
       const catchUp = back * (this.diff.packRecovery ?? 1) * (R3D.PACK_CATCHUP * (1 + pressure * 0.5)
         + Math.max(0, Math.min(leaderPace, R3D.SPEED_MAX) - basePace) * pressure);
       const tgt = Math.min(
-        (R3D.SPEED_BASE * (0.86 + car.power * 0.15)) * dSpd + car.draftBoost + catchUp,
+        basePace + car.draftBoost + catchUp,
+        Math.max(basePace + car.draftBoost, leaderPace + 6),
         R3D.SPEED_MAX) * (this.speedScale ?? 1);
       car.speed += (tgt - car.speed) * (1 - Math.exp(-2.2 * dt));   // frame-rate independent
 
@@ -4368,7 +4376,7 @@ class Race3DEngine {
         c.z > car.z && c.z - car.z < R3D.DRAFT_Z * 1.4 && Math.abs(c.x - car.x) < 6);
       const partner = partners.sort((a,b) =>
         (a.z-car.z + Math.abs(a.x-car.x)*12) - (b.z-car.z + Math.abs(b.x-car.x)*12))[0];
-      const soloPace = R3D.SPEED_BASE * (0.86 + car.power * 0.15) * this.diff.aiSpeed * (this.speedScale ?? 1);
+      const soloPace = this._naturalAIPace(car) * (this.speedScale ?? 1);
       if (partner && partner.speed > soloPace - 8 && car.speed - partner.speed < 10) {
         if (Math.abs(partner.x - car.x) < .35 || this._laneSafe(car, partner.x)) {
           car.targetX = clamp(partner.x, -hw, hw);
@@ -4514,6 +4522,7 @@ class Race3DEngine {
     const active = this.cars.filter(c => !c.dnf && !c.finished && !c.spinning)
       .slice().sort((a, b) => b.z - a.z);
     for (const car of this.cars) {
+      car._pushContactTime = car.pushStrength > .35 ? (car._pushContactTime || 0) + dt : Math.max(0, (car._pushContactTime || 0) - dt);
       car.towStrength = 0;
       car.pushStrength = 0;
       car.receivedPush = 0;
@@ -4548,8 +4557,10 @@ class Race3DEngine {
         // Transfer the pusher's already-earned run through bumper contact.
         // Otherwise the follower banks full aero while its partner receives
         // only six units, making a last-second pullout nearly uncontestable.
-        const sharedRun = Math.min(car.draftMomentum || 0, R3D.AERO_MAX) * .5;
+        const transfer = .5 + .5 * r3dSmooth(((car._pushContactTime || 0) - 6) / 4);
+        const sharedRun = Math.min(car.draftMomentum || 0, R3D.AERO_MAX) * transfer;
         other.receivedPush = Math.max(other.receivedPush, wake.push * (bonus * 0.75 + sharedRun));
+        if (wake.push > .35 && car._pushContactTime >= 10) other._receivedCarryDuration = 3.2;
       }
       car._draftDepth = car._wakeLeader ? (car._wakeLeader._draftDepth || 1) + 1 : 1;
       const leader = car._wakeLeader;
@@ -4572,12 +4583,14 @@ class Race3DEngine {
       const activeDraft = car.towStrength > 0.12 || car.pushStrength > 0.12 || car.receivedPush > 1;
       if (activeDraft) {
         car._draftCarryMomentum = before;
-        car._draftCarryTimer = R3D.DRAFT_CARRY;
+        car._draftCarryDuration = Math.max(R3D.DRAFT_CARRY, car._receivedCarryDuration || 0);
+        car._draftCarryTimer = car._draftCarryDuration;
       } else if ((car._draftCarryTimer || 0) > 0 && (car._draftCarryMomentum || 0) > 8) {
         car._draftCarryTimer = Math.max(0, car._draftCarryTimer - dt);
-        const carryFrac = car._draftCarryTimer / R3D.DRAFT_CARRY;
+        const carryFrac = car._draftCarryTimer / (car._draftCarryDuration || R3D.DRAFT_CARRY);
         target = Math.max(target, car._draftCarryMomentum * (0.72 + carryFrac * 0.28));
       }
+      if (!activeDraft && !(car._draftCarryTimer > 0)) car._receivedCarryDuration = 0;
       const rate = target > before ? R3D.DRAFT_BUILD : R3D.DRAFT_RELEASE;
       car.draftMomentum = before + (target - before) * (1 - Math.exp(-rate * dt));
       car.draftBoost = car.draftMomentum;
@@ -7817,6 +7830,13 @@ document.addEventListener('keydown', e => {
     handleSaveGame();
   }
 });
+
+function returnToMainMenu() {
+  if (!game) return;
+  if (currentSlot !== null && !saveToSlot(currentSlot)) { toast('Could not save your career. Try saving again before leaving.', 'error'); return; }
+  document.getElementById('btn-continue-career').hidden = false;
+  showScreen('intro');
+}
 
 </script>
 

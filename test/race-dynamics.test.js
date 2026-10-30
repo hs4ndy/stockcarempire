@@ -154,7 +154,7 @@ if (require.main === module) test('All-Out leaves a strong front starter within 
 });
 
 if (require.main === module) test('Pro keeps pressure on a powerful front-start teammate train', () => {
-  const report=runRearStart(17,36,'pro','ride',null,{frontTrain:true,teammates:3});
+  const report=runRearStart(17,36,'pro','ride',null,{frontTrain:true,teammates:3,playerPower:.99});
   assert.equal(report.done,true);
   assert.ok(report.finish>1,'a fixed late pullout behind three teammates must not be an automatic win');
   assert.ok(report.medianNearby>=20,'the field must stay close enough to contest the player');
