@@ -926,3 +926,5 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .dual-progress i { height: 3px; }
 .dual-order { top: calc(5.25vw + 24px); }
 @media (max-width: 700px) { .dual-order { top: calc(11vw + 20px); } }
+
+.intro-version.logo-beta { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); margin: 0; white-space: nowrap; }
