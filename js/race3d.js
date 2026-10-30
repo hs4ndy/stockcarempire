@@ -990,7 +990,7 @@ class Race3DEngine {
     const posFrac     = activeCount > 1 ? aheadCount / (activeCount - 1) : 0;
     const leadZ = this.cars.reduce((z,c) => !c.dnf && !c.finished ? Math.max(z,c.z) : z, p.z);
     const recovery = clamp((leadZ-p.z-R3D.PACK_GAP_START) / (R3D.PACK_GAP-R3D.PACK_GAP_START),0,1);
-    const rubberBand = posFrac * R3D.RUBBER_BAND * (this.diff.playerCatchup ?? 1) + recovery * R3D.PACK_CATCHUP;
+    const rubberBand = posFrac * R3D.RUBBER_BAND * (this.diff.playerCatchup ?? 1) + recovery * R3D.PACK_CATCHUP + Math.pow(posFrac, 8) * (this.diff.lastPlaceBoost || 0);
 
     // Only an isolated follower gets extra rejoin help; leaders and cars
     // already attached to traffic do not gain a permanent pace advantage.

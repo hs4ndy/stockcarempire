@@ -608,7 +608,8 @@ test('difficulty above Beginner is strictly tougher in pace, racecraft and comeb
     assert.ok(values[i].power > values[i - 1].power);
     assert.ok(values[i].aggression > values[i - 1].aggression);
     assert.ok(values[i].racecraft > values[i - 1].racecraft);
-    assert.ok(values[i].playerDraft < values[i - 1].playerDraft);
+    // Pro draft support is independently tuned by user request; AI pace and comeback retain their ordering.
+    assert.ok(values[i].playerDraft > 0 && values[i].playerDraft <= values[0].playerDraft);
     assert.ok(values[i].playerCatchup < values[i - 1].playerCatchup);
   }
 });
@@ -915,4 +916,10 @@ test('installed career upgrades have a larger playable pace effect and preserve 
  const c=makeContext();
  const r=readJson(c,`(() => {newGame('Test','Driver','Car');game.money=500000;const car=game.cars[0],before=careerRacePower(car,game.playerSkill),speed=car.speed;const result=upgradeCar(car.id,'engine_tune');const after=careerRacePower(car,game.playerSkill);return {ok:result.ok,before,after,delta:car.speed-speed,paceGain:210*.28*(after-before)};})()`);
  assert.equal(r.ok,true);assert.equal(r.delta,8);assert.ok(r.after>r.before);assert.ok(r.paceGain>1.2);
+});
+
+test('Pro extra comeback help targets the back and does not help the leader', () => {
+ const c=physicsContext();
+ const r=readJson(c,`[0,10,30].map(z=>{const run=extra=>{const p=car('player',0,z,200),a=car('a',0,5,200),b=car('b',0,20,200),e=engine([p,a,b],'pro');e.diff={...e.diff,lastPlaceBoost:extra};e._updatePlayer(1);return p.speed;};return run(1.26)-run(0);})`);
+ assert.ok(r[0]>0.9);assert.ok(r[1]<0.01);assert.equal(r[2],0);
 });
