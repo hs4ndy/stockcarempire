@@ -1060,5 +1060,6 @@ function ordinal(n) {
 // Car development has more influence than driver skill in playable career pace.
 function careerRacePower(car, skill) {
   const score = car ? (car.speed + car.handling + car.reliability) / 300 : 0.5;
-  return clamp(score * 0.80 + skill / 100 * 0.20, 0.3, 0.99);
+  const rawPower = score * 0.80 + skill / 100 * 0.20;
+  return clamp(0.58 + (rawPower - 0.51) * (0.41 / 0.48), 0.3, 0.99);
 }

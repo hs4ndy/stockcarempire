@@ -1,0 +1,8 @@
+const fs=require('fs');const {runRearStart}=require('../test/race-dynamics.test.js');
+const baselineSources=Object.fromEntries(['data','game','race','race3d','ui'].map(n=>['js/'+n+'.js',require('node:child_process').execFileSync('git',['show','4c241db:js/'+n+'.js'],{encoding:'utf8'})]));fs.mkdirSync('.impeccable/review',{recursive:true});const rows=[];function run(label,seed,size,diff,strategy,options,baseline=null){const r=runRearStart(seed,size,diff,strategy,baseline,options);rows.push({label,seed,size,diff,strategy,...r});fs.writeFileSync('.impeccable/review/rebalance-comparisons.json',JSON.stringify(rows,null,2));console.log(JSON.stringify({label,seed,size,diff,finish:r.finish,opening:r.openingNearby,gap:r.openingLeaderGap,draft:r.draftingSeconds,overtakes:r.overtakes}));}
+for(const [seriesId,size] of [['grassroots',20],['challenger',26],['premier',40]])for(const diff of ['semipro','pro','allout']){
+ run('before-quick',17,size,diff,'managed',{seriesId,quickRace:true,openingPace:true,playerPower:.60},baselineSources);
+ for(const seed of [3,17])run('quick',seed,size,diff,'managed',{seriesId,quickRace:true,openingPace:true,playerPower:.75});
+}
+for(const [seriesId,size,stock]of [['grassroots',20,.5771527778],['challenger',26,.6617222222],['premier',40,.7596666667]])for(const [label,power] of [['career-stock',stock],['career-upgraded',.99]])run(label,17,size,'pro','managed',{seriesId,openingPace:true,playerPower:power});
+for(const seed of [3,17])for(const strategy of ['ride','managed'])run('front-teammates',seed,40,'pro',strategy,{frontTrain:true,teammates:3,playerPower:.99});

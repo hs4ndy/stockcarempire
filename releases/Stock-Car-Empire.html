@@ -988,7 +988,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 91</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 92</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -1486,7 +1486,7 @@ const DIFFICULTIES = [
     aiSpeed: 1.05, aiPower: 1.22, aiAggro: 1.386, aiDraft: 1.05, rideLimit: 3, packPressure: 1.00, playerDraft: 1.02, playerCatchup: 0.70, lastPlaceBoost: 1.26, racecraft: 1.00 },
   { id: 'allout', name: 'All-Out',
     blurb: 'Relentless pace, ruthless drafting and almost no help. Expect to lose.',
-    aiSpeed: 1.09, aiPower: 1.38, aiAggro: 1.65, aiDraft: 1.15, rideLimit: 1.5, packPressure: 1.00, packRecovery: 1.15, playerDraft: 0.95, playerCatchup: 0.35, racecraft: 1.25 },
+    aiSpeed: 1.065, aiPower: 1.38, aiAggro: 1.65, aiDraft: 1.10, rideLimit: 1.5, packPressure: 1.00, packRecovery: 1.15, playerDraft: 1.00, playerCatchup: 0.55, racecraft: 1.25 },
 ];
 
 const DEFAULT_DIFFICULTY = 'beginner';
@@ -2661,7 +2661,8 @@ function ordinal(n) {
 // Car development has more influence than driver skill in playable career pace.
 function careerRacePower(car, skill) {
   const score = car ? (car.speed + car.handling + car.reliability) / 300 : 0.5;
-  return clamp(score * 0.80 + skill / 100 * 0.20, 0.3, 0.99);
+  const rawPower = score * 0.80 + skill / 100 * 0.20;
+  return clamp(0.58 + (rawPower - 0.51) * (0.41 / 0.48), 0.3, 0.99);
 }
 
 </script>
@@ -4153,7 +4154,8 @@ class Race3DEngine {
       p.speed = Math.max(tgt * 0.38, p.speed - R3D.BRAKE_FORCE * dt);
       braking = true;
     } else {
-      p.speed += (tgt - p.speed) * (1 - Math.exp(-R3D.ACCEL * dt));
+      const accel = 2.2 + (R3D.ACCEL - 2.2) * clamp((p.speed - 180) / 30, 0, 1);
+      p.speed += (tgt - p.speed) * (1 - Math.exp(-accel * dt));
     }
 
     p.z += p.speed * dt;
@@ -4221,7 +4223,7 @@ class Race3DEngine {
         + Math.max(0, Math.min(leaderPace, R3D.SPEED_MAX) - basePace) * pressure);
       const tgt = Math.min(
         (R3D.SPEED_BASE * (0.86 + car.power * 0.15)) * dSpd + car.draftBoost + catchUp,
-        R3D.SPEED_MAX * dSpd + catchUp) * (this.speedScale ?? 1);
+        R3D.SPEED_MAX) * (this.speedScale ?? 1);
       car.speed += (tgt - car.speed) * (1 - Math.exp(-2.2 * dt));   // frame-rate independent
 
       // ── Lateral motion with inertia ─────────────────────────
@@ -7092,7 +7094,7 @@ function handleStartQuickRace(fieldSize) {
   const AI_COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#c0392b','#16a085','#8e44ad','#2980b9','#27ae60'];
   const aiEntries = [];
   const usedNumbers = new Set(quickRaceCars.slice(0, quickRacePlayers).map(c => c.number));
-  if (quickRacePlayers === 2) aiEntries.push({entrantId: 'player2', name: 'PLAYER 2', number: quickRaceCars[1].number, color: quickRaceCars[1].color, power: 0.60, isSecondPlayer: true});
+  if (quickRacePlayers === 2) aiEntries.push({entrantId: 'player2', name: 'PLAYER 2', number: quickRaceCars[1].number, color: quickRaceCars[1].color, power: 0.75, isSecondPlayer: true});
   // Unique human driver names for the field
   const namePool = [...AI_DRIVER_NAMES].sort(() => Math.random() - 0.5);
   for (let i = 0; i < fieldSize - quickRacePlayers; i++) {
@@ -7102,7 +7104,7 @@ function handleStartQuickRace(fieldSize) {
   }
   showScreen('game-race');
   launch3DRace(
-    { playerColor: quickRaceCars[0].color, playerNumber: quickRaceCars[0].number, playerName: quickRacePlayers === 2 ? 'PLAYER 1' : 'YOU', dualPlayer: quickRacePlayers === 2, playerPower: 0.60, fieldSize,
+    { playerColor: quickRaceCars[0].color, playerNumber: quickRaceCars[0].number, playerName: quickRacePlayers === 2 ? 'PLAYER 1' : 'YOU', dualPlayer: quickRacePlayers === 2, playerPower: 0.75, fieldSize,
       seriesId: SERIES.find(s => s.fieldSize === fieldSize)?.id || 'grassroots',
       difficulty: quickRaceDifficulty, aiEntries },
     (pos) => {

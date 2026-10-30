@@ -14,6 +14,7 @@ for(const [width,height] of [[1366,768],[375,850]]) test(`customized dual quick 
  await page.screenshot({path:`.impeccable/review/quick-custom-${width}.png`});
  await page.locator('#btn-quick-race-confirm').click();await page.waitForFunction(()=>window._r3d?.player2 && window._r3d?.mirrorRT);
  expect(await page.evaluate(()=>{const e=window._r3d;return [e.cars.length,e.player.number,e.player2.number,e.player.hex,e.player2.hex,new Set(e.cars.map(c=>c.number)).size,e.renderer.shadowMap.enabled];})).toEqual([40,27,88,0xff7e35,0xa47ae8,40,false]);
+ expect(await page.evaluate(()=>[window._r3d.player.power,window._r3d.player2.power])).toEqual([.75,.75]);
  await expect(page.locator('#dual-order-1')).toBeVisible();await expect(page.locator('#dual-order-2')).toHaveCount(0);
  const aligned=await page.evaluate(()=>[1,2].every(n=>{const p=document.getElementById(`dual-view-${n}`).getBoundingClientRect(),m=document.getElementById(`dual-mirror-${n}`).getBoundingClientRect();return Math.abs((p.left+p.width/2)-(m.left+m.width/2))<1;}));expect(aligned).toBe(true);
  await expect(page.locator('.dual-progress')).toHaveCount(1);expect(await page.locator('.dual-progress').evaluate(el=>{const r=el.getBoundingClientRect();return Math.abs(r.left+r.width/2-innerWidth/2)<1;})).toBe(true);

@@ -1006,7 +1006,8 @@ class Race3DEngine {
       p.speed = Math.max(tgt * 0.38, p.speed - R3D.BRAKE_FORCE * dt);
       braking = true;
     } else {
-      p.speed += (tgt - p.speed) * (1 - Math.exp(-R3D.ACCEL * dt));
+      const accel = 2.2 + (R3D.ACCEL - 2.2) * clamp((p.speed - 180) / 30, 0, 1);
+      p.speed += (tgt - p.speed) * (1 - Math.exp(-accel * dt));
     }
 
     p.z += p.speed * dt;
@@ -1074,7 +1075,7 @@ class Race3DEngine {
         + Math.max(0, Math.min(leaderPace, R3D.SPEED_MAX) - basePace) * pressure);
       const tgt = Math.min(
         (R3D.SPEED_BASE * (0.86 + car.power * 0.15)) * dSpd + car.draftBoost + catchUp,
-        R3D.SPEED_MAX * dSpd + catchUp) * (this.speedScale ?? 1);
+        R3D.SPEED_MAX) * (this.speedScale ?? 1);
       car.speed += (tgt - car.speed) * (1 - Math.exp(-2.2 * dt));   // frame-rate independent
 
       // ── Lateral motion with inertia ─────────────────────────

@@ -26,7 +26,7 @@ function runRearStart(seed, fieldSize = 36, difficulty = 'beginner', strategy = 
     clearTimeout,
   });
   for (const file of SOURCE_FILES) {
-    const source = baseline ? require('node:child_process').execFileSync('git', ['show', `${baseline}:${file}`], {encoding:'utf8'})
+    const source = baseline && typeof baseline === 'object' ? baseline[file] : baseline ? require('node:child_process').execFileSync('git', ['show', `${baseline}:${file}`], {encoding:'utf8'})
       : fs.readFileSync(path.join(ROOT, file), 'utf8');
     vm.runInContext(source, context, { filename: file });
   }
@@ -37,7 +37,7 @@ function runRearStart(seed, fieldSize = 36, difficulty = 'beginner', strategy = 
       return {
         entrantId: id, number: id === 'player' ? 1 : 2, label: id, hex: 0x123456,
         isPlayer: id === 'player', isTeammate: false,
-        power: id === 'player' ? 0.6 : 0.45 + Math.random() * 0.35,
+        power: id === 'player' ? ${options.playerPower ?? 0.6} : ${options.quickRace ? '.35 + Math.random() * .45' : '.45 + Math.random() * .35'},
         x, z, speed, lv: 0, lvx: 0, targetX: x,
         raceNerve: 0.85 + Math.random() * 0.3,
         draftBoost: 0, draftMomentum: 0, towStrength: 0, pushStrength: 0,
@@ -62,12 +62,14 @@ function runRearStart(seed, fieldSize = 36, difficulty = 'beginner', strategy = 
     const cars = [player, ...slots.filter((_,i)=>i!==playerIndex).map((slot, i) =>
       car('ai-' + i, slot.x, slot.z))];
     if (${!!options.frontTrain}) {
-      player.power=.95;
+      player.power=${options.playerPower ?? .95};
       cars.slice(1,1+${options.teammates || 0}).forEach(c=>{c.isTeammate=true;c.power=.95;});
     }
+    if (${!!options.openingPace}) cars.forEach(c=>c.speed=65*${options.seriesId==='grassroots' ? .9 : 1});
     const engine = Object.create(Race3DEngine.prototype);
     Object.assign(engine, {
       cars, player, diff: difficultyById('${difficulty}'),
+      speedScale: ${options.seriesId==='grassroots' ? .9 : 1},
       keys: { a: false, d: false, s: false },
       wrecks: [], wreckCount: 0, wreckCooldown: Infinity, camShake: 0,
       finishOrder: [], done: false, racing: true, paused: false, paceMode: false,
@@ -80,6 +82,7 @@ function runRearStart(seed, fieldSize = 36, difficulty = 'beginner', strategy = 
     const lastTactic = new Map();
     const samples = [];
     let startPosition = null;
+    let overtakes=0, priorAhead=new Set(cars.filter(c=>c!==player && c.z>player.z));
 
     for (let frame = 0; frame < 60 * 140 && !engine.done; frame++) {
       if ('${strategy}' === 'ride') {
@@ -90,6 +93,9 @@ function runRearStart(seed, fieldSize = 36, difficulty = 'beginner', strategy = 
       } else raceDriverStep(engine, driver, 1/60, '${strategy}');
 
       engine._update(1 / 60);
+      const nowAhead=new Set(cars.filter(c=>c!==player && !c.dnf && (c.finished || c.z>player.z)));
+      for(const c of priorAhead) if(!nowAhead.has(c) && !c.dnf)overtakes++;
+      priorAhead=nowAhead;
       for (const car of cars) {
         if (car._tactic === 'pass' && lastTactic.get(car) !== 'pass') {
           const third = Math.min(2, Math.floor((car.z / R3D.TRACK_LEN) * 3));
@@ -109,6 +115,7 @@ function runRearStart(seed, fieldSize = 36, difficulty = 'beginner', strategy = 
           nearby: active.filter(c => c !== player && Math.abs(c.z-player.z) < 100).length,
           leaderGap: Math.max(...active.map(c => c.z)) - player.z,
           playerPush: player.receivedPush || 0,
+          playerTow: player.towStrength || 0,
         });
       }
     }
@@ -121,6 +128,8 @@ function runRearStart(seed, fieldSize = 36, difficulty = 'beginner', strategy = 
       done: engine.done,
       finish: engine.finishOrder.indexOf(player) + 1,
       startPosition,
+      overtakes,
+      draftingSeconds: samples.filter(s=>s.drafting>0 && s.playerTow>.04).length,
       openingNearby: samples[Math.min(10,samples.length-1)].nearby,
       openingLeaderGap: samples[Math.min(10,samples.length-1)].leaderGap,
       passStarts,
@@ -153,7 +162,7 @@ if (require.main === module) test('Pro keeps pressure on a powerful front-start 
 });
 
 if (require.main === module) test('chasing groups stay connected and contest positions throughout the race', () => {
-  const reports = [3, 17, 41].map(seed => runRearStart(seed));
+  const reports = [3, 17, 41].map(seed => runRearStart(seed,36,'beginner','managed',null,{playerPower:.75}));
   for (const report of reports) {
     assert.equal(report.done, true, 'every measured race must finish');
     assert.equal(report.startPosition, 36, 'the player must begin at the rear');
