@@ -149,4 +149,6 @@ Before the October 8 redesign commit, remote tip was verified at `5af567f`. Hist
 
 This replaces the obsolete September 5 Claude handoff. `HANDOFF_SOURCE.md` remains the historical `ca0245c` snapshot, not current source. Git preserves the old handoff. Its claims about missing tooling/tests/assets, stub-only rendering, fonts, deployment uncertainty, and tutorial absence are stale.
 
-Version rule (user request, 2026-10-29): Main-menu footer currently BETA / VERSION 93. Increment this displayed number by one with each subsequent committed game update; update source and offline releases together. Treat this as the project's display counter, not a verified Git-history count.
+Version rule (user request, 2026-10-29): Main-menu footer currently BETA / VERSION 94. Increment this displayed number by one with each subsequent committed game update; update source and offline releases together. Treat this as the project's display counter, not a verified Git-history count.
+
+VERSION94 initial tuning implemented2026-10-30. Balance acceptance failed: see docs/rebalance-v94-results.md and vault Sessions/2026-10-30 - Version94 fair racing.md for measured shortfalls, actual checks and delivery. Next committed game update increments footer to95. Detailed continuity remains at C:\Users\harri\OneDrive\Documents\vaults\stockcarempire.

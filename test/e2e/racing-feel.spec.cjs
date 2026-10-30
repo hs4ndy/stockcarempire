@@ -88,6 +88,8 @@ test('mirror renders both sides without DPR cropping and preserves main-render s
       e.player.mesh.position.set(0, 0, 1500);
       r.setPixelRatio(dpr);
       e._onResize();
+      // Resize applies the game's pixel budget; read actual framebuffer pixels.
+      const ratio = r.getPixelRatio();
       e._updateCamera(1 / 60);
       // Bright markers represent a car behind each rear quarter.
       [
@@ -102,9 +104,9 @@ test('mirror renders both sides without DPR cropping and preserves main-render s
       r.autoClear = false; e._renderMirror();
       const gl = r.getContext(), wrap = document.getElementById('r3d-mirror-wrap');
       const rect = wrap.getBoundingClientRect(), cr = e.canvas.getBoundingClientRect();
-      const x = Math.round((rect.left + wrap.clientLeft - cr.left) * dpr);
-      const y = Math.round((cr.height - (rect.top + wrap.clientTop - cr.top) - wrap.clientHeight) * dpr);
-      const w = Math.round(wrap.clientWidth * dpr), h = Math.round(wrap.clientHeight * dpr);
+      const x = Math.round((rect.left + wrap.clientLeft - cr.left) * ratio);
+      const y = Math.round((cr.height - (rect.top + wrap.clientTop - cr.top) - wrap.clientHeight) * ratio);
+      const w = Math.round(wrap.clientWidth * ratio), h = Math.round(wrap.clientHeight * ratio);
       const data = new Uint8Array(w * h * 4);
       gl.readPixels(x, y, w, h, gl.RGBA, gl.UNSIGNED_BYTE, data);
       let red = [], green = [];
@@ -117,14 +119,16 @@ test('mirror renders both sides without DPR cropping and preserves main-render s
       return { redCount: red.length, greenCount: green.length,
         redX: mean(red), greenX: mean(green), playerVisible: e.player.mesh.visible,
         targetReset: r.getRenderTarget() === null, scissorReset: !r.getScissorTest(),
-        pixelWidth: e.mirrorRT.width, expectedWidth: w };
+        pixelWidth: e.mirrorRT.width, cssWidth: wrap.clientWidth };
     }, dpr);
     expect(result.redCount).toBeGreaterThan(30);
     expect(result.greenCount).toBeGreaterThan(30);
     expect(result.redX).toBeLessThan(0.5);
     expect(result.greenX).toBeGreaterThan(0.5);
     expect(result.playerVisible && result.targetReset && result.scissorReset).toBe(true);
-    expect(result.pixelWidth).toBe(result.expectedWidth);
+    // Mirrors intentionally sample at1.5–2x CSS size independently of main DPR.
+    expect(result.pixelWidth).toBeGreaterThanOrEqual(Math.round(result.cssWidth * 1.5));
+    expect(result.pixelWidth).toBeLessThanOrEqual(Math.round(result.cssWidth * 2));
     await page.screenshot({ path: testInfo.outputPath('mirror-dpr-' + dpr + '.png') });
     await page.evaluate(() => window._r3d.destroy());
   }

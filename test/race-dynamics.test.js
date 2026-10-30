@@ -50,6 +50,20 @@ function runRearStart(seed, fieldSize = 36, difficulty = 'beginner', strategy = 
       };
     }
 
+    let careerPower=null,careerRivals=null,installedParts=0;
+    if (${!!options.careerFixture}) {
+      newGame('Benchmark','Driver','Car'); game.money=1e9;
+      game.currentSeries=${options.seriesId==='premier' ? 2 : options.seriesId==='challenger' ? 1 : 0};
+      const cls=['stock','modified','premier'][game.currentSeries];
+      game.cars=[makeCar('Benchmark',cls)];game.cars[0].assignedDriverId='player';
+      const roster=generateAITeams(game.currentSeries);
+      careerRivals=roster.flatMap(t=>t.cars.map(c=>clamp(c.power*c.condition/100,.25,.95)));
+      if (${options.careerFixture === 'upgraded'}) {
+        game.staff=Array.from({length:3},()=>({typeId:'data_analyst'}));
+        for(const u of CAR_CLASSES[cls].upgrades) if(upgradeCar(game.cars[0].id,u.id).ok)installedParts++;
+      }
+      careerPower=careerRacePower(game.cars[0],game.playerSkill);
+    }
     const slots = [];
     const rows = Math.ceil(${fieldSize} / 2);
     for (let row = 0; row < rows; row++) {
@@ -57,13 +71,14 @@ function runRearStart(seed, fieldSize = 36, difficulty = 'beginner', strategy = 
       slots.push({ x: -3.5, z }, { x: 3.5, z: z - 1.6 });
     }
     slots.length = ${fieldSize};
-    const playerIndex = ${options.frontTrain ? (options.teammates || 1) : fieldSize - 1};
+    const playerIndex = ${options.frontTrain ? (options.teammates ?? 0) : fieldSize - 1};
     const player = car('player', slots[playerIndex].x, slots[playerIndex].z);
     const cars = [player, ...slots.filter((_,i)=>i!==playerIndex).map((slot, i) =>
       car('ai-' + i, slot.x, slot.z))];
+    if (careerPower !== null) {player.power=careerPower;cars.slice(1).forEach((c,i)=>c.power=careerRivals[i]);}
     if (${!!options.frontTrain}) {
       player.power=${options.playerPower ?? .95};
-      cars.slice(1,1+${options.teammates || 0}).forEach(c=>{c.isTeammate=true;c.power=.95;});
+      cars.slice(1,1+${options.teammates || 0}).forEach(c=>{c.isTeammate=${!options.rivalPartners};c.power=.95;});
     }
     if (${!!options.openingPace}) cars.forEach(c=>c.speed=65*${options.seriesId==='grassroots' ? .9 : 1});
     const engine = Object.create(Race3DEngine.prototype);
@@ -85,9 +100,10 @@ function runRearStart(seed, fieldSize = 36, difficulty = 'beginner', strategy = 
     let overtakes=0, priorAhead=new Set(cars.filter(c=>c!==player && c.z>player.z));
 
     for (let frame = 0; frame < 60 * 140 && !engine.done; frame++) {
-      if ('${strategy}' === 'ride') {
-        const mate=cars.filter(c=>c.isTeammate && !c.dnf && !c.finished && c.z>player.z).sort((a,b)=>a.z-b.z)[0];
-        const target=mate ? mate.x+(player.z/R3D.TRACK_LEN>.92 ? 3.2 : 0) : player.x;
+      if (['ride','push','swap'].includes('${strategy}')) {
+        const mate=cars.filter(c=>(c.isTeammate || ${!!options.rivalPartners} || '${strategy}'!=='ride') && c!==player && !c.dnf && !c.finished && c.z>player.z).sort((a,b)=>a.z-b.z)[0];
+        const exiting='${strategy}'==='swap' ? frame/60%10>7 : '${strategy}'!=='push' && player.z/R3D.TRACK_LEN>.92;
+        const target=mate ? mate.x+(exiting ? (mate.x>3 ? -3.2 : 3.2) : 0) : player.x;
         const err=clamp(target,-9,9)-player.x-player.lv*.22;
         engine.keys.a=err>.3;engine.keys.d=err<-.3;engine.keys.s=false;
       } else raceDriverStep(engine, driver, 1/60, '${strategy}');
@@ -109,6 +125,8 @@ function runRearStart(seed, fieldSize = 36, difficulty = 'beginner', strategy = 
         const position = 1 + active.filter(c => c !== player && c.z > player.z).length;
         if (startPosition === null) startPosition = position;
         samples.push({
+          nearestGap: Math.min(...active.filter(c=>c.z>player.z).map(c=>c.z-player.z),Infinity),
+          spacing: (()=>{const z=active.map(c=>c.z).sort((a,b)=>a-b);const lo=Math.floor((z.length-1)*.1),hi=Math.ceil((z.length-1)*.9);return (z[hi]-z[lo])/Math.max(1,hi-lo);})(),
           span: Math.max(...active.map(c => c.z)) - Math.min(...active.map(c => c.z)),
           chain: Math.max(...active.map(c => c.chainLen || 1)),
           drafting: active.filter(c => c.towStrength > 0.2).length,
@@ -124,7 +142,16 @@ function runRearStart(seed, fieldSize = 36, difficulty = 'beginner', strategy = 
       const values = samples.map(sample => sample[key]).sort((a, b) => a - b);
       return values[Math.floor(values.length / 2)] || 0;
     };
+    let detachedAt=null;const rejoinTimes=[];
+    for(let i=0;i<samples.length;i++){
+      if(samples[i].nearestGap>120 && Number.isFinite(samples[i].nearestGap) && detachedAt===null)detachedAt=i;
+      if(samples[i].nearestGap<=120 && detachedAt!==null){rejoinTimes.push(i-detachedAt);detachedAt=null;}
+    }
     return {
+      careerPower,installedParts,
+      detachedSeconds:samples.filter(s=>s.nearestGap>120 && Number.isFinite(s.nearestGap)).length,
+      unrecovered:detachedAt!==null,rejoinTimes,
+      medianNearestGap:median('nearestGap'),centralSpacing:median('spacing'),
       done: engine.done,
       finish: engine.finishOrder.indexOf(player) + 1,
       startPosition,

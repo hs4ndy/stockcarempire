@@ -1,0 +1,302 @@
+[
+  {
+    "difficulty": "beginner",
+    "series": "grassroots",
+    "power": 0.75,
+    "reconnect": 17.258333333333333,
+    "gapAt20": 115.50438739625588,
+    "gapAt60": 113.64194425444111,
+    "maxSpeed": 241.92641471603787,
+    "met20s": true
+  },
+  {
+    "difficulty": "beginner",
+    "series": "grassroots",
+    "power": 0.5771527778,
+    "reconnect": null,
+    "gapAt20": 120.15751980152709,
+    "gapAt60": 120.01193456097826,
+    "maxSpeed": 241.92641471603787,
+    "met20s": false
+  },
+  {
+    "difficulty": "beginner",
+    "series": "challenger",
+    "power": 0.75,
+    "reconnect": 15.616666666666667,
+    "gapAt20": 114.09189617154607,
+    "gapAt60": 113.43361077568807,
+    "maxSpeed": 268.795152039434,
+    "met20s": true
+  },
+  {
+    "difficulty": "beginner",
+    "series": "challenger",
+    "power": 0.5771527778,
+    "reconnect": 17.341666666666665,
+    "gapAt20": 119.75244590970124,
+    "gapAt60": 119.80360122798993,
+    "maxSpeed": 268.795152039434,
+    "met20s": true
+  },
+  {
+    "difficulty": "beginner",
+    "series": "premier",
+    "power": 0.75,
+    "reconnect": 15.616666666666667,
+    "gapAt20": 114.09189617154607,
+    "gapAt60": 113.43361077568807,
+    "maxSpeed": 268.795152039434,
+    "met20s": true
+  },
+  {
+    "difficulty": "beginner",
+    "series": "premier",
+    "power": 0.5771527778,
+    "reconnect": 17.341666666666665,
+    "gapAt20": 119.75244590970124,
+    "gapAt60": 119.80360122798993,
+    "maxSpeed": 268.795152039434,
+    "met20s": true
+  },
+  {
+    "difficulty": "amateur",
+    "series": "grassroots",
+    "power": 0.75,
+    "reconnect": 17.375,
+    "gapAt20": 116.23848184082908,
+    "gapAt60": 114.8245288328726,
+    "maxSpeed": 241.92641471603787,
+    "met20s": true
+  },
+  {
+    "difficulty": "amateur",
+    "series": "grassroots",
+    "power": 0.5771527778,
+    "reconnect": null,
+    "gapAt20": 120.68910433033216,
+    "gapAt60": 120.62362940708954,
+    "maxSpeed": 241.92641471603787,
+    "met20s": false
+  },
+  {
+    "difficulty": "amateur",
+    "series": "challenger",
+    "power": 0.75,
+    "reconnect": 15.708333333333334,
+    "gapAt20": 115.03582001209634,
+    "gapAt60": 114.61619548748786,
+    "maxSpeed": 268.795152039434,
+    "met20s": true
+  },
+  {
+    "difficulty": "amateur",
+    "series": "challenger",
+    "power": 0.5771527778,
+    "reconnect": null,
+    "gapAt20": 120.35425176036188,
+    "gapAt60": 120.41529607402117,
+    "maxSpeed": 268.795152039434,
+    "met20s": false
+  },
+  {
+    "difficulty": "amateur",
+    "series": "premier",
+    "power": 0.75,
+    "reconnect": 15.708333333333334,
+    "gapAt20": 115.03582001209634,
+    "gapAt60": 114.61619548748786,
+    "maxSpeed": 268.795152039434,
+    "met20s": true
+  },
+  {
+    "difficulty": "amateur",
+    "series": "premier",
+    "power": 0.5771527778,
+    "reconnect": null,
+    "gapAt20": 120.35425176036188,
+    "gapAt60": 120.41529607402117,
+    "maxSpeed": 268.795152039434,
+    "met20s": false
+  },
+  {
+    "difficulty": "semipro",
+    "series": "grassroots",
+    "power": 0.75,
+    "reconnect": 17.516666666666666,
+    "gapAt20": 116.94000678540488,
+    "gapAt60": 115.8707809847383,
+    "maxSpeed": 241.92641471603787,
+    "met20s": true
+  },
+  {
+    "difficulty": "semipro",
+    "series": "grassroots",
+    "power": 0.5771527778,
+    "reconnect": null,
+    "gapAt20": 121.19775006059626,
+    "gapAt60": 121.19430927031681,
+    "maxSpeed": 241.92641471603787,
+    "met20s": false
+  },
+  {
+    "difficulty": "semipro",
+    "series": "challenger",
+    "power": 0.75,
+    "reconnect": 15.808333333333334,
+    "gapAt20": 115.91855362540446,
+    "gapAt60": 115.66244765078773,
+    "maxSpeed": 268.795152039434,
+    "met20s": true
+  },
+  {
+    "difficulty": "semipro",
+    "series": "challenger",
+    "power": 0.5771527778,
+    "reconnect": null,
+    "gapAt20": 120.92184560236728,
+    "gapAt60": 120.98597593707927,
+    "maxSpeed": 268.795152039434,
+    "met20s": false
+  },
+  {
+    "difficulty": "semipro",
+    "series": "premier",
+    "power": 0.75,
+    "reconnect": 15.808333333333334,
+    "gapAt20": 115.91855362540446,
+    "gapAt60": 115.66244765078773,
+    "maxSpeed": 268.795152039434,
+    "met20s": true
+  },
+  {
+    "difficulty": "semipro",
+    "series": "premier",
+    "power": 0.5771527778,
+    "reconnect": null,
+    "gapAt20": 120.92184560236728,
+    "gapAt60": 120.98597593707927,
+    "maxSpeed": 268.795152039434,
+    "met20s": false
+  },
+  {
+    "difficulty": "pro",
+    "series": "grassroots",
+    "power": 0.75,
+    "reconnect": 17.533333333333335,
+    "gapAt20": 117.00844109708942,
+    "gapAt60": 115.96932816925437,
+    "maxSpeed": 241.92641471603787,
+    "met20s": true
+  },
+  {
+    "difficulty": "pro",
+    "series": "grassroots",
+    "power": 0.5771527778,
+    "reconnect": null,
+    "gapAt20": 121.2473921939245,
+    "gapAt60": 121.24928373347211,
+    "maxSpeed": 241.92641471603787,
+    "met20s": false
+  },
+  {
+    "difficulty": "pro",
+    "series": "challenger",
+    "power": 0.75,
+    "reconnect": 15.816666666666666,
+    "gapAt20": 116.00372398607396,
+    "gapAt60": 115.76099483553116,
+    "maxSpeed": 268.795152039434,
+    "met20s": true
+  },
+  {
+    "difficulty": "pro",
+    "series": "challenger",
+    "power": 0.5771527778,
+    "reconnect": null,
+    "gapAt20": 120.97680972866783,
+    "gapAt60": 121.04095040020547,
+    "maxSpeed": 268.795152039434,
+    "met20s": false
+  },
+  {
+    "difficulty": "pro",
+    "series": "premier",
+    "power": 0.75,
+    "reconnect": 15.816666666666666,
+    "gapAt20": 116.00372398607396,
+    "gapAt60": 115.76099483553116,
+    "maxSpeed": 268.795152039434,
+    "met20s": true
+  },
+  {
+    "difficulty": "pro",
+    "series": "premier",
+    "power": 0.5771527778,
+    "reconnect": null,
+    "gapAt20": 120.97680972866783,
+    "gapAt60": 121.04095040020547,
+    "maxSpeed": 268.795152039434,
+    "met20s": false
+  },
+  {
+    "difficulty": "allout",
+    "series": "grassroots",
+    "power": 0.75,
+    "reconnect": 17.725,
+    "gapAt20": 117.74139641119655,
+    "gapAt60": 116.99046656873543,
+    "maxSpeed": 241.92641471603787,
+    "met20s": true
+  },
+  {
+    "difficulty": "allout",
+    "series": "grassroots",
+    "power": 0.5771527778,
+    "reconnect": null,
+    "gapAt20": 121.77926294021745,
+    "gapAt60": 121.83070052176299,
+    "maxSpeed": 241.92641471603787,
+    "met20s": false
+  },
+  {
+    "difficulty": "allout",
+    "series": "challenger",
+    "power": 0.75,
+    "reconnect": 15.958333333333334,
+    "gapAt20": 116.90559986626886,
+    "gapAt60": 116.78213323536329,
+    "maxSpeed": 268.795152039434,
+    "met20s": true
+  },
+  {
+    "difficulty": "allout",
+    "series": "challenger",
+    "power": 0.5771527778,
+    "reconnect": null,
+    "gapAt20": 121.56090278557258,
+    "gapAt60": 121.62236718836175,
+    "maxSpeed": 268.795152039434,
+    "met20s": false
+  },
+  {
+    "difficulty": "allout",
+    "series": "premier",
+    "power": 0.75,
+    "reconnect": 15.958333333333334,
+    "gapAt20": 116.90559986626886,
+    "gapAt60": 116.78213323536329,
+    "maxSpeed": 268.795152039434,
+    "met20s": true
+  },
+  {
+    "difficulty": "allout",
+    "series": "premier",
+    "power": 0.5771527778,
+    "reconnect": null,
+    "gapAt20": 121.56090278557258,
+    "gapAt60": 121.62236718836175,
+    "maxSpeed": 268.795152039434,
+    "met20s": false
+  }
+]

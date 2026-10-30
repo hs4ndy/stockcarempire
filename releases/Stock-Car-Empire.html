@@ -991,7 +991,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 93</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 94</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -1484,13 +1484,13 @@ const DIFFICULTIES = [
     aiSpeed: 1.02, aiPower: 1.08, aiAggro: 1.155, aiDraft: 1.05, rideLimit: 6, packPressure: 0.20, playerDraft: 1.02, playerCatchup: 0.90, racecraft: 0.40 },
   { id: 'semipro',  name: 'Semi-Pro',
     blurb: 'Fast racers who convert draft runs and defend their line.',
-    aiSpeed: 1.035, aiPower: 1.15, aiAggro: 1.281, aiDraft: 1.05, rideLimit: 4, packPressure: 0.75, playerDraft: 1.00, playerCatchup: 0.80, racecraft: 0.75 },
+    aiSpeed: 1.035, aiPower: 1.15, aiAggro: 1.281, aiDraft: 1.05, rideLimit: 4, packPressure: 0.75, recoveryStart: 96, recoveryFull: 360, pursuitMargin: 4, playerDraft: 1.00, playerCatchup: 0.80, racecraft: 0.75 },
   { id: 'pro',      name: 'Pro',
     blurb: 'Everyone is fast, works the tow and holds their ground.',
-    aiSpeed: 1.05, aiPower: 1.22, aiAggro: 1.386, aiDraft: 1.05, rideLimit: 3, packPressure: 1.00, playerDraft: 1.00, playerCatchup: 0.70, lastPlaceBoost: 1.26, racecraft: 1.00 },
+    aiSpeed: 1.05, aiPower: 1.22, aiAggro: 1.386, aiDraft: 1.05, rideLimit: 3, packPressure: 1.00, recoveryStart: 88, recoveryFull: 340, pursuitMargin: 6, playerDraft: 1.00, playerCatchup: 0.70, lastPlaceBoost: 1.26, racecraft: 1.00 },
   { id: 'allout', name: 'All-Out',
     blurb: 'Relentless pace, ruthless drafting and almost no help. Expect to lose.',
-    aiSpeed: 1.055, aiPower: 1.38, aiAggro: 1.65, aiDraft: 1.08, rideLimit: 1.5, packPressure: 1.00, packRecovery: 1.15, playerDraft: 1.06, playerCatchup: 0.68, racecraft: 1.25 },
+    aiSpeed: 1.055, aiPower: 1.38, aiAggro: 1.65, aiDraft: 1.08, rideLimit: 1.5, packPressure: 1.00, recoveryStart: 80, recoveryFull: 320, pursuitMargin: 8, packRecovery: 1.15, playerDraft: 1.06, playerCatchup: 0.68, racecraft: 1.25 },
 ];
 
 const DEFAULT_DIFFICULTY = 'beginner';
@@ -3187,7 +3187,7 @@ const R3D = {
   DRAFT_BOOST:    30,
   DRAFT_BUILD:    1.8,    // exponential response rates, independent of frame rate
   DRAFT_RELEASE:  1.25,
-  DRAFT_CARRY:    1.60,   // enough time to clear a bumper and use the earned run
+  DRAFT_CARRY:    2.00,   // earned passing momentum, identical for every partner
   PUSH_Z:         6.5,    // push fades continuously from contact to this gap
   PUSH_X:         1.45,   // accurate bumper alignment earns the strongest push
   PUSH_BONUS:     8,
@@ -3197,10 +3197,6 @@ const R3D = {
   PACK_CATCHUP:   16,     // gradual recovery after losing the leading groups
   PACK_GAP_START: 160,
   PACK_GAP:       600,
-  TEAM_HELP_Z:    60,     // range at which a teammate starts working with you
-  TEAM_PUSH_BONUS: 0,     // team identity must not amplify a drafting train
-  TEAM_FRONT_FRAC: 0.18,  // top of the field races for itself, regardless of team
-  TEAM_RACE_END:  0.72,   // teammates stop cooperating before the final charge
   // A narrower lens keeps following cars large enough to read at a glance.
   // This remains a horizontal FOV so the view is stable at every mirror size.
   MIRROR_HFOV:    68,     // readable trailing cars, stable across aspect ratios
@@ -3876,7 +3872,7 @@ class Race3DEngine {
         entrantId:  entry.entrantId || null,
         color:      entry.color,
         number:     entry.number || (aiIdx + 1),
-        power:      clamp(entry.power, 0.25, entry.isTeammate ? 0.99 : 0.95),
+        power:      clamp(entry.power, 0.25, 0.99),
         isPlayer:   !!entry.isSecondPlayer,
         isTeammate: !!entry.isTeammate,
         label:      entry.name,
@@ -4060,8 +4056,11 @@ class Race3DEngine {
     // by the contact solver which runs AFTER _updateAI, so clearing it here
     // meant _updateAI always saw false and cars in a pack kept making lane
     // decisions while locked bumper-to-bumper - a big source of the twitching.
+    // Both humans read the same pre-step traffic state, regardless of update order.
+    this._playerTraffic = this.player2 ? this.cars.filter(c => !c.dnf && !c.finished).map(c => ({ car:c,z:c.z,speed:c.speed })) : null;
     this._updatePlayer(dt);
     if (this.player2) this._withSecond(() => this._updatePlayer(dt));
+    this._playerTraffic = null;
     this._updateAI(dt);
     this._calcDraft(dt);
     this._separateCars(dt);
@@ -4137,22 +4136,22 @@ class Race3DEngine {
       this._warn('WALL BRUSH');
     }
 
-    const activeCount = this.cars.filter(c => !c.dnf && !c.finished).length;
-    const aheadCount  = this.cars.filter(c => !c.dnf && !c.finished && c.z > p.z).length;
+    const traffic = this._playerTraffic || this.cars.filter(c => !c.dnf && !c.finished);
+    const startZ = this._playerTraffic?.find(c => c.car === p)?.z ?? p.z;
+    const activeCount = traffic.length;
+    const aheadCount  = traffic.filter(c => c.z > startZ).length;
     const posFrac     = activeCount > 1 ? aheadCount / (activeCount - 1) : 0;
-    const leadZ = this.cars.reduce((z,c) => !c.dnf && !c.finished ? Math.max(z,c.z) : z, p.z);
-    const recovery = clamp((leadZ-p.z-R3D.PACK_GAP_START) / (R3D.PACK_GAP-R3D.PACK_GAP_START),0,1);
+    const leadZ = traffic.reduce((z,c) => Math.max(z,c.z), startZ);
+    const recovery = clamp((leadZ-startZ-R3D.PACK_GAP_START) / (R3D.PACK_GAP-R3D.PACK_GAP_START),0,1);
     const rubberBand = posFrac * R3D.RUBBER_BAND * (this.diff.playerCatchup ?? 1) + recovery * R3D.PACK_CATCHUP + Math.pow(posFrac, 8) * (this.diff.lastPlaceBoost || 0);
 
     // Only an isolated follower gets extra rejoin help; leaders and cars
     // already attached to traffic do not gain a permanent pace advantage.
-    const nextCar = this.cars.reduce((next,c) => !c.dnf && !c.finished && c.z > p.z && (!next || c.z < next.z) ? c : next, null);
-    const gap = nextCar ? nextCar.z - p.z : 0;
+    const nextCar = traffic.reduce((next,c) => c.z > startZ && (!next || c.z < next.z) ? c : next, null);
+    const gap = nextCar ? nextCar.z - startZ : 0;
     const basePace = R3D.SPEED_BASE * (0.83 + p.power * 0.28);
-    const rejoin = clamp((gap - 35) / (R3D.DRAFT_Z - 35), 0, 1);
-    const missingPace = nextCar ? clamp(nextCar.speed / (this.speedScale ?? 1) - basePace - rubberBand, 0, 14) : 0;
-    const rejoinBoost = rejoin * (16 + missingPace);
-    const tgt = Math.min(basePace + p.draftBoost + rubberBand + rejoinBoost, R3D.SPEED_MAX) * (this.speedScale ?? 1);
+    const normalPace = basePace + p.draftBoost + rubberBand;
+    const tgt = this._playerRecoveryTarget(normalPace, nextCar, gap) * (this.speedScale ?? 1);
     let braking = false;
     if (this.keys.s) {
       p.speed = Math.max(tgt * 0.38, p.speed - R3D.BRAKE_FORCE * dt);
@@ -4175,7 +4174,32 @@ class Race3DEngine {
   }
 
   _naturalAIPace(car) {
-    return R3D.SPEED_BASE * (car.isTeammate ? .83 + car.power * .28 : (.86 + car.power * .15) * this.diff.aiSpeed);
+    return R3D.SPEED_BASE * (.86 + car.power * .15) * this.diff.aiSpeed;
+  }
+
+  _playerRecoveryTarget(normalPace, nextCar, gap) {
+    const blend = clamp((gap - 60) / 80, 0, 1);
+    const floor = nextCar ? nextCar.speed / (this.speedScale ?? 1) + clamp(gap / 15, 6, 20) : normalPace;
+    return Math.min(R3D.SPEED_MAX, normalPace + Math.max(0, floor - normalPace) * blend);
+  }
+
+  // One snapshot per AI update. Recovery is excluded from every reference,
+  // so one assisted group cannot ratchet all following groups toward the cap.
+  _racingGroups() {
+    const active = this.cars.filter(c => !c.dnf && !c.finished && !c.spinning).sort((a,b) => b.z-a.z);
+    const groups = [], membership = new Map();
+    for (const c of active) {
+      let group = groups[groups.length-1];
+      if (!group || group.tail.z-c.z > 60) {
+        group = { front:c, tail:c, pace:0, ahead:groups[groups.length-1] || null };
+        groups.push(group);
+      }
+      group.tail=c;
+      const natural = c.isPlayer ? R3D.SPEED_BASE*(.83+c.power*.28) : this._naturalAIPace(c);
+      group.pace=Math.max(group.pace, Math.min(R3D.SPEED_MAX, natural+c.draftBoost));
+      membership.set(c,group);
+    }
+    return {groups,membership};
   }
 
   _updateAI(dt) {
@@ -4185,6 +4209,7 @@ class Race3DEngine {
     if (!isFinite(this._leadZ)) this._leadZ = this.player.z;
     const naturalLeaderPace = this.cars.reduce((pace,c) => !c.dnf && !c.finished && !c.spinning && c.z >= this._leadZ - 60
       ? Math.max(pace, c.isPlayer ? R3D.SPEED_BASE * (.83 + c.power * .28) + c.draftBoost : this._naturalAIPace(c) + c.draftBoost) : pace, 0);
+    const {membership} = this._racingGroups();
 
     for (const car of this.cars) {
       if (car.isPlayer) continue;
@@ -4209,9 +4234,8 @@ class Race3DEngine {
         continue;
       }
 
-      car._teamWorking = this._teammateCooperation(car);
-      const aggro = this._raceAggression(car, car._teamWorking);
-      const aggroMul = car._teamWorking ? 1 : this.diff.aiAggro;
+      const aggro = this._raceAggression(car);
+      const aggroMul = this.diff.aiAggro;
       const mix = (calm, wild) => calm + (wild - calm) * aggro;
       this._chooseAILine(car, aggro, dt);
 
@@ -4220,18 +4244,26 @@ class Race3DEngine {
       // reconnect without changing their positions or slowing the leaders.
       const lead = this._leadZ || car.z;
       const pressure = this.diff.packPressure || 0;
-      const gapStart = R3D.PACK_GAP_START * (1 - pressure * 0.8);
+      const gapStart = this.diff.recoveryStart ?? R3D.PACK_GAP_START * (1 - pressure * 0.8);
+      const gapFull = this.diff.recoveryFull ?? gapStart + (R3D.PACK_GAP - R3D.PACK_GAP_START) * (1 - pressure * 0.6);
       const back = clamp((lead - car.z - gapStart) /
-        ((R3D.PACK_GAP - R3D.PACK_GAP_START) * (1 - pressure * 0.6)), 0, 1);
+        (gapFull - gapStart), 0, 1);
       const basePace = this._naturalAIPace(car);
       // Recover through acceleration, never position snapping or leader braking.
       const leaderPace = Math.max(basePace, naturalLeaderPace);
       const catchUp = back * (this.diff.packRecovery ?? 1) * (R3D.PACK_CATCHUP * (1 + pressure * 0.5)
         + Math.max(0, Math.min(leaderPace, R3D.SPEED_MAX) - basePace) * pressure);
-      const tgt = Math.min(
+      const ordinary = Math.min(
         basePace + car.draftBoost + catchUp,
-        Math.max(basePace + car.draftBoost, leaderPace + 6),
-        R3D.SPEED_MAX) * (this.speedScale ?? 1);
+        Math.max(basePace + car.draftBoost, leaderPace + 6));
+      const group = membership.get(car), ahead = group?.ahead;
+      const groupGap = ahead ? ahead.tail.z-group.front.z : 0;
+      car._pursuing = groupGap > 120 || (!!car._pursuing && groupGap > 60);
+      const pursuitBlend = car._pursuing ? clamp((groupGap-60)/60,0,1) : 0;
+      const pursuit = ahead && this.diff.pursuitMargin
+        ? basePace+car.draftBoost+Math.max(0,ahead.pace+this.diff.pursuitMargin-basePace-car.draftBoost)*pursuitBlend
+        : 0;
+      const tgt = Math.min(Math.max(ordinary,pursuit), R3D.SPEED_MAX) * (this.speedScale ?? 1);
       car.speed += (tgt - car.speed) * (1 - Math.exp(-2.2 * dt));   // frame-rate independent
 
       // ── Lateral motion with inertia ─────────────────────────
@@ -4258,26 +4290,12 @@ class Race3DEngine {
     }
   }
 
-  _raceAggression(car, teamWorking = false) {
-    const calm = R3D.CALM_FRAC / Math.max(0.5, teamWorking ? 1 : this.diff.aiAggro);
+  _raceAggression(car) {
+    const calm = R3D.CALM_FRAC / Math.max(0.5, this.diff.aiAggro);
     const phase = r3dSmooth((car.z / (this.raceLength || R3D.TRACK_LEN) - calm) /
       Math.max(0.01, R3D.ENDGAME_FRAC - calm));
     const temperament = clamp(((car.raceNerve || 1) - 1) * 0.45, -0.08, 0.08);
     return clamp(0.38 + phase * 0.44 + temperament, 0.3, 0.9);
-  }
-
-  _teammateCooperation(car) {
-    const p = this.player;
-    if ((car._supportTime || 0) >= 6 || !car.isTeammate || !p || p.dnf || p.finished || p.spinning ||
-        car.dnf || car.finished || car.spinning) return false;
-    if (Math.abs(p.z - car.z) >= R3D.TEAM_HELP_Z) return false;
-    if (Math.max(p.z, car.z) / (this.raceLength || R3D.TRACK_LEN) >= R3D.TEAM_RACE_END) return false;
-
-    const active = this.cars.filter(c => !c.dnf && !c.finished && !c.spinning);
-    const frontCount = Math.max(3, Math.ceil(active.length * R3D.TEAM_FRONT_FRAC));
-    const pAhead = active.filter(c => c !== p && c.z > p.z).length;
-    const mateAhead = active.filter(c => c !== car && c.z > car.z).length;
-    return pAhead >= frontCount && mateAhead >= frontCount;
   }
 
   _wantsTrain(car) {
@@ -4330,15 +4348,29 @@ class Race3DEngine {
     // A prolonged bumper partnership is useful, but not a permanent escort.
     // Break into clear racing room before the pusher banks a free late pass.
     // This applies to rivals and teammates, with earlier responses on Pro.
-    const bumperPartner = this.cars.find(c => c !== car && !c.dnf && !c.finished && !c.spinning &&
-      car.z - c.z > 0 && car.z - c.z < R3D.PUSH_Z + 3 && Math.abs(car.x - c.x) < R3D.PUSH_X);
-    car._rideTime = bumperPartner ? (car._rideTime || 0) + dt : Math.max(0, (car._rideTime || 0) - dt * .5);
+    // Race-local memory survives brief separations and swaps of the leading car.
+    const partners = car._partnerships || (car._partnerships = new Map());
+    let rideTime = 0;
+    for (const other of this.cars) {
+      if (other === car) continue;
+      const close = !other.dnf && !other.finished && !other.spinning &&
+        Math.abs(car.z-other.z) < R3D.PUSH_Z+3 && Math.abs(car.x-other.x) < R3D.PUSH_X;
+      let record = partners.get(other);
+      if (close) {
+        if (!record) { record={time:0,apart:0}; partners.set(other,record); }
+        record.time += dt; record.apart=0;
+        rideTime = Math.max(rideTime,record.time);
+      } else if (record) {
+        record.apart += dt;
+        if (record.apart > 2) record.time = Math.max(0,record.time-dt*.25);
+        if (!record.time) partners.delete(other);
+      }
+    }
+    car._rideTime = rideTime;
     if (car._rideTime >= (this.diff.rideLimit ?? 6) && alternatives.length &&
         !(car._tactic === 'breakaway' && car.tacticTimer > 0)) {
       car.targetX = alternatives.sort((a,b) => this._scoreLane(car,b,aggro)-this._scoreLane(car,a,aggro))[0];
-      car._tactic = 'breakaway'; car._helping = false;
-      car._supportTime = 6;
-      car._rideTime = 0;
+      car._tactic = 'breakaway';
       car.tacticTimer = car.laneTimer = 2.6;
       return;
     }
@@ -4348,42 +4380,21 @@ class Race3DEngine {
       } else return;
     }
 
-    // Ahead: briefly hold a steady line; behind: follow a clear corridor.
-    // Behind: follow smoothly only if the intended corridor is clear.
-    car._helping = false;
-    if (car.isTeammate) {
-      const p = this.player, dz = p.z - car.z;
-      if (this._teammateCooperation(car)) {
-        car._supportTime = (car._supportTime || 0) + dt;
-        car._helping = true;
-        car._tactic = 'support';
-        const target = dz > 0 ? clamp(p.x, -hw, hw) : car.x;
-        if (dz <= 0 || this._laneSafe(car, target)) car.targetX = target;
-        if (dz > 0) car.speed += 8 * dt;
-        return;
-      }
-      if (car._tactic === 'support') {
-        car._tactic = null;
-        car.tacticTimer = 0;
-        car.laneTimer = 0;
-      }
-    }
-
     // Any driver will work with any useful partner, including the player.
     // Let an existing passing/avoidance move finish before seeking a new line.
     if (this._wantsTrain(car) && !(['pass', 'avoid', 'defend'].includes(car._tactic) && car.tacticTimer > 0)) {
-      const partners = this.cars.filter(c => c !== car && !c.dnf && !c.finished && !c.spinning &&
+      const candidates = this.cars.filter(c => c !== car && !c.dnf && !c.finished && !c.spinning &&
         c.z > car.z && c.z - car.z < R3D.DRAFT_Z * 1.4 && Math.abs(c.x - car.x) < 6);
-      const partner = partners.sort((a,b) =>
-        (a.z-car.z + Math.abs(a.x-car.x)*12) - (b.z-car.z + Math.abs(b.x-car.x)*12))[0];
       const soloPace = this._naturalAIPace(car) * (this.speedScale ?? 1);
-      if (partner && partner.speed > soloPace - 8 && car.speed - partner.speed < 10) {
-        if (Math.abs(partner.x - car.x) < .35 || this._laneSafe(car, partner.x)) {
-          car.targetX = clamp(partner.x, -hw, hw);
-          car._tactic = partner.z - car.z < R3D.PUSH_Z + 3 ? 'push' : 'join';
-          car.tacticTimer = car.laneTimer = 0.8;
-          return;
-        }
+      const partner = candidates.filter(c => c.speed > soloPace-8 && car.speed-c.speed < 10 &&
+        (Math.abs(c.x-car.x)<.35 || this._laneSafe(car,c.x))).sort((a,b) =>
+        (a.z-car.z+Math.abs(a.x-car.x)*12-Math.min(12,a.speed-soloPace)*2) -
+        (b.z-car.z+Math.abs(b.x-car.x)*12-Math.min(12,b.speed-soloPace)*2))[0];
+      if (partner) {
+        car.targetX = clamp(partner.x, -hw, hw);
+        car._tactic = partner.z - car.z < R3D.PUSH_Z + 3 ? 'push' : 'join';
+        car.tacticTimer = car.laneTimer = 0.8;
+        return;
       }
       const pusher = this.cars.find(c => c !== car && !c.dnf && !c.finished && !c.spinning &&
         car.z - c.z > 0 && car.z - c.z < 28 && Math.abs(c.x-car.x) < 2.5 && c.speed >= car.speed - 2);
@@ -4427,9 +4438,11 @@ class Race3DEngine {
       return;
     }
 
-    const chaser = this.cars.find(c => c !== car && !c.dnf && !c.finished && !c.spinning &&
+    const chaser = this.cars.filter(c => c !== car && !c.dnf && !c.finished && !c.spinning &&
       car.z - c.z > R3D.CAR_SEP_Z && car.z - c.z < R3D.BLOCK_Z * (1 + craft * 0.5) &&
-      c.speed > car.speed + 2 - craft && Math.abs(c.x - car.x) > 0.7);
+      c.speed > car.speed + 2 - craft && Math.abs(c.x - car.x) > 0.7 &&
+      this._laneSafe(car,clamp(car.x+clamp(c.x-car.x,-R3D.BLOCK_MAX,R3D.BLOCK_MAX),-hw,hw)))
+      .sort((a,b) => (car.z-a.z)/(a.speed-car.speed) - (car.z-b.z)/(b.speed-car.speed))[0];
     if (chaser && aggro * nerve + craft * 0.25 > 0.7) {
       const target = clamp(car.x + clamp(chaser.x - car.x, -R3D.BLOCK_MAX, R3D.BLOCK_MAX), -hw, hw);
       if (this._laneSafe(car, target)) {
@@ -4522,7 +4535,6 @@ class Race3DEngine {
     const active = this.cars.filter(c => !c.dnf && !c.finished && !c.spinning)
       .slice().sort((a, b) => b.z - a.z);
     for (const car of this.cars) {
-      car._pushContactTime = car.pushStrength > .35 ? (car._pushContactTime || 0) + dt : Math.max(0, (car._pushContactTime || 0) - dt);
       car.towStrength = 0;
       car.pushStrength = 0;
       car.receivedPush = 0;
@@ -4536,7 +4548,6 @@ class Race3DEngine {
       }
     }
 
-    const cooperating = new Set(active.filter(c => this._teammateCooperation(c)));
     const trains = new Map();
     // Forward-only links cannot cycle. A distant or offset wake still gives
     // a tow, but only close aligned cars share a train's efficiency benefit.
@@ -4548,19 +4559,11 @@ class Race3DEngine {
           car.towStrength = wake.tow;
           car._wakeLeader = other;
         }
-        const teammate = car.isTeammate ? car : other.isTeammate ? other : null;
-        const teamLink = !!teammate && ((car.isTeammate && other.isPlayer) ||
-          (car.isPlayer && other.isTeammate)) && cooperating.has(teammate);
-        const bonus = R3D.PUSH_BONUS + (teamLink ? R3D.TEAM_PUSH_BONUS : 0);
+        const bonus = R3D.PUSH_BONUS;
         car.pushStrength = Math.max(car.pushStrength, wake.push);
         car._pushTarget = Math.max(car._pushTarget, wake.push * bonus);
-        // Transfer the pusher's already-earned run through bumper contact.
-        // Otherwise the follower banks full aero while its partner receives
-        // only six units, making a last-second pullout nearly uncontestable.
-        const transfer = .5 + .5 * r3dSmooth(((car._pushContactTime || 0) - 6) / 4);
-        const sharedRun = Math.min(car.draftMomentum || 0, R3D.AERO_MAX) * transfer;
-        other.receivedPush = Math.max(other.receivedPush, wake.push * (bonus * 0.75 + sharedRun));
-        if (wake.push > .35 && car._pushContactTime >= 10) other._receivedCarryDuration = 3.2;
+        // Direct push only; do not recirculate accumulated aero through a pair.
+        other.receivedPush = Math.max(other.receivedPush, wake.push * bonus * .75);
       }
       car._draftDepth = car._wakeLeader ? (car._wakeLeader._draftDepth || 1) + 1 : 1;
       const leader = car._wakeLeader;
@@ -4583,14 +4586,13 @@ class Race3DEngine {
       const activeDraft = car.towStrength > 0.12 || car.pushStrength > 0.12 || car.receivedPush > 1;
       if (activeDraft) {
         car._draftCarryMomentum = before;
-        car._draftCarryDuration = Math.max(R3D.DRAFT_CARRY, car._receivedCarryDuration || 0);
+        car._draftCarryDuration = R3D.DRAFT_CARRY;
         car._draftCarryTimer = car._draftCarryDuration;
       } else if ((car._draftCarryTimer || 0) > 0 && (car._draftCarryMomentum || 0) > 8) {
         car._draftCarryTimer = Math.max(0, car._draftCarryTimer - dt);
         const carryFrac = car._draftCarryTimer / (car._draftCarryDuration || R3D.DRAFT_CARRY);
         target = Math.max(target, car._draftCarryMomentum * (0.72 + carryFrac * 0.28));
       }
-      if (!activeDraft && !(car._draftCarryTimer > 0)) car._receivedCarryDuration = 0;
       const rate = target > before ? R3D.DRAFT_BUILD : R3D.DRAFT_RELEASE;
       car.draftMomentum = before + (target - before) * (1 - Math.exp(-rate * dt));
       car.draftBoost = car.draftMomentum;
@@ -4634,8 +4636,9 @@ class Race3DEngine {
             const diff = B.speed - A.speed;
             if (diff > 0) {
               const give = Math.min(diff, 60) * (1 - Math.exp(-2.6 * step)) * bumper;
-              A.speed = Math.min(R3D.SPEED_MAX * 1.05 * (this.speedScale ?? 1), A.speed + give);
-              B.speed = Math.max(40, B.speed - give * 0.65);
+              const transfer = Math.min(give, Math.max(0,R3D.SPEED_MAX*(this.speedScale ?? 1)-A.speed), Math.max(0,B.speed-40));
+              A.speed += transfer;
+              B.speed -= transfer;
             }
           }
 
@@ -4671,6 +4674,8 @@ class Race3DEngine {
       car.x = clamp(car.x, origin - maxRate * step, origin + maxRate * step);
       car.mesh.position.x = car.x;
     }
+    const speedLimit = R3D.SPEED_MAX*(this.speedScale ?? 1);
+    for (const car of active) car.speed=Math.min(car.speed,speedLimit);
   }
 
   _checkCollisions() {
