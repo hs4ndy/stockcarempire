@@ -68,7 +68,7 @@ for (const [name, viewport] of [
       document.body.insertAdjacentHTML('beforeend', renderRaceResultsModal(results.results, results.events, results.playerResult));
     });
     await capture(page, 'results-' + name);
-    await expect(page.getByRole('button', { name: 'Continue', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Next', exact: true })).toBeVisible();
     expect(errors).toEqual([]);
   });
 }

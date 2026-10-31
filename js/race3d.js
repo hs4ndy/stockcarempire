@@ -242,12 +242,14 @@ function launch3DRace(config, onComplete) {
     // Grab the real on-track order before tearing the engine down, so the
     // results table reflects what actually happened - team-mates included.
     let order = [];
+    let photo = null;
     if (window._r3d) {
       try { order = window._r3d.finalOrder(); } catch (_) {}
+      photo = window._r3d.finishPhoto || null;
       try { window._r3d.destroy(); } catch (_) {}
       window._r3d = null;
     }
-    onComplete(pos, order);
+    onComplete(pos, order, photo);
   };
 }
 
@@ -749,6 +751,7 @@ class Race3DEngine {
         for (const c of [neighbor,this.player2]) c.mesh.position.set(c.x,0,c.z);
       }
     }
+    this._newsGrid = Object.fromEntries([...this.cars].sort((a,b)=>b.z-a.z).map((c,i)=>[c.entrantId,i+1]));
   }
 
   _withSecond(callback) {
@@ -1639,6 +1642,10 @@ class Race3DEngine {
     if (!crossed.length) return;
     crossed.sort((a, b) => b.z - a.z);        // furthest down the track first
 
+    // One capture at the first crossing, not when the human later finishes.
+    // Practice has no news flow. No extra render work during ordinary racing.
+    if (!this.finishOrder.length && !this.config?.practiceTips && this.renderer) this._captureFinishPhoto(crossed[0]);
+
     for (const car of crossed) {
       car.finished = true;
       this.finishOrder.push(car);
@@ -1650,7 +1657,7 @@ class Race3DEngine {
         this._updateDualHUD(1);
         const p1 = this.finishOrder.indexOf(this.player)+1, p2 = this.finishOrder.indexOf(this.player2)+1;
         const el = document.getElementById('r3d-finish');
-        el.innerHTML = `<div class="r3d-finish-box"><h2>Race Results</h2><p>Player 1 · #${this.player.number} · ${p1}${ordinal(p1)}</p><p>Player 2 · #${this.player2.number} · ${p2}${ordinal(p2)}</p><button class="btn btn-primary btn-lg" onclick="window._r3dFinish(${p1})">Continue</button></div>`;
+        el.innerHTML = `<div class="r3d-finish-box"><h2>Race Results</h2><p>Player 1 · #${this.player.number} · ${p1}${ordinal(p1)}</p><p>Player 2 · #${this.player2.number} · ${p2}${ordinal(p2)}</p><button class="btn btn-primary btn-lg" onclick="window._r3dFinish(${p1})">Next</button></div>`;
         el.style.display = 'flex';
       }
       return;
@@ -1662,6 +1669,50 @@ class Race3DEngine {
       // stops updating it, so force one authoritative final refresh here.
       this._updateOrder(pos, this.cars.filter(c => !c.dnf).length);
       this._showFinish(pos);
+    }
+  }
+
+  _captureFinishPhoto(leader) {
+    if (!this.renderer || !this.scene || this._finishPhotoAttempted) return;
+    this._finishPhotoAttempted = true;
+    const r=this.renderer, width=1024, height=576, line=this.raceLength || R3D.TRACK_LEN;
+    const target=new THREE.WebGLRenderTarget(width,height,{minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter});
+    const camera=new THREE.PerspectiveCamera(48,width/height,0.5,2200);
+    // A high trackside eye just beyond the line sees noses and the approaching
+    // pack. The finish structure remains visible behind the crossing cars.
+    camera.position.set((this.trackHalfWidth ?? R3D.HALF_W)-1,7,line+24);
+    camera.lookAt(0,0.9,line-7);
+    const old={target:r.getRenderTarget(),viewport:r.getViewport(new THREE.Vector4()),
+      scissor:r.getScissor(new THREE.Vector4()),scissorTest:r.getScissorTest(),autoClear:r.autoClear,
+      player:this.player,shadowAutoUpdate:r.shadowMap.autoUpdate};
+    const positions=this.cars.map(c=>[c.mesh,c.mesh.position.clone()]);
+    try {
+      // Windowed track/stands must be present at the leader even when the human
+      // is far behind. Restore those pools before the next chase/mirror pass.
+      this.player={z:line}; this._positionTrack(); this._positionGrandstands();
+      this.cars.forEach(c=>c.mesh.position.set(c.x,0,c.z));
+      r.setScissorTest(false); r.setRenderTarget(target); r.autoClear=true;
+      r.shadowMap.autoUpdate=false;
+      r.clear(true,true,true); r.render(this.scene,camera);
+      const pixels=new Uint8Array(width*height*4);
+      r.readRenderTargetPixels(target,0,0,width,height,pixels);
+      const canvas=document.createElement('canvas'); canvas.width=width; canvas.height=height;
+      const ctx=canvas.getContext('2d'), frame=ctx.createImageData(width,height);
+      for(let y=0;y<height;y++) frame.data.set(pixels.subarray((height-1-y)*width*4,(height-y)*width*4),y*width*4);
+      ctx.putImageData(frame,0,0);
+      this.finishPhoto={dataUrl:canvas.toDataURL('image/jpeg',0.88),leaderName:leader.label || 'The race winner',leaderId:leader.entrantId,grid:this._newsGrid,width,height};
+    } catch(error) {
+      // Photo failure must not interrupt classification or saving.
+      this.finishPhoto=null;
+      console.warn('Finish photograph unavailable:',error.message);
+    } finally {
+      this.player=old.player;
+      for(const [mesh,position] of positions) mesh.position.copy(position);
+      this._positionTrack(); this._positionGrandstands();
+      r.shadowMap.autoUpdate=old.shadowAutoUpdate;
+      r.setRenderTarget(old.target); r.setViewport(old.viewport); r.setScissor(old.scissor);
+      r.setScissorTest(old.scissorTest); r.autoClear=old.autoClear;
+      target.dispose();
     }
   }
 
@@ -2004,7 +2055,7 @@ class Race3DEngine {
       <div class="r3d-finish-box">
         <div class="r3d-finish-pos">${pos}${ordinal(pos)} Place</div>
         <div class="r3d-finish-msg">${msg}</div>
-        <button class="btn btn-primary btn-lg" onclick="window._r3dFinish(${pos})">Continue</button>
+        <button class="btn btn-primary btn-lg" onclick="window._r3dFinish(${pos})">${this.config.practiceTips ? 'Continue' : 'Next'}</button>
       </div>`;
     el.style.display = 'flex';
   }

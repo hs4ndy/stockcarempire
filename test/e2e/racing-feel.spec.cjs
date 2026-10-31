@@ -293,7 +293,7 @@ test('three complete career races preserve on-track classification in saved resu
     expect(summary.attempts).toBeGreaterThan(0);
     if (summary.minWarning !== null) expect(summary.minWarning).toBeGreaterThanOrEqual(2.8);
     await page.screenshot({ path: testInfo.outputPath('career-finish-' + run + '.png') });
-    await page.locator('#r3d-finish').getByRole('button', { name: 'Continue' }).click();
+    await page.locator('#r3d-finish').getByRole('button', { name: 'Next' }).click();
     await expect(page.locator('#results-modal')).toBeVisible();
     const saved = await page.evaluate(() => {
       const stored = JSON.parse(localStorage.getItem('sce_slot_0'));
@@ -316,7 +316,8 @@ test('three complete career races preserve on-track classification in saved resu
     }
     console.log(JSON.stringify({ race: run + 1, position: summary.position,
       passingAttempts: summary.attempts, incidents: summary.wrecks, engineMs: Math.round(summary.cpuMs) }));
-    await page.locator('#results-modal').getByRole('button', { name: /Continue|Close|Dashboard/i }).click();
+    await page.locator('#results-modal').getByRole('button', { name: /Next/i }).click();
+    await page.locator('#btn-close-news').click();
   }
   expect(errors).toEqual([]);
 });

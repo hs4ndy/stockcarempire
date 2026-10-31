@@ -148,7 +148,7 @@ test('a win opens a dedicated race winner menu', async ({ page }, testInfo) => {
   await expect(modal.locator('.race-win-driver')).toHaveText('Taylor Winner');
   await expect(modal.locator('.race-win-team')).toHaveText('Victory Test Racing');
   await expect(modal.locator('.race-win-stats')).toContainText('$15,000');
-  await expect(modal.getByRole('button', { name: 'Continue' })).toBeVisible();
+  await expect(modal.getByRole('button', { name: 'Next' })).toBeVisible();
   await expect(modal.locator('.big-pos')).toHaveCount(0);
   await page.screenshot({ path: testInfo.outputPath('race-winner-menu.png'), fullPage: true });
 

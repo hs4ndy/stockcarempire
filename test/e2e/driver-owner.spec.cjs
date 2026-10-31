@@ -44,8 +44,9 @@ for (const [name, url] of [
         newGame('Legacy Racing', 'Legacy Driver', 'Legacy Car');
         game.tutorial.status = 'skipped';
         game.money = 900000;
+        game.reputation = 100; // fixture must meet Jake's current hiring gate
         buyCar('Teammate');
-        hireDriver(HIREABLE_DRIVERS[0].id, game.cars[1].id);
+        if (!hireDriver(HIREABLE_DRIVERS[0].id, game.cars[1].id).ok) throw new Error('Fixture teammate hire failed');
         game.driverMode = role;
         game.hiredTeamId = game.season.aiTeams[0].id;
         game.hiredSalary = 8000;
@@ -61,7 +62,9 @@ for (const [name, url] of [
       expected.cars[0].assignedDriverId = 'player';
       expect(await page.evaluate(() => game)).toEqual(expected);
       await page.evaluate(() => showTab('carstats'));
-      await expect(page.locator('#main-content')).toContainText('Driver / Owner');
+      // Driver / Owner is the sole career; its redundant role label was removed.
+      await expect(page.locator('#main-content')).not.toContainText('Driver / Owner');
+      await expect(page.locator('#main-content')).toContainText('Legacy Driver');
       await expect(page.locator('#main-content')).not.toContainText('Team Manager');
       await page.evaluate(() => showTab('team'));
       await expect(page.locator('.team-roster')).toContainText('Legacy Driver');
@@ -76,6 +79,7 @@ for (const [name, url] of [
       expect(result.isPlayer).toBe(true);
       expect(await page.evaluate(() => JSON.parse(localStorage.getItem('sce_slot_0')).driverMode)).toBeUndefined();
       await page.locator('#btn-close-results').click();
+      await page.locator('#btn-close-news').click();
     }
 
     // A fully occupied legacy garage cannot race as an owner-only career,
@@ -85,7 +89,8 @@ for (const [name, url] of [
       newGame('Occupied Racing', 'Player Driver', 'Occupied Car');
       game.tutorial.status = 'skipped';
       game.money = 500000;
-      hireDriver(HIREABLE_DRIVERS[0].id, game.cars[0].id);
+      game.reputation = 100;
+      if (!hireDriver(HIREABLE_DRIVERS[0].id, game.cars[0].id).ok) throw new Error('Fixture seat assignment failed');
       game.driverMode = 'manager';
       localStorage.setItem('sce_slot_1', JSON.stringify(game));
       handleLoadFromSlot(1);
@@ -106,7 +111,7 @@ for (const [name, url] of [
     await expect(page.locator('.r3d-order-head')).toHaveText('Leaderboard');
     expect(await page.evaluate(() => window._r3d.config.playerCarId)).toBe(await page.evaluate(() => game.cars[0].id));
     await page.evaluate(() => { window._r3d.done = true; cancelAnimationFrame(window._r3d._raf); window._r3d._showFinish(1); });
-    await page.locator('#r3d-finish').getByRole('button', { name: 'Continue', exact: true }).click();
+    await page.locator('#r3d-finish').getByRole('button', { name: 'Next', exact: true }).click();
     await expect(page.locator('#results-modal')).toBeVisible();
     expect(await page.evaluate(() => game.season.calendar[0].playerResult.isPlayer)).toBe(true);
     expect(errors).toEqual([]);

@@ -1026,7 +1026,7 @@ function renderRaceResultsModal(results, events, playerResult) {
         ${results.length > 10 ? `<p class="muted-text small">${results.length - 10} more finishers...</p>` : ''}
       </div>
       <div class="modal-footer">
-        <button class="btn btn-primary" id="btn-close-results" onclick="handleCloseResults()">Continue</button>
+        <button class="btn btn-primary" id="btn-close-results" onclick="handleCloseResults()">Next</button>
       </div>
     </div>
   </div>`;

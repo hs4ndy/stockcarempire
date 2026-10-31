@@ -194,10 +194,9 @@ function handleStartQuickRace(fieldSize) {
     { playerColor: quickRaceCars[0].color, playerNumber: quickRaceCars[0].number, playerName: quickRacePlayers === 2 ? 'PLAYER 1' : 'YOU', dualPlayer: quickRacePlayers === 2, playerPower: 0.75, fieldSize,
       seriesId: SERIES.find(s => s.fieldSize === fieldSize)?.id || 'grassroots',
       difficulty: quickRaceDifficulty, aiEntries },
-    (pos) => {
-      showScreen('intro');
-      const d = difficultyById(quickRaceDifficulty).name;
-      toast(`Quick Race (${d}) finished - you placed ${pos}${ordinal(pos)}!`, pos <= 3 ? 'success' : 'info');
+    (pos, order, photo) => {
+      prepareQuickNews(SERIES.find(s=>s.fieldSize===fieldSize).id, order, photo);
+      showRaceNews();
     }
   );
 }
@@ -617,7 +616,7 @@ function handleStartRace() {
       qualifyAI:    true,
       aiEntries:    aiEntries.slice(0, series.fieldSize - 1),
     },
-    (playerPosition, trackOrder) => {
+    (playerPosition, trackOrder, finishPhoto) => {
       // 3D race complete - playerPosition is 1-indexed finish position
       // Run background sim to get AI standings (player result will be overridden)
       const simResult = simulateRace({ playerCarId, trackId: race.trackId });
@@ -659,6 +658,7 @@ function handleStartRace() {
 
       postRaceUpdate(pr, prize, allResults);
       saveGame();
+      prepareCareerNews(race, pr, finishPhoto);
 
       // Show results modal over the now-blank race screen
       showScreen('game');
@@ -702,6 +702,7 @@ function handleSimulateRace() {
   race.earnings     = pr.prize;
   postRaceUpdate(pr, pr.prize, simResult.results);
   saveGame();
+  prepareCareerNews(race, pr, null, true);
 
   showScreen('game');
   document.body.insertAdjacentHTML('beforeend',
@@ -841,6 +842,7 @@ function reportLoanNotes() {
 }
 
 function handleCloseResults() {
+  if (pendingRaceNews) { showRaceNews(); return; }
   document.getElementById('results-modal')?.remove();
   showScreen('game');
   updateHeader();
