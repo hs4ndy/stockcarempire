@@ -21,7 +21,7 @@ function createRaceNews(context, random = Math.random) {
   const choices=articles.filter(a=>a.id!==last);
   const article=choices[Math.min(choices.length-1,Math.floor(random()*choices.length))];
   raceNewsLastVariants.set(key,article.id);
-  raceNewsReporter=(raceNewsReporter+1+Math.floor(random()*3))%RACE_NEWS_REPORTERS.length;
+  raceNewsReporter=(raceNewsReporter+1+Math.floor(random()*(RACE_NEWS_REPORTERS.length-1)))%RACE_NEWS_REPORTERS.length;
   const fill=text=>text.replace(/\{(player|track|position)\}/g,(_,name)=>({player:context.playerName,track:context.trackName,position:newsOrdinal(context.position)}[name]));
   const paragraphs=context.dnf ? [
     `${context.playerName} was classified ${newsOrdinal(context.position)} in the ${context.seriesName} at ${context.trackName}, with a DNF recorded. The entry did not finish the race.`,
@@ -55,23 +55,20 @@ function prepareCareerNews(race, result, photo, simulated=false) {
       nextTrack:next ? TRACKS.find(t=>t.id===next.trackId)?.name : null})]};
 }
 
-function prepareQuickNews(seriesId, order, photo) {
-  const series=SERIES.find(s=>s.id===seriesId);
-  pendingRaceNews={mode:'quick',photo:photo || null,simulated:false,
-    reports:order.filter(r=>r.isPlayer || r.entrantId==='player2').sort((a,b)=>Number(a.entrantId==='player2')-Number(b.entrantId==='player2')).map(r=>createRaceNews({
-      seriesId,seriesName:series.name,playerName:r.label==='YOU' ? 'Player' : (r.label || 'Player').replace('PLAYER','Player'),
-      trackName:'the Quick Race circuit',position:r.position,dnf:r.dnf,
-      winner:order[0]?.label==='YOU' ? 'Player' : order[0]?.label?.replace('PLAYER','Player'),gridPosition:photo?.grid?.[r.entrantId]
-    }))};
-}
-
 function showRaceNews(reader=0) {
   if (!pendingRaceNews?.reports.length) { finishRaceNews(); return; }
   raceNewsReader=Math.min(reader,pendingRaceNews.reports.length-1);
   document.getElementById('results-modal')?.remove();
-  showScreen('race-news');
-  document.getElementById('race-news-content').innerHTML=renderRaceNews(pendingRaceNews,raceNewsReader);
-  window.scrollTo(0,0);
+  document.getElementById('race-news-modal')?.remove();
+  showScreen(pendingRaceNews.mode==='career' ? 'game' : 'intro');
+  document.querySelectorAll('.screen').forEach(s=>s.inert=true);
+  document.body.insertAdjacentHTML('beforeend', `<div class="modal-overlay" id="race-news-modal" role="dialog" aria-modal="true" aria-labelledby="news-modal-title"><div class="modal modal-wide race-news-modal"><div class="modal-header"><h3 id="news-modal-title">Race News</h3></div><div class="modal-body" id="race-news-content">${renderRaceNews(pendingRaceNews,raceNewsReader)}</div><div class="modal-footer"><button class="btn btn-primary" id="btn-close-news" onclick="finishRaceNews()">${pendingRaceNews.mode==='career' ? 'Continue to Career' : 'Back to Menu'}</button></div></div></div>`);
+  document.getElementById('race-news-modal').onkeydown=e=>{
+    if(e.key!=='Tab') return;
+    const buttons=[...e.currentTarget.querySelectorAll('button')],first=buttons[0],last=buttons[buttons.length-1];
+    if(e.shiftKey && (document.activeElement===first || document.activeElement.id==='news-headline')) {e.preventDefault();last.focus();}
+    else if(!e.shiftKey && document.activeElement===last) {e.preventDefault();first.focus();}
+  };
   document.getElementById('news-headline')?.focus({preventScroll:true});
 }
 
@@ -80,9 +77,9 @@ function renderRaceNews(news,reader) {
   const photo=news.photo;
   const image=photo?.dataUrl?.startsWith('data:image/jpeg;base64,') ? `<figure class="race-news-photo">
     <img src="${esc(photo.dataUrl)}" width="1024" height="576" alt="Trackside photograph of ${esc(photo.leaderName)} crossing the finish line.">
-    <figcaption>${esc(photo.leaderName==='YOU' ? 'Player' : photo.leaderName.replace('PLAYER','Player'))} takes the checkered flag. Finish-line camera · Race News</figcaption>
+    <figcaption>${esc(photo.leaderName==='YOU' ? 'Player' : photo.leaderName.replace('PLAYER','Player'))} takes the checkered flag. Photo by Gavin Turnage</figcaption>
   </figure>` : `<div class="race-news-no-photo"><strong>Finish photo unavailable</strong><p>${news.simulated ? 'This race was simulated, so no trackside photograph was captured.' : 'A finish-line photograph could not be captured for this race.'}</p></div>`;
-  return `<header class="race-news-header"><h1>Race News</h1><span>${news.mode==='career' ? 'Career' : 'Quick Race'}</span></header>
+  return `
     ${news.reports.length>1 ? `<div class="race-news-readers" role="group" aria-label="Player report">${news.reports.map((r,i)=>`<button class="btn btn-secondary" aria-pressed="${i===reader}" onclick="showRaceNews(${i})">${esc(r.playerName)}</button>`).join('')}</div>` : ''}
     <article class="race-news-article" aria-labelledby="news-headline">
       <h2 id="news-headline" tabindex="-1">${esc(report.headline)}</h2>
@@ -95,14 +92,14 @@ function renderRaceNews(news,reader) {
         <blockquote><p>“${esc(report.quote)}”</p><cite>${esc(report.playerName)}</cite></blockquote>
         <p>${esc(report.paragraphs[2])}</p><p>${esc(report.closing)}</p>
       </div>
-    </article>
-    <footer class="race-news-footer"><button class="btn btn-primary btn-lg" id="btn-close-news" onclick="finishRaceNews()">${news.mode==='career' ? 'Continue to Career' : 'Back to Menu'}</button></footer>`;
+    </article>`;
 }
 
 function finishRaceNews() {
   const mode=pendingRaceNews?.mode || 'career';
   pendingRaceNews=null;
-  document.getElementById('race-news-content').replaceChildren();
+  document.getElementById('race-news-modal')?.remove();
+  document.querySelectorAll('.screen').forEach(s=>s.inert=false);
   if(mode==='quick' || !game) { showScreen('intro'); document.getElementById('btn-quick-race')?.focus(); return; }
   showScreen('game'); updateHeader(); renderTab('dashboard');
   reportLoanNotes(); checkSaveReminder();

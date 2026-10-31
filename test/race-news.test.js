@@ -6,7 +6,7 @@ function json(c,exp){return JSON.parse(vm.runInContext(`JSON.stringify(${exp})`,
 
 test('270 authored articles cover every valid finish in all series',()=>{
  const c=context();
- assert.deepEqual(json(c,'RACE_NEWS_REPORTERS'),['Sophia Calabrese','Gavin Turnage','Michael Williams','Kenzie Wright']);
+ assert.deepEqual(json(c,'RACE_NEWS_REPORTERS'),['Sophia Calabrese','Michael Williams','Kenzie Wright']);
  const reports=json(c,`SERIES.flatMap(s=>Array.from({length:s.fieldSize},(_,i)=>{
    const choices=RACE_NEWS_ARTICLES[s.id][i+1];
    return {pos:i+1,series:s.id,count:choices.length,ids:choices.map(a=>a.id),articles:choices};
@@ -44,6 +44,5 @@ test('DNF reports never celebrate a classified win; final event and split humans
  const c=context();
  const d=json(c,`createRaceNews({seriesId:'grassroots',seriesName:'Grassroots Cup',playerName:'Driver',trackName:'Track',position:1,dnf:true,points:0,standing:{position:4,points:80}},()=>0)`);
  assert.match(d.headline,/DNF/);assert.match(d.paragraphs[0],/did not finish/);assert.match(d.closing,/season are complete/);assert.ok(!d.paragraphs.join(' ').includes('victory'));
- vm.runInContext(`prepareQuickNews('premier',[{label:'PLAYER 1',isPlayer:true,position:40},{label:'PLAYER 2',entrantId:'player2',position:1},{label:'AI',position:2}],null)`,c);
- assert.deepEqual(json(c,'pendingRaceNews.reports.map(r=>r.position)'),[40,1]);
+
 });

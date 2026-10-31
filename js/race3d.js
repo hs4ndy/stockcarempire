@@ -1644,7 +1644,7 @@ class Race3DEngine {
 
     // One capture at the first crossing, not when the human later finishes.
     // Practice has no news flow. No extra render work during ordinary racing.
-    if (!this.finishOrder.length && !this.config?.practiceTips && this.renderer) this._captureFinishPhoto(crossed[0]);
+    if (!this.finishOrder.length && this.config?.qualifyAI && this.renderer) this._captureFinishPhoto(crossed[0]);
 
     for (const car of crossed) {
       car.finished = true;
@@ -1657,7 +1657,7 @@ class Race3DEngine {
         this._updateDualHUD(1);
         const p1 = this.finishOrder.indexOf(this.player)+1, p2 = this.finishOrder.indexOf(this.player2)+1;
         const el = document.getElementById('r3d-finish');
-        el.innerHTML = `<div class="r3d-finish-box"><h2>Race Results</h2><p>Player 1 · #${this.player.number} · ${p1}${ordinal(p1)}</p><p>Player 2 · #${this.player2.number} · ${p2}${ordinal(p2)}</p><button class="btn btn-primary btn-lg" onclick="window._r3dFinish(${p1})">Next</button></div>`;
+        el.innerHTML = `<div class="r3d-finish-box"><h2>Race Results</h2><p>Player 1 · #${this.player.number} · ${p1}${ordinal(p1)}</p><p>Player 2 · #${this.player2.number} · ${p2}${ordinal(p2)}</p><button class="btn btn-primary btn-lg" onclick="window._r3dFinish(${p1})">Continue</button></div>`;
         el.style.display = 'flex';
       }
       return;
@@ -2055,7 +2055,7 @@ class Race3DEngine {
       <div class="r3d-finish-box">
         <div class="r3d-finish-pos">${pos}${ordinal(pos)} Place</div>
         <div class="r3d-finish-msg">${msg}</div>
-        <button class="btn btn-primary btn-lg" onclick="window._r3dFinish(${pos})">${this.config.practiceTips ? 'Continue' : 'Next'}</button>
+        <button class="btn btn-primary btn-lg" onclick="window._r3dFinish(${pos})">${this.config.qualifyAI ? 'Next' : 'Continue'}</button>
       </div>`;
     el.style.display = 'flex';
   }

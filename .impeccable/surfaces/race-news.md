@@ -19,3 +19,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 ## Finish record
 
 October31 VERSION97: independent finish review disposition **ship**, no material fixes. Reviewed desktop1440, phone390 with photograph, and phone390 offline simulated final-event/long-name fallback. Library sampled; all270 variant counts checked programmatically. Scope is this extension, not whole-game balance or physical Chromebook performance. Photographs are runtime scene captures, not shipping raster assets. Incumbent DESIGN.md/sidecar remain the visual authority.
+
+## VERSION98 requested refinement
+
+Career-only results-style scrolling modal, fixed header/footer. Gavin is photographer only; Sophia/Michael/Kenzie write. Quick skips news and photo capture. Existing tokens preserved; this replaces the97 full-page composition.

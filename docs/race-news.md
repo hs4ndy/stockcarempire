@@ -25,3 +25,11 @@ October 31: syntax and all 89 Node regressions passed, with four article tests r
 Independent Impeccable finish review: **ship**, no material fixes for this extension, based on desktop/mobile photo and simulated fallback captures plus source/library coverage. The documentation check found no new global tokens or approved system change; incumbent DESIGN.md and its sidecar remain unchanged. Pre-existing HUD opacity wording drift was recorded rather than repaired outside this task.
 
 Human article/style approval and physical Chromebook finish-capture latency are not established by automated tests. Photo capture is a single synchronous readback at the leader's finish, so a brief one-time pause may vary by hardware. There is no per-frame screenshot work.
+
+## VERSION98 supersedes the presentation and mode coverage above
+
+VERSION98: Race News is Career-only, displayed in the existing results-style modal with a scrolling body and fixed header/Continue footer. Background screens are inert while open; keyboard focus cycles inside. Quick single/dual returns directly to menu and does not capture a news photo. Authors: Sophia Calabrese, Michael Williams, Kenzie Wright. Gavin Turnage always receives the photograph credit and never an article byline. The270-variant library and Career classification/save behavior are preserved.
+
+Checks: npm run check; four article Node tests; four targeted browser cases all passed (played Career/photo/dialog, offline phone simulation, single and dual Quick without news). Desktop1440/phone390 captures inspected. Full Node/browser suites not rerun for this UI follow-up. Offline HTML/ZIP parity verified. Review/delivery recorded below. Physical Chromebook timing remains unverified; original human task stays in Open Checks.
+
+Release SHA256 4a89fb14feff92152e960b810e2140f78f08d25c4897498fec22fe661cdfa3ad.

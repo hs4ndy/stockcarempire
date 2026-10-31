@@ -300,10 +300,6 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .modal-wide { max-width: 760px; }
 
 /* Race reporting shares the game system, with a quieter reading measure. */
-.race-news-page { max-width: 960px; margin: 0 auto; padding: 32px 32px 48px; }
-.race-news-header { display: flex; align-items: baseline; justify-content: space-between; gap: 24px; padding-bottom: 20px; margin-bottom: 32px; border-bottom: 1px solid var(--line); }
-.race-news-header h1 { font: 700 30px/1.1 var(--font-display); }
-.race-news-header > span, .race-news-byline { color: var(--text-dim); }
 .race-news-article h2 { max-width: 24ch; font: 700 clamp(34px, 4.5vw, 56px)/1.05 var(--font-display); letter-spacing: -.01em; overflow-wrap: anywhere; text-wrap: balance; }
 .race-news-byline { margin: 16px 0 24px; }
 .race-news-photo { margin: 0 0 32px; }
@@ -315,16 +311,12 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .race-news-copy blockquote { margin: 32px 0; padding: 24px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: var(--text); }
 .race-news-copy blockquote p { font: 600 28px/1.25 var(--font-display); margin-bottom: 12px; }
 .race-news-copy cite { font-size: 15px; font-style: normal; color: var(--text-dim); }
-.race-news-footer { max-width: 70ch; margin: 32px auto 0; }
-.race-news-footer .btn { width: 100%; min-height: 48px; }
 .race-news-no-photo { padding: 32px; background: var(--panel); border-radius: var(--radius); margin-bottom: 32px; }
 .race-news-no-photo p { margin-top: 8px; color: var(--text-dim); }
 .race-news-readers { display: flex; gap: 12px; margin-bottom: 24px; }
 .race-news-readers .btn { flex: 1; }
 .race-news-readers [aria-pressed="true"] { color: var(--bg); background: var(--text); }
 @media (max-width: 600px) {
-  .race-news-page { padding: 24px 20px 32px; }
-  .race-news-header { margin-bottom: 24px; }
   .race-news-copy { font-size: 16px; line-height: 1.6; }
   .race-news-copy blockquote p { font-size: 26px; }
   .race-news-no-photo { padding: 24px; }
@@ -979,6 +971,10 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 
 .intro-version.logo-beta { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); margin: 0; white-space: nowrap; }
 
+.race-news-modal .modal-body { overscroll-behavior: contain; }
+.race-news-modal .race-news-article h2 { font-size: clamp(30px, 4vw, 40px); }
+.race-news-modal .race-news-copy { font-size: 16px; }
+
 </style>
 </head>
 <body>
@@ -1019,7 +1015,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 97</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 98</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -1165,10 +1161,6 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
     <!-- Race3D injects canvas + HUD here -->
   </div>
 </div>
-
-<section id="screen-race-news" class="screen hidden" aria-label="Post-race news">
-  <main id="race-news-content" class="race-news-page"></main>
-</section>
 
 <!-- Toast container (always present) -->
 <div id="toast-container"></div>
@@ -4858,7 +4850,7 @@ class Race3DEngine {
 
     // One capture at the first crossing, not when the human later finishes.
     // Practice has no news flow. No extra render work during ordinary racing.
-    if (!this.finishOrder.length && !this.config?.practiceTips && this.renderer) this._captureFinishPhoto(crossed[0]);
+    if (!this.finishOrder.length && this.config?.qualifyAI && this.renderer) this._captureFinishPhoto(crossed[0]);
 
     for (const car of crossed) {
       car.finished = true;
@@ -4871,7 +4863,7 @@ class Race3DEngine {
         this._updateDualHUD(1);
         const p1 = this.finishOrder.indexOf(this.player)+1, p2 = this.finishOrder.indexOf(this.player2)+1;
         const el = document.getElementById('r3d-finish');
-        el.innerHTML = `<div class="r3d-finish-box"><h2>Race Results</h2><p>Player 1 · #${this.player.number} · ${p1}${ordinal(p1)}</p><p>Player 2 · #${this.player2.number} · ${p2}${ordinal(p2)}</p><button class="btn btn-primary btn-lg" onclick="window._r3dFinish(${p1})">Next</button></div>`;
+        el.innerHTML = `<div class="r3d-finish-box"><h2>Race Results</h2><p>Player 1 · #${this.player.number} · ${p1}${ordinal(p1)}</p><p>Player 2 · #${this.player2.number} · ${p2}${ordinal(p2)}</p><button class="btn btn-primary btn-lg" onclick="window._r3dFinish(${p1})">Continue</button></div>`;
         el.style.display = 'flex';
       }
       return;
@@ -5269,7 +5261,7 @@ class Race3DEngine {
       <div class="r3d-finish-box">
         <div class="r3d-finish-pos">${pos}${ordinal(pos)} Place</div>
         <div class="r3d-finish-msg">${msg}</div>
-        <button class="btn btn-primary btn-lg" onclick="window._r3dFinish(${pos})">${this.config.practiceTips ? 'Continue' : 'Next'}</button>
+        <button class="btn btn-primary btn-lg" onclick="window._r3dFinish(${pos})">${this.config.qualifyAI ? 'Next' : 'Continue'}</button>
       </div>`;
     el.style.display = 'flex';
   }
@@ -6807,7 +6799,7 @@ function attachTabListeners(tabName) {
 <script>
 /* js/news-data.js */
 // In-game fictional journalism. Generated by tools/build_news.cjs; edit authored copy there.
-const RACE_NEWS_REPORTERS = ["Sophia Calabrese","Gavin Turnage","Michael Williams","Kenzie Wright"];
+const RACE_NEWS_REPORTERS = ["Sophia Calabrese","Michael Williams","Kenzie Wright"];
 const RACE_NEWS_ARTICLES = {
   "grassroots": {
     "1": [
@@ -9445,7 +9437,7 @@ function createRaceNews(context, random = Math.random) {
   const choices=articles.filter(a=>a.id!==last);
   const article=choices[Math.min(choices.length-1,Math.floor(random()*choices.length))];
   raceNewsLastVariants.set(key,article.id);
-  raceNewsReporter=(raceNewsReporter+1+Math.floor(random()*3))%RACE_NEWS_REPORTERS.length;
+  raceNewsReporter=(raceNewsReporter+1+Math.floor(random()*(RACE_NEWS_REPORTERS.length-1)))%RACE_NEWS_REPORTERS.length;
   const fill=text=>text.replace(/\{(player|track|position)\}/g,(_,name)=>({player:context.playerName,track:context.trackName,position:newsOrdinal(context.position)}[name]));
   const paragraphs=context.dnf ? [
     `${context.playerName} was classified ${newsOrdinal(context.position)} in the ${context.seriesName} at ${context.trackName}, with a DNF recorded. The entry did not finish the race.`,
@@ -9479,23 +9471,20 @@ function prepareCareerNews(race, result, photo, simulated=false) {
       nextTrack:next ? TRACKS.find(t=>t.id===next.trackId)?.name : null})]};
 }
 
-function prepareQuickNews(seriesId, order, photo) {
-  const series=SERIES.find(s=>s.id===seriesId);
-  pendingRaceNews={mode:'quick',photo:photo || null,simulated:false,
-    reports:order.filter(r=>r.isPlayer || r.entrantId==='player2').sort((a,b)=>Number(a.entrantId==='player2')-Number(b.entrantId==='player2')).map(r=>createRaceNews({
-      seriesId,seriesName:series.name,playerName:r.label==='YOU' ? 'Player' : (r.label || 'Player').replace('PLAYER','Player'),
-      trackName:'the Quick Race circuit',position:r.position,dnf:r.dnf,
-      winner:order[0]?.label==='YOU' ? 'Player' : order[0]?.label?.replace('PLAYER','Player'),gridPosition:photo?.grid?.[r.entrantId]
-    }))};
-}
-
 function showRaceNews(reader=0) {
   if (!pendingRaceNews?.reports.length) { finishRaceNews(); return; }
   raceNewsReader=Math.min(reader,pendingRaceNews.reports.length-1);
   document.getElementById('results-modal')?.remove();
-  showScreen('race-news');
-  document.getElementById('race-news-content').innerHTML=renderRaceNews(pendingRaceNews,raceNewsReader);
-  window.scrollTo(0,0);
+  document.getElementById('race-news-modal')?.remove();
+  showScreen(pendingRaceNews.mode==='career' ? 'game' : 'intro');
+  document.querySelectorAll('.screen').forEach(s=>s.inert=true);
+  document.body.insertAdjacentHTML('beforeend', `<div class="modal-overlay" id="race-news-modal" role="dialog" aria-modal="true" aria-labelledby="news-modal-title"><div class="modal modal-wide race-news-modal"><div class="modal-header"><h3 id="news-modal-title">Race News</h3></div><div class="modal-body" id="race-news-content">${renderRaceNews(pendingRaceNews,raceNewsReader)}</div><div class="modal-footer"><button class="btn btn-primary" id="btn-close-news" onclick="finishRaceNews()">${pendingRaceNews.mode==='career' ? 'Continue to Career' : 'Back to Menu'}</button></div></div></div>`);
+  document.getElementById('race-news-modal').onkeydown=e=>{
+    if(e.key!=='Tab') return;
+    const buttons=[...e.currentTarget.querySelectorAll('button')],first=buttons[0],last=buttons[buttons.length-1];
+    if(e.shiftKey && (document.activeElement===first || document.activeElement.id==='news-headline')) {e.preventDefault();last.focus();}
+    else if(!e.shiftKey && document.activeElement===last) {e.preventDefault();first.focus();}
+  };
   document.getElementById('news-headline')?.focus({preventScroll:true});
 }
 
@@ -9504,9 +9493,9 @@ function renderRaceNews(news,reader) {
   const photo=news.photo;
   const image=photo?.dataUrl?.startsWith('data:image/jpeg;base64,') ? `<figure class="race-news-photo">
     <img src="${esc(photo.dataUrl)}" width="1024" height="576" alt="Trackside photograph of ${esc(photo.leaderName)} crossing the finish line.">
-    <figcaption>${esc(photo.leaderName==='YOU' ? 'Player' : photo.leaderName.replace('PLAYER','Player'))} takes the checkered flag. Finish-line camera · Race News</figcaption>
+    <figcaption>${esc(photo.leaderName==='YOU' ? 'Player' : photo.leaderName.replace('PLAYER','Player'))} takes the checkered flag. Photo by Gavin Turnage</figcaption>
   </figure>` : `<div class="race-news-no-photo"><strong>Finish photo unavailable</strong><p>${news.simulated ? 'This race was simulated, so no trackside photograph was captured.' : 'A finish-line photograph could not be captured for this race.'}</p></div>`;
-  return `<header class="race-news-header"><h1>Race News</h1><span>${news.mode==='career' ? 'Career' : 'Quick Race'}</span></header>
+  return `
     ${news.reports.length>1 ? `<div class="race-news-readers" role="group" aria-label="Player report">${news.reports.map((r,i)=>`<button class="btn btn-secondary" aria-pressed="${i===reader}" onclick="showRaceNews(${i})">${esc(r.playerName)}</button>`).join('')}</div>` : ''}
     <article class="race-news-article" aria-labelledby="news-headline">
       <h2 id="news-headline" tabindex="-1">${esc(report.headline)}</h2>
@@ -9519,14 +9508,14 @@ function renderRaceNews(news,reader) {
         <blockquote><p>“${esc(report.quote)}”</p><cite>${esc(report.playerName)}</cite></blockquote>
         <p>${esc(report.paragraphs[2])}</p><p>${esc(report.closing)}</p>
       </div>
-    </article>
-    <footer class="race-news-footer"><button class="btn btn-primary btn-lg" id="btn-close-news" onclick="finishRaceNews()">${news.mode==='career' ? 'Continue to Career' : 'Back to Menu'}</button></footer>`;
+    </article>`;
 }
 
 function finishRaceNews() {
   const mode=pendingRaceNews?.mode || 'career';
   pendingRaceNews=null;
-  document.getElementById('race-news-content').replaceChildren();
+  document.getElementById('race-news-modal')?.remove();
+  document.querySelectorAll('.screen').forEach(s=>s.inert=false);
   if(mode==='quick' || !game) { showScreen('intro'); document.getElementById('btn-quick-race')?.focus(); return; }
   showScreen('game'); updateHeader(); renderTab('dashboard');
   reportLoanNotes(); checkSaveReminder();
@@ -10000,9 +9989,9 @@ function handleStartQuickRace(fieldSize) {
     { playerColor: quickRaceCars[0].color, playerNumber: quickRaceCars[0].number, playerName: quickRacePlayers === 2 ? 'PLAYER 1' : 'YOU', dualPlayer: quickRacePlayers === 2, playerPower: 0.75, fieldSize,
       seriesId: SERIES.find(s => s.fieldSize === fieldSize)?.id || 'grassroots',
       difficulty: quickRaceDifficulty, aiEntries },
-    (pos, order, photo) => {
-      prepareQuickNews(SERIES.find(s=>s.fieldSize===fieldSize).id, order, photo);
-      showRaceNews();
+    (pos) => {
+      showScreen('intro');
+      toast(`Quick Race finished - you placed ${pos}${ordinal(pos)}!`, pos <= 3 ? 'success' : 'info');
     }
   );
 }

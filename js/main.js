@@ -194,9 +194,9 @@ function handleStartQuickRace(fieldSize) {
     { playerColor: quickRaceCars[0].color, playerNumber: quickRaceCars[0].number, playerName: quickRacePlayers === 2 ? 'PLAYER 1' : 'YOU', dualPlayer: quickRacePlayers === 2, playerPower: 0.75, fieldSize,
       seriesId: SERIES.find(s => s.fieldSize === fieldSize)?.id || 'grassroots',
       difficulty: quickRaceDifficulty, aiEntries },
-    (pos, order, photo) => {
-      prepareQuickNews(SERIES.find(s=>s.fieldSize===fieldSize).id, order, photo);
-      showRaceNews();
+    (pos) => {
+      showScreen('intro');
+      toast(`Quick Race finished - you placed ${pos}${ordinal(pos)}!`, pos <= 3 ? 'success' : 'info');
     }
   );
 }
