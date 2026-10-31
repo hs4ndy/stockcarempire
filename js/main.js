@@ -19,6 +19,7 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 function enterGame() {
+  if (!game) return;
   try {
     showScreen('game');
     updateHeader();
@@ -854,6 +855,7 @@ function handleSaveGame() {
 }
 
 function showSaveModal() {
+  if (!game) return;
   document.body.insertAdjacentHTML('beforeend', renderSaveModal());
 }
 
@@ -862,6 +864,7 @@ function showLoadModal() {
 }
 
 function handleSaveToSlot(slot) {
+  if (!game) return;
   const previousSlot = currentSlot;
   if (!saveToSlot(slot)) {
     currentSlot = previousSlot;
@@ -913,7 +916,13 @@ document.addEventListener('keydown', e => {
 
 function returnToMainMenu() {
   if (!game) return;
+  if (currentSlot === null || currentSlot === undefined) {
+    showSaveModal();
+    toast('Save your career to a slot before returning to the menu.', 'info');
+    return;
+  }
   if (currentSlot !== null && !saveToSlot(currentSlot)) { toast('Could not save your career. Try saving again before leaving.', 'error'); return; }
-  document.getElementById('btn-continue-career').hidden = false;
+  game = null;
+  currentSlot = null;
   showScreen('intro');
 }

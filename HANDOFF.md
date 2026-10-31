@@ -149,8 +149,10 @@ Before the October 8 redesign commit, remote tip was verified at `5af567f`. Hist
 
 This replaces the obsolete September 5 Claude handoff. `HANDOFF_SOURCE.md` remains the historical `ca0245c` snapshot, not current source. Git preserves the old handoff. Its claims about missing tooling/tests/assets, stub-only rendering, fonts, deployment uncertainty, and tutorial absence are stale.
 
-Version rule (user request, 2026-10-29): Main-menu footer currently BETA / VERSION 95. Increment this displayed number by one with each subsequent committed game update; update source and offline releases together. Treat this as the project's display counter, not a verified Git-history count.
+Version rule (user request, 2026-10-29): Main-menu footer currently BETA / VERSION 96. Increment this displayed number by one with each subsequent committed game update; update source and offline releases together. Treat this as the project's display counter, not a verified Git-history count.
 
 VERSION94 initial tuning implemented2026-10-30. Balance acceptance failed: see docs/rebalance-v94-results.md and vault Sessions/2026-10-30 - Version94 fair racing.md for measured shortfalls, actual checks and delivery. Next committed game update increments footer to95. Detailed continuity remains at C:\Users\harri\OneDrive\Documents\vaults\stockcarempire.
 
 VERSION95 (2026-10-30): practical close-wake recovery, stronger in-pack AI, sustained pursuit and achievable passes; three consistent Career contenders plus between-event rival preparation (legacy rivals could wear to zero). Career AI qualifying removes automatic teammate front slots. Player money/repair rules, save format, actual classification and Chromebook renderer preserved. Details: docs/rebalance-v95-results.md and vault Sessions/2026-10-30 - Version95 recovery and championship rivals.md. Next committed game update96.
+
+VERSION96: Continue Career removed. Menu saves the bound career then clears game/currentSlot; unsaved careers must choose a slot first, failed saves keep the career open. Reopen through Load Game. Idle-menu save handlers are guarded. See vault Sessions/2026-10-30 - Version96 menu career closure.md. Next game update97.

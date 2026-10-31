@@ -948,7 +948,6 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 
 .intro-version.logo-beta { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); margin: 0; white-space: nowrap; }
 
-#btn-continue-career[hidden] { display: none; }
 
 </style>
 </head>
@@ -977,7 +976,6 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
       </div>
 
       <div class="intro-buttons">
-        <button class="btn btn-primary btn-lg" id="btn-continue-career" onclick="enterGame()" hidden>Continue Career</button>
         <button class="btn-game btn-game-primary" id="btn-start-new">
           <span>New Career</span>
         </button>
@@ -991,7 +989,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 95</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 96</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -7012,6 +7010,7 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 function enterGame() {
+  if (!game) return;
   try {
     showScreen('game');
     updateHeader();
@@ -7847,6 +7846,7 @@ function handleSaveGame() {
 }
 
 function showSaveModal() {
+  if (!game) return;
   document.body.insertAdjacentHTML('beforeend', renderSaveModal());
 }
 
@@ -7855,6 +7855,7 @@ function showLoadModal() {
 }
 
 function handleSaveToSlot(slot) {
+  if (!game) return;
   const previousSlot = currentSlot;
   if (!saveToSlot(slot)) {
     currentSlot = previousSlot;
@@ -7906,8 +7907,14 @@ document.addEventListener('keydown', e => {
 
 function returnToMainMenu() {
   if (!game) return;
+  if (currentSlot === null || currentSlot === undefined) {
+    showSaveModal();
+    toast('Save your career to a slot before returning to the menu.', 'info');
+    return;
+  }
   if (currentSlot !== null && !saveToSlot(currentSlot)) { toast('Could not save your career. Try saving again before leaving.', 'error'); return; }
-  document.getElementById('btn-continue-career').hidden = false;
+  game = null;
+  currentSlot = null;
   showScreen('intro');
 }
 
