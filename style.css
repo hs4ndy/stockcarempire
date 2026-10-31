@@ -286,7 +286,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .race-news-photo { margin: 0 0 32px; }
 .race-news-photo img { display: block; width: 100%; height: auto; aspect-ratio: 16/9; object-fit: cover; border-radius: var(--radius); }
 .race-news-photo figcaption { margin-top: 10px; font-size: 14px; color: var(--text-mute); }
-.race-news-copy { max-width: 70ch; margin: 0 auto; font-size: 18px; line-height: 1.65; color: var(--text-dim); overflow-wrap: anywhere; }
+.race-news-copy { max-width: 70ch; margin: 0; font-size: 18px; line-height: 1.65; color: var(--text-dim); overflow-wrap: anywhere; }
 .race-news-copy > p { margin-bottom: 24px; }
 .race-news-copy .race-news-lead { color: var(--text); font-weight: 500; }
 .race-news-copy blockquote { margin: 32px 0; padding: 24px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: var(--text); }
