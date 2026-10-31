@@ -567,6 +567,7 @@ function handleStartRace() {
     });
   });
 
+  const contenders = championshipContenderIds();
   game.season.aiTeams.forEach(team => {
     team.cars.forEach(car => {
       aiEntries.push({
@@ -575,7 +576,9 @@ function handleStartRace() {
         teamName:  team.name,
         color:     car.color || team.color,
         number:    nextNum(car.number),
-        power:     clamp(car.power * (car.condition / 100), 0.25, 0.95),
+        power:     careerRivalPower(car, contenders.has(car.id)),
+        raceNerve: contenders.has(car.id) ? 1.12 : undefined,
+        isContender: contenders.has(car.id),
       });
     });
   });
@@ -593,6 +596,9 @@ function handleStartRace() {
   }
 
   // Switch to race screen and launch 3D
+  // Retain owned entries and the season's contenders when a full field must
+  // leave out ordinary rivals. Grid order is determined separately below.
+  aiEntries.sort((a,b) => (b.isTeammate ? 2 : b.isContender ? 1 : 0) - (a.isTeammate ? 2 : a.isContender ? 1 : 0));
   showScreen('game-race');
 
   launch3DRace(
@@ -607,6 +613,7 @@ function handleStartRace() {
       difficulty:   game.difficulty || DEFAULT_DIFFICULTY,
       onQuit: () => { game = JSON.parse(preRaceState); saveGame(); showScreen('game'); updateHeader(); showTab('dashboard'); toast('Race cancelled. Entry fees refunded; career unchanged.'); },
       qualifyBoost: analystCount(),   // Data Analysts sharpen the grid draw
+      qualifyAI:    true,
       aiEntries:    aiEntries.slice(0, series.fieldSize - 1),
     },
     (playerPosition, trackOrder) => {

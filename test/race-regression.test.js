@@ -452,7 +452,7 @@ test('AI commits to earned passes, accepts smaller late runs, and respects occup
   const context = physicsContext();
   const states = readJson(context, `(() => {
     const run = (aggro, closing, blocked) => {
-      const p = car('player', 0, 1000, 190), b = car('b', 0, 980, 190 + closing);
+      const p = car('player', 0, 1000, 190), b = car('b', 0, 988, 190 + closing);
       const cars = [p, b];
       if (blocked) cars.push(car('l', -3, 980), car('r', 3, 980));
       const e = engine(cars);
@@ -887,7 +887,7 @@ test('opening acceleration blends from AI response back to normal race response'
 });
 test('AI and human recovery obey the same final speed cap in every series',()=>{
  const c=physicsContext();
- const r=readJson(c,`[.9,1].map(scale=>{const p=car('player',0,0,100),a=car('a',0,1000,100),e=engine([p,a],'allout');e.speedScale=scale;p.draftBoost=a.draftBoost=300;for(let i=0;i<600;i++){e._updatePlayer(1/60);e._updateAI(1/60);}return {p:p.speed,a:a.speed,limit:270*scale};})`);
+ const r=readJson(c,`[.9,1].map(scale=>{const p=car('player',0,0,100),a=car('a',0,1000,100),e=engine([p,a],'allout');e.speedScale=scale;p.draftBoost=a.draftBoost=300;for(let i=0;i<600;i++){e._updatePlayer(1/60);e._updateAI(1/60);}return {p:p.speed,a:a.speed,limit:290*scale};})`);
  for(const v of r){assert.ok(v.p<=v.limit+1e-8);assert.ok(v.a<=v.limit+1e-8);}
 });
 test('career power remap lifts stock equipment and preserves monotonic upgrade gains',()=>{
@@ -897,11 +897,11 @@ test('career power remap lifts stock equipment and preserves monotonic upgrade g
 
 test('owned teammates use the ordinary rival clean-air curve',()=>{
  const c=physicsContext();const r=readJson(c,`(()=>{const p=car('player',0,0),b=car('b',0,10),e=engine([p,b],'pro');b.isTeammate=true;b.power=.99;return e._naturalAIPace(b);})()`);
- assert.ok(Math.abs(r-210*(.86+.99*.15)*1.05)<1e-8);
+ assert.ok(Math.abs(r-210*(.845+.99*.215)*1.05)<1e-8);
 });
 test('AI recovery references natural pace rather than a boosted leader speed',()=>{
- const c=physicsContext();const r=readJson(c,`(()=>{const p=car('player',0,6000,270),b=car('b',0,5500,200),e=engine([p,b],'pro');e._chooseAILine=()=>{};for(let i=0;i<300;i++)e._updateAI(1/60);return b.speed;})()`);
- assert.ok(r<220,'a boosted leader must not ratchet recovery targets toward270');
+ const c=physicsContext();const r=readJson(c,`[270,300,1000].map(speed=>{const p=car('player',0,6000,speed),b=car('b',0,5500,200),e=engine([p,b],'pro');e._chooseAILine=()=>{};for(let i=0;i<300;i++)e._updateAI(1/60);return b.speed;})`);
+ assert.equal(r[0],r[1]);assert.equal(r[1],r[2],'speed beyond the normal ceiling must not ratchet pursuit');
 });
 
 
@@ -909,9 +909,9 @@ test('Quick Race recovery reconnects within20s in every mode and series then fad
  const c=physicsContext();const rows=readJson(c,`DIFFICULTIES.flatMap(d=>[.9,1,1].map(scale=>{
    const p=car('player',0,0,210*scale),b=car('b',0,300,250*scale),e=engine([p,b],d.id);e.speedScale=scale;p.power=.75;
    let time=0;while(b.z-p.z>=120 && time<20){b.z+=250*scale/120;e._calcDraft(1/120);e._updatePlayer(1/120);time+=1/120;}
-   return {mode:d.id,scale,time,gap:b.z-p.z,at60:e._playerRecoveryTarget(220,b,60),leader:e._playerRecoveryTarget(220,null,0),partial:e._playerRecoveryTarget(220,b,100),full:e._playerRecoveryTarget(220,b,140)};
+   return {mode:d.id,scale,time,gap:b.z-p.z,at18:e._playerRecoveryTarget(220,b,18),leader:e._playerRecoveryTarget(220,null,0),partial:e._playerRecoveryTarget(220,b,100),full:e._playerRecoveryTarget(220,b,200)};
  }))`);
- for(const r of rows){assert.ok(r.gap<120,JSON.stringify(r));assert.ok(r.time<20);assert.equal(r.at60,220);assert.equal(r.leader,220);assert.ok(r.partial>220 && r.partial<r.full);}
+ for(const r of rows){assert.ok(r.gap<120,JSON.stringify(r));assert.ok(r.time<20);assert.equal(r.at18,220);assert.equal(r.leader,220);assert.ok(r.partial>220 && r.partial<r.full);}
 });
 
 test('human recovery target is identical for the second split-screen player',()=>{
@@ -923,7 +923,7 @@ test('contact transfers speed without creating it and enforces the cap for all i
  const c=physicsContext();const rows=readJson(c,`[.9,1].flatMap(scale=>[false,true].map(team=>{
    const p=car('player',0,5000,268*scale),b=car('b',0,4996,270*scale),e=engine([p,b],'pro');p.isTeammate=team;e.speedScale=scale;
    const before=p.speed+b.speed;e._separateCars(.1);const after=p.speed+b.speed;
-   b.speed=290*scale;e._separateCars(.1);return {before,after,p:p.speed,b:b.speed,limit:270*scale};
+   b.speed=290*scale;e._separateCars(.1);return {before,after,p:p.speed,b:b.speed,limit:290*scale};
  }))`);
  for(const r of rows){assert.ok(Math.abs(r.before-r.after)<1e-8);assert.ok(r.p<=r.limit && r.b<=r.limit);}
 });
@@ -944,12 +944,99 @@ test('defense selects the earliest closing threat rather than roster order',()=>
 });
 
 test('group pursuit starts beyond120 and fades without recursive recovery',()=>{
- const c=physicsContext();const r=readJson(c,`(()=>{const p=car('player',4,6000,270),b=car('b',0,5800,200),e=engine([p,b],'allout');e._chooseAILine=()=>{};e._updateAI(.1);const active=b._pursuing; b.z=5900;e._updateAI(.1);const fading=b._pursuing;b.z=5950;e._updateAI(.1);return {active,fading,off:b._pursuing,groups:e._racingGroups().groups.length};})()`);
- assert.equal(r.active,true);assert.equal(r.fading,true);assert.equal(r.off,false);assert.equal(r.groups,1);
+ const c=physicsContext();const r=readJson(c,`(()=>{const p=car('player',4,6000,270),b=car('b',0,5800,200),e=engine([p,b],'allout');e._chooseAILine=()=>{};e._updateAI(.1);const active=b._pursuing; b.z=5900;e._updateAI(.1);const fading=b._pursuing;b.z=5950;e._updateAI(.1);const merged=b._pursuing;b.z=5990;e._updateAI(.1);return {active,fading,merged,off:b._pursuing,groups:e._racingGroups().groups.length};})()`);
+ assert.equal(r.active,true);assert.equal(r.fading,true);assert.equal(r.merged,true);assert.equal(r.off,false);assert.equal(r.groups,1);
 });
 
 
 test('race construction uses the same power bounds regardless of team ownership',()=>{
  const c=physicsContext();const r=readJson(c,`(()=>{const e=engine([],'pro');e.config={playerPower:.75,fieldSize:3,aiEntries:[{power:.99,isTeammate:false},{power:.99,isTeammate:true}]};e._makeCar=(x,z,opts)=>({...opts,x,z});e._buildCars();return e.cars.filter(c=>!c.isPlayer).map(c=>c.power);})()`);
  assert.deepEqual(r,[.99,.99]);
+});
+
+
+test('three Career contenders stay stable through condition, points, roster order and save/load',()=>{
+ const c=makeContext();const r=readJson(c,`(()=>{newGame('Test','Driver','Car');const first=[...championshipContenderIds()].sort();
+ game.season.aiTeams.reverse();game.season.aiTeams.forEach(t=>{t.points=999;t.cars.reverse();t.cars.forEach(c=>c.condition=50);});
+ const changed=[...championshipContenderIds()].sort();saveToSlot(2);loadFromSlot(2);return {first,changed,loaded:[...championshipContenderIds()].sort(),owned:game.cars.map(c=>c.id)};})()`);
+ assert.equal(r.first.length,3);assert.deepEqual(r.first,r.changed);assert.deepEqual(r.first,r.loaded);assert.ok(r.first.every(id=>!r.owned.includes(id)));
+});
+
+test('contender profiles respect condition and never alter stored rival stats',()=>{
+ const c=makeContext();const r=readJson(c,`(()=>{newGame('Test','Driver','Car');const before=JSON.stringify(game.season.aiTeams),car=game.season.aiTeams[0].cars[0];
+ const normal=careerRivalPower(car),elite=careerRivalPower(car,true),damaged=careerRivalPower({...car,condition:50},true);return {normal,elite,damaged,unchanged:before===JSON.stringify(game.season.aiTeams),count:buildEntryList(game.cars[0].id,'t01').filter(e=>e.isContender).length};})()`);
+ assert.ok(r.elite>r.normal);assert.ok(r.damaged<r.elite);assert.equal(r.unchanged,true);assert.equal(r.count,3);
+});
+
+test('contenders remain entered when hired teammates displace ordinary rivals',()=>{
+ const c=makeContext();const r=readJson(c,`(()=>{newGame('Test','Driver','Car');game.money=1e7;game.reputation=100;
+ const p=game.cars[0];for(const d of HIREABLE_DRIVERS.slice(0,3)){const car=makeCar(d.name,'stock');game.cars.push(car);hireDriver(d.id,car.id);}
+ const entries=buildEntryList(p.id,'t01');return {count:entries.length,owned:entries.filter(e=>e.isTeammate).length,contenders:entries.filter(e=>e.isContender).map(e=>e.id).sort(),expected:[...championshipContenderIds()].sort()};})()`);
+ assert.equal(r.count,20);assert.equal(r.owned,3);assert.deepEqual(r.contenders,r.expected);
+});
+
+test('contender performance has less scatter without immunity to retirements or forced positions',()=>{
+ const c=makeContext();const r=readJson(c,`(()=>{newGame('Test','Driver','Car');game.difficulty='pro';
+ const samples=flag=>Array.from({length:200},()=>calcPerf({syntheticPower:.7,isContender:flag},TRACKS[0]));const normal=samples(false),elite=samples(true);
+ return {normalRange:Math.max(...normal)-Math.min(...normal),eliteRange:Math.max(...elite)-Math.min(...elite),normalMean:normal.reduce((a,b)=>a+b)/normal.length,eliteMean:elite.reduce((a,b)=>a+b)/elite.length};})()`);
+ assert.ok(r.eliteRange<r.normalRange*.6);assert.ok(Math.abs(r.normalMean-r.eliteMean)<1);
+});
+
+test('Career AI qualifying is based on equipment rather than teammate entry order',()=>{
+ const c=physicsContext();const r=readJson(c,`(()=>{const e=engine([],'pro');e.config={playerPower:.75,fieldSize:4,qualifyAI:true,aiEntries:[{entrantId:'weak-mate',power:.3,isTeammate:true},{entrantId:'strong',power:.99},{entrantId:'middle',power:.65}]};e._makeCar=(x,z,o)=>({...o,x,z});e._buildCars();return e.cars.filter(c=>!c.isPlayer).sort((a,b)=>b.z-a.z).map(c=>c.entrantId);})()`);
+ assert.deepEqual(r,['strong','middle','weak-mate']);
+});
+
+test('stock and Quick cars regain a useful wake from600 behind fast traffic',()=>{
+ const c=physicsContext();const r=readJson(c,`DIFFICULTIES.flatMap(d=>[.9,1].flatMap(scale=>[.57715,.75].map(power=>{
+  const p=car('player',0,0,210*scale),b=car('b',0,600,260*scale),e=engine([p,b],d.id);p.power=power;e.speedScale=scale;let t=0;
+  while(b.z-p.z>80 && t<40){b.z+=b.speed/120;e._calcDraft(1/120);e._updatePlayer(1/120);t+=1/120;}
+  return {mode:d.id,power,scale,time:t,gap:b.z-p.z,max:R3D.RECOVERY_MAX*scale,speed:p.speed};
+ })))`);
+ for(const row of r){assert.ok(row.gap<=80,JSON.stringify(row));assert.ok(row.time<40);assert.ok(row.speed<=row.max);}
+});
+
+test('in-pack help on hard modes is lower than94 and normal pace retains a shared ceiling',()=>{
+ const c=physicsContext();const r=readJson(c,`['semipro','pro','allout'].map(id=>{const p=car('player',0,0,220),b=car('b',0,10,220),e=engine([p,b],id);p.power=.75;e._updatePlayer(1);const connected=p.speed;
+ p.z=100;p.speed=260;p.draftBoost=100;e._updatePlayer(1);return {connected,leader:p.speed,cap:R3D.SPEED_MAX};})`);
+ for(const row of r){assert.ok(row.connected<230);assert.ok(row.leader<=row.cap);}
+});
+
+
+test('recovery remains active through the outer wake and releases at close drafting range',()=>{
+ const c=physicsContext();const r=readJson(c,`(()=>{const p=car('player',0,0,220),b=car('b',0,200,260),e=engine([p,b],'pro');
+ const far=e._playerRecoveryTarget(225,b,200),middle=e._playerRecoveryTarget(225,b,50),active=p._rejoining,close=e._playerRecoveryTarget(225,b,18),released=p._rejoining,leader=e._playerRecoveryTarget(225,null,0);
+ return {far,middle,active,close,released,leader};})()`);
+ assert.ok(r.far>r.middle && r.middle>260);assert.equal(r.active,true);assert.equal(r.close,225);assert.equal(r.released,false);assert.equal(r.leader,225);
+});
+
+
+test('AI saves a passing run until close enough to complete the move',()=>{
+ const c=physicsContext();const r=readJson(c,`(()=>{const p=car('player',0,5000,240),b=car('b',0,4960,241),e=engine([p,b],'pro');b.draftMomentum=35;e._chooseAILine(b,.8,1/60);const far=b._tactic;b.z=4990;b.laneTimer=b.tacticTimer=0;b._tactic=null;e._chooseAILine(b,.8,1/60);return {far,close:b._tactic};})()`);
+ assert.notEqual(r.far,'pass');assert.equal(r.close,'pass');
+});
+
+
+test('rival garages prevent late-season collapse and restore exhausted legacy-save rivals on entry',()=>{
+ const c=makeContext();const r=readJson(c,`(()=>{newGame('Test','Driver','Car');const ids=championshipContenderIds();game.season.aiTeams.forEach(t=>t.cars.forEach(c=>c.condition=0));
+ const saved=JSON.stringify(game.season.aiTeams),entries=buildEntryList(game.cars[0].id,'t01'),powers=entries.filter(e=>!e.isPlayer).map(e=>e.syntheticPower),unchanged=saved===JSON.stringify(game.season.aiTeams);
+ const result=simulateRace({playerCarId:game.cars[0].id,trackId:'t01'});postRaceUpdate(result.playerResult,result.playerResult.prize,result.results);
+ return {powers,unchanged,conditions:game.season.aiTeams.flatMap(t=>t.cars.map(c=>({condition:c.condition,contender:ids.has(c.id)})))};})()`);
+ assert.equal(r.unchanged,true);assert.ok(r.powers.some(p=>p>.5));for(const car of r.conditions)assert.ok(car.condition>=(car.contender?96:90));
+});
+
+
+test('the three contenders have series-appropriate developed equipment without changing stored ratings',()=>{
+ const c=makeContext();const r=readJson(c,`[0,1,2].map(level=>{newGame('Test','Driver','Car');game.currentSeries=level;const car={power:.5,condition:100};return {level,power:careerRivalPower(car,true),stored:car.power};})`);
+ assert.deepEqual(r.map(x=>x.power),[.92,.95,.99]);assert.ok(r.every(x=>x.stored===.5));
+});
+
+
+test('developing Career tow efficiency is shared by every car and keeps upgrade pace monotonic',()=>{
+ const c=physicsContext();const rows=readJson(c,`DIFFICULTIES.flatMap(d=>[false,true].map(human=>{
+ const p=car('player',0,0),b=car('b',0,10),e=engine([p,b],d.id);e.config={qualifyAI:true};
+ const values=[.4,.57,.58,.6,.65,.7,.75,.8,.85,.9,.99].map(power=>{const target=human?p:b;target.power=power;target.draftBoost=43*(human?1:d.aiDraft);return (human?210*(.83+power*.28):e._naturalAIPace(target))+e._aeroPace(target);});
+ p.power=b.power=.58;p.draftBoost=b.draftBoost=30;const equal=e._aeroPace(p)===e._aeroPace(b);return {values,equal};
+ }))`);
+ for(const row of rows){assert.equal(row.equal,true);for(let i=1;i<row.values.length;i++)assert.ok(row.values[i]>row.values[i-1]);}
 });

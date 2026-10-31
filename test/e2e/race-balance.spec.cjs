@@ -1,7 +1,7 @@
 const path = require('node:path');
 const {test, expect} = require('playwright/test');
 
-for (const difficulty of ['beginner','amateur','semipro','pro']) {
+for (const difficulty of ['beginner','amateur','semipro','pro','allout']) {
   test(`complete a contested race on ${difficulty}`, async ({page}, testInfo) => {
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
@@ -53,7 +53,7 @@ for (const difficulty of ['beginner','amateur','semipro','pro']) {
         expect(report.passing).toBeGreaterThan(5);
         expect(report.joining).toBeGreaterThan(5);
         expect(report.nearby).toBeGreaterThan(1);
-        expect(report.count).toBe(36); expect(report.unique).toBe(36);
+        expect(report.count).toBe(40); expect(report.unique).toBe(40);
         console.log(JSON.stringify(report));
       }
     }

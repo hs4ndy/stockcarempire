@@ -326,13 +326,13 @@ const DIFFICULTIES = [
     aiSpeed: 1.02, aiPower: 1.08, aiAggro: 1.155, aiDraft: 1.05, rideLimit: 6, packPressure: 0.20, playerDraft: 1.02, playerCatchup: 0.90, racecraft: 0.40 },
   { id: 'semipro',  name: 'Semi-Pro',
     blurb: 'Fast racers who convert draft runs and defend their line.',
-    aiSpeed: 1.035, aiPower: 1.15, aiAggro: 1.281, aiDraft: 1.05, rideLimit: 4, packPressure: 0.75, recoveryStart: 96, recoveryFull: 360, pursuitMargin: 4, playerDraft: 1.00, playerCatchup: 0.80, racecraft: 0.75 },
+    aiSpeed: 1.035, aiPower: 1.15, aiAggro: 1.281, aiDraft: 1.05, rideLimit: 4, packPressure: 0.75, inPackHelp: 0.75, recoveryStart: 96, recoveryFull: 360, pursuitMargin: 4, playerDraft: 1.00, playerCatchup: 0.80, racecraft: 0.75 },
   { id: 'pro',      name: 'Pro',
     blurb: 'Everyone is fast, works the tow and holds their ground.',
-    aiSpeed: 1.05, aiPower: 1.22, aiAggro: 1.386, aiDraft: 1.05, rideLimit: 3, packPressure: 1.00, recoveryStart: 88, recoveryFull: 340, pursuitMargin: 6, playerDraft: 1.00, playerCatchup: 0.70, lastPlaceBoost: 1.26, racecraft: 1.00 },
+    aiSpeed: 1.05, aiPower: 1.22, aiAggro: 1.386, aiDraft: 1.05, rideLimit: 3, packPressure: 1.00, inPackHelp: 0.65, recoveryStart: 88, recoveryFull: 340, pursuitMargin: 6, playerDraft: 1.00, playerCatchup: 0.70, lastPlaceBoost: 1.26, racecraft: 1.00 },
   { id: 'allout', name: 'All-Out',
     blurb: 'Relentless pace, ruthless drafting and almost no help. Expect to lose.',
-    aiSpeed: 1.055, aiPower: 1.38, aiAggro: 1.65, aiDraft: 1.08, rideLimit: 1.5, packPressure: 1.00, recoveryStart: 80, recoveryFull: 320, pursuitMargin: 8, packRecovery: 1.15, playerDraft: 1.06, playerCatchup: 0.68, racecraft: 1.25 },
+    aiSpeed: 1.065, aiPower: 1.38, aiAggro: 1.65, aiDraft: 1.08, rideLimit: 1.5, packPressure: 1.00, inPackHelp: 0.50, recoveryStart: 80, recoveryFull: 320, pursuitMargin: 8, packRecovery: 1.15, playerDraft: 1.06, playerCatchup: 0.68, racecraft: 1.25 },
 ];
 
 const DEFAULT_DIFFICULTY = 'beginner';

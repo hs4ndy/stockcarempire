@@ -32,7 +32,7 @@ function simulateRace({ playerCarId, trackId }) {
   const analystQuali = analystCount() * ANALYST_QUALI_BONUS;
   entries.forEach(e => {
     const ours = e.isPlayer || e.isTeammate;
-    const scatter = ours && analystQuali > 0 ? 5 : 8;
+    const scatter = e.isContender ? 4 : ours && analystQuali > 0 ? 5 : 8;
     e.qualifyScore = e.perfScore + rand(-scatter, scatter) + (ours ? Math.min(analystQuali, 14) - 4 : 0);
   });
   entries.sort((a, b) => b.qualifyScore - a.qualifyScore);
@@ -161,6 +161,7 @@ function buildEntryList(playerCarId, trackId) {
   });
 
   // AI team entries
+  const contenders = championshipContenderIds();
   game.season.aiTeams.forEach(team => {
     team.cars.forEach(car => {
       entries.push({
@@ -170,7 +171,8 @@ function buildEntryList(playerCarId, trackId) {
         teamColor:   team.color,
         isPlayer:    false,
         dnf:         false,
-        syntheticPower: car.power * (car.condition / 100),
+        syntheticPower: careerRivalPower(car, contenders.has(car.id)),
+        isContender: contenders.has(car.id),
         aggression:  team.aggression,
       });
     });
@@ -191,6 +193,9 @@ function buildEntryList(playerCarId, trackId) {
     });
   }
 
+  // Do not accidentally omit a recurring contender just because a hired
+  // teammate occupied the last available slot in a full field.
+  entries.sort((a,b) => (b.isPlayer || b.isTeammate ? 2 : b.isContender ? 1 : 0) - (a.isPlayer || a.isTeammate ? 2 : a.isContender ? 1 : 0));
   return entries.slice(0, series.fieldSize);
 }
 
@@ -323,7 +328,8 @@ function calcPerf(entry, track) {
     const diff = difficultyById(game.difficulty || DEFAULT_DIFFICULTY);
     const mult = entry.isTeammate ? 1 : diff.aiPower;
     const base = entry.syntheticPower * 100 * mult;
-    return base + rand(-6, 6);
+    const scatter = entry.isContender ? 3 : 6;
+    return base + rand(-scatter, scatter);
   }
 
   // Player entry with real stats
@@ -355,7 +361,8 @@ function runPhase(entries, phase, track, currentLeader, cautionCount) {
   liveEntries.forEach(e => {
     const gridEdge = phase === 'start' ? (e.qualifyScore - e.perfScore) * 0.8 : 0;
     const momentum = e.position ? (fieldN - e.position) / fieldN * 6 : 0;
-    e.phaseScore = e.perfScore + rand(-10, 10) + gridEdge + momentum;
+    const scatter = e.isContender ? 5 : 10;
+    e.phaseScore = e.perfScore + rand(-scatter, scatter) + gridEdge + momentum;
     // Reliability check - DNF risk
     const relRisk = e.reliability !== undefined ? e.reliability : (e.syntheticPower || 0.5) * 80 + 30;
     const dnfChance = clamp((100 - relRisk) / 1000, 0.005, 0.06);

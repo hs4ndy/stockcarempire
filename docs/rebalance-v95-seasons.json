@@ -1,0 +1,1712 @@
+[
+  {
+    "series": "grassroots",
+    "difficulty": "semipro",
+    "seed": 3,
+    "races": 18,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "evv8oak",
+        "championshipPosition": 3,
+        "points": 599,
+        "wins": 1,
+        "top5": 18,
+        "meanFinish": 2.4444444444444446
+      },
+      {
+        "id": "bh8xvtf",
+        "championshipPosition": 2,
+        "points": 634,
+        "wins": 11,
+        "top5": 17,
+        "meanFinish": 2.611111111111111
+      },
+      {
+        "id": "eflluul",
+        "championshipPosition": 1,
+        "points": 644,
+        "wins": 6,
+        "top5": 18,
+        "meanFinish": 1.8888888888888888
+      }
+    ]
+  },
+  {
+    "series": "grassroots",
+    "difficulty": "semipro",
+    "seed": 17,
+    "races": 18,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "2c5b5dd",
+        "championshipPosition": 3,
+        "points": 597,
+        "wins": 6,
+        "top5": 17,
+        "meanFinish": 3
+      },
+      {
+        "id": "6rvyyv4",
+        "championshipPosition": 1,
+        "points": 645,
+        "wins": 7,
+        "top5": 18,
+        "meanFinish": 1.8888888888888888
+      },
+      {
+        "id": "pau8m0m",
+        "championshipPosition": 2,
+        "points": 635,
+        "wins": 5,
+        "top5": 18,
+        "meanFinish": 2
+      }
+    ]
+  },
+  {
+    "series": "grassroots",
+    "difficulty": "semipro",
+    "seed": 41,
+    "races": 18,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "y9iqbof",
+        "championshipPosition": 3,
+        "points": 600,
+        "wins": 5,
+        "top5": 17,
+        "meanFinish": 2.9444444444444446
+      },
+      {
+        "id": "a9rqkfr",
+        "championshipPosition": 2,
+        "points": 606,
+        "wins": 7,
+        "top5": 17,
+        "meanFinish": 2.888888888888889
+      },
+      {
+        "id": "ie2m4ll",
+        "championshipPosition": 1,
+        "points": 640,
+        "wins": 6,
+        "top5": 18,
+        "meanFinish": 1.9444444444444444
+      }
+    ]
+  },
+  {
+    "series": "grassroots",
+    "difficulty": "semipro",
+    "seed": 73,
+    "races": 18,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "rwhl91m",
+        "championshipPosition": 3,
+        "points": 582,
+        "wins": 3,
+        "top5": 17,
+        "meanFinish": 3.2222222222222223
+      },
+      {
+        "id": "q3vnp02",
+        "championshipPosition": 2,
+        "points": 618,
+        "wins": 7,
+        "top5": 17,
+        "meanFinish": 2.7222222222222223
+      },
+      {
+        "id": "8gkchw7",
+        "championshipPosition": 1,
+        "points": 646,
+        "wins": 8,
+        "top5": 18,
+        "meanFinish": 1.8888888888888888
+      }
+    ]
+  },
+  {
+    "series": "grassroots",
+    "difficulty": "semipro",
+    "seed": 101,
+    "races": 18,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "40lncdw",
+        "championshipPosition": 3,
+        "points": 570,
+        "wins": 6,
+        "top5": 16,
+        "meanFinish": 3.6666666666666665
+      },
+      {
+        "id": "wjr2ze9",
+        "championshipPosition": 2,
+        "points": 595,
+        "wins": 4,
+        "top5": 17,
+        "meanFinish": 3
+      },
+      {
+        "id": "2h37sni",
+        "championshipPosition": 1,
+        "points": 623,
+        "wins": 8,
+        "top5": 17,
+        "meanFinish": 2.6666666666666665
+      }
+    ]
+  },
+  {
+    "series": "grassroots",
+    "difficulty": "pro",
+    "seed": 3,
+    "races": 18,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "evv8oak",
+        "championshipPosition": 3,
+        "points": 595,
+        "wins": 1,
+        "top5": 18,
+        "meanFinish": 2.5
+      },
+      {
+        "id": "bh8xvtf",
+        "championshipPosition": 2,
+        "points": 634,
+        "wins": 11,
+        "top5": 17,
+        "meanFinish": 2.611111111111111
+      },
+      {
+        "id": "eflluul",
+        "championshipPosition": 1,
+        "points": 648,
+        "wins": 6,
+        "top5": 18,
+        "meanFinish": 1.8333333333333333
+      }
+    ]
+  },
+  {
+    "series": "grassroots",
+    "difficulty": "pro",
+    "seed": 17,
+    "races": 18,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "2c5b5dd",
+        "championshipPosition": 2,
+        "points": 646,
+        "wins": 8,
+        "top5": 18,
+        "meanFinish": 1.8888888888888888
+      },
+      {
+        "id": "6rvyyv4",
+        "championshipPosition": 1,
+        "points": 653,
+        "wins": 7,
+        "top5": 18,
+        "meanFinish": 1.7777777777777777
+      },
+      {
+        "id": "pau8m0m",
+        "championshipPosition": 3,
+        "points": 549,
+        "wins": 3,
+        "top5": 16,
+        "meanFinish": 4
+      }
+    ]
+  },
+  {
+    "series": "grassroots",
+    "difficulty": "pro",
+    "seed": 41,
+    "races": 18,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "y9iqbof",
+        "championshipPosition": 3,
+        "points": 618,
+        "wins": 7,
+        "top5": 17,
+        "meanFinish": 2.7222222222222223
+      },
+      {
+        "id": "a9rqkfr",
+        "championshipPosition": 2,
+        "points": 628,
+        "wins": 6,
+        "top5": 18,
+        "meanFinish": 2.111111111111111
+      },
+      {
+        "id": "ie2m4ll",
+        "championshipPosition": 1,
+        "points": 628,
+        "wins": 5,
+        "top5": 18,
+        "meanFinish": 2.111111111111111
+      }
+    ]
+  },
+  {
+    "series": "grassroots",
+    "difficulty": "pro",
+    "seed": 73,
+    "races": 18,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "rwhl91m",
+        "championshipPosition": 2,
+        "points": 591,
+        "wins": 3,
+        "top5": 17,
+        "meanFinish": 3
+      },
+      {
+        "id": "q3vnp02",
+        "championshipPosition": 3,
+        "points": 579,
+        "wins": 7,
+        "top5": 16,
+        "meanFinish": 3.7777777777777777
+      },
+      {
+        "id": "8gkchw7",
+        "championshipPosition": 1,
+        "points": 617,
+        "wins": 8,
+        "top5": 17,
+        "meanFinish": 2.6666666666666665
+      }
+    ]
+  },
+  {
+    "series": "grassroots",
+    "difficulty": "pro",
+    "seed": 101,
+    "races": 18,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "40lncdw",
+        "championshipPosition": 3,
+        "points": 598,
+        "wins": 6,
+        "top5": 17,
+        "meanFinish": 2.9444444444444446
+      },
+      {
+        "id": "wjr2ze9",
+        "championshipPosition": 2,
+        "points": 601,
+        "wins": 5,
+        "top5": 17,
+        "meanFinish": 2.9444444444444446
+      },
+      {
+        "id": "2h37sni",
+        "championshipPosition": 1,
+        "points": 614,
+        "wins": 7,
+        "top5": 17,
+        "meanFinish": 2.7777777777777777
+      }
+    ]
+  },
+  {
+    "series": "grassroots",
+    "difficulty": "allout",
+    "seed": 3,
+    "races": 18,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "evv8oak",
+        "championshipPosition": 3,
+        "points": 603,
+        "wins": 1,
+        "top5": 18,
+        "meanFinish": 2.388888888888889
+      },
+      {
+        "id": "bh8xvtf",
+        "championshipPosition": 2,
+        "points": 625,
+        "wins": 10,
+        "top5": 17,
+        "meanFinish": 2.7222222222222223
+      },
+      {
+        "id": "eflluul",
+        "championshipPosition": 1,
+        "points": 649,
+        "wins": 7,
+        "top5": 18,
+        "meanFinish": 1.8333333333333333
+      }
+    ]
+  },
+  {
+    "series": "grassroots",
+    "difficulty": "allout",
+    "seed": 17,
+    "races": 18,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "2c5b5dd",
+        "championshipPosition": 2,
+        "points": 627,
+        "wins": 8,
+        "top5": 17,
+        "meanFinish": 2.611111111111111
+      },
+      {
+        "id": "6rvyyv4",
+        "championshipPosition": 1,
+        "points": 628,
+        "wins": 9,
+        "top5": 17,
+        "meanFinish": 2.611111111111111
+      },
+      {
+        "id": "pau8m0m",
+        "championshipPosition": 3,
+        "points": 587,
+        "wins": 1,
+        "top5": 18,
+        "meanFinish": 2.611111111111111
+      }
+    ]
+  },
+  {
+    "series": "grassroots",
+    "difficulty": "allout",
+    "seed": 41,
+    "races": 18,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "y9iqbof",
+        "championshipPosition": 1,
+        "points": 650,
+        "wins": 8,
+        "top5": 18,
+        "meanFinish": 1.8333333333333333
+      },
+      {
+        "id": "a9rqkfr",
+        "championshipPosition": 2,
+        "points": 641,
+        "wins": 7,
+        "top5": 18,
+        "meanFinish": 1.9444444444444444
+      },
+      {
+        "id": "ie2m4ll",
+        "championshipPosition": 3,
+        "points": 617,
+        "wins": 3,
+        "top5": 18,
+        "meanFinish": 2.2222222222222223
+      }
+    ]
+  },
+  {
+    "series": "grassroots",
+    "difficulty": "allout",
+    "seed": 73,
+    "races": 18,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "rwhl91m",
+        "championshipPosition": 2,
+        "points": 618,
+        "wins": 7,
+        "top5": 17,
+        "meanFinish": 2.7222222222222223
+      },
+      {
+        "id": "q3vnp02",
+        "championshipPosition": 3,
+        "points": 550,
+        "wins": 5,
+        "top5": 16,
+        "meanFinish": 4.111111111111111
+      },
+      {
+        "id": "8gkchw7",
+        "championshipPosition": 1,
+        "points": 648,
+        "wins": 6,
+        "top5": 18,
+        "meanFinish": 1.8333333333333333
+      }
+    ]
+  },
+  {
+    "series": "grassroots",
+    "difficulty": "allout",
+    "seed": 101,
+    "races": 18,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "40lncdw",
+        "championshipPosition": 2,
+        "points": 613,
+        "wins": 8,
+        "top5": 17,
+        "meanFinish": 2.7222222222222223
+      },
+      {
+        "id": "wjr2ze9",
+        "championshipPosition": 3,
+        "points": 582,
+        "wins": 3,
+        "top5": 17,
+        "meanFinish": 3.1666666666666665
+      },
+      {
+        "id": "2h37sni",
+        "championshipPosition": 1,
+        "points": 653,
+        "wins": 7,
+        "top5": 18,
+        "meanFinish": 1.7777777777777777
+      }
+    ]
+  },
+  {
+    "series": "challenger",
+    "difficulty": "semipro",
+    "seed": 3,
+    "races": 26,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "3zh9fcq",
+        "championshipPosition": 2,
+        "points": 1141,
+        "wins": 8,
+        "top5": 25,
+        "meanFinish": 2.8461538461538463
+      },
+      {
+        "id": "2fr8txd",
+        "championshipPosition": 1,
+        "points": 1180,
+        "wins": 10,
+        "top5": 26,
+        "meanFinish": 2
+      },
+      {
+        "id": "08r2ddq",
+        "championshipPosition": 3,
+        "points": 1092,
+        "wins": 8,
+        "top5": 24,
+        "meanFinish": 3.8076923076923075
+      }
+    ]
+  },
+  {
+    "series": "challenger",
+    "difficulty": "semipro",
+    "seed": 17,
+    "races": 26,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "atv0q12",
+        "championshipPosition": 1,
+        "points": 1204,
+        "wins": 10,
+        "top5": 26,
+        "meanFinish": 1.7692307692307692
+      },
+      {
+        "id": "rggpquc",
+        "championshipPosition": 2,
+        "points": 1180,
+        "wins": 10,
+        "top5": 26,
+        "meanFinish": 2
+      },
+      {
+        "id": "umku7qm",
+        "championshipPosition": 3,
+        "points": 1105,
+        "wins": 6,
+        "top5": 25,
+        "meanFinish": 3.1153846153846154
+      }
+    ]
+  },
+  {
+    "series": "challenger",
+    "difficulty": "semipro",
+    "seed": 41,
+    "races": 26,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "vb6h3bw",
+        "championshipPosition": 1,
+        "points": 1207,
+        "wins": 13,
+        "top5": 26,
+        "meanFinish": 1.7692307692307692
+      },
+      {
+        "id": "zxi14p6",
+        "championshipPosition": 2,
+        "points": 1128,
+        "wins": 7,
+        "top5": 25,
+        "meanFinish": 2.9615384615384617
+      },
+      {
+        "id": "q6btz47",
+        "championshipPosition": 3,
+        "points": 1119,
+        "wins": 6,
+        "top5": 25,
+        "meanFinish": 3.0384615384615383
+      }
+    ]
+  },
+  {
+    "series": "challenger",
+    "difficulty": "semipro",
+    "seed": 73,
+    "races": 26,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "836528q",
+        "championshipPosition": 3,
+        "points": 1117,
+        "wins": 6,
+        "top5": 25,
+        "meanFinish": 2.923076923076923
+      },
+      {
+        "id": "ouxg427",
+        "championshipPosition": 1,
+        "points": 1193,
+        "wins": 11,
+        "top5": 26,
+        "meanFinish": 1.8846153846153846
+      },
+      {
+        "id": "5n4blnr",
+        "championshipPosition": 2,
+        "points": 1187,
+        "wins": 9,
+        "top5": 26,
+        "meanFinish": 1.9230769230769231
+      }
+    ]
+  },
+  {
+    "series": "challenger",
+    "difficulty": "semipro",
+    "seed": 101,
+    "races": 26,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "exlfng2",
+        "championshipPosition": 1,
+        "points": 1198,
+        "wins": 12,
+        "top5": 26,
+        "meanFinish": 1.8461538461538463
+      },
+      {
+        "id": "qomajl6",
+        "championshipPosition": 2,
+        "points": 1172,
+        "wins": 6,
+        "top5": 26,
+        "meanFinish": 2.0384615384615383
+      },
+      {
+        "id": "f3b3ru8",
+        "championshipPosition": 3,
+        "points": 1125,
+        "wins": 8,
+        "top5": 25,
+        "meanFinish": 3
+      }
+    ]
+  },
+  {
+    "series": "challenger",
+    "difficulty": "pro",
+    "seed": 3,
+    "races": 26,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "3zh9fcq",
+        "championshipPosition": 2,
+        "points": 1145,
+        "wins": 8,
+        "top5": 25,
+        "meanFinish": 2.730769230769231
+      },
+      {
+        "id": "2fr8txd",
+        "championshipPosition": 1,
+        "points": 1160,
+        "wins": 8,
+        "top5": 26,
+        "meanFinish": 2.1923076923076925
+      },
+      {
+        "id": "08r2ddq",
+        "championshipPosition": 3,
+        "points": 1139,
+        "wins": 10,
+        "top5": 25,
+        "meanFinish": 2.8846153846153846
+      }
+    ]
+  },
+  {
+    "series": "challenger",
+    "difficulty": "pro",
+    "seed": 17,
+    "races": 26,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "atv0q12",
+        "championshipPosition": 3,
+        "points": 1145,
+        "wins": 8,
+        "top5": 25,
+        "meanFinish": 2.8076923076923075
+      },
+      {
+        "id": "rggpquc",
+        "championshipPosition": 1,
+        "points": 1177,
+        "wins": 11,
+        "top5": 26,
+        "meanFinish": 2.0384615384615383
+      },
+      {
+        "id": "umku7qm",
+        "championshipPosition": 2,
+        "points": 1160,
+        "wins": 7,
+        "top5": 26,
+        "meanFinish": 2.1923076923076925
+      }
+    ]
+  },
+  {
+    "series": "challenger",
+    "difficulty": "pro",
+    "seed": 41,
+    "races": 26,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "vb6h3bw",
+        "championshipPosition": 3,
+        "points": 1031,
+        "wins": 6,
+        "top5": 23,
+        "meanFinish": 4.6923076923076925
+      },
+      {
+        "id": "zxi14p6",
+        "championshipPosition": 1,
+        "points": 1162,
+        "wins": 12,
+        "top5": 25,
+        "meanFinish": 2.6923076923076925
+      },
+      {
+        "id": "q6btz47",
+        "championshipPosition": 2,
+        "points": 1129,
+        "wins": 8,
+        "top5": 25,
+        "meanFinish": 2.8846153846153846
+      }
+    ]
+  },
+  {
+    "series": "challenger",
+    "difficulty": "pro",
+    "seed": 73,
+    "races": 26,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "836528q",
+        "championshipPosition": 2,
+        "points": 1137,
+        "wins": 8,
+        "top5": 25,
+        "meanFinish": 2.8846153846153846
+      },
+      {
+        "id": "ouxg427",
+        "championshipPosition": 1,
+        "points": 1144,
+        "wins": 11,
+        "top5": 25,
+        "meanFinish": 2.8461538461538463
+      },
+      {
+        "id": "5n4blnr",
+        "championshipPosition": 3,
+        "points": 1132,
+        "wins": 7,
+        "top5": 25,
+        "meanFinish": 2.8461538461538463
+      }
+    ]
+  },
+  {
+    "series": "challenger",
+    "difficulty": "pro",
+    "seed": 101,
+    "races": 26,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "exlfng2",
+        "championshipPosition": 2,
+        "points": 1152,
+        "wins": 11,
+        "top5": 25,
+        "meanFinish": 2.769230769230769
+      },
+      {
+        "id": "qomajl6",
+        "championshipPosition": 3,
+        "points": 1051,
+        "wins": 8,
+        "top5": 23,
+        "meanFinish": 4.615384615384615
+      },
+      {
+        "id": "f3b3ru8",
+        "championshipPosition": 1,
+        "points": 1169,
+        "wins": 7,
+        "top5": 26,
+        "meanFinish": 2.076923076923077
+      }
+    ]
+  },
+  {
+    "series": "challenger",
+    "difficulty": "allout",
+    "seed": 3,
+    "races": 26,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "3zh9fcq",
+        "championshipPosition": 2,
+        "points": 1178,
+        "wins": 8,
+        "top5": 26,
+        "meanFinish": 2
+      },
+      {
+        "id": "2fr8txd",
+        "championshipPosition": 1,
+        "points": 1193,
+        "wins": 11,
+        "top5": 26,
+        "meanFinish": 1.8846153846153846
+      },
+      {
+        "id": "08r2ddq",
+        "championshipPosition": 3,
+        "points": 1162,
+        "wins": 7,
+        "top5": 26,
+        "meanFinish": 2.1538461538461537
+      }
+    ]
+  },
+  {
+    "series": "challenger",
+    "difficulty": "allout",
+    "seed": 17,
+    "races": 26,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "atv0q12",
+        "championshipPosition": 1,
+        "points": 1143,
+        "wins": 10,
+        "top5": 25,
+        "meanFinish": 2.769230769230769
+      },
+      {
+        "id": "rggpquc",
+        "championshipPosition": 3,
+        "points": 1124,
+        "wins": 12,
+        "top5": 24,
+        "meanFinish": 3.4615384615384617
+      },
+      {
+        "id": "umku7qm",
+        "championshipPosition": 2,
+        "points": 1139,
+        "wins": 4,
+        "top5": 26,
+        "meanFinish": 2.3461538461538463
+      }
+    ]
+  },
+  {
+    "series": "challenger",
+    "difficulty": "allout",
+    "seed": 41,
+    "races": 26,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "vb6h3bw",
+        "championshipPosition": 1,
+        "points": 1172,
+        "wins": 6,
+        "top5": 26,
+        "meanFinish": 2.0384615384615383
+      },
+      {
+        "id": "zxi14p6",
+        "championshipPosition": 2,
+        "points": 1162,
+        "wins": 13,
+        "top5": 25,
+        "meanFinish": 2.6923076923076925
+      },
+      {
+        "id": "q6btz47",
+        "championshipPosition": 3,
+        "points": 1122,
+        "wins": 7,
+        "top5": 25,
+        "meanFinish": 2.8846153846153846
+      }
+    ]
+  },
+  {
+    "series": "challenger",
+    "difficulty": "allout",
+    "seed": 73,
+    "races": 26,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "836528q",
+        "championshipPosition": 1,
+        "points": 1167,
+        "wins": 10,
+        "top5": 26,
+        "meanFinish": 2.1538461538461537
+      },
+      {
+        "id": "ouxg427",
+        "championshipPosition": 2,
+        "points": 1129,
+        "wins": 6,
+        "top5": 25,
+        "meanFinish": 2.923076923076923
+      },
+      {
+        "id": "5n4blnr",
+        "championshipPosition": 3,
+        "points": 1122,
+        "wins": 8,
+        "top5": 25,
+        "meanFinish": 3.0384615384615383
+      }
+    ]
+  },
+  {
+    "series": "challenger",
+    "difficulty": "allout",
+    "seed": 101,
+    "races": 26,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "exlfng2",
+        "championshipPosition": 3,
+        "points": 1126,
+        "wins": 9,
+        "top5": 25,
+        "meanFinish": 2.923076923076923
+      },
+      {
+        "id": "qomajl6",
+        "championshipPosition": 2,
+        "points": 1179,
+        "wins": 9,
+        "top5": 26,
+        "meanFinish": 2
+      },
+      {
+        "id": "f3b3ru8",
+        "championshipPosition": 1,
+        "points": 1190,
+        "wins": 8,
+        "top5": 26,
+        "meanFinish": 1.8846153846153846
+      }
+    ]
+  },
+  {
+    "series": "premier",
+    "difficulty": "semipro",
+    "seed": 3,
+    "races": 36,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "fgy6zmc",
+        "championshipPosition": 2,
+        "points": 1900,
+        "wins": 8,
+        "top5": 35,
+        "meanFinish": 3.3055555555555554
+      },
+      {
+        "id": "3zh9fcq",
+        "championshipPosition": 3,
+        "points": 1878,
+        "wins": 10,
+        "top5": 32,
+        "meanFinish": 3.5555555555555554
+      },
+      {
+        "id": "08r2ddq",
+        "championshipPosition": 1,
+        "points": 1907,
+        "wins": 16,
+        "top5": 34,
+        "meanFinish": 3.9444444444444446
+      }
+    ]
+  },
+  {
+    "series": "premier",
+    "difficulty": "semipro",
+    "seed": 17,
+    "races": 36,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "atv0q12",
+        "championshipPosition": 1,
+        "points": 2072,
+        "wins": 23,
+        "top5": 36,
+        "meanFinish": 1.5277777777777777
+      },
+      {
+        "id": "umku7qm",
+        "championshipPosition": 2,
+        "points": 1865,
+        "wins": 7,
+        "top5": 34,
+        "meanFinish": 3.5833333333333335
+      },
+      {
+        "id": "rggpquc",
+        "championshipPosition": 3,
+        "points": 1812,
+        "wins": 6,
+        "top5": 32,
+        "meanFinish": 4.583333333333333
+      }
+    ]
+  },
+  {
+    "series": "premier",
+    "difficulty": "semipro",
+    "seed": 41,
+    "races": 36,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "vb6h3bw",
+        "championshipPosition": 1,
+        "points": 1931,
+        "wins": 20,
+        "top5": 34,
+        "meanFinish": 3.8055555555555554
+      },
+      {
+        "id": "q6btz47",
+        "championshipPosition": 2,
+        "points": 1895,
+        "wins": 11,
+        "top5": 34,
+        "meanFinish": 3.888888888888889
+      },
+      {
+        "id": "zxi14p6",
+        "championshipPosition": 3,
+        "points": 1868,
+        "wins": 5,
+        "top5": 34,
+        "meanFinish": 3.4722222222222223
+      }
+    ]
+  },
+  {
+    "series": "premier",
+    "difficulty": "semipro",
+    "seed": 73,
+    "races": 36,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "836528q",
+        "championshipPosition": 1,
+        "points": 2003,
+        "wins": 14,
+        "top5": 36,
+        "meanFinish": 1.9444444444444444
+      },
+      {
+        "id": "ouxg427",
+        "championshipPosition": 2,
+        "points": 1886,
+        "wins": 11,
+        "top5": 34,
+        "meanFinish": 3.9722222222222223
+      },
+      {
+        "id": "hw613ev",
+        "championshipPosition": 3,
+        "points": 1771,
+        "wins": 11,
+        "top5": 32,
+        "meanFinish": 6.111111111111111
+      }
+    ]
+  },
+  {
+    "series": "premier",
+    "difficulty": "semipro",
+    "seed": 101,
+    "races": 36,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "exlfng2",
+        "championshipPosition": 1,
+        "points": 1975,
+        "wins": 13,
+        "top5": 35,
+        "meanFinish": 2.75
+      },
+      {
+        "id": "qomajl6",
+        "championshipPosition": 2,
+        "points": 1942,
+        "wins": 11,
+        "top5": 35,
+        "meanFinish": 2.388888888888889
+      },
+      {
+        "id": "f3b3ru8",
+        "championshipPosition": 3,
+        "points": 1808,
+        "wins": 11,
+        "top5": 33,
+        "meanFinish": 5.25
+      }
+    ]
+  },
+  {
+    "series": "premier",
+    "difficulty": "pro",
+    "seed": 3,
+    "races": 36,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "fgy6zmc",
+        "championshipPosition": 1,
+        "points": 1947,
+        "wins": 16,
+        "top5": 34,
+        "meanFinish": 3.0277777777777777
+      },
+      {
+        "id": "3zh9fcq",
+        "championshipPosition": 2,
+        "points": 1940,
+        "wins": 8,
+        "top5": 36,
+        "meanFinish": 2.361111111111111
+      },
+      {
+        "id": "08r2ddq",
+        "championshipPosition": 3,
+        "points": 1873,
+        "wins": 12,
+        "top5": 33,
+        "meanFinish": 4.222222222222222
+      }
+    ]
+  },
+  {
+    "series": "premier",
+    "difficulty": "pro",
+    "seed": 17,
+    "races": 36,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "atv0q12",
+        "championshipPosition": 1,
+        "points": 2030,
+        "wins": 17,
+        "top5": 36,
+        "meanFinish": 1.7777777777777777
+      },
+      {
+        "id": "umku7qm",
+        "championshipPosition": 2,
+        "points": 1945,
+        "wins": 10,
+        "top5": 36,
+        "meanFinish": 2.361111111111111
+      },
+      {
+        "id": "rggpquc",
+        "championshipPosition": 3,
+        "points": 1893,
+        "wins": 8,
+        "top5": 35,
+        "meanFinish": 3.3333333333333335
+      }
+    ]
+  },
+  {
+    "series": "premier",
+    "difficulty": "pro",
+    "seed": 41,
+    "races": 36,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "vb6h3bw",
+        "championshipPosition": 1,
+        "points": 2044,
+        "wins": 26,
+        "top5": 35,
+        "meanFinish": 2.3333333333333335
+      },
+      {
+        "id": "q6btz47",
+        "championshipPosition": 2,
+        "points": 1877,
+        "wins": 4,
+        "top5": 35,
+        "meanFinish": 3.4166666666666665
+      },
+      {
+        "id": "zxi14p6",
+        "championshipPosition": 3,
+        "points": 1789,
+        "wins": 6,
+        "top5": 33,
+        "meanFinish": 5.388888888888889
+      }
+    ]
+  },
+  {
+    "series": "premier",
+    "difficulty": "pro",
+    "seed": 73,
+    "races": 36,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "836528q",
+        "championshipPosition": 3,
+        "points": 1834,
+        "wins": 14,
+        "top5": 33,
+        "meanFinish": 5.138888888888889
+      },
+      {
+        "id": "ouxg427",
+        "championshipPosition": 1,
+        "points": 1973,
+        "wins": 16,
+        "top5": 35,
+        "meanFinish": 2.7777777777777777
+      },
+      {
+        "id": "hw613ev",
+        "championshipPosition": 2,
+        "points": 1846,
+        "wins": 6,
+        "top5": 34,
+        "meanFinish": 4.222222222222222
+      }
+    ]
+  },
+  {
+    "series": "premier",
+    "difficulty": "pro",
+    "seed": 101,
+    "races": 36,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "exlfng2",
+        "championshipPosition": 1,
+        "points": 1984,
+        "wins": 17,
+        "top5": 35,
+        "meanFinish": 2.7777777777777777
+      },
+      {
+        "id": "qomajl6",
+        "championshipPosition": 3,
+        "points": 1887,
+        "wins": 8,
+        "top5": 35,
+        "meanFinish": 3.3055555555555554
+      },
+      {
+        "id": "f3b3ru8",
+        "championshipPosition": 2,
+        "points": 1982,
+        "wins": 10,
+        "top5": 36,
+        "meanFinish": 2.0555555555555554
+      }
+    ]
+  },
+  {
+    "series": "premier",
+    "difficulty": "allout",
+    "seed": 3,
+    "races": 36,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "fgy6zmc",
+        "championshipPosition": 1,
+        "points": 1952,
+        "wins": 13,
+        "top5": 34,
+        "meanFinish": 3
+      },
+      {
+        "id": "3zh9fcq",
+        "championshipPosition": 3,
+        "points": 1886,
+        "wins": 11,
+        "top5": 34,
+        "meanFinish": 4.055555555555555
+      },
+      {
+        "id": "08r2ddq",
+        "championshipPosition": 2,
+        "points": 1895,
+        "wins": 11,
+        "top5": 35,
+        "meanFinish": 3.2777777777777777
+      }
+    ]
+  },
+  {
+    "series": "premier",
+    "difficulty": "allout",
+    "seed": 17,
+    "races": 36,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "atv0q12",
+        "championshipPosition": 1,
+        "points": 2040,
+        "wins": 20,
+        "top5": 36,
+        "meanFinish": 1.7222222222222223
+      },
+      {
+        "id": "umku7qm",
+        "championshipPosition": 2,
+        "points": 1958,
+        "wins": 6,
+        "top5": 36,
+        "meanFinish": 2.2222222222222223
+      },
+      {
+        "id": "rggpquc",
+        "championshipPosition": 3,
+        "points": 1907,
+        "wins": 10,
+        "top5": 35,
+        "meanFinish": 3.2222222222222223
+      }
+    ]
+  },
+  {
+    "series": "premier",
+    "difficulty": "allout",
+    "seed": 41,
+    "races": 36,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "vb6h3bw",
+        "championshipPosition": 1,
+        "points": 2011,
+        "wins": 22,
+        "top5": 35,
+        "meanFinish": 2.611111111111111
+      },
+      {
+        "id": "q6btz47",
+        "championshipPosition": 2,
+        "points": 1956,
+        "wins": 7,
+        "top5": 36,
+        "meanFinish": 2.2222222222222223
+      },
+      {
+        "id": "zxi14p6",
+        "championshipPosition": 3,
+        "points": 1850,
+        "wins": 7,
+        "top5": 34,
+        "meanFinish": 4.277777777777778
+      }
+    ]
+  },
+  {
+    "series": "premier",
+    "difficulty": "allout",
+    "seed": 73,
+    "races": 36,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "836528q",
+        "championshipPosition": 3,
+        "points": 1891,
+        "wins": 7,
+        "top5": 35,
+        "meanFinish": 3.3055555555555554
+      },
+      {
+        "id": "ouxg427",
+        "championshipPosition": 1,
+        "points": 2000,
+        "wins": 19,
+        "top5": 35,
+        "meanFinish": 2.611111111111111
+      },
+      {
+        "id": "hw613ev",
+        "championshipPosition": 2,
+        "points": 1966,
+        "wins": 10,
+        "top5": 36,
+        "meanFinish": 2.1666666666666665
+      }
+    ]
+  },
+  {
+    "series": "premier",
+    "difficulty": "allout",
+    "seed": 101,
+    "races": 36,
+    "standingsMatch": true,
+    "contenderConditions": [
+      96,
+      96,
+      96
+    ],
+    "contenders": [
+      {
+        "id": "exlfng2",
+        "championshipPosition": 1,
+        "points": 2052,
+        "wins": 27,
+        "top5": 35,
+        "meanFinish": 2.3333333333333335
+      },
+      {
+        "id": "qomajl6",
+        "championshipPosition": 2,
+        "points": 1899,
+        "wins": 6,
+        "top5": 35,
+        "meanFinish": 3.25
+      },
+      {
+        "id": "f3b3ru8",
+        "championshipPosition": 3,
+        "points": 1863,
+        "wins": 3,
+        "top5": 35,
+        "meanFinish": 3.5
+      }
+    ]
+  }
+]

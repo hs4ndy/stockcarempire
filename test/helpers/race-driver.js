@@ -2,7 +2,7 @@
 // "novice" holds its starting line; "managed" follows gaps and times exits.
 function raceDriverStep(e, state, dt, strategy = 'managed') {
   state.time = (state.time || 0) + dt;
-  if (strategy !== 'managed') { e.keys.a = e.keys.d = e.keys.s = false; return; }
+  if (!['managed','race','race-v1'].includes(strategy)) { e.keys.a = e.keys.d = e.keys.s = false; return; }
   const p = e.player, active = e.cars.filter(c => c !== p && !c.dnf && !c.finished && !c.spinning);
   const ahead = active.filter(c => c.z > p.z).sort((a,b) =>
     a.z-p.z + Math.abs(a.x-p.x)*10 - (b.z-p.z + Math.abs(b.x-p.x)*10))[0];
@@ -15,8 +15,9 @@ function raceDriverStep(e, state, dt, strategy = 'managed') {
     if (ahead) {
       target = ahead.x;
       const closing = p.speed-ahead.speed;
-      const attack = progress > .78 || front-p.z < 65;
-      if (attack && ahead.z-p.z < 19 && p.draftMomentum > 16 && closing > (progress > .78 ? -.2 : 1)) {
+      const attack = ['race','race-v1'].includes(strategy) || progress > .78 || front-p.z < 65;
+      const bumperRun = strategy === 'race' && ahead.z-p.z < 8 && p.draftMomentum > 28 && closing > -1.5;
+      if (attack && ahead.z-p.z < 19 && p.draftMomentum > 16 && (bumperRun || closing > (progress > .78 ? -.2 : 1))) {
         const options = [ahead.x-3.1,ahead.x+3.1].filter(x => e._laneSafe(p,x));
         if (options.length) {
           target = options.sort((a,b) => Math.abs(a-p.x)-Math.abs(b-p.x))[0];

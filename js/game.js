@@ -152,6 +152,27 @@ function setCarNumber(carId, num) {
 }
 
 // ─── AI Team factory ────────────────────────────────────────
+// Derived from the season's fixed equipment ratings, not current points/form.
+// Stable IDs keep the same three rivals across races and save/load; no migration.
+function championshipContenderIds() {
+  const rivals = (game?.season?.aiTeams || []).flatMap(t => t.cars)
+    .filter(c => c.id && Number.isFinite(c.power));
+  rivals.sort((a,b) => b.power-a.power || (a.number || 999)-(b.number || 999) || String(a.id).localeCompare(String(b.id)));
+  return new Set(rivals.slice(0,3).map(c => c.id));
+}
+
+function rivalPreparationCondition(condition, contender = false) {
+  return clamp(Math.max(condition,contender ? 96 : 90),0,100);
+}
+
+function careerRivalPower(car, contender = false) {
+  // Rival teams service their cars between events. Apply the same preparation
+  // on entry so older midseason saves with exhausted rivals recover immediately.
+  const contenderFloor = [.92,.95,.99][game?.currentSeries ?? 0] ?? .92;
+  const power = contender ? Math.max(car.power+.035,contenderFloor) : car.power;
+  return clamp(power * rivalPreparationCondition(car.condition,contender) / 100, .25, contender ? .99 : .95);
+}
+
 function makeAITeam(template, seriesLevel) {
   // Scale AI power to series level
   const powerBase = template.basePower + seriesLevel * 0.15;
@@ -453,10 +474,12 @@ function postRaceUpdate(playerResult, earnings, allResults) {
     }
   });
 
-  // AI car condition degrades too
+  // Rival teams also perform routine garage work between events. Without it,
+  // every rival reached zero condition partway through a long season.
+  const contenders = championshipContenderIds();
   game.season.aiTeams.forEach(team => {
     team.cars.forEach(c => {
-      c.condition = clamp(c.condition - randInt(5, 15), 0, 100);
+      c.condition = rivalPreparationCondition(c.condition-randInt(5,15),contenders.has(c.id));
     });
   });
 
