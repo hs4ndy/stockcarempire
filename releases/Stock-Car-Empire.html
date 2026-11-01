@@ -1028,7 +1028,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 110</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 111</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -3463,7 +3463,7 @@ function launch3DRace(config, onComplete) {
           <div class="r3d-draft-label" id="r3d-draft">Draft</div>
           <div class="r3d-draft-meter"><div class="r3d-draft-fill" id="r3d-draft-fill"></div></div>
         </div>
-      ${!config.practiceTips && raceFeatureRules(config.difficulty,config.raceRules).damage ? '<div class="r3d-health" id="r3d-health" role="progressbar" aria-label="Vehicle health" aria-valuemin="0" aria-valuemax="100"><span>Vehicle health <strong id="r3d-health-value">100%</strong></span><div><i id="r3d-health-fill"></i></div></div>' : ''}
+      ${!config.practiceTips && raceFeatureRules(config.difficulty,config.raceRules).damage ? '<div class="r3d-health" id="r3d-health" role="progressbar" aria-label="Vehicle condition" aria-valuemin="0" aria-valuemax="100"><span>Vehicle condition <strong id="r3d-health-value">100%</strong></span><div><i id="r3d-health-fill"></i></div></div>' : ''}
       </div>
 
       <div class="r3d-progress-wrap">
@@ -3502,7 +3502,7 @@ function launch3DRace(config, onComplete) {
         <div class="dual-player-label">Player ${n} · ${n === 1 ? 'A / S / D' : 'J / K / L'}</div>
         <div class="dual-mirror" id="dual-mirror-${n}"></div>
         ${n === 1 ? '<div class="r3d-order dual-order" id="dual-order-1"></div>' : ''}
-        <div class="dual-data">${raceFeatureRules(config.difficulty,config.raceRules).damage ? `<span class="dual-health" id="dual-health-${n}">Vehicle health 100%</span>` : ''}<span id="dual-pos-${n}"></span><span><strong id="dual-speed-${n}">0</strong> MPH</span><span>Draft <strong id="dual-draft-${n}">0</strong>%</span></div>
+        <div class="dual-data">${raceFeatureRules(config.difficulty,config.raceRules).damage ? `<span class="dual-health" id="dual-health-${n}">Vehicle condition 100%</span>` : ''}<span id="dual-pos-${n}"></span><span><strong id="dual-speed-${n}">0</strong> MPH</span><span>Draft <strong id="dual-draft-${n}">0</strong>%</span></div>
       </section>`).join('')}</div><div class="dual-progress" aria-label="Race progress for both players"><span>Start</span><span>Finish</span><div>${[1,2].map(n=>`<i id="dual-progress-${n}" aria-label="Player ${n} progress"></i>`).join('')}</div></div>`);
     document.getElementById('r3d-hint').textContent = 'P1: A / S / D     P2: J / K / L     Esc: Pause';
   }
@@ -5095,7 +5095,7 @@ class Race3DEngine {
     }
   }
 
-  _emitWallSparks(x,z,speed,side,count) {
+  _emitWallSparks(x,z,speed,side,count,underbody=false) {
     if(!this.scene) return; // headless physics uses the same contact solver
     if(!this._wallSparks) {
       this._wallSparks=Array.from({length:384},()=>({life:0}));this._sparkCursor=0;this._sparkSeed=12345;
@@ -5112,10 +5112,26 @@ class Race3DEngine {
       p.x=x-side*.06;p.y=.4+random()*.4;p.z=z+(random()-.5)*.8;
       p.vx=-side*(2+random()*7);p.vy=2+random()*6;p.vz=-speed*(.18+random()*.3);
       p.life=p.maxLife=.35+random()*.3;
+      if(underbody) {
+        p.x=x+(random()-.5)*1.2;p.y=.25+random()*.12;p.z=z+(random()-.5)*1.6;
+        p.vx=(random()-.5)*3;p.vy=1.5+random()*2;p.vz=-speed*(.2+random()*.12);
+        p.life=p.maxLife=.4+random()*.2;
+      }
     }
   }
 
   _stepWallSparks(dt) {
+    if(this.paused) return;
+    // Reuse the wall pool and private visual RNG; never alter driving state.
+    if(this.scene && this._incidentRules().damage) for(const car of this.cars) {
+      car._conditionSparkWait=Math.max(0,(car._conditionSparkWait||0)-dt);
+      const nearby=car.isPlayer || Math.abs(car.z-this.player.z)<180 ||
+        (this.player2 && Math.abs(car.z-this.player2.z)<180);
+      if(!car.finished && !car.dnf && car.raceHealth<50 && car.speed>5 && nearby && !car._conditionSparkWait) {
+        this._emitWallSparks(car.x,car.z,car.speed,0,3,true);
+        car._conditionSparkWait=.025;
+      }
+    }
     if(!this._wallSparks) return;
     const g=this._sparkMesh.geometry,pos=g.attributes.position,col=g.attributes.color;let index=0;
     for(const p of this._wallSparks) {
@@ -5525,7 +5541,7 @@ class Race3DEngine {
     });
     [this.player,this.player2].forEach((p,i)=>{
       const n=i+1, pos=ranked.indexOf(p)+1;
-      const health=document.getElementById(`dual-health-${n}`);if(health)health.textContent=`Vehicle health ${Math.ceil(p.raceHealth ?? 100)}%`;
+      const health=document.getElementById(`dual-health-${n}`);if(health)health.textContent=`Vehicle condition ${Math.ceil(p.raceHealth ?? 100)}%`;
       document.getElementById(`dual-pos-${n}`).textContent = p.finished ? `Finished P${pos}` : `P${pos} / ${this.cars.length}`;
       document.getElementById(`dual-speed-${n}`).textContent = Math.round(p.speed*.78+33*(this.speedScale ?? 1));
       document.getElementById(`dual-draft-${n}`).textContent = Math.round(clamp((p.draftMomentum || 0)/R3D.AERO_MAX,0,1)*100);

@@ -188,7 +188,7 @@ function launch3DRace(config, onComplete) {
           <div class="r3d-draft-label" id="r3d-draft">Draft</div>
           <div class="r3d-draft-meter"><div class="r3d-draft-fill" id="r3d-draft-fill"></div></div>
         </div>
-      ${!config.practiceTips && raceFeatureRules(config.difficulty,config.raceRules).damage ? '<div class="r3d-health" id="r3d-health" role="progressbar" aria-label="Vehicle health" aria-valuemin="0" aria-valuemax="100"><span>Vehicle health <strong id="r3d-health-value">100%</strong></span><div><i id="r3d-health-fill"></i></div></div>' : ''}
+      ${!config.practiceTips && raceFeatureRules(config.difficulty,config.raceRules).damage ? '<div class="r3d-health" id="r3d-health" role="progressbar" aria-label="Vehicle condition" aria-valuemin="0" aria-valuemax="100"><span>Vehicle condition <strong id="r3d-health-value">100%</strong></span><div><i id="r3d-health-fill"></i></div></div>' : ''}
       </div>
 
       <div class="r3d-progress-wrap">
@@ -227,7 +227,7 @@ function launch3DRace(config, onComplete) {
         <div class="dual-player-label">Player ${n} · ${n === 1 ? 'A / S / D' : 'J / K / L'}</div>
         <div class="dual-mirror" id="dual-mirror-${n}"></div>
         ${n === 1 ? '<div class="r3d-order dual-order" id="dual-order-1"></div>' : ''}
-        <div class="dual-data">${raceFeatureRules(config.difficulty,config.raceRules).damage ? `<span class="dual-health" id="dual-health-${n}">Vehicle health 100%</span>` : ''}<span id="dual-pos-${n}"></span><span><strong id="dual-speed-${n}">0</strong> MPH</span><span>Draft <strong id="dual-draft-${n}">0</strong>%</span></div>
+        <div class="dual-data">${raceFeatureRules(config.difficulty,config.raceRules).damage ? `<span class="dual-health" id="dual-health-${n}">Vehicle condition 100%</span>` : ''}<span id="dual-pos-${n}"></span><span><strong id="dual-speed-${n}">0</strong> MPH</span><span>Draft <strong id="dual-draft-${n}">0</strong>%</span></div>
       </section>`).join('')}</div><div class="dual-progress" aria-label="Race progress for both players"><span>Start</span><span>Finish</span><div>${[1,2].map(n=>`<i id="dual-progress-${n}" aria-label="Player ${n} progress"></i>`).join('')}</div></div>`);
     document.getElementById('r3d-hint').textContent = 'P1: A / S / D     P2: J / K / L     Esc: Pause';
   }

@@ -50,3 +50,7 @@ test('repair rates are ten percent lower and mechanic discount still applies',()
 test('AI-only contact builds one quarter strain, human-caused AI strain drops twenty percent',()=>{
  assert.equal(run(`(()=>{const e=engine(),a=car(),b=car();e.cars=[a,b];e._sideContact(a,b,4,1,.1,1);if(Math.abs(a.sideStrain-.2625)>.00001)return false;const p=car(true),c=car();e.cars=[p,c];e._sideContact(p,c,4,1,.1,1);return Math.abs(c.sideStrain-.84)<.00001&&Math.abs(p.sideStrain-1.05)<.00001;})()`),true);
 });
+
+test('condition sparks require below fifty, moving, damage-enabled traffic and freeze on pause',()=>{
+ assert.equal(run(`(()=>{const e=engine(),p=car(true);e.scene={};e.player=p;e.cars=[p];let emitted=0;e._emitWallSparks=(x,z,speed,side,count,under)=>{if(!under)throw Error('wrong emitter');emitted+=count;};p.raceHealth=50;e._stepWallSparks(.01);if(emitted)return false;p.raceHealth=49;e._stepWallSparks(.01);if(emitted!==3)return false;e.paused=true;e._stepWallSparks(1);if(emitted!==3)return false;e.paused=false;e.config.raceRules.damage=false;delete e._raceFeatures;e._stepWallSparks(1);return emitted===3;})()`),true);
+});

@@ -155,7 +155,7 @@
     });
     [this.player,this.player2].forEach((p,i)=>{
       const n=i+1, pos=ranked.indexOf(p)+1;
-      const health=document.getElementById(`dual-health-${n}`);if(health)health.textContent=`Vehicle health ${Math.ceil(p.raceHealth ?? 100)}%`;
+      const health=document.getElementById(`dual-health-${n}`);if(health)health.textContent=`Vehicle condition ${Math.ceil(p.raceHealth ?? 100)}%`;
       document.getElementById(`dual-pos-${n}`).textContent = p.finished ? `Finished P${pos}` : `P${pos} / ${this.cars.length}`;
       document.getElementById(`dual-speed-${n}`).textContent = Math.round(p.speed*.78+33*(this.speedScale ?? 1));
       document.getElementById(`dual-draft-${n}`).textContent = Math.round(clamp((p.draftMomentum || 0)/R3D.AERO_MAX,0,1)*100);

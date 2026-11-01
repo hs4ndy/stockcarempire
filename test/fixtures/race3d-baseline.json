@@ -335,7 +335,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "fce02aaabde2b8c8e4eec65b73df3a8d712103522f8a59b4674dec56f5f81fdc"
+      "hash": "2c141d4c3f0fd7a0fcabbc92a07c1e57afe4a87a84901112be1cd3aebb632754"
     },
     {
       "name": "_stepWallSparks",
@@ -343,7 +343,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "383d6692f63cf5b56a5eaebd40655e6ae09012dac6636d5bcf126f611f2bd846"
+      "hash": "d56773a5e377625412ffe00a1cc1a50279f62c84dd1b979c1ea16f0bafdbc77f"
     },
     {
       "name": "_checkCollisions",
@@ -487,7 +487,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "f03f6851b9544c0b7f0c1dd58e6d42375ac84ab4fff0b88202cb5d8c5624cce9"
+      "hash": "45b0e3f54acc84b7b4c580a81891e2600b03dcaef85398374fcf22a8fe5eae7d"
     },
     {
       "name": "_renderDual",
@@ -543,8 +543,11 @@
     {
       "name": "launch3DRace",
       "length": 2,
-      "hash": "01cada94da0e1040de2030b764bcfa2c17b1231c564421f709dc3380a2f3630b"
+      "hash": "91ee9ce6989f98b05a05929e4a70da099e9e43435607f89a2208ed95625b4433"
     }
   ],
-  "sourceCommit": "20c3f0c77f0934c085371c2e19c73357fe1c9b58"
+  "sourceCommit": "20c3f0c77f0934c085371c2e19c73357fe1c9b58",
+  "approvedUpdates": {
+    "version111": "Only spark emitter/step, dual HUD and launch labels updated for requested condition visuals."
+  }
 }

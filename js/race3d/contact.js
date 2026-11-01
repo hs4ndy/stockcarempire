@@ -167,7 +167,7 @@
     }
   }
 
-  _emitWallSparks(x,z,speed,side,count) {
+  _emitWallSparks(x,z,speed,side,count,underbody=false) {
     if(!this.scene) return; // headless physics uses the same contact solver
     if(!this._wallSparks) {
       this._wallSparks=Array.from({length:384},()=>({life:0}));this._sparkCursor=0;this._sparkSeed=12345;
@@ -184,10 +184,26 @@
       p.x=x-side*.06;p.y=.4+random()*.4;p.z=z+(random()-.5)*.8;
       p.vx=-side*(2+random()*7);p.vy=2+random()*6;p.vz=-speed*(.18+random()*.3);
       p.life=p.maxLife=.35+random()*.3;
+      if(underbody) {
+        p.x=x+(random()-.5)*1.2;p.y=.25+random()*.12;p.z=z+(random()-.5)*1.6;
+        p.vx=(random()-.5)*3;p.vy=1.5+random()*2;p.vz=-speed*(.2+random()*.12);
+        p.life=p.maxLife=.4+random()*.2;
+      }
     }
   }
 
   _stepWallSparks(dt) {
+    if(this.paused) return;
+    // Reuse the wall pool and private visual RNG; never alter driving state.
+    if(this.scene && this._incidentRules().damage) for(const car of this.cars) {
+      car._conditionSparkWait=Math.max(0,(car._conditionSparkWait||0)-dt);
+      const nearby=car.isPlayer || Math.abs(car.z-this.player.z)<180 ||
+        (this.player2 && Math.abs(car.z-this.player2.z)<180);
+      if(!car.finished && !car.dnf && car.raceHealth<50 && car.speed>5 && nearby && !car._conditionSparkWait) {
+        this._emitWallSparks(car.x,car.z,car.speed,0,3,true);
+        car._conditionSparkWait=.025;
+      }
+    }
     if(!this._wallSparks) return;
     const g=this._sparkMesh.geometry,pos=g.attributes.position,col=g.attributes.color;let index=0;
     for(const p of this._wallSparks) {
