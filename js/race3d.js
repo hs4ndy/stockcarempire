@@ -1566,7 +1566,10 @@ class Race3DEngine {
     for(const [car,side] of [[a,-dir],[b,dir]]) {
       if(car.spinning || car._crashGrace>0) continue;
       this._damageCar(car,(Math.max(0,closing-1)*5+pressure*.8)*dt);
-      car.sideStrain=(car.sideStrain||0)+strain;car._recentSide=.5;
+      // AI door contact needs sustained force; human-caused AI strain is
+      // reduced modestly, AI-only strain substantially. Player tolerance stays.
+      const strainScale = car.isPlayer ? 1 : (a.isPlayer || b.isPlayer ? .80 : .25);
+      car.sideStrain=(car.sideStrain||0)+strain*strainScale;car._recentSide=.5;
       const threshold=this._crashThreshold(car);
       if(rules.crashes && car.sideStrain>=threshold) this._beginCrash(car,side,'side contact');
     }
@@ -1648,10 +1651,10 @@ class Race3DEngine {
     if(!this._incidentRules().crashes || car.z<1000 || car.spinning) return;
     car._shoulderWait=Math.max(0,(car._shoulderWait||0)-dt);
     if(car._shoulderTime>0) {car._shoulderTime-=dt;car.targetX=car._shoulderTarget;return;}
-    if(car._shoulderWait>0 || Math.random()>.12*dt*this.diff.aiAggro) return;
+    if(car._shoulderWait>0 || Math.random()>.04*dt*this.diff.aiAggro) return;
     const other=this.cars.filter(c=>c!==car && !c.isPlayer && !c.spinning && !c.dnf && !c.finished && Math.abs(c.z-car.z)<2 && Math.abs(c.x-car.x)>1.5 && Math.abs(c.x-car.x)<3).sort((a,b)=>Math.abs(a.x-car.x)-Math.abs(b.x-car.x))[0];
     if(!other) return;
-    car._shoulderWait=7;car._shoulderTime=.8;
+    car._shoulderWait=12;car._shoulderTime=.8;
     car._shoulderTarget=clamp(other.x-Math.sign(other.x-car.x)*1.1,-7.5,7.5);
     car.targetX=car._shoulderTarget;
   }

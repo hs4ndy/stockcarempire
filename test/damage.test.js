@@ -46,3 +46,7 @@ test('repair rates are ten percent lower and mechanic discount still applies',()
  assert.equal(run(`(()=>{if(JSON.stringify(Object.values(CAR_CLASSES).map(c=>c.repairCostPerPoint))!==JSON.stringify([72,270,1350]))return false;newGame('T','D','C');game.money=100000;const c=game.cars[0];c.condition=50;const normal=repairCar(c.id).cost;c.condition=50;game.staff.push({typeId:'mechanic'});const discount=repairCar(c.id).cost;return normal===3600&&discount===2700;})()`),true);
 });
 
+
+test('AI-only contact builds one quarter strain, human-caused AI strain drops twenty percent',()=>{
+ assert.equal(run(`(()=>{const e=engine(),a=car(),b=car();e.cars=[a,b];e._sideContact(a,b,4,1,.1,1);if(Math.abs(a.sideStrain-.2625)>.00001)return false;const p=car(true),c=car();e.cars=[p,c];e._sideContact(p,c,4,1,.1,1);return Math.abs(c.sideStrain-.84)<.00001&&Math.abs(p.sideStrain-1.05)<.00001;})()`),true);
+});
