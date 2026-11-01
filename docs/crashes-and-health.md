@@ -36,3 +36,5 @@ User playtest found race health far too sensitive. All played-engine damage inpu
 
 ## VERSION106 contact/repair tuning
 Repairs cost10% less per condition point across all classes (72/270/1350), retaining mechanic discount. Human side-strain threshold80 vs62; collection adds12 vs18 human strain. AI shoulder rate .12 vs .10 per second times aggression and cooldown7 vs8 seconds. Crash thresholds for AI unchanged. Wreck contact now uses rotated car-sized footprints and includes veer phase, instead of fixed2x3.5 center window/late spin angle. Collection bounded to4 additional/5 simultaneous cars instead of2/3; contact is required and paths are unchanged. Recoverable/easy-mode/toggle rules retained. Draft aero target and cap both scaled1.15 for every difficulty and human/AI, preserving per-difficulty factors; speed ceilings remain. Initial tuning, no new observed race-frequency claim.
+
+VERSION107 drafting correction: restore VERSION105 AI aero target/cap; apply1.15 only to humans (both split players) at all difficulties. Per-difficulty factors retained. VERSION106 repair/crash changes unchanged.

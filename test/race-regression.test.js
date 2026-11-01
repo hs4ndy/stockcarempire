@@ -1025,9 +1025,9 @@ test('developing Career tow efficiency is shared by every car and keeps upgrade 
  for(const row of rows){assert.equal(row.equal,true);for(let i=1;i<row.values.length;i++)assert.ok(row.values[i]>row.values[i-1]);}
 });
 
-test('every difficulty keeps its draft differences with a shared fifteen percent gain',()=>{
+test('every difficulty gives humans fifteen percent more draft while AI retains VERSION105 pace',()=>{
  const c=physicsContext();const rows=readJson(c,`DIFFICULTIES.map(d=>[false,true].map(human=>{
-  const run=gain=>{R3D.DRAFT_STRENGTH=gain;const p=car('player',0,0,210),a=car('a',0,30,210),e=engine([p,a],d.id);p.isPlayer=human;for(let i=0;i<300;i++)e._calcDraft(1/60);return p.draftBoost;};
-  return {base:run(1),boost:run(1.15)};
- })).flat()`);for(const r of rows){assert.ok(r.base>0);assert.ok(Math.abs(r.boost/r.base-1.15)<.00001);}
+  const run=gain=>{R3D.PLAYER_DRAFT_STRENGTH=gain;const p=car('player',0,0,210),a=car('a',0,30,210),e=engine([p,a],d.id);p.isPlayer=human;for(let i=0;i<300;i++)e._calcDraft(1/60);return p.draftBoost;};
+  return {human,base:run(1),boost:run(1.15)};
+ })).flat()`);for(const r of rows){assert.ok(r.base>0);assert.ok(Math.abs(r.boost/r.base-(r.human?1.15:1))<.00001);}
 });
