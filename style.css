@@ -968,3 +968,9 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .graveyard-car { overflow-wrap: anywhere; }
 .graveyard-car + .graveyard-car { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--line); }
 .dual-data { flex-wrap: wrap; justify-content: center; width: max-content; max-width: calc(100% - 24px); white-space: normal; }
+
+/* Named support recruitment inherits Team rows and shared controls. */
+.staff-ovr { display: inline-block; margin-left: 8px; color: var(--good); font-size: 14px; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.staff-filter { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 16px 0; }
+.staff-filter label { color: var(--text-dim); font-size: 14px; }
+.staff-filter select { width: auto; max-width: 100%; min-height: 44px; }

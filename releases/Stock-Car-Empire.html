@@ -988,6 +988,12 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .graveyard-car + .graveyard-car { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--line); }
 .dual-data { flex-wrap: wrap; justify-content: center; width: max-content; max-width: calc(100% - 24px); white-space: normal; }
 
+/* Named support recruitment inherits Team rows and shared controls. */
+.staff-ovr { display: inline-block; margin-left: 8px; color: var(--good); font-size: 14px; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.staff-filter { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 16px 0; }
+.staff-filter label { color: var(--text-dim); font-size: 14px; }
+.staff-filter select { width: auto; max-width: 100%; min-height: 44px; }
+
 </style>
 </head>
 <body>
@@ -1028,7 +1034,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 113</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 114</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -1381,15 +1387,15 @@ const STAFF_TYPES = [
   {
     id: 'engineer',
     name: 'Race Engineer',
-    description: 'Optimizes car setup between races. Adds flat speed/handling to your best car.',
+    description: 'Finds setup improvements for simulated races.',
     weeklyCost: [1400, 2800, 5500],
-    bonus: '+4 effective speed/handling on assigned car',
+    bonus: 'Improves simulated setup score',
     max: 2
   },
   {
     id: 'mechanic',
-    name: 'Senior Mechanic',
-    description: 'Reduces car repair costs and improves reliability.',
+    name: 'Race Mechanic',
+    description: 'Reduces repair costs. The best mechanic discount applies.',
     weeklyCost: [900, 1800, 3600],
     bonus: '25% discount on all repair costs',
     max: 3
@@ -1399,7 +1405,7 @@ const STAFF_TYPES = [
     name: 'Data Analyst',
     description: 'Pores over practice data to find the quick way round, and identifies extra parts your crew can fit.',
     weeklyCost: [1600, 3200, 6400],
-    bonus: 'Stronger qualifying, plus one extra upgrade slot per tier',
+    bonus: 'Stronger qualifying and extra upgrade slots per tier',
     max: 2
   },
   {
@@ -1412,40 +1418,74 @@ const STAFF_TYPES = [
   }
 ];
 
-// ── Commercial Director effects ─────────────────────────────
+// Named support staff. Salaries use the role's series rate; signing costs four salaries.
+// Effects are explicit rather than derived from OVR, allowing different specialties.
+const STAFF_CANDIDATES = [
+  {id:'chief01',typeId:'crew_chief',name:'Owen Brooks',overall:60,pay:.55,effects:{simulation:1}},
+  {id:'chief02',typeId:'crew_chief',name:'Denise Carter',overall:70,pay:.75,effects:{simulation:1.5}},
+  {id:'chief03',typeId:'crew_chief',name:'Marcus Reed',overall:79,pay:1,effects:{simulation:2}},
+  {id:'chief04',typeId:'crew_chief',name:'Elena Price',overall:87,pay:1.35,effects:{simulation:2.5}},
+  {id:'chief05',typeId:'crew_chief',name:'Victor Hayes',overall:95,pay:1.9,effects:{simulation:3}},
+  {id:'engineer01',typeId:'engineer',name:'Noah Bennett',overall:60,pay:.55,effects:{simulation:1}},
+  {id:'engineer02',typeId:'engineer',name:'Maya Foster',overall:70,pay:.75,effects:{simulation:1.5}},
+  {id:'engineer03',typeId:'engineer',name:'Adrian Cole',overall:79,pay:1,effects:{simulation:2}},
+  {id:'engineer04',typeId:'engineer',name:'Sienna Walsh',overall:87,pay:1.35,effects:{simulation:3}},
+  {id:'engineer05',typeId:'engineer',name:'Julian Mercer',overall:95,pay:1.9,effects:{simulation:4}},
+  {id:'mechanic01',typeId:'mechanic',name:'Eli Turner',overall:60,pay:.55,effects:{repairDiscount:.12}},
+  {id:'mechanic02',typeId:'mechanic',name:'Rosa Delgado',overall:70,pay:.75,effects:{repairDiscount:.18}},
+  {id:'mechanic03',typeId:'mechanic',name:'Byron Hill',overall:79,pay:1,effects:{repairDiscount:.25}},
+  {id:'mechanic04',typeId:'mechanic',name:'Claire Dawson',overall:87,pay:1.35,effects:{repairDiscount:.30}},
+  {id:'mechanic05',typeId:'mechanic',name:'Travis Morgan',overall:95,pay:1.9,effects:{repairDiscount:.35}},
+  {id:'analyst01',typeId:'data_analyst',name:'Leah Grant',overall:60,pay:.55,effects:{qualifying:3,upgradeSlots:1,simulation:.5}},
+  {id:'analyst02',typeId:'data_analyst',name:'Isaac Moore',overall:70,pay:.75,effects:{qualifying:5,upgradeSlots:1,simulation:1}},
+  {id:'analyst03',typeId:'data_analyst',name:'Nina Patel',overall:79,pay:1,effects:{qualifying:7,upgradeSlots:1,simulation:2}},
+  {id:'analyst04',typeId:'data_analyst',name:'Theo Lawson',overall:87,pay:1.35,effects:{qualifying:8,upgradeSlots:2,simulation:2.25}},
+  {id:'analyst05',typeId:'data_analyst',name:'Avery Chen',overall:95,pay:1.9,effects:{qualifying:9,upgradeSlots:2,simulation:2.5}},
+  {id:'director01',typeId:'commercial_director',name:'Ben Wallace',overall:60,pay:.55,effects:{sponsorSlots:1,sponsorBonus:0.02}},
+  {id:'director02',typeId:'commercial_director',name:'Camila Ross',overall:70,pay:.75,effects:{sponsorSlots:1,sponsorBonus:0.04}},
+  {id:'director03',typeId:'commercial_director',name:'Miles Sutton',overall:79,pay:1,effects:{sponsorSlots:2,sponsorBonus:0.06}},
+  {id:'director04',typeId:'commercial_director',name:'Paige Ellis',overall:87,pay:1.35,effects:{sponsorSlots:2,sponsorBonus:0.08}},
+  {id:'director05',typeId:'commercial_director',name:'Dominic Blake',overall:95,pay:1.9,effects:{sponsorSlots:2,sponsorBonus:0.1}},
+];
 const BASE_SPONSOR_SLOTS = 3;
 const SLOTS_PER_DIRECTOR = 2;
-const MAX_SPONSOR_SLOTS  = 7;
-
-function commercialDirectorCount() {
-  return (typeof game !== 'undefined' && game && game.staff)
-    ? game.staff.filter(s => s.typeId === 'commercial_director').length
-    : 0;
+const MAX_SPONSOR_SLOTS = 7;
+const ANALYST_QUALI_BONUS = 7;
+const ANALYST_TIER_SLOTS = 1;
+const LEGACY_STAFF_EFFECTS = {
+  crew_chief:{simulation:2}, engineer:{simulation:2}, mechanic:{repairDiscount:.25},
+  data_analyst:{qualifying:7,upgradeSlots:1,simulation:2}, commercial_director:{sponsorSlots:2},
+};
+function staffEffects(member) {
+  return member.effects || LEGACY_STAFF_EFFECTS[member.typeId] || {};
 }
-
-// How many sponsor deals you may run at once
-function sponsorSlots() {
-  return Math.min(
-    MAX_SPONSOR_SLOTS,
-    BASE_SPONSOR_SLOTS + commercialDirectorCount() * SLOTS_PER_DIRECTOR
-  );
+function staffTotal(effect, typeId) {
+  const members = typeof game !== 'undefined' && game ? game.staff || [] : [];
+  const selected = members.filter(s => !typeId || s.typeId === typeId);
+  // Engineer setup was historically a single team benefit, even with two hires.
+  if (effect === 'simulation') {
+    const engineers = selected.filter(s=>s.typeId==='engineer');
+    return selected.filter(s=>s.typeId!=='engineer').reduce((n,s)=>n+(staffEffects(s)[effect] || 0),0)
+      + Math.max(0,...engineers.map(s=>staffEffects(s)[effect] || 0));
+  }
+  return selected.reduce((sum,s) => sum + (staffEffects(s)[effect] || 0), 0);
 }
-
-// ── Data Analyst effects ────────────────────────────────────
-// Each analyst sharpens qualifying and opens another slot in every upgrade
-// tier, so a well-staffed team can fit more parts than a bare-bones one.
-const ANALYST_QUALI_BONUS = 7;   // qualifying score per analyst
-const ANALYST_TIER_SLOTS  = 1;   // extra parts allowed per tier, per analyst
-
-function analystCount() {
-  return (typeof game !== 'undefined' && game && game.staff)
-    ? game.staff.filter(s => s.typeId === 'data_analyst').length
-    : 0;
+function commercialDirectorCount() { return (typeof game !== 'undefined' && game?.staff || []).filter(s=>s.typeId==='commercial_director').length; }
+function analystCount() { return (typeof game !== 'undefined' && game?.staff || []).filter(s=>s.typeId==='data_analyst').length; }
+function sponsorSlots() { return Math.min(MAX_SPONSOR_SLOTS, BASE_SPONSOR_SLOTS + staffTotal('sponsorSlots')); }
+function tierCapacity() { return MAX_PER_TIER + staffTotal('upgradeSlots'); }
+function staffRepairDiscount() {
+  return Math.max(0,...(game.staff || []).map(s=>staffEffects(s).repairDiscount || 0));
 }
-
-// Upgrade slots available per tier, including anything the analysts unlock
-function tierCapacity() {
-  return MAX_PER_TIER + analystCount() * ANALYST_TIER_SLOTS;
+function staffSalary(candidate, series = game.currentSeries) {
+  return Math.round(STAFF_TYPES.find(t=>t.id===candidate.typeId).weeklyCost[series] * candidate.pay);
+}
+function staffBenefitText(member) {
+  const e = staffEffects(member);
+  if (member.typeId === 'mechanic') return `${Math.round(e.repairDiscount*100)}% repair discount (best mechanic applies)`;
+  if (member.typeId === 'data_analyst') return `+${e.upgradeSlots} upgrade slot${e.upgradeSlots===1?'':'s'} per tier · +${e.qualifying} qualifying score · +${e.simulation} simulated setup`;
+  if (member.typeId === 'commercial_director') return `+${e.sponsorSlots} sponsor slot${e.sponsorSlots===1?'':'s'} (7 total maximum)${e.sponsorBonus ? ` · +${Math.round(e.sponsorBonus*100)}% sponsor income` : ''}`;
+  return `+${e.simulation} simulated ${member.typeId==='crew_chief'?'strategy':'setup'} score${member.typeId==='engineer'?' (best engineer applies)':''}`;
 }
 
 const HIREABLE_DRIVERS = [
@@ -1718,6 +1758,7 @@ function loadFromSlot(slot) {
     }
     game = loaded;
     normalizeVehicleState();
+    normalizeSupportStaff();
     retireExhaustedCars();
     currentSlot = slot;
     return true;
@@ -2183,6 +2224,7 @@ function postRaceUpdate(playerResult, earnings, allResults) {
     else if (deal.cond === 'top3' && pos <= 3) sponsorPay += deal.bonus;
     else if (deal.cond === 'win' && pos === 1)  sponsorPay += deal.bonus;
   });
+  sponsorPay = Math.round(sponsorPay * (1 + staffTotal('sponsorBonus')));
   game.money += sponsorPay;
 
   // Your hired drivers gain experience from the race they just ran
@@ -2212,6 +2254,7 @@ function skipRace() {
     const deal = SPONSOR_DEALS.find(d => d.id === sid);
     if (deal) sponsorPay += deal.weekly * skipMult;
   });
+  sponsorPay = Math.round(sponsorPay * (1 + staffTotal('sponsorBonus')));
   game.money += sponsorPay;
   saveGame();
 }
@@ -2400,8 +2443,7 @@ function repairCar(carId) {
   if (car.condition >= 100) return { ok: false, msg: 'Car is already in perfect condition.' };
 
   const cls = CAR_CLASSES[car.classId];
-  const hasMechanic = game.staff.some(s => s.typeId === 'mechanic');
-  const discount = hasMechanic ? 0.75 : 1.0;
+  const discount = 1 - staffRepairDiscount();
   const damage = 100 - car.condition;
   const cost = Math.round(damage * cls.repairCostPerPoint * discount);
 
@@ -2579,21 +2621,36 @@ function renameCar(carId, newName) {
 }
 
 // ─── Staff management ────────────────────────────────────────
-function hireStaff(typeId) {
-  const type = STAFF_TYPES.find(s => s.id === typeId);
-  if (!type) return { ok: false, msg: 'Unknown staff type.' };
-
-  const currentCount = game.staff.filter(s => s.typeId === typeId).length;
-  if (currentCount >= type.max) return { ok: false, msg: `You can only hire ${type.max} ${type.name}(s).` };
-
-  const weeklyCost = type.weeklyCost[game.currentSeries];
+// Older generic hires retain contracts and effects; give them named identities once.
+function normalizeSupportStaff() {
+  game.staff = game.staff || [];
+  for (const member of game.staff) {
+    if (member.candidateId || member.overall) continue;
+    const candidates = STAFF_CANDIDATES.filter(c=>c.typeId===member.typeId);
+    const candidate = candidates.find(c=>c.overall===79 && !game.staff.some(s=>s.candidateId===c.id))
+      || candidates.find(c=>!game.staff.some(s=>s.candidateId===c.id));
+    if (!candidate) continue;
+    Object.assign(member,{candidateId:candidate.id,name:candidate.name,overall:candidate.overall,
+      effects:{...LEGACY_STAFF_EFFECTS[member.typeId]}});
+  }
+}
+function hireStaff(candidateId) {
+  // Keep role-ID calls working for older integrations; choose the standard specialist.
+  const candidate = STAFF_CANDIDATES.find(c=>c.id===candidateId)
+    || STAFF_CANDIDATES.find(c=>c.typeId===candidateId && c.overall===79);
+  if (!candidate) return {ok:false,msg:'Unknown staff member.'};
+  const type = STAFF_TYPES.find(t=>t.id===candidate.typeId);
+  if (game.staff.some(s=>s.candidateId===candidate.id)) return {ok:false,msg:'Already hired.'};
+  if (game.staff.filter(s=>s.typeId===type.id).length >= type.max)
+    return {ok:false,msg:`You can only hire ${type.max} ${type.name}(s).`};
+  const weeklyCost = staffSalary(candidate);
   const signingFee = weeklyCost * 4;
-  if (game.money < signingFee) return { ok: false, msg: `Signing fee is ${fmt$(signingFee)}.` };
-
+  if (game.money < signingFee) return {ok:false,msg:`Signing fee is ${fmt$(signingFee)}.`};
   game.money -= signingFee;
-  game.staff.push({ id: uid(), typeId, name: type.name, weeklyCost });
+  game.staff.push({id:uid(),candidateId:candidate.id,typeId:type.id,name:candidate.name,
+    overall:candidate.overall,weeklyCost,effects:{...candidate.effects}});
   saveGame();
-  return { ok: true };
+  return {ok:true,name:candidate.name};
 }
 
 function fireStaff(staffId) {
@@ -2754,10 +2811,11 @@ function sponsorCarMultiplier() {
 
 function weeklySponsorIncome() {
   const mult = sponsorCarMultiplier();
-  return game.activeSponsors.reduce((s, sid) => {
+  const base = game.activeSponsors.reduce((s, sid) => {
     const deal = SPONSOR_DEALS.find(d => d.id === sid);
     return s + (deal ? deal.weekly * mult : 0);
   }, 0);
+  return Math.round(base * (1 + staffTotal('sponsorBonus')));
 }
 
 function ordinal(n) {
@@ -2816,7 +2874,7 @@ function simulateRace({ playerCarId, trackId }) {
   // Starting grid (sorted by perf with some qualifying randomness).
   // Data Analysts turn practice data into a better lap, so your cars qualify
   // stronger and with less scatter.
-  const analystQuali = analystCount() * ANALYST_QUALI_BONUS;
+  const analystQuali = staffTotal('qualifying');
   entries.forEach(e => {
     const ours = e.isPlayer || e.isTeammate;
     const scatter = e.isContender ? 4 : ours && analystQuali > 0 ? 5 : 8;
@@ -2920,6 +2978,7 @@ function buildEntryList(playerCarId, trackId) {
         hasCrchief:  game.staff.some(s => s.typeId === 'crew_chief'),
         hasEngineer: game.staff.some(s => s.typeId === 'engineer'),
         analysts:    analystCount(),
+        staffSimulation: staffTotal('simulation'),
       });
     }
   }
@@ -3131,7 +3190,8 @@ function calcPerf(entry, track) {
   const chiefBonus = entry.hasCrchief ? 2 : 0;
   const engBonus   = entry.hasEngineer ? 2 : 0;
   const analystBonus = (entry.analysts || 0) * 2;   // setup work found in the data
-  const base = raw * condMod + entry.driverSkill * 0.1 + chiefBonus + engBonus + analystBonus;
+  const supportBonus = entry.staffSimulation ?? (chiefBonus + engBonus + analystBonus);
+  const base = raw * condMod + entry.driverSkill * 0.1 + supportBonus;
   return clamp(base, 10, 99) + rand(-5, 5);
 }
 
@@ -6007,7 +6067,7 @@ function renderGarage() {
   const maxUpgrades = UPGRADE_TIERS.length * MAX_PER_TIER;
 
   const carCards = game.cars.map(car => {
-    const repairCost = Math.round((100 - car.condition) * cls.repairCostPerPoint * (game.staff.some(s=>s.typeId==='mechanic') ? 0.75 : 1));
+    const repairCost = Math.round((100 - car.condition) * cls.repairCostPerPoint * (1 - staffRepairDiscount()));
     // Who is actually in this car: you, a hired driver, or nobody.
     const seat = hireForCar(car.id);
     const seatDrv = seat ? HIREABLE_DRIVERS.find(d => d.id === seat.driverId) : null;
@@ -6122,7 +6182,7 @@ function renderUpgradeModal(carId) {
 
   const totalFitted = (car.appliedUpgrades || []).length;
   const analystNote = analysts > 0
-    ? `<p class="muted-text small">${analysts} Data Analyst${analysts > 1 ? 's' : ''} on staff - ${analysts * ANALYST_TIER_SLOTS} extra slot${analysts * ANALYST_TIER_SLOTS > 1 ? 's' : ''} in every tier.</p>`
+    ? `<p class="muted-text small">${analysts} Data Analyst${analysts > 1 ? 's' : ''} on staff - ${staffTotal('upgradeSlots')} extra slot${staffTotal('upgradeSlots') > 1 ? 's' : ''} in every tier.</p>`
     : `<p class="muted-text small">Hire a Data Analyst to open an extra slot in every tier.</p>`;
   return `
   <div class="modal-overlay" id="upgrade-modal" onclick="closeUpgradeModal(event)">
@@ -6148,6 +6208,12 @@ function renderUpgradeModal(carId) {
 
 // ─── Team ────────────────────────────────────────────────────
 let teamView = 'drivers';
+let staffRoleFilter = 'all';
+function showStaffRole(role) {
+  staffRoleFilter = STAFF_TYPES.some(t=>t.id===role) ? role : 'all';
+  renderTab('team');
+  document.getElementById('staff-role-filter')?.focus({preventScroll:true});
+}
 
 function showTeamView(view) {
   teamView = view === 'staff' ? 'staff' : 'drivers';
@@ -6197,8 +6263,10 @@ function renderTeam() {
     const type = STAFF_TYPES.find(t => t.id === s.typeId);
     return `<div class="staff-row">
       <div class="staff-info">
-        <span class="staff-name">${s.name}</span>
-        <div class="staff-meta">${type?.bonus || ''} • ${fmt$(s.weeklyCost)}/week</div>
+        <span class="staff-name">${String(s.name).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))} <span class="staff-ovr">${s.overall || 79} OVR</span></span>
+        <div class="staff-meta">${type?.name || 'Support Staff'}</div>
+        <div class="staff-meta">${staffBenefitText(s)}</div>
+        <div class="staff-meta muted-text">${fmt$(s.weeklyCost)} per race</div>
       </div>
       <button class="btn btn-sm btn-danger" onclick="handleFireStaff('${s.id}')">Release Staff</button>
     </div>`;
@@ -6229,22 +6297,24 @@ function renderTeam() {
     </div>`;
   }).join('');
 
-  const staffHireRows = STAFF_TYPES.map(type => {
-    const current = game.staff.filter(s => s.typeId === type.id).length;
-    const cost    = type.weeklyCost[game.currentSeries];
-    const sigFee  = cost * 4;
-    const canHire = current < type.max && game.money >= sigFee;
-    return `<div class="staff-row">
+  const availableStaff = STAFF_CANDIDATES.filter(c=>!game.staff.some(s=>s.candidateId===c.id));
+  const filteredStaff = availableStaff.filter(c=>staffRoleFilter==='all' || c.typeId===staffRoleFilter);
+  const staffHireRows = filteredStaff.map(candidate => {
+    const type = STAFF_TYPES.find(t=>t.id===candidate.typeId);
+    const current = game.staff.filter(s=>s.typeId===type.id).length;
+    const cost = staffSalary(candidate), sigFee = cost * 4;
+    const reason = current >= type.max ? 'Staff Limit Reached' : game.money < sigFee ? 'Not Enough Cash' : '';
+    return `<div class="staff-row" data-staff-candidate="${candidate.id}">
       <div class="staff-info">
-        <span class="staff-name">${type.name}</span>
-        <div class="staff-meta">${type.bonus}</div>
-        <div class="staff-meta muted-text">${current}/${type.max} hired</div>
+        <span class="staff-name">${candidate.name} <span class="staff-ovr">${candidate.overall} OVR</span></span>
+        <div class="staff-meta">${type.name}</div>
+        <div class="staff-meta">${staffBenefitText(candidate)}</div>
+        <div class="staff-meta muted-text">${current}/${type.max} ${type.name.toLowerCase()}${type.max>1?'s':''} hired</div>
       </div>
-      <div class="recruit-cost"><strong><span class="recruit-cost-label">Signing fee </span>${fmt$(sigFee)}</strong><span>${fmt$(cost)}/week</span></div>
-      ${canHire ? `<button class="btn btn-sm btn-primary" aria-label="Hire ${type.name}" onclick="handleHireStaff('${type.id}')">Hire</button>`
-               : `<button class="btn btn-sm" disabled>${current >= type.max ? 'Staff Limit Reached' : 'Not Enough Cash'}</button>`}
+      <div class="recruit-cost"><strong><span class="recruit-cost-label">Signing fee </span>${fmt$(sigFee)}</strong><span>${fmt$(cost)} per race</span></div>
+      ${reason ? `<button class="btn btn-sm" disabled>${reason}</button>` : `<button class="btn btn-sm btn-primary" aria-label="Hire ${candidate.name}" onclick="handleHireStaff('${candidate.id}')">Hire</button>`}
     </div>`;
-  }).join('');
+  }).join('') || '<p class="team-empty">No available specialists in this role.</p>';
 
   return `
   <div class="page-header"><h2>Team Management</h2><p>${game.teamName}</p></div>
@@ -6264,7 +6334,8 @@ function renderTeam() {
       <h3 class="card-header" id="team-recruitment-title">${teamView === 'drivers' ? 'Recruit Drivers' : 'Recruit Support Staff'}</h3>
       <p class="section-copy">Signing fees are paid upfront. Salaries are paid each race.</p>
       ${teamView === 'drivers' ? seatWarning : ''}
-      <p class="recruitment-caption"><span>${teamView === 'drivers' ? `${availableDrivers.length} available · ${game.hiredDrivers.length}/${MAX_HIRED_DRIVERS} hired` : `${STAFF_TYPES.length} staff roles`}</span><span>Scroll to browse</span></p>
+      <p class="recruitment-caption"><span>${teamView === 'drivers' ? `${availableDrivers.length} available · ${game.hiredDrivers.length}/${MAX_HIRED_DRIVERS} hired` : `${filteredStaff.length} specialists available`}</span><span>Scroll to browse</span></p>
+      ${teamView === 'staff' ? `<div class="staff-filter"><label for="staff-role-filter">Staff role</label><select class="form-select" id="staff-role-filter" onchange="showStaffRole(this.value)"><option value="all">All roles</option>${STAFF_TYPES.map(t=>`<option value="${t.id}" ${staffRoleFilter===t.id?'selected':''}>${t.name}</option>`).join('')}</select></div>` : ''}
       <div class="recruitment-columns" aria-hidden="true"><span>${teamView === 'drivers' ? 'Driver' : 'Specialist'}</span><span>Signing fee / salary</span><span></span></div>
       <div class="recruitment-list" tabindex="0" aria-label="${teamView === 'drivers' ? 'Available drivers' : 'Available support staff'}">${teamView === 'drivers' ? driverRows : staffHireRows}</div>
     </section>
@@ -10514,8 +10585,7 @@ function handleSellCar(carId) {
 function handleHireStaff(typeId) {
   const result = hireStaff(typeId);
   if (!result.ok) { toast(result.msg, 'error'); return; }
-  const type = STAFF_TYPES.find(s => s.id === typeId);
-  toast(`${type?.name} hired!`, 'success');
+  toast(`${result.name} hired!`, 'success');
   updateHeader();
   renderTab('team');
 }
@@ -10788,7 +10858,7 @@ function handleStartRace() {
       raceRules: {...game.raceRules},
       playerHealth: pCar?.condition ?? 100,
       onQuit: () => { game = JSON.parse(preRaceState); saveGame(); showScreen('game'); updateHeader(); showTab('dashboard'); toast('Race cancelled. Entry fees refunded; career unchanged.'); },
-      qualifyBoost: analystCount(),   // Data Analysts sharpen the grid draw
+      qualifyBoost: Math.round(staffTotal('qualifying') / ANALYST_QUALI_BONUS),   // Data Analysts sharpen the grid draw
       qualifyAI:    true,
       aiEntries:    aiEntries.slice(0, series.fieldSize - 1),
     },

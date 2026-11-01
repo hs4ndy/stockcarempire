@@ -70,6 +70,7 @@ function loadFromSlot(slot) {
     }
     game = loaded;
     normalizeVehicleState();
+    normalizeSupportStaff();
     retireExhaustedCars();
     currentSlot = slot;
     return true;
@@ -535,6 +536,7 @@ function postRaceUpdate(playerResult, earnings, allResults) {
     else if (deal.cond === 'top3' && pos <= 3) sponsorPay += deal.bonus;
     else if (deal.cond === 'win' && pos === 1)  sponsorPay += deal.bonus;
   });
+  sponsorPay = Math.round(sponsorPay * (1 + staffTotal('sponsorBonus')));
   game.money += sponsorPay;
 
   // Your hired drivers gain experience from the race they just ran
@@ -564,6 +566,7 @@ function skipRace() {
     const deal = SPONSOR_DEALS.find(d => d.id === sid);
     if (deal) sponsorPay += deal.weekly * skipMult;
   });
+  sponsorPay = Math.round(sponsorPay * (1 + staffTotal('sponsorBonus')));
   game.money += sponsorPay;
   saveGame();
 }
@@ -752,8 +755,7 @@ function repairCar(carId) {
   if (car.condition >= 100) return { ok: false, msg: 'Car is already in perfect condition.' };
 
   const cls = CAR_CLASSES[car.classId];
-  const hasMechanic = game.staff.some(s => s.typeId === 'mechanic');
-  const discount = hasMechanic ? 0.75 : 1.0;
+  const discount = 1 - staffRepairDiscount();
   const damage = 100 - car.condition;
   const cost = Math.round(damage * cls.repairCostPerPoint * discount);
 
@@ -931,21 +933,36 @@ function renameCar(carId, newName) {
 }
 
 // ─── Staff management ────────────────────────────────────────
-function hireStaff(typeId) {
-  const type = STAFF_TYPES.find(s => s.id === typeId);
-  if (!type) return { ok: false, msg: 'Unknown staff type.' };
-
-  const currentCount = game.staff.filter(s => s.typeId === typeId).length;
-  if (currentCount >= type.max) return { ok: false, msg: `You can only hire ${type.max} ${type.name}(s).` };
-
-  const weeklyCost = type.weeklyCost[game.currentSeries];
+// Older generic hires retain contracts and effects; give them named identities once.
+function normalizeSupportStaff() {
+  game.staff = game.staff || [];
+  for (const member of game.staff) {
+    if (member.candidateId || member.overall) continue;
+    const candidates = STAFF_CANDIDATES.filter(c=>c.typeId===member.typeId);
+    const candidate = candidates.find(c=>c.overall===79 && !game.staff.some(s=>s.candidateId===c.id))
+      || candidates.find(c=>!game.staff.some(s=>s.candidateId===c.id));
+    if (!candidate) continue;
+    Object.assign(member,{candidateId:candidate.id,name:candidate.name,overall:candidate.overall,
+      effects:{...LEGACY_STAFF_EFFECTS[member.typeId]}});
+  }
+}
+function hireStaff(candidateId) {
+  // Keep role-ID calls working for older integrations; choose the standard specialist.
+  const candidate = STAFF_CANDIDATES.find(c=>c.id===candidateId)
+    || STAFF_CANDIDATES.find(c=>c.typeId===candidateId && c.overall===79);
+  if (!candidate) return {ok:false,msg:'Unknown staff member.'};
+  const type = STAFF_TYPES.find(t=>t.id===candidate.typeId);
+  if (game.staff.some(s=>s.candidateId===candidate.id)) return {ok:false,msg:'Already hired.'};
+  if (game.staff.filter(s=>s.typeId===type.id).length >= type.max)
+    return {ok:false,msg:`You can only hire ${type.max} ${type.name}(s).`};
+  const weeklyCost = staffSalary(candidate);
   const signingFee = weeklyCost * 4;
-  if (game.money < signingFee) return { ok: false, msg: `Signing fee is ${fmt$(signingFee)}.` };
-
+  if (game.money < signingFee) return {ok:false,msg:`Signing fee is ${fmt$(signingFee)}.`};
   game.money -= signingFee;
-  game.staff.push({ id: uid(), typeId, name: type.name, weeklyCost });
+  game.staff.push({id:uid(),candidateId:candidate.id,typeId:type.id,name:candidate.name,
+    overall:candidate.overall,weeklyCost,effects:{...candidate.effects}});
   saveGame();
-  return { ok: true };
+  return {ok:true,name:candidate.name};
 }
 
 function fireStaff(staffId) {
@@ -1106,10 +1123,11 @@ function sponsorCarMultiplier() {
 
 function weeklySponsorIncome() {
   const mult = sponsorCarMultiplier();
-  return game.activeSponsors.reduce((s, sid) => {
+  const base = game.activeSponsors.reduce((s, sid) => {
     const deal = SPONSOR_DEALS.find(d => d.id === sid);
     return s + (deal ? deal.weekly * mult : 0);
   }, 0);
+  return Math.round(base * (1 + staffTotal('sponsorBonus')));
 }
 
 function ordinal(n) {

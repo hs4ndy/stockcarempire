@@ -186,15 +186,15 @@ const STAFF_TYPES = [
   {
     id: 'engineer',
     name: 'Race Engineer',
-    description: 'Optimizes car setup between races. Adds flat speed/handling to your best car.',
+    description: 'Finds setup improvements for simulated races.',
     weeklyCost: [1400, 2800, 5500],
-    bonus: '+4 effective speed/handling on assigned car',
+    bonus: 'Improves simulated setup score',
     max: 2
   },
   {
     id: 'mechanic',
-    name: 'Senior Mechanic',
-    description: 'Reduces car repair costs and improves reliability.',
+    name: 'Race Mechanic',
+    description: 'Reduces repair costs. The best mechanic discount applies.',
     weeklyCost: [900, 1800, 3600],
     bonus: '25% discount on all repair costs',
     max: 3
@@ -204,7 +204,7 @@ const STAFF_TYPES = [
     name: 'Data Analyst',
     description: 'Pores over practice data to find the quick way round, and identifies extra parts your crew can fit.',
     weeklyCost: [1600, 3200, 6400],
-    bonus: 'Stronger qualifying, plus one extra upgrade slot per tier',
+    bonus: 'Stronger qualifying and extra upgrade slots per tier',
     max: 2
   },
   {
@@ -217,40 +217,74 @@ const STAFF_TYPES = [
   }
 ];
 
-// ── Commercial Director effects ─────────────────────────────
+// Named support staff. Salaries use the role's series rate; signing costs four salaries.
+// Effects are explicit rather than derived from OVR, allowing different specialties.
+const STAFF_CANDIDATES = [
+  {id:'chief01',typeId:'crew_chief',name:'Owen Brooks',overall:60,pay:.55,effects:{simulation:1}},
+  {id:'chief02',typeId:'crew_chief',name:'Denise Carter',overall:70,pay:.75,effects:{simulation:1.5}},
+  {id:'chief03',typeId:'crew_chief',name:'Marcus Reed',overall:79,pay:1,effects:{simulation:2}},
+  {id:'chief04',typeId:'crew_chief',name:'Elena Price',overall:87,pay:1.35,effects:{simulation:2.5}},
+  {id:'chief05',typeId:'crew_chief',name:'Victor Hayes',overall:95,pay:1.9,effects:{simulation:3}},
+  {id:'engineer01',typeId:'engineer',name:'Noah Bennett',overall:60,pay:.55,effects:{simulation:1}},
+  {id:'engineer02',typeId:'engineer',name:'Maya Foster',overall:70,pay:.75,effects:{simulation:1.5}},
+  {id:'engineer03',typeId:'engineer',name:'Adrian Cole',overall:79,pay:1,effects:{simulation:2}},
+  {id:'engineer04',typeId:'engineer',name:'Sienna Walsh',overall:87,pay:1.35,effects:{simulation:3}},
+  {id:'engineer05',typeId:'engineer',name:'Julian Mercer',overall:95,pay:1.9,effects:{simulation:4}},
+  {id:'mechanic01',typeId:'mechanic',name:'Eli Turner',overall:60,pay:.55,effects:{repairDiscount:.12}},
+  {id:'mechanic02',typeId:'mechanic',name:'Rosa Delgado',overall:70,pay:.75,effects:{repairDiscount:.18}},
+  {id:'mechanic03',typeId:'mechanic',name:'Byron Hill',overall:79,pay:1,effects:{repairDiscount:.25}},
+  {id:'mechanic04',typeId:'mechanic',name:'Claire Dawson',overall:87,pay:1.35,effects:{repairDiscount:.30}},
+  {id:'mechanic05',typeId:'mechanic',name:'Travis Morgan',overall:95,pay:1.9,effects:{repairDiscount:.35}},
+  {id:'analyst01',typeId:'data_analyst',name:'Leah Grant',overall:60,pay:.55,effects:{qualifying:3,upgradeSlots:1,simulation:.5}},
+  {id:'analyst02',typeId:'data_analyst',name:'Isaac Moore',overall:70,pay:.75,effects:{qualifying:5,upgradeSlots:1,simulation:1}},
+  {id:'analyst03',typeId:'data_analyst',name:'Nina Patel',overall:79,pay:1,effects:{qualifying:7,upgradeSlots:1,simulation:2}},
+  {id:'analyst04',typeId:'data_analyst',name:'Theo Lawson',overall:87,pay:1.35,effects:{qualifying:8,upgradeSlots:2,simulation:2.25}},
+  {id:'analyst05',typeId:'data_analyst',name:'Avery Chen',overall:95,pay:1.9,effects:{qualifying:9,upgradeSlots:2,simulation:2.5}},
+  {id:'director01',typeId:'commercial_director',name:'Ben Wallace',overall:60,pay:.55,effects:{sponsorSlots:1,sponsorBonus:0.02}},
+  {id:'director02',typeId:'commercial_director',name:'Camila Ross',overall:70,pay:.75,effects:{sponsorSlots:1,sponsorBonus:0.04}},
+  {id:'director03',typeId:'commercial_director',name:'Miles Sutton',overall:79,pay:1,effects:{sponsorSlots:2,sponsorBonus:0.06}},
+  {id:'director04',typeId:'commercial_director',name:'Paige Ellis',overall:87,pay:1.35,effects:{sponsorSlots:2,sponsorBonus:0.08}},
+  {id:'director05',typeId:'commercial_director',name:'Dominic Blake',overall:95,pay:1.9,effects:{sponsorSlots:2,sponsorBonus:0.1}},
+];
 const BASE_SPONSOR_SLOTS = 3;
 const SLOTS_PER_DIRECTOR = 2;
-const MAX_SPONSOR_SLOTS  = 7;
-
-function commercialDirectorCount() {
-  return (typeof game !== 'undefined' && game && game.staff)
-    ? game.staff.filter(s => s.typeId === 'commercial_director').length
-    : 0;
+const MAX_SPONSOR_SLOTS = 7;
+const ANALYST_QUALI_BONUS = 7;
+const ANALYST_TIER_SLOTS = 1;
+const LEGACY_STAFF_EFFECTS = {
+  crew_chief:{simulation:2}, engineer:{simulation:2}, mechanic:{repairDiscount:.25},
+  data_analyst:{qualifying:7,upgradeSlots:1,simulation:2}, commercial_director:{sponsorSlots:2},
+};
+function staffEffects(member) {
+  return member.effects || LEGACY_STAFF_EFFECTS[member.typeId] || {};
 }
-
-// How many sponsor deals you may run at once
-function sponsorSlots() {
-  return Math.min(
-    MAX_SPONSOR_SLOTS,
-    BASE_SPONSOR_SLOTS + commercialDirectorCount() * SLOTS_PER_DIRECTOR
-  );
+function staffTotal(effect, typeId) {
+  const members = typeof game !== 'undefined' && game ? game.staff || [] : [];
+  const selected = members.filter(s => !typeId || s.typeId === typeId);
+  // Engineer setup was historically a single team benefit, even with two hires.
+  if (effect === 'simulation') {
+    const engineers = selected.filter(s=>s.typeId==='engineer');
+    return selected.filter(s=>s.typeId!=='engineer').reduce((n,s)=>n+(staffEffects(s)[effect] || 0),0)
+      + Math.max(0,...engineers.map(s=>staffEffects(s)[effect] || 0));
+  }
+  return selected.reduce((sum,s) => sum + (staffEffects(s)[effect] || 0), 0);
 }
-
-// ── Data Analyst effects ────────────────────────────────────
-// Each analyst sharpens qualifying and opens another slot in every upgrade
-// tier, so a well-staffed team can fit more parts than a bare-bones one.
-const ANALYST_QUALI_BONUS = 7;   // qualifying score per analyst
-const ANALYST_TIER_SLOTS  = 1;   // extra parts allowed per tier, per analyst
-
-function analystCount() {
-  return (typeof game !== 'undefined' && game && game.staff)
-    ? game.staff.filter(s => s.typeId === 'data_analyst').length
-    : 0;
+function commercialDirectorCount() { return (typeof game !== 'undefined' && game?.staff || []).filter(s=>s.typeId==='commercial_director').length; }
+function analystCount() { return (typeof game !== 'undefined' && game?.staff || []).filter(s=>s.typeId==='data_analyst').length; }
+function sponsorSlots() { return Math.min(MAX_SPONSOR_SLOTS, BASE_SPONSOR_SLOTS + staffTotal('sponsorSlots')); }
+function tierCapacity() { return MAX_PER_TIER + staffTotal('upgradeSlots'); }
+function staffRepairDiscount() {
+  return Math.max(0,...(game.staff || []).map(s=>staffEffects(s).repairDiscount || 0));
 }
-
-// Upgrade slots available per tier, including anything the analysts unlock
-function tierCapacity() {
-  return MAX_PER_TIER + analystCount() * ANALYST_TIER_SLOTS;
+function staffSalary(candidate, series = game.currentSeries) {
+  return Math.round(STAFF_TYPES.find(t=>t.id===candidate.typeId).weeklyCost[series] * candidate.pay);
+}
+function staffBenefitText(member) {
+  const e = staffEffects(member);
+  if (member.typeId === 'mechanic') return `${Math.round(e.repairDiscount*100)}% repair discount (best mechanic applies)`;
+  if (member.typeId === 'data_analyst') return `+${e.upgradeSlots} upgrade slot${e.upgradeSlots===1?'':'s'} per tier · +${e.qualifying} qualifying score · +${e.simulation} simulated setup`;
+  if (member.typeId === 'commercial_director') return `+${e.sponsorSlots} sponsor slot${e.sponsorSlots===1?'':'s'} (7 total maximum)${e.sponsorBonus ? ` · +${Math.round(e.sponsorBonus*100)}% sponsor income` : ''}`;
+  return `+${e.simulation} simulated ${member.typeId==='crew_chief'?'strategy':'setup'} score${member.typeId==='engineer'?' (best engineer applies)':''}`;
 }
 
 const HIREABLE_DRIVERS = [

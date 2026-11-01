@@ -319,7 +319,7 @@ function renderGarage() {
   const maxUpgrades = UPGRADE_TIERS.length * MAX_PER_TIER;
 
   const carCards = game.cars.map(car => {
-    const repairCost = Math.round((100 - car.condition) * cls.repairCostPerPoint * (game.staff.some(s=>s.typeId==='mechanic') ? 0.75 : 1));
+    const repairCost = Math.round((100 - car.condition) * cls.repairCostPerPoint * (1 - staffRepairDiscount()));
     // Who is actually in this car: you, a hired driver, or nobody.
     const seat = hireForCar(car.id);
     const seatDrv = seat ? HIREABLE_DRIVERS.find(d => d.id === seat.driverId) : null;
@@ -434,7 +434,7 @@ function renderUpgradeModal(carId) {
 
   const totalFitted = (car.appliedUpgrades || []).length;
   const analystNote = analysts > 0
-    ? `<p class="muted-text small">${analysts} Data Analyst${analysts > 1 ? 's' : ''} on staff - ${analysts * ANALYST_TIER_SLOTS} extra slot${analysts * ANALYST_TIER_SLOTS > 1 ? 's' : ''} in every tier.</p>`
+    ? `<p class="muted-text small">${analysts} Data Analyst${analysts > 1 ? 's' : ''} on staff - ${staffTotal('upgradeSlots')} extra slot${staffTotal('upgradeSlots') > 1 ? 's' : ''} in every tier.</p>`
     : `<p class="muted-text small">Hire a Data Analyst to open an extra slot in every tier.</p>`;
   return `
   <div class="modal-overlay" id="upgrade-modal" onclick="closeUpgradeModal(event)">
@@ -460,6 +460,12 @@ function renderUpgradeModal(carId) {
 
 // ─── Team ────────────────────────────────────────────────────
 let teamView = 'drivers';
+let staffRoleFilter = 'all';
+function showStaffRole(role) {
+  staffRoleFilter = STAFF_TYPES.some(t=>t.id===role) ? role : 'all';
+  renderTab('team');
+  document.getElementById('staff-role-filter')?.focus({preventScroll:true});
+}
 
 function showTeamView(view) {
   teamView = view === 'staff' ? 'staff' : 'drivers';
@@ -509,8 +515,10 @@ function renderTeam() {
     const type = STAFF_TYPES.find(t => t.id === s.typeId);
     return `<div class="staff-row">
       <div class="staff-info">
-        <span class="staff-name">${s.name}</span>
-        <div class="staff-meta">${type?.bonus || ''} • ${fmt$(s.weeklyCost)}/week</div>
+        <span class="staff-name">${String(s.name).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))} <span class="staff-ovr">${s.overall || 79} OVR</span></span>
+        <div class="staff-meta">${type?.name || 'Support Staff'}</div>
+        <div class="staff-meta">${staffBenefitText(s)}</div>
+        <div class="staff-meta muted-text">${fmt$(s.weeklyCost)} per race</div>
       </div>
       <button class="btn btn-sm btn-danger" onclick="handleFireStaff('${s.id}')">Release Staff</button>
     </div>`;
@@ -541,22 +549,24 @@ function renderTeam() {
     </div>`;
   }).join('');
 
-  const staffHireRows = STAFF_TYPES.map(type => {
-    const current = game.staff.filter(s => s.typeId === type.id).length;
-    const cost    = type.weeklyCost[game.currentSeries];
-    const sigFee  = cost * 4;
-    const canHire = current < type.max && game.money >= sigFee;
-    return `<div class="staff-row">
+  const availableStaff = STAFF_CANDIDATES.filter(c=>!game.staff.some(s=>s.candidateId===c.id));
+  const filteredStaff = availableStaff.filter(c=>staffRoleFilter==='all' || c.typeId===staffRoleFilter);
+  const staffHireRows = filteredStaff.map(candidate => {
+    const type = STAFF_TYPES.find(t=>t.id===candidate.typeId);
+    const current = game.staff.filter(s=>s.typeId===type.id).length;
+    const cost = staffSalary(candidate), sigFee = cost * 4;
+    const reason = current >= type.max ? 'Staff Limit Reached' : game.money < sigFee ? 'Not Enough Cash' : '';
+    return `<div class="staff-row" data-staff-candidate="${candidate.id}">
       <div class="staff-info">
-        <span class="staff-name">${type.name}</span>
-        <div class="staff-meta">${type.bonus}</div>
-        <div class="staff-meta muted-text">${current}/${type.max} hired</div>
+        <span class="staff-name">${candidate.name} <span class="staff-ovr">${candidate.overall} OVR</span></span>
+        <div class="staff-meta">${type.name}</div>
+        <div class="staff-meta">${staffBenefitText(candidate)}</div>
+        <div class="staff-meta muted-text">${current}/${type.max} ${type.name.toLowerCase()}${type.max>1?'s':''} hired</div>
       </div>
-      <div class="recruit-cost"><strong><span class="recruit-cost-label">Signing fee </span>${fmt$(sigFee)}</strong><span>${fmt$(cost)}/week</span></div>
-      ${canHire ? `<button class="btn btn-sm btn-primary" aria-label="Hire ${type.name}" onclick="handleHireStaff('${type.id}')">Hire</button>`
-               : `<button class="btn btn-sm" disabled>${current >= type.max ? 'Staff Limit Reached' : 'Not Enough Cash'}</button>`}
+      <div class="recruit-cost"><strong><span class="recruit-cost-label">Signing fee </span>${fmt$(sigFee)}</strong><span>${fmt$(cost)} per race</span></div>
+      ${reason ? `<button class="btn btn-sm" disabled>${reason}</button>` : `<button class="btn btn-sm btn-primary" aria-label="Hire ${candidate.name}" onclick="handleHireStaff('${candidate.id}')">Hire</button>`}
     </div>`;
-  }).join('');
+  }).join('') || '<p class="team-empty">No available specialists in this role.</p>';
 
   return `
   <div class="page-header"><h2>Team Management</h2><p>${game.teamName}</p></div>
@@ -576,7 +586,8 @@ function renderTeam() {
       <h3 class="card-header" id="team-recruitment-title">${teamView === 'drivers' ? 'Recruit Drivers' : 'Recruit Support Staff'}</h3>
       <p class="section-copy">Signing fees are paid upfront. Salaries are paid each race.</p>
       ${teamView === 'drivers' ? seatWarning : ''}
-      <p class="recruitment-caption"><span>${teamView === 'drivers' ? `${availableDrivers.length} available · ${game.hiredDrivers.length}/${MAX_HIRED_DRIVERS} hired` : `${STAFF_TYPES.length} staff roles`}</span><span>Scroll to browse</span></p>
+      <p class="recruitment-caption"><span>${teamView === 'drivers' ? `${availableDrivers.length} available · ${game.hiredDrivers.length}/${MAX_HIRED_DRIVERS} hired` : `${filteredStaff.length} specialists available`}</span><span>Scroll to browse</span></p>
+      ${teamView === 'staff' ? `<div class="staff-filter"><label for="staff-role-filter">Staff role</label><select class="form-select" id="staff-role-filter" onchange="showStaffRole(this.value)"><option value="all">All roles</option>${STAFF_TYPES.map(t=>`<option value="${t.id}" ${staffRoleFilter===t.id?'selected':''}>${t.name}</option>`).join('')}</select></div>` : ''}
       <div class="recruitment-columns" aria-hidden="true"><span>${teamView === 'drivers' ? 'Driver' : 'Specialist'}</span><span>Signing fee / salary</span><span></span></div>
       <div class="recruitment-list" tabindex="0" aria-label="${teamView === 'drivers' ? 'Available drivers' : 'Available support staff'}">${teamView === 'drivers' ? driverRows : staffHireRows}</div>
     </section>

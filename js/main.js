@@ -348,8 +348,7 @@ function handleSellCar(carId) {
 function handleHireStaff(typeId) {
   const result = hireStaff(typeId);
   if (!result.ok) { toast(result.msg, 'error'); return; }
-  const type = STAFF_TYPES.find(s => s.id === typeId);
-  toast(`${type?.name} hired!`, 'success');
+  toast(`${result.name} hired!`, 'success');
   updateHeader();
   renderTab('team');
 }
@@ -622,7 +621,7 @@ function handleStartRace() {
       raceRules: {...game.raceRules},
       playerHealth: pCar?.condition ?? 100,
       onQuit: () => { game = JSON.parse(preRaceState); saveGame(); showScreen('game'); updateHeader(); showTab('dashboard'); toast('Race cancelled. Entry fees refunded; career unchanged.'); },
-      qualifyBoost: analystCount(),   // Data Analysts sharpen the grid draw
+      qualifyBoost: Math.round(staffTotal('qualifying') / ANALYST_QUALI_BONUS),   // Data Analysts sharpen the grid draw
       qualifyAI:    true,
       aiEntries:    aiEntries.slice(0, series.fieldSize - 1),
     },

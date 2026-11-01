@@ -38,7 +38,7 @@ function simulateRace({ playerCarId, trackId }) {
   // Starting grid (sorted by perf with some qualifying randomness).
   // Data Analysts turn practice data into a better lap, so your cars qualify
   // stronger and with less scatter.
-  const analystQuali = analystCount() * ANALYST_QUALI_BONUS;
+  const analystQuali = staffTotal('qualifying');
   entries.forEach(e => {
     const ours = e.isPlayer || e.isTeammate;
     const scatter = e.isContender ? 4 : ours && analystQuali > 0 ? 5 : 8;
@@ -142,6 +142,7 @@ function buildEntryList(playerCarId, trackId) {
         hasCrchief:  game.staff.some(s => s.typeId === 'crew_chief'),
         hasEngineer: game.staff.some(s => s.typeId === 'engineer'),
         analysts:    analystCount(),
+        staffSimulation: staffTotal('simulation'),
       });
     }
   }
@@ -353,7 +354,8 @@ function calcPerf(entry, track) {
   const chiefBonus = entry.hasCrchief ? 2 : 0;
   const engBonus   = entry.hasEngineer ? 2 : 0;
   const analystBonus = (entry.analysts || 0) * 2;   // setup work found in the data
-  const base = raw * condMod + entry.driverSkill * 0.1 + chiefBonus + engBonus + analystBonus;
+  const supportBonus = entry.staffSimulation ?? (chiefBonus + engBonus + analystBonus);
+  const base = raw * condMod + entry.driverSkill * 0.1 + supportBonus;
   return clamp(base, 10, 99) + rand(-5, 5);
 }
 

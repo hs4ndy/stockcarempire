@@ -65,7 +65,7 @@ for (const [name, viewport] of [
     expect(await page.evaluate(() => game.hiredDrivers.length)).toBe(1);
 
     await page.locator('[data-team-view="staff"]').click();
-    await page.getByRole('button', { name: 'Hire Race Engineer', exact: true }).click();
+    await page.getByRole('button', { name: 'Hire Adrian Cole', exact: true }).click();
     await expect(page.locator('.team-roster')).toContainText('Race Engineer');
     expect(await page.evaluate(() => game.staff.length)).toBe(2);
     page.once('dialog', d => d.accept());
