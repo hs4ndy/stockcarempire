@@ -9,8 +9,9 @@
 
   _healthPace(car) {
     const rules=this._incidentRules();
-    return (rules.damage ? .70+.30*(car.raceHealth ?? 100)/100 : 1) *
-      (rules.crashes ? Math.max(.74,1-(car.crashCount||0)*.06) : 1);
+    const health=(car.raceHealth ?? 100)/100;
+    return (rules.damage ? (car.isPlayer ? .85+.15*health : .70+.30*health) : 1) *
+      (rules.crashes ? Math.max(car.isPlayer ? .88 : .74,1-(car.crashCount||0)*(car.isPlayer ? .03 : .06)) : 1);
   }
 
   _damageCar(car,amount) {
@@ -37,7 +38,7 @@
       this._damageCar(car,(Math.max(0,closing-1)*5+pressure*.8)*dt);
       // AI door contact needs sustained force; human-caused AI strain is
       // reduced modestly, AI-only strain substantially. Player tolerance stays.
-      const strainScale = car.isPlayer ? 1 : (a.isPlayer || b.isPlayer ? .80 : .25);
+      const strainScale = car.isPlayer ? 1 : (a.isPlayer || b.isPlayer ? .80 : .28);
       car.sideStrain=(car.sideStrain||0)+strain*strainScale;car._recentSide=.5;
       const threshold=this._crashThreshold(car);
       if(rules.crashes && car.sideStrain>=threshold) this._beginCrash(car,side,'side contact');

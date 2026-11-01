@@ -1082,40 +1082,40 @@
           "playerTow": 0.862084236436352
         },
         {
-          "nearestGap": 1.483812330398024,
+          "nearestGap": 0.8503196962194295,
           "spacing": 13.740791351059428,
           "playerLead": 0,
-          "span": 238.13325807371527,
+          "span": 237.49976543953667,
           "chain": 2,
           "drafting": 18,
           "nearby": 7,
-          "leaderGap": 238.13325807371527,
+          "leaderGap": 237.49976543953667,
           "playerPush": 0,
-          "playerTow": 0.8631118064614396
+          "playerTow": 0.8687166135161509
         },
         {
-          "nearestGap": 3.578502940894566,
+          "nearestGap": 0.9384321947053422,
           "spacing": 11.58402248170733,
           "playerLead": 0,
-          "span": 206.283737417898,
+          "span": 203.6436666717088,
           "chain": 4,
           "drafting": 17,
           "nearby": 8,
-          "leaderGap": 206.283737417898,
+          "leaderGap": 203.6436666717088,
           "playerPush": 0,
-          "playerTow": 0.843951450912113
+          "playerTow": 0.8679424270108294
         },
         {
-          "nearestGap": 7.58847769861211,
+          "nearestGap": 2.0225829961383397,
           "spacing": 9.770858863972782,
           "playerLead": 0,
-          "span": 176.76489095712543,
+          "span": 171.19899625465166,
           "chain": 4,
           "drafting": 16,
-          "nearby": 9,
-          "leaderGap": 176.76489095712543,
+          "nearby": 10,
+          "leaderGap": 171.19899625465166,
           "playerPush": 0,
-          "playerTow": 0.8022007537596862
+          "playerTow": 0.8559825294078531
         }
       ],
       "order": [
@@ -1383,10 +1383,10 @@
       "states": [
         {
           "id": "player",
-          "x": 3.909643435744249,
-          "z": 875.0693580780161,
-          "speed": 229.21933482043437,
-          "lv": 1.7068287758586824,
+          "x": 3.5,
+          "z": 884.4015192175799,
+          "speed": 234.3893421460404,
+          "lv": 0,
           "lvx": 0,
           "strain": 0
         },
@@ -1398,7 +1398,7 @@
           "lv": 0,
           "lvx": 0.07647810359032245,
           "health": 99.99931090026855,
-          "strain": 0.0016150774956052519,
+          "strain": 0.001808886795077882,
           "tactic": null
         },
         {
@@ -1420,7 +1420,7 @@
           "lv": 0,
           "lvx": -0.26627373117309644,
           "health": 99.99931090026855,
-          "strain": 0.0016150774956052519,
+          "strain": 0.001808886795077882,
           "tactic": null
         },
         {
@@ -1507,8 +1507,8 @@
         {
           "id": "ai-11",
           "x": 3.1487072922861494,
-          "z": 940.287549914547,
-          "speed": 214.44402550938483,
+          "z": 940.2990102079611,
+          "speed": 214.5492482863446,
           "lv": 0,
           "lvx": -0.13294159838885436,
           "strain": 0,
@@ -1527,8 +1527,8 @@
         {
           "id": "ai-13",
           "x": 3.314769600743824,
-          "z": 925.8841656049545,
-          "speed": 219.43086637351246,
+          "z": 925.897579427624,
+          "speed": 219.55424546025185,
           "lv": 0,
           "lvx": -0.1420181757702051,
           "strain": 0,
@@ -1546,11 +1546,11 @@
         },
         {
           "id": "ai-15",
-          "x": 3.385521139347801,
-          "z": 910.8894592769698,
-          "speed": 226.33170643142105,
+          "x": 3.4186047566135143,
+          "z": 910.9893698474747,
+          "speed": 226.7434157955519,
           "lv": 0,
-          "lvx": -0.08072096042853016,
+          "lvx": -0.08880088175569868,
           "strain": 0,
           "tactic": "join"
         },
@@ -1566,13 +1566,13 @@
         },
         {
           "id": "ai-17",
-          "x": 4.3828351178477085,
-          "z": 906.2901822551752,
-          "speed": 227.89901458277905,
+          "x": 3.471934903531723,
+          "z": 906.3893698474747,
+          "speed": 229.30347702842238,
           "lv": 0,
-          "lvx": 1.2673357880407183,
+          "lvx": -0.04560848424440287,
           "strain": 0,
-          "tactic": "pass"
+          "tactic": "push"
         },
         {
           "id": "ai-18",
@@ -1596,25 +1596,25 @@
       "detachedSeconds": 0,
       "unrecovered": false,
       "rejoinTimes": [],
-      "medianNearestGap": 3.578502940894566,
+      "medianNearestGap": 1.5988638192369953,
       "centralSpacing": 13.740791351059428,
       "done": false,
       "finish": 0,
       "startPosition": 20,
       "overtakes": 0,
       "draftingSeconds": 4,
-      "openingNearby": 9,
-      "openingLeaderGap": 176.76489095712543,
+      "openingNearby": 10,
+      "openingLeaderGap": 171.19899625465166,
       "passStarts": [
-        6,
+        5,
         0,
         0
       ],
       "maxPlayerLead": 0,
-      "medianSpan": 238.13325807371527,
+      "medianSpan": 237.49976543953667,
       "medianDrafting": 18,
       "medianNearby": 8,
-      "medianLeaderGap": 238.13325807371527,
+      "medianLeaderGap": 237.49976543953667,
       "pushedSamples": 0,
       "maxChain": 4
     }
@@ -1638,40 +1638,40 @@
           "playerTow": 0.8620652072760256
         },
         {
-          "nearestGap": 3.6562118942041764,
+          "nearestGap": 3.0239366410450543,
           "spacing": 13.73464810949569,
           "playerLead": 0,
-          "span": 240.22269874331278,
+          "span": 239.59042349015365,
           "chain": 2,
           "drafting": 18,
           "nearby": 7,
-          "leaderGap": 240.22269874331278,
+          "leaderGap": 239.59042349015365,
           "playerPush": 0,
-          "playerTow": 0.8432226845536537
+          "playerTow": 0.8491158051293927
         },
         {
-          "nearestGap": 8.233420561185312,
+          "nearestGap": 5.62147330556661,
           "spacing": 11.63329797576384,
           "playerLead": 0,
-          "span": 211.93878841811772,
+          "span": 209.32684116249902,
           "chain": 3,
           "drafting": 17,
           "nearby": 7,
-          "leaderGap": 211.93878841811772,
+          "leaderGap": 209.32684116249902,
           "playerPush": 0,
-          "playerTow": 0.7981904670693779
+          "playerTow": 0.8243825493889793
         },
         {
-          "nearestGap": 8.527854490080813,
+          "nearestGap": 3.04380953572786,
           "spacing": 10.402087705544245,
           "playerLead": 0,
-          "span": 190.43145880771692,
+          "span": 184.94741385336397,
           "chain": 4,
           "drafting": 16,
           "nearby": 8,
-          "leaderGap": 190.43145880771692,
+          "leaderGap": 184.94741385336397,
           "playerPush": 0,
-          "playerTow": 0.7951483107233431
+          "playerTow": 0.8489181642181636
         }
       ],
       "order": [
@@ -1910,11 +1910,11 @@
           "dnf": false
         },
         {
-          "entrantId": "ai-18",
+          "entrantId": "player",
           "carId": null,
-          "isPlayer": false,
-          "number": 2,
-          "label": "ai-18",
+          "isPlayer": true,
+          "number": 1,
+          "label": "player",
           "teamName": null,
           "teamColor": "#123456",
           "raceHealth": 100,
@@ -1923,11 +1923,11 @@
           "dnf": false
         },
         {
-          "entrantId": "player",
+          "entrantId": "ai-18",
           "carId": null,
-          "isPlayer": true,
-          "number": 1,
-          "label": "player",
+          "isPlayer": false,
+          "number": 2,
+          "label": "ai-18",
           "teamName": null,
           "teamColor": "#123456",
           "raceHealth": 100,
@@ -1940,8 +1940,8 @@
         {
           "id": "player",
           "x": 3.5,
-          "z": 870.6651599528485,
-          "speed": 228.0747896461271,
+          "z": 879.704554521949,
+          "speed": 231.88487855631766,
           "lv": 0,
           "lvx": 0,
           "strain": 0
@@ -2016,7 +2016,7 @@
           "lv": 0,
           "lvx": 0.0016361883887282538,
           "health": 99.99999521752794,
-          "strain": 0.000011208918872970237,
+          "strain": 0.000012553989137726668,
           "tactic": "receive"
         },
         {
@@ -2057,7 +2057,7 @@
           "lv": 0,
           "lvx": 0.09466874034706443,
           "health": 99.99999521752794,
-          "strain": 0.000011208918872970237,
+          "strain": 0.000012553989137726668,
           "tactic": null
         },
         {
@@ -2152,25 +2152,25 @@
       "detachedSeconds": 0,
       "unrecovered": false,
       "rejoinTimes": [],
-      "medianNearestGap": 8.233420561185312,
+      "medianNearestGap": 3.04380953572786,
       "centralSpacing": 13.73464810949569,
       "done": false,
       "finish": 0,
       "startPosition": 20,
-      "overtakes": 0,
+      "overtakes": 1,
       "draftingSeconds": 4,
       "openingNearby": 8,
-      "openingLeaderGap": 190.43145880771692,
+      "openingLeaderGap": 184.94741385336397,
       "passStarts": [
         6,
         0,
         0
       ],
       "maxPlayerLead": 0,
-      "medianSpan": 240.22269874331278,
+      "medianSpan": 239.59042349015365,
       "medianDrafting": 18,
       "medianNearby": 7,
-      "medianLeaderGap": 240.22269874331278,
+      "medianLeaderGap": 239.59042349015365,
       "pushedSamples": 0,
       "maxChain": 4
     }
@@ -2194,40 +2194,40 @@
           "playerTow": 0.862036032452535
         },
         {
-          "nearestGap": 6.681107171248016,
+          "nearestGap": 6.010831613948113,
           "spacing": 13.7176312023941,
           "playerLead": 0,
-          "span": 242.97384890869282,
+          "span": 242.3035733513929,
           "chain": 2,
           "drafting": 18,
           "nearby": 7,
-          "leaderGap": 242.97384890869282,
+          "leaderGap": 242.3035733513929,
           "playerPush": 0,
-          "playerTow": 0.8139095967813784
+          "playerTow": 0.8205592432021794
         },
         {
-          "nearestGap": 15.512722452016192,
+          "nearestGap": 12.784042797976326,
           "spacing": 11.69006687813686,
           "playerLead": 0,
-          "span": 218.93110324049115,
+          "span": 216.2024235864513,
           "chain": 3,
           "drafting": 17,
           "nearby": 7,
-          "leaderGap": 218.93110324049115,
+          "leaderGap": 216.2024235864513,
           "playerPush": 0,
-          "playerTow": 0.7192433368808717
+          "playerTow": 0.749761062216806
         },
         {
-          "nearestGap": 20.89763888683308,
+          "nearestGap": 15.248251883074431,
           "spacing": 10.37650838180903,
           "playerLead": 0,
-          "span": 200.11976736514896,
+          "span": 194.4703803613903,
           "chain": 3,
           "drafting": 17,
-          "nearby": 6,
-          "leaderGap": 200.11976736514896,
+          "nearby": 7,
+          "leaderGap": 194.4703803613903,
           "playerPush": 0,
-          "playerTow": 0.6565763512715559
+          "playerTow": 0.7224017245760262
         }
       ],
       "order": [
@@ -2496,8 +2496,8 @@
         {
           "id": "player",
           "x": 3.5,
-          "z": 861.1226237158207,
-          "speed": 222.7573364092741,
+          "z": 870.442038843255,
+          "speed": 226.96190690509206,
           "lv": 0,
           "lvx": 0,
           "strain": 0
@@ -2506,7 +2506,7 @@
           "id": "ai-0",
           "x": -3.237800560926186,
           "z": 1043.426645881814,
-          "speed": 209.40789668650044,
+          "speed": 209.4078966865004,
           "lv": 0,
           "lvx": -0.11606113486813553,
           "health": 99.99995753955507,
@@ -2521,7 +2521,7 @@
           "lv": 0,
           "lvx": -0.2199200206993609,
           "health": 99.99996267060783,
-          "strain": 0.00008749076303100869,
+          "strain": 0.00009798965459472973,
           "tactic": null
         },
         {
@@ -2563,7 +2563,7 @@
           "lv": 0,
           "lvx": 0.2161922694225422,
           "health": 99.99996267060783,
-          "strain": 0.00008749076303100869,
+          "strain": 0.00009798965459472973,
           "tactic": null
         },
         {
@@ -2574,7 +2574,7 @@
           "lv": 0,
           "lvx": 0,
           "health": 99.99997685022423,
-          "strain": 0.00005425728690731902,
+          "strain": 0.000060768161336197316,
           "tactic": "receive"
         },
         {
@@ -2615,7 +2615,7 @@
           "lv": 0,
           "lvx": -0.11886272822826442,
           "health": 99.99997685022423,
-          "strain": 0.00005425728690731902,
+          "strain": 0.000060768161336197316,
           "tactic": "join"
         },
         {
@@ -2710,25 +2710,25 @@
       "detachedSeconds": 0,
       "unrecovered": false,
       "rejoinTimes": [],
-      "medianNearestGap": 15.512722452016192,
+      "medianNearestGap": 12.784042797976326,
       "centralSpacing": 13.7176312023941,
       "done": false,
       "finish": 0,
       "startPosition": 20,
       "overtakes": 0,
       "draftingSeconds": 4,
-      "openingNearby": 6,
-      "openingLeaderGap": 200.11976736514896,
+      "openingNearby": 7,
+      "openingLeaderGap": 194.4703803613903,
       "passStarts": [
         7,
         0,
         0
       ],
       "maxPlayerLead": 0,
-      "medianSpan": 242.97384890869282,
+      "medianSpan": 242.3035733513929,
       "medianDrafting": 18,
       "medianNearby": 7,
-      "medianLeaderGap": 242.97384890869282,
+      "medianLeaderGap": 242.3035733513929,
       "pushedSamples": 0,
       "maxChain": 3
     }
@@ -4080,40 +4080,40 @@
           "playerTow": 0.8620853655700077
         },
         {
-          "nearestGap": 3.5230877918685906,
+          "nearestGap": 2.8344349530122486,
           "spacing": 12.827437941955736,
           "playerLead": 0,
-          "span": 322.3723509925452,
+          "span": 321.68369815368885,
           "chain": 2,
           "drafting": 24,
           "nearby": 7,
-          "leaderGap": 322.3723509925452,
+          "leaderGap": 321.68369815368885,
           "playerPush": 0,
-          "playerTow": 0.8449058081346937
+          "playerTow": 0.8512941983625271
         },
         {
-          "nearestGap": 6.536797624716826,
+          "nearestGap": 3.6218921401503508,
           "spacing": 11.832090219635328,
           "playerLead": 0,
-          "span": 288.7224456011633,
+          "span": 285.80754011659684,
           "chain": 4,
           "drafting": 23,
           "nearby": 7,
-          "leaderGap": 288.7224456011633,
+          "leaderGap": 285.80754011659684,
           "playerPush": 0,
-          "playerTow": 0.8158619112953381
+          "playerTow": 0.8440283838598635
         },
         {
-          "nearestGap": 2.876237994384155,
+          "nearestGap": 21.910307099075908,
           "spacing": 10.720860331870686,
           "playerLead": 0,
-          "span": 265.56898081793463,
+          "span": 262.6927428235505,
           "chain": 4,
           "drafting": 22,
           "nearby": 7,
-          "leaderGap": 265.56898081793463,
+          "leaderGap": 259.39160042496417,
           "playerPush": 0,
-          "playerTow": 0.8612889033800363
+          "playerTow": 0.9121611280344207
         }
       ],
       "order": [
@@ -4460,8 +4460,8 @@
         {
           "id": "player",
           "x": 3.5,
-          "z": 959.7647522110194,
-          "speed": 256.869548398216,
+          "z": 971.0875671667046,
+          "speed": 263.1061766281335,
           "lv": 0,
           "lvx": 0,
           "strain": 0
@@ -4474,7 +4474,7 @@
           "lv": 0,
           "lvx": -0.18332930049184376,
           "health": 99.9998772882267,
-          "strain": 0.00004740484550148044,
+          "strain": 0.0000530934269616581,
           "tactic": null
         },
         {
@@ -4496,7 +4496,7 @@
           "lv": 0,
           "lvx": 0.06587335616111561,
           "health": 99.99997794552395,
-          "strain": 0.00004740484550148044,
+          "strain": 0.0000530934269616581,
           "tactic": null
         },
         {
@@ -4513,7 +4513,7 @@
           "id": "ai-4",
           "x": -1.7469301496891054,
           "z": 1208.3762128995359,
-          "speed": 236.97602009962972,
+          "speed": 236.97602009962975,
           "lv": 0,
           "lvx": 0.0013191844883940877,
           "health": 99.99989568588552,
@@ -4733,7 +4733,7 @@
       "detachedSeconds": 0,
       "unrecovered": false,
       "rejoinTimes": [],
-      "medianNearestGap": 3.5230877918685906,
+      "medianNearestGap": 3.6218921401503508,
       "centralSpacing": 12.827437941955736,
       "done": false,
       "finish": 0,
@@ -4741,17 +4741,17 @@
       "overtakes": 1,
       "draftingSeconds": 4,
       "openingNearby": 7,
-      "openingLeaderGap": 265.56898081793463,
+      "openingLeaderGap": 259.39160042496417,
       "passStarts": [
         7,
         0,
         0
       ],
       "maxPlayerLead": 0,
-      "medianSpan": 322.3723509925452,
+      "medianSpan": 321.68369815368885,
       "medianDrafting": 24,
       "medianNearby": 7,
-      "medianLeaderGap": 322.3723509925452,
+      "medianLeaderGap": 321.68369815368885,
       "pushedSamples": 0,
       "maxChain": 4
     }
@@ -4775,40 +4775,40 @@
           "playerTow": 0.8620642220627628
         },
         {
-          "nearestGap": 5.921806082413497,
+          "nearestGap": 5.235168622034308,
           "spacing": 12.82174091325425,
           "playerLead": 0,
-          "span": 324.6875881764675,
+          "span": 324.0009507160883,
           "chain": 2,
           "drafting": 24,
           "nearby": 7,
-          "leaderGap": 324.6875881764675,
+          "leaderGap": 324.0009507160883,
           "playerPush": 0,
-          "playerTow": 0.8219054442210512
+          "playerTow": 0.828609883028748
         },
         {
-          "nearestGap": 12.887216919279183,
+          "nearestGap": 10.009105612682674,
           "spacing": 11.825150301817406,
           "playerLead": 0,
-          "span": 295.0625024285314,
+          "span": 292.1843911219349,
           "chain": 3,
           "drafting": 23,
           "nearby": 7,
-          "leaderGap": 295.0625024285314,
+          "leaderGap": 292.1843911219349,
           "playerPush": 0,
-          "playerTow": 0.7492072362469979
+          "playerTow": 0.7802494527661754
         },
         {
-          "nearestGap": 14.646743230844208,
+          "nearestGap": 8.61815896974781,
           "spacing": 10.646336379077297,
           "playerLead": 0,
-          "span": 277.75467400814046,
+          "span": 271.72608974704406,
           "chain": 4,
           "drafting": 22,
           "nearby": 7,
-          "leaderGap": 277.75467400814046,
+          "leaderGap": 271.72608974704406,
           "playerPush": 0,
-          "playerTow": 0.7384751531563588
+          "playerTow": 0.8028772983074688
         }
       ],
       "order": [
@@ -5155,8 +5155,8 @@
         {
           "id": "player",
           "x": 3.5,
-          "z": 952.2189722788714,
-          "speed": 251.5029839404486,
+          "z": 962.3303611675199,
+          "speed": 256.25965240922585,
           "lv": 0,
           "lvx": 0,
           "strain": 0
@@ -5169,7 +5169,7 @@
           "lv": 0,
           "lvx": -0.16246249299792478,
           "health": 99.99988001407695,
-          "strain": 0.00005008888703549268,
+          "strain": 0.0000560995534797518,
           "tactic": null
         },
         {
@@ -5180,7 +5180,7 @@
           "lv": 0,
           "lvx": 0.002219929941889012,
           "health": 99.99999411386628,
-          "strain": 0.000013795625907952638,
+          "strain": 0.000015451101016906955,
           "tactic": "receive"
         },
         {
@@ -5191,7 +5191,7 @@
           "lv": 0,
           "lvx": 0.06658406298148972,
           "health": 99.99997848349368,
-          "strain": 0.00005008888703549268,
+          "strain": 0.0000560995534797518,
           "tactic": null
         },
         {
@@ -5243,7 +5243,7 @@
           "lv": 0,
           "lvx": 0.06486769060950409,
           "health": 99.99999411386628,
-          "strain": 0.000013795625907952638,
+          "strain": 0.000015451101016906955,
           "tactic": "join"
         },
         {
@@ -5428,7 +5428,7 @@
       "detachedSeconds": 0,
       "unrecovered": false,
       "rejoinTimes": [],
-      "medianNearestGap": 12.887216919279183,
+      "medianNearestGap": 8.61815896974781,
       "centralSpacing": 12.82174091325425,
       "done": false,
       "finish": 0,
@@ -5436,17 +5436,17 @@
       "overtakes": 0,
       "draftingSeconds": 4,
       "openingNearby": 7,
-      "openingLeaderGap": 277.75467400814046,
+      "openingLeaderGap": 271.72608974704406,
       "passStarts": [
         7,
         0,
         0
       ],
       "maxPlayerLead": 0,
-      "medianSpan": 324.6875881764675,
+      "medianSpan": 324.0009507160883,
       "medianDrafting": 24,
       "medianNearby": 7,
-      "medianLeaderGap": 324.6875881764675,
+      "medianLeaderGap": 324.0009507160883,
       "pushedSamples": 0,
       "maxChain": 4
     }
@@ -5470,40 +5470,40 @@
           "playerTow": 0.8620318053576144
         },
         {
-          "nearestGap": 9.258006499750877,
+          "nearestGap": 8.53428716325871,
           "spacing": 12.818734501031091,
           "playerLead": 0,
-          "span": 327.71820578824054,
+          "span": 326.99448645174834,
           "chain": 2,
           "drafting": 24,
           "nearby": 7,
-          "leaderGap": 327.71820578824054,
+          "leaderGap": 326.99448645174834,
           "playerPush": 0,
-          "playerTow": 0.7880812189710643
+          "playerTow": 0.7955880649264363
         },
         {
-          "nearestGap": 21.475368545264473,
+          "nearestGap": 18.481963213726715,
           "spacing": 11.858206497418864,
           "playerLead": 0,
-          "span": 303.0724272617388,
+          "span": 300.07902193020107,
           "chain": 3,
           "drafting": 23,
           "nearby": 5,
-          "leaderGap": 303.0724272617388,
+          "leaderGap": 300.07902193020107,
           "playerPush": 0,
-          "playerTow": 0.6501315486172141
+          "playerTow": 0.6855978196255705
         },
         {
-          "nearestGap": 31.683445144201187,
-          "spacing": 10.694135370195292,
+          "nearestGap": 25.503536587910276,
+          "spacing": 10.694135370195298,
           "playerLead": 0,
-          "span": 293.6198901241155,
+          "span": 287.4399815678246,
           "chain": 3,
           "drafting": 22,
           "nearby": 5,
-          "leaderGap": 293.6198901241155,
+          "leaderGap": 287.4399815678246,
           "playerPush": 0,
-          "playerTow": 0.527189121413431
+          "playerTow": 0.6037746301731498
         }
       ],
       "order": [
@@ -5850,8 +5850,8 @@
         {
           "id": "player",
           "x": 3.5,
-          "z": 939.6067884750507,
-          "speed": 243.46272214384805,
+          "z": 949.8055515699554,
+          "speed": 248.0600033990766,
           "lv": 0,
           "lvx": 0,
           "strain": 0
@@ -5864,14 +5864,14 @@
           "lv": 0,
           "lvx": -0.12339398545235643,
           "health": 99.99986748145108,
-          "strain": 0.000001720772880806141,
+          "strain": 0.000001927265626502878,
           "tactic": null
         },
         {
           "id": "ai-1",
           "x": 3.4421246494532296,
           "z": 1180.8180057751392,
-          "speed": 236.35680325099165,
+          "speed": 236.35680325099167,
           "lv": 0,
           "lvx": 0,
           "health": 99.99997168804298,
@@ -5886,14 +5886,14 @@
           "lv": 0,
           "lvx": 0.0026191763473249054,
           "health": 99.99999926580357,
-          "strain": 0.000001720772880806141,
+          "strain": 0.000001927265626502878,
           "tactic": null
         },
         {
           "id": "ai-3",
           "x": 1.1593323563309061,
-          "z": 1210.7719482398384,
-          "speed": 238.37276982807475,
+          "z": 1210.7719482398386,
+          "speed": 238.37276982807478,
           "lv": 0,
           "lvx": 0,
           "health": 99.99997168804298,
@@ -5914,8 +5914,8 @@
         {
           "id": "ai-5",
           "x": 1.830711444982538,
-          "z": 1206.1719482398385,
-          "speed": 242.81395321519167,
+          "z": 1206.1719482398387,
+          "speed": 242.8139532151917,
           "lv": 0,
           "lvx": 1.5416456420477689,
           "strain": 0,
@@ -6123,7 +6123,7 @@
       "detachedSeconds": 0,
       "unrecovered": false,
       "rejoinTimes": [],
-      "medianNearestGap": 21.475368545264473,
+      "medianNearestGap": 18.481963213726715,
       "centralSpacing": 12.818734501031091,
       "done": false,
       "finish": 0,
@@ -6131,17 +6131,17 @@
       "overtakes": 0,
       "draftingSeconds": 4,
       "openingNearby": 5,
-      "openingLeaderGap": 293.6198901241155,
+      "openingLeaderGap": 287.4399815678246,
       "passStarts": [
         6,
         0,
         0
       ],
       "maxPlayerLead": 0,
-      "medianSpan": 327.71820578824054,
+      "medianSpan": 326.99448645174834,
       "medianDrafting": 24,
       "medianNearby": 7,
-      "medianLeaderGap": 327.71820578824054,
+      "medianLeaderGap": 326.99448645174834,
       "pushedSamples": 0,
       "maxChain": 3
     }
@@ -8109,40 +8109,40 @@
           "playerTow": 0.8620764619786042
         },
         {
-          "nearestGap": 3.4778694002387454,
+          "nearestGap": 2.7893467601520854,
           "spacing": 14.019659696876664,
           "playerLead": 0,
-          "span": 518.3736761742289,
+          "span": 517.6851535341423,
           "chain": 2,
           "drafting": 38,
           "nearby": 7,
-          "leaderGap": 518.3736761742289,
+          "leaderGap": 517.6851535341423,
           "playerPush": 0,
-          "playerTow": 0.8445330596110788
+          "playerTow": 0.850926053289849
         },
         {
-          "nearestGap": 6.4940102203947845,
+          "nearestGap": 3.5798843258356783,
           "spacing": 13.407647721566072,
           "playerLead": 0,
-          "span": 484.73125442232725,
+          "span": 481.81712852776815,
           "chain": 4,
           "drafting": 37,
           "nearby": 7,
-          "leaderGap": 484.73125442232725,
+          "leaderGap": 481.81712852776815,
           "playerPush": 0,
-          "playerTow": 0.8153493898136389
+          "playerTow": 0.8435383089254901
         },
         {
-          "nearestGap": 1.7397559003601373,
+          "nearestGap": 23.038752765311187,
           "spacing": 12.678583880144798,
           "playerLead": 0,
-          "span": 461.6002202359647,
+          "span": 459.86046433560455,
           "chain": 4,
           "drafting": 36,
           "nearby": 7,
-          "leaderGap": 461.6002202359647,
+          "leaderGap": 455.4278896472092,
           "playerPush": 0,
-          "playerTow": 0.8510998079322755
+          "playerTow": 0.9035734503503973
         }
       ],
       "order": [
@@ -8671,8 +8671,8 @@
         {
           "id": "player",
           "x": 3.5,
-          "z": 959.3995957017811,
-          "speed": 255.9551437893374,
+          "z": 970.7752006540416,
+          "speed": 262.7475905609797,
           "lv": 0,
           "lvx": 0,
           "strain": 0
@@ -8681,11 +8681,11 @@
           "id": "ai-0",
           "x": -3.2828141986984125,
           "z": 1380.6440673945058,
-          "speed": 219.53842021082292,
+          "speed": 219.53842021082295,
           "lv": 0,
           "lvx": -0.1796233796266371,
           "health": 99.99987396467458,
-          "strain": 0.000044299527121619835,
+          "strain": 0.00004961547037621423,
           "tactic": null
         },
         {
@@ -8707,7 +8707,7 @@
           "lv": 0,
           "lvx": 0.06536765001141753,
           "health": 99.99996701525998,
-          "strain": 0.000044299527121619835,
+          "strain": 0.00004961547037621423,
           "tactic": null
         },
         {
@@ -9055,8 +9055,8 @@
         {
           "id": "ai-37",
           "x": 3.4999999839294604,
-          "z": 982.0578745372096,
-          "speed": 250.08045392293133,
+          "z": 982.6978320545164,
+          "speed": 250.5593249280088,
           "lv": 0,
           "lvx": -6.34008434804641e-8,
           "strain": 0,
@@ -9084,7 +9084,7 @@
       "detachedSeconds": 0,
       "unrecovered": false,
       "rejoinTimes": [],
-      "medianNearestGap": 3.4778694002387454,
+      "medianNearestGap": 3.5798843258356783,
       "centralSpacing": 14.019659696876664,
       "done": false,
       "finish": 0,
@@ -9092,17 +9092,17 @@
       "overtakes": 1,
       "draftingSeconds": 4,
       "openingNearby": 7,
-      "openingLeaderGap": 461.6002202359647,
+      "openingLeaderGap": 455.4278896472092,
       "passStarts": [
         7,
         0,
         0
       ],
       "maxPlayerLead": 0,
-      "medianSpan": 518.3736761742289,
+      "medianSpan": 517.6851535341423,
       "medianDrafting": 38,
       "medianNearby": 7,
-      "medianLeaderGap": 518.3736761742289,
+      "medianLeaderGap": 517.6851535341423,
       "pushedSamples": 0,
       "maxChain": 4
     }
@@ -9126,40 +9126,40 @@
           "playerTow": 0.8620551889016961
         },
         {
-          "nearestGap": 5.875460907891323,
+          "nearestGap": 5.188956572763658,
           "spacing": 14.015407739887113,
           "playerLead": 0,
-          "span": 520.6889715714892,
+          "span": 520.0024672363616,
           "chain": 2,
           "drafting": 38,
           "nearby": 7,
-          "leaderGap": 520.6889715714892,
+          "leaderGap": 520.0024672363616,
           "playerPush": 0,
-          "playerTow": 0.8215024287511533
+          "playerTow": 0.82821105628014
         },
         {
-          "nearestGap": 12.84373397588115,
+          "nearestGap": 9.966484629685738,
           "spacing": 13.38971823479385,
           "playerLead": 0,
-          "span": 491.0719320746328,
+          "span": 488.1946827284374,
           "chain": 3,
           "drafting": 37,
           "nearby": 7,
-          "leaderGap": 491.0719320746328,
+          "leaderGap": 488.1946827284374,
           "playerPush": 0,
-          "playerTow": 0.7486205053986471
+          "playerTow": 0.7796772425443484
         },
         {
-          "nearestGap": 13.83223202077204,
+          "nearestGap": 7.8073265335791575,
           "spacing": 12.665849957229039,
           "playerLead": 0,
-          "span": 473.78319541979397,
+          "span": 467.7582899326011,
           "chain": 4,
           "drafting": 36,
           "nearby": 7,
-          "leaderGap": 473.78319541979397,
+          "leaderGap": 467.7582899326011,
           "playerPush": 0,
-          "playerTow": 0.7297439168306422
+          "playerTow": 0.7948403416801171
         }
       ],
       "order": [
@@ -9688,8 +9688,8 @@
         {
           "id": "player",
           "x": 3.5,
-          "z": 952.0726589607681,
-          "speed": 251.290164413699,
+          "z": 962.1545839692999,
+          "speed": 256.0085971236614,
           "lv": 0,
           "lvx": 0,
           "strain": 0
@@ -9698,7 +9698,7 @@
           "id": "ai-0",
           "x": -2.901007846552288,
           "z": 1391.3193658570347,
-          "speed": 226.28695824795457,
+          "speed": 226.2869582479546,
           "lv": 0,
           "lvx": 0.07615891712839984,
           "health": 99.99988098365978,
@@ -9713,7 +9713,7 @@
           "lv": 0,
           "lvx": 0.0011411857480121861,
           "health": 99.99999412878881,
-          "strain": 0.000013760651262350506,
+          "strain": 0.00001541192941383257,
           "tactic": "receive"
         },
         {
@@ -9739,8 +9739,8 @@
         {
           "id": "ai-4",
           "x": -1.9361056978183198,
-          "z": 1416.6612960025395,
-          "speed": 240.881003110975,
+          "z": 1416.66129600254,
+          "speed": 240.88100311097503,
           "lv": 0,
           "lvx": -0.11064439339322114,
           "health": 99.99988098365978,
@@ -9775,7 +9775,7 @@
           "lv": 0,
           "lvx": 0.06602822634030973,
           "health": 99.99999412878881,
-          "strain": 0.000013760651262350506,
+          "strain": 0.00001541192941383257,
           "tactic": "join"
         },
         {
@@ -9812,7 +9812,7 @@
           "id": "ai-11",
           "x": 3.229010629647762,
           "z": 1324.2420939953042,
-          "speed": 243.52958319322858,
+          "speed": 243.52958319322866,
           "lv": 0,
           "lvx": 0,
           "strain": 0,
@@ -9822,7 +9822,7 @@
           "id": "ai-12",
           "x": -3.591401932881901,
           "z": 1303.4128734447597,
-          "speed": 246.0129886255657,
+          "speed": 246.01298862556578,
           "lv": 0,
           "lvx": 0,
           "strain": 0,
@@ -9832,7 +9832,7 @@
           "id": "ai-13",
           "x": 3.3382145742318055,
           "z": 1313.406155310633,
-          "speed": 249.47778749055863,
+          "speed": 249.4777874905587,
           "lv": 0,
           "lvx": -0.09339232448818605,
           "strain": 0,
@@ -9842,7 +9842,7 @@
           "id": "ai-14",
           "x": -3.5544065765036175,
           "z": 1298.8128734447598,
-          "speed": 248.41871920223045,
+          "speed": 248.41871920223053,
           "lv": 0,
           "lvx": -0.03163880517866914,
           "strain": 0,
@@ -9852,7 +9852,7 @@
           "id": "ai-15",
           "x": 3.4236051922696173,
           "z": 1294.6096985510412,
-          "speed": 250.88934406152998,
+          "speed": 250.88934406153007,
           "lv": 0,
           "lvx": -0.07302692534056474,
           "strain": 0,
@@ -9862,7 +9862,7 @@
           "id": "ai-16",
           "x": -3.5266035370214444,
           "z": 1274.4797905592043,
-          "speed": 252.95916205178824,
+          "speed": 252.95916205178833,
           "lv": 0,
           "lvx": -0.023777442243202534,
           "strain": 0,
@@ -10100,7 +10100,7 @@
       "detachedSeconds": 0,
       "unrecovered": false,
       "rejoinTimes": [],
-      "medianNearestGap": 12.84373397588115,
+      "medianNearestGap": 7.8073265335791575,
       "centralSpacing": 14.015407739887113,
       "done": false,
       "finish": 0,
@@ -10108,17 +10108,17 @@
       "overtakes": 0,
       "draftingSeconds": 4,
       "openingNearby": 7,
-      "openingLeaderGap": 473.78319541979397,
+      "openingLeaderGap": 467.7582899326011,
       "passStarts": [
         7,
         0,
         0
       ],
       "maxPlayerLead": 0,
-      "medianSpan": 520.6889715714892,
+      "medianSpan": 520.0024672363616,
       "medianDrafting": 38,
       "medianNearby": 7,
-      "medianLeaderGap": 520.6889715714892,
+      "medianLeaderGap": 520.0024672363616,
       "pushedSamples": 0,
       "maxChain": 4
     }
@@ -10142,40 +10142,40 @@
           "playerTow": 0.8620226423249367
         },
         {
-          "nearestGap": 9.211598959605027,
+          "nearestGap": 8.488026920597207,
           "spacing": 14.011115723533266,
           "playerLead": 0,
-          "span": 523.7197053300824,
+          "span": 522.9961332910747,
           "chain": 2,
           "drafting": 38,
           "nearby": 7,
-          "leaderGap": 523.7197053300824,
+          "leaderGap": 522.9961332910747,
           "playerPush": 0,
-          "playerTow": 0.7876516214881328
+          "playerTow": 0.7951620633532184
         },
         {
-          "nearestGap": 21.432719986748225,
+          "nearestGap": 18.440319181359655,
           "spacing": 13.41993444847358,
           "playerLead": 0,
-          "span": 499.0828862430867,
+          "span": 496.09048543769813,
           "chain": 3,
           "drafting": 37,
           "nearby": 5,
-          "leaderGap": 499.0828862430867,
+          "leaderGap": 496.09048543769813,
           "playerPush": 0,
-          "playerTow": 0.6494793978535235
+          "playerTow": 0.6849493430422187
         },
         {
-          "nearestGap": 31.451470237454146,
+          "nearestGap": 25.274425482922425,
           "spacing": 12.598959096580726,
           "playerLead": 0,
-          "span": 489.65829345895077,
+          "span": 483.48124870441904,
           "chain": 3,
           "drafting": 36,
           "nearby": 5,
-          "leaderGap": 489.65829345895077,
+          "leaderGap": 483.48124870441904,
           "playerPush": 0,
-          "playerTow": 0.524043933400514
+          "playerTow": 0.6006498668683848
         }
       ],
       "order": [
@@ -10704,8 +10704,8 @@
         {
           "id": "player",
           "x": 3.5,
-          "z": 939.5196515025654,
-          "speed": 243.37836901431567,
+          "z": 949.709967221499,
+          "speed": 247.9663423574142,
           "lv": 0,
           "lvx": 0,
           "strain": 0
@@ -10718,7 +10718,7 @@
           "lv": 0,
           "lvx": -0.12437983360019263,
           "health": 99.99985469786009,
-          "strain": 0.000012166128412306775,
+          "strain": 0.00001362606382178359,
           "tactic": null
         },
         {
@@ -10740,7 +10740,7 @@
           "lv": 0,
           "lvx": -0.1263197516101025,
           "health": 99.99999480911853,
-          "strain": 0.000012166128412306775,
+          "strain": 0.00001362606382178359,
           "tactic": null
         },
         {
@@ -11117,7 +11117,7 @@
       "detachedSeconds": 0,
       "unrecovered": false,
       "rejoinTimes": [],
-      "medianNearestGap": 21.432719986748225,
+      "medianNearestGap": 18.440319181359655,
       "centralSpacing": 14.011115723533266,
       "done": false,
       "finish": 0,
@@ -11125,17 +11125,17 @@
       "overtakes": 0,
       "draftingSeconds": 4,
       "openingNearby": 5,
-      "openingLeaderGap": 489.65829345895077,
+      "openingLeaderGap": 483.48124870441904,
       "passStarts": [
         7,
         0,
         0
       ],
       "maxPlayerLead": 0,
-      "medianSpan": 523.7197053300824,
+      "medianSpan": 522.9961332910747,
       "medianDrafting": 38,
       "medianNearby": 7,
-      "medianLeaderGap": 523.7197053300824,
+      "medianLeaderGap": 522.9961332910747,
       "pushedSamples": 0,
       "maxChain": 3
     }

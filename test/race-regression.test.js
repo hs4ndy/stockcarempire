@@ -256,7 +256,7 @@ test('aero is independent of roster order, with capped smooth release and teamma
   assert.deepEqual(result[0], result[1]);
   const trace = result[0].trace;
   assert.ok(trace[0] > 0 && trace[0] < 2, 'no instant attachment bonus');
-  assert.ok(Math.max(...trace) <= 43 * 1.15);
+  assert.ok(Math.max(...trace) <= 43 * 1.15 * 1.10);
   assert.ok(trace[180] > trace[179] * 0.97, 'carry run after pulling out');
   for (let i = 181; i < trace.length; i++) assert.ok(trace[i] <= trace[i - 1]);
   assert.ok(trace.at(-1) < trace[180] * 0.1, 'run eventually expires');
@@ -308,7 +308,7 @@ test('longer connected lines earn more speed, including their lead car', () => {
     assert.ok(runs[i].front > runs[i-1].front, 'front car should benefit from the larger line');
     assert.ok(runs[i].mean > runs[i-1].mean, 'longer line should earn a faster average pace');
     assert.ok(runs[i].counts.every(n=>n === runs[i].size));
-    assert.ok(runs[i].front <= 43 * 1.15, 'player aero remains capped');
+    assert.ok(runs[i].front <= 43 * 1.15 * 1.10, 'player aero remains capped');
     assert.ok(runs[i].mean <= 43 * 1.05 * 1.15, 'train gains remain bounded by AI/player aero ceilings');
   }
 });
@@ -404,9 +404,9 @@ test('clean-air race pace stays brisk and releasing a tow still carries speed sm
   assert.ok(result.trace[119] > result.cruise + 18, 'carry an earned run for the passing move');
   for (let i = 1; i < result.trace.length; i++) {
     assert.ok(result.trace[i] >= result.cruise);
-    assert.ok(result.trace[i - 1] - result.trace[i] < 0.2, 'no abrupt speed drop on release');
+    assert.ok(result.trace[i - 1] - result.trace[i] < 0.2 * 1.10, 'release remains smooth relative to the ten-percent stronger run');
   }
-  assert.ok(result.trace.at(-1) < result.cruise + 1, 'draft still expires');
+  assert.ok(result.trace.at(-1) < result.cruise + 1 * 1.10, 'the stronger draft still expires at the same relative rate');
   assert.ok(result.braked < result.cruise * 0.5, 'higher cruising pace must not defeat deliberate braking');
 });
 
@@ -1029,4 +1029,10 @@ test('every difficulty gives humans fifteen percent more draft while AI retains 
   const run=gain=>{R3D.PLAYER_DRAFT_STRENGTH=gain;const p=car('player',0,0,210),a=car('a',0,30,210),e=engine([p,a],d.id);p.isPlayer=human;for(let i=0;i<300;i++)e._calcDraft(1/60);return p.draftBoost;};
   return {human,base:run(1),boost:run(1.15)};
  })).flat()`);for(const r of rows){assert.ok(r.base>0);assert.ok(Math.abs(r.boost/r.base-(r.human?1.15:1))<.00001);}
+});
+
+test('only hard-mode humans receive the additional ten percent drafting',()=>{
+ const c=physicsContext();const rows=readJson(c,`DIFFICULTIES.flatMap(d=>[false,true].map(human=>{
+ const run=old=>{const p=car('player',0,0,210),a=car('a',0,30,210),e=engine([p,a],d.id);p.isPlayer=human;e.diff={...e.diff,id:old?'baseline':d.id};for(let i=0;i<300;i++)e._calcDraft(1/60);return p.draftBoost;};return {id:d.id,human,ratio:run(false)/run(true)};
+ }))`);for(const r of rows)assert.ok(Math.abs(r.ratio-(r.human&&['semipro','pro','allout'].includes(r.id)?1.10:1))<1e-8);
 });

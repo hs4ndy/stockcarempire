@@ -223,7 +223,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "0cc2f89808c3f0c81db1c89eb08b2bfd0537abe829bf4ece9f4507daa778cc79"
+      "hash": "18f7077a09a95a1f66086cacf2076e22da25705c137c1334784ef85883f83da6"
     },
     {
       "name": "_separateCars",
@@ -247,7 +247,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "288a742a31c1b8b58dc33d68ae8f098ce3b1f7d042fd07d65053d83ce151821f"
+      "hash": "4e487f3750d0c30dd8c8d6fea1521d5f001fffd3ed24ededb5c7b60efef96a42"
     },
     {
       "name": "_damageCar",
@@ -263,7 +263,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "aae29616fc7bebf8cf5a56e25077bdbccc0bb2b1c071db457b0e3e76ea42fc2d"
+      "hash": "823edd27e35c3b29c84c240f3a1f563d26ed2625dd77ae0b5496478a1804a110"
     },
     {
       "name": "_crashThreshold",
@@ -548,6 +548,7 @@
   ],
   "sourceCommit": "20c3f0c77f0934c085371c2e19c73357fe1c9b58",
   "approvedUpdates": {
-    "version111": "Only spark emitter/step, dual HUD and launch labels updated for requested condition visuals."
+    "version111": "Only spark emitter/step, dual HUD and launch labels updated for requested condition visuals.",
+    "version112": "Intentional player penalty/draft and AI-only contact tuning; opening/dual traces refreshed."
   }
 }

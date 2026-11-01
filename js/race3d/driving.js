@@ -145,7 +145,7 @@
     for (const car of active) {
       const chain = R3D.CHAIN_MAX * (1 - Math.exp(-(car.chainLen-1) / 3));
       const rawTarget = car.towStrength * R3D.DRAFT_BOOST + car._pushTarget + chain + car.receivedPush;
-      const draftGain = car.isPlayer ? R3D.PLAYER_DRAFT_STRENGTH : 1;
+      const draftGain = car.isPlayer ? R3D.PLAYER_DRAFT_STRENGTH * (['semipro','pro','allout'].includes(this.diff.id || this.config?.difficulty) ? 1.10 : 1) : 1;
       let target = Math.min(R3D.AERO_MAX * draftGain * (car.isPlayer ? 1 : (this.diff.aiDraft ?? 1)),
         rawTarget * draftGain * (car.isPlayer ? this.diff.playerDraft : (this.diff.aiDraft ?? 1)));
       const before = car.draftMomentum || 0;
