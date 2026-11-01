@@ -50,6 +50,7 @@ if (/<script\s+src=/i.test(html) || /<link[^>]+href=/i.test(html)) {
 fs.mkdirSync(outDir, { recursive: true });
 // Publish a complete file in one rename; interrupted writes cannot truncate it.
 const temporaryFile = path.join(outDir, '.Stock-Car-Empire.html.tmp');
-fs.writeFileSync(temporaryFile, html, 'utf8');
+// Keep the downloadable HTML identical to its ZIP on Windows and Git hosts.
+fs.writeFileSync(temporaryFile, html.replace(/\r\n?/g, '\n'), 'utf8');
 fs.renameSync(temporaryFile, outFile);
 console.log(`Built ${path.relative(root, outFile)} (${Math.ceil(fs.statSync(outFile).size / 1024)} KiB)`);
