@@ -33,3 +33,9 @@ VERSION98: Race News is Career-only, displayed in the existing results-style mod
 Checks: npm run check; four article Node tests; four targeted browser cases all passed (played Career/photo/dialog, offline phone simulation, single and dual Quick without news). Desktop1440/phone390 captures inspected. Full Node/browser suites not rerun for this UI follow-up. Offline HTML/ZIP parity verified. Review/delivery recorded below. Physical Chromebook timing remains unverified; original human task stays in Open Checks.
 
 Release SHA256 4a89fb14feff92152e960b810e2140f78f08d25c4897498fec22fe661cdfa3ad.
+
+## VERSION109 library layout
+
+`tools/build_news.cjs` remains the only authored-copy source. Run it to regenerate the small `js/news-data.js` registry and five article banks in `js/news-data/`: Grassroots1-20, Challenger1-20/21-26, Premier1-20/21-40. Load the registry first, then grassroots, challenger-front, challenger-back, premier-front, premier-back, all before js/news.js. Banks only populate the existing RACE_NEWS_ARTICLES series objects; reporters and public names remain unchanged. The standalone builder embeds this same ordered script list without extra requests. Do not edit generated banks by hand.
+
+Pre-split fingerprints in test/fixtures/race-news-fingerprints.json cover all270 articles, reporter order and774 deterministic reports (nine selections for every valid position). News tests also verify generator output matches every shipped script. Article copy/IDs/selection/formatting remain unchanged.
