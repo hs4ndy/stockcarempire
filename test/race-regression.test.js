@@ -257,7 +257,7 @@ test('aero is independent of roster order, with capped smooth release and teamma
   assert.deepEqual(result[0], result[1]);
   const trace = result[0].trace;
   assert.ok(trace[0] > 0 && trace[0] < 2, 'no instant attachment bonus');
-  assert.ok(Math.max(...trace) <= 43);
+  assert.ok(Math.max(...trace) <= 43 * 1.15);
   assert.ok(trace[180] > trace[179] * 0.97, 'carry run after pulling out');
   for (let i = 181; i < trace.length; i++) assert.ok(trace[i] <= trace[i - 1]);
   assert.ok(trace.at(-1) < trace[180] * 0.1, 'run eventually expires');
@@ -309,8 +309,8 @@ test('longer connected lines earn more speed, including their lead car', () => {
     assert.ok(runs[i].front > runs[i-1].front, 'front car should benefit from the larger line');
     assert.ok(runs[i].mean > runs[i-1].mean, 'longer line should earn a faster average pace');
     assert.ok(runs[i].counts.every(n=>n === runs[i].size));
-    assert.ok(runs[i].front <= 43, 'player aero remains capped');
-    assert.ok(runs[i].mean <= 43 * 1.05, 'train gains remain bounded by AI/player aero ceilings');
+    assert.ok(runs[i].front <= 43 * 1.15, 'player aero remains capped');
+    assert.ok(runs[i].mean <= 43 * 1.05 * 1.15, 'train gains remain bounded by AI/player aero ceilings');
   }
 });
 
@@ -1023,4 +1023,11 @@ test('developing Career tow efficiency is shared by every car and keeps upgrade 
  p.power=b.power=.58;p.draftBoost=b.draftBoost=30;const equal=e._aeroPace(p)===e._aeroPace(b);return {values,equal};
  }))`);
  for(const row of rows){assert.equal(row.equal,true);for(let i=1;i<row.values.length;i++)assert.ok(row.values[i]>row.values[i-1]);}
+});
+
+test('every difficulty keeps its draft differences with a shared fifteen percent gain',()=>{
+ const c=physicsContext();const rows=readJson(c,`DIFFICULTIES.map(d=>[false,true].map(human=>{
+  const run=gain=>{R3D.DRAFT_STRENGTH=gain;const p=car('player',0,0,210),a=car('a',0,30,210),e=engine([p,a],d.id);p.isPlayer=human;for(let i=0;i<300;i++)e._calcDraft(1/60);return p.draftBoost;};
+  return {base:run(1),boost:run(1.15)};
+ })).flat()`);for(const r of rows){assert.ok(r.base>0);assert.ok(Math.abs(r.boost/r.base-1.15)<.00001);}
 });

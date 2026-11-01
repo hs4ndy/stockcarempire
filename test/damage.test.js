@@ -22,7 +22,7 @@ test('disabled damage cannot change health, and bumper nudges cannot start crash
 });
 test('ordinary bumper trains never accumulate side strain, while collection is capped',()=>{
  assert.equal(run(`(()=>{const e=engine(),a=car(true),b=car();a.z=4.4;e.cars=[a,b];for(let i=0;i<100;i++)e._separateCars(1/120);if(a.spinning||b.spinning||a.raceHealth!==100||b.raceHealth!==100)return false;
- const wreck=car();wreck.spinning=true;wreck.mesh.rotation.y=Math.PI/2;e.cars=[wreck,car(),car(),car(),car()];e._stepContactState(.01);return e.cars.filter(c=>c.spinning).length===3&&e._collectedCount===2;})()`),true);
+ const wreck=car();wreck.spinning=true;wreck.mesh.rotation.y=Math.PI/2;e.cars=[wreck,car(),car(),car(),car()];e._stepContactState(.01);return e.cars.filter(c=>c.spinning).length===5&&e._collectedCount===4;})()`),true);
 });
 test('retirement preserves records once; empty garage can buy replacement',()=>{
  assert.equal(run(`(()=>{newGame('Team','Driver','Car');game.difficulty='pro';const c=game.cars[0];c.wins=4;c.races=40;c.totalPoints=555;c.appliedUpgrades=['engine_tune'];c.lifetimeHealth=0;retireExhaustedCars();retireExhaustedCars();if(game.cars.length||game.retiredCars.length!==1||game.retiredCars[0].totalPoints!==555)return false;game.money=100000;const r=buyCar('Replacement');return r.ok&&r.car.assignedDriverId==='player'&&r.car.lifetimeHealth===100&&game.retiredCars[0].wins===4;})()`),true);
@@ -37,3 +37,12 @@ test('typical ten-point damage retires at 40 starts in each series; easy/disable
  assert.equal(run(`(()=>{for(let s=0;s<3;s++){newGame('Team','Driver','Car');game.currentSeries=s;game.difficulty='pro';const c=game.cars[0];for(let i=0;i<39;i++){c.condition=100;postRaceUpdate({carId:c.id,position:10,prize:0,raceHealth:90},0,[]);}if(game.cars.length!==1||Math.abs(c.lifetimeHealth-2.5)>.001)return false;c.condition=100;postRaceUpdate({carId:c.id,position:10,prize:0,raceHealth:90},0,[]);if(game.cars.length||game.retiredCars[0].races!==40)return false;}
 for(const d of ['beginner','amateur','pro']){newGame('T','D','C');game.difficulty=d;if(d==='pro')game.raceRules.damage=false;const c=game.cars[0];postRaceUpdate({carId:c.id,position:5,raceHealth:0},0,[]);if(c.lifetimeHealth!==100)return false;}return true;})()`),true);
 });
+
+test('rotated wreck footprint collects true overlap beyond old tiny box only',()=>{
+ assert.equal(run(`(()=>{const e=engine(),a=car(),b=car();a.mesh.rotation.y=Math.PI/2;a.wallHalfX=b.wallHalfX=1;a.wallHalfZ=b.wallHalfZ=2.5;b.x=3;const hit=e._wreckOverlap(a,b);b.x=4;return hit&&!e._wreckOverlap(a,b)&&e._crashThreshold(car(true))===80;})()`),true);
+});
+
+test('repair rates are ten percent lower and mechanic discount still applies',()=>{
+ assert.equal(run(`(()=>{if(JSON.stringify(Object.values(CAR_CLASSES).map(c=>c.repairCostPerPoint))!==JSON.stringify([72,270,1350]))return false;newGame('T','D','C');game.money=100000;const c=game.cars[0];c.condition=50;const normal=repairCar(c.id).cost;c.condition=50;game.staff.push({typeId:'mechanic'});const discount=repairCar(c.id).cost;return normal===3600&&discount===2700;})()`),true);
+});
+

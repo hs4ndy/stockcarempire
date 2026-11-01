@@ -150,7 +150,7 @@ const CAR_CLASSES = {
     description: 'Entry-level cars for the Grassroots Cup',
     buyCost: 18000,
     sellValue: 9000,
-    repairCostPerPoint: 80,
+    repairCostPerPoint: 72,
     baseStats: { speed: 42, handling: 45, reliability: 58 },
     upgrades: buildUpgrades(1)
   },
@@ -159,7 +159,7 @@ const CAR_CLASSES = {
     description: 'Higher-spec cars for the Challenger Series',
     buyCost: 70000,
     sellValue: 35000,
-    repairCostPerPoint: 300,
+    repairCostPerPoint: 270,
     baseStats: { speed: 62, handling: 62, reliability: 58 },
     upgrades: buildUpgrades(3.4)
   },
@@ -168,7 +168,7 @@ const CAR_CLASSES = {
     description: 'Top-of-the-line cars for the Premier Cup Series',
     buyCost: 380000,
     sellValue: 190000,
-    repairCostPerPoint: 1500,
+    repairCostPerPoint: 1350,
     baseStats: { speed: 80, handling: 80, reliability: 65 },
     upgrades: buildUpgrades(15)
   }

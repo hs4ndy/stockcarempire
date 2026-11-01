@@ -34,6 +34,7 @@ const R3D = {
   DRAFT_Z:        120,     // useful tow range without linking the whole field
   DRAFT_X:        3.6,    // wake half-width at distance; narrower at the bumper
   DRAFT_BOOST:    30,
+  DRAFT_STRENGTH: 1.15,   // shared gain; difficulty multipliers retain their differences
   DRAFT_BUILD:    1.8,    // exponential response rates, independent of frame rate
   DRAFT_RELEASE:  1.25,
   DRAFT_CARRY:    2.00,   // earned passing momentum, identical for every partner
@@ -1432,8 +1433,8 @@ class Race3DEngine {
     for (const car of active) {
       const chain = R3D.CHAIN_MAX * (1 - Math.exp(-(car.chainLen-1) / 3));
       const rawTarget = car.towStrength * R3D.DRAFT_BOOST + car._pushTarget + chain + car.receivedPush;
-      let target = Math.min(R3D.AERO_MAX * (car.isPlayer ? 1 : (this.diff.aiDraft ?? 1)),
-        rawTarget * (car.isPlayer ? this.diff.playerDraft : (this.diff.aiDraft ?? 1)));
+      let target = Math.min(R3D.AERO_MAX * R3D.DRAFT_STRENGTH * (car.isPlayer ? 1 : (this.diff.aiDraft ?? 1)),
+        rawTarget * R3D.DRAFT_STRENGTH * (car.isPlayer ? this.diff.playerDraft : (this.diff.aiDraft ?? 1)));
       const before = car.draftMomentum || 0;
       const activeDraft = car.towStrength > 0.12 || car.pushStrength > 0.12 || car.receivedPush > 1;
       if (activeDraft) {
@@ -1571,13 +1572,13 @@ class Race3DEngine {
   }
 
   _crashThreshold(car) {
-    if(car.isPlayer) return 62;
+    if(car.isPlayer) return 80;
     return this.config?.seriesId==='grassroots' ? 10 : this.config?.seriesId==='challenger' ? 4 : 7;
   }
 
   _beginCrash(car,side,cause) {
     if(!this._incidentRules().crashes || car.spinning || car.finished || car.dnf || car._crashGrace>0) return false;
-    if(cause==='collected' && ((this._collectedCount||0)>=2 || this.cars.filter(c=>c.spinning).length>=3)) return false;
+    if(cause==='collected' && ((this._collectedCount||0)>=4 || this.cars.filter(c=>c.spinning).length>=5)) return false;
     if(cause==='collected') this._collectedCount=(this._collectedCount||0)+1;
     car.spinning=true;car._crashPhase='veer';car._veerTime=.85;car.spinTimer=2.5;car.spinDir=side||1;
     car.crashCount=(car.crashCount||0)+1;car.sideStrain=0;car._crashCause=cause;
@@ -1622,23 +1623,34 @@ class Race3DEngine {
     // do not count. Grace and pair cooldowns bound chain reactions.
     for(const wreck of this.cars.filter(c=>c.spinning)) for(const car of this.cars) {
       if(car===wreck || car.spinning || car.finished || car.dnf || car._crashGrace>0 || car._recentSide>0) continue;
-      if(Math.abs(car.x-wreck.x)<2 && Math.abs(car.z-wreck.z)<3.5 && Math.abs(Math.sin(wreck.mesh.rotation.y))>.45) {
+      if((wreck._crashPhase==='veer' || Math.abs(Math.sin(wreck.mesh.rotation.y))>.25) && this._wreckOverlap(wreck,car)) {
         this._damageCar(car,14);car._recentSide=1;
-        car.sideStrain=(car.sideStrain||0)+(car.isPlayer?18:25);
+        car.sideStrain=(car.sideStrain||0)+(car.isPlayer?12:25);
         car.speed*=.8;
         if(car.sideStrain>=this._crashThreshold(car)) this._beginCrash(car,Math.sign(car.x-wreck.x)||1,'collected');
       }
     }
   }
 
+  // Separating-axis test for rotated car footprints. Only used against a
+  // crashing car; ordinary bumper drafting never enters this path.
+  _wreckOverlap(a,b) {
+    const ay=a.mesh?.rotation?.y||0,by=b.mesh?.rotation?.y||0;
+    const axes=[{x:Math.cos(ay),z:-Math.sin(ay)},{x:Math.sin(ay),z:Math.cos(ay)},
+      {x:Math.cos(by),z:-Math.sin(by)},{x:Math.sin(by),z:Math.cos(by)}];
+    const radius=(c,y,n)=>Math.abs(n.x*Math.cos(y)-n.z*Math.sin(y))*(c.wallHalfX??R3D.CAR_SEP_X/2)+
+      Math.abs(n.x*Math.sin(y)+n.z*Math.cos(y))*(c.wallHalfZ??R3D.CAR_SEP_Z/2);
+    return axes.every(n=>Math.abs((a.x-b.x)*n.x+(a.z-b.z)*n.z)<radius(a,ay,n)+radius(b,by,n));
+  }
+
   _shoulderRace(car,dt) {
     if(!this._incidentRules().crashes || car.z<1000 || car.spinning) return;
     car._shoulderWait=Math.max(0,(car._shoulderWait||0)-dt);
     if(car._shoulderTime>0) {car._shoulderTime-=dt;car.targetX=car._shoulderTarget;return;}
-    if(car._shoulderWait>0 || Math.random()>.10*dt*this.diff.aiAggro) return;
+    if(car._shoulderWait>0 || Math.random()>.12*dt*this.diff.aiAggro) return;
     const other=this.cars.filter(c=>c!==car && !c.isPlayer && !c.spinning && !c.dnf && !c.finished && Math.abs(c.z-car.z)<2 && Math.abs(c.x-car.x)>1.5 && Math.abs(c.x-car.x)<3).sort((a,b)=>Math.abs(a.x-car.x)-Math.abs(b.x-car.x))[0];
     if(!other) return;
-    car._shoulderWait=8;car._shoulderTime=.8;
+    car._shoulderWait=7;car._shoulderTime=.8;
     car._shoulderTarget=clamp(other.x-Math.sign(other.x-car.x)*1.1,-7.5,7.5);
     car.targetX=car._shoulderTarget;
   }
