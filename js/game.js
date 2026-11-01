@@ -937,6 +937,7 @@ function renameCar(carId, newName) {
 function normalizeSupportStaff() {
   game.staff = game.staff || [];
   for (const member of game.staff) {
+    if (member.candidateId === 'mechanic03') member.overall = 99;
     if (member.candidateId || member.overall) continue;
     const candidates = STAFF_CANDIDATES.filter(c=>c.typeId===member.typeId);
     const candidate = candidates.find(c=>c.overall===79 && !game.staff.some(s=>s.candidateId===c.id))

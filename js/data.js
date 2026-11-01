@@ -232,7 +232,7 @@ const STAFF_CANDIDATES = [
   {id:'engineer05',typeId:'engineer',name:'Julian Mercer',overall:95,pay:1.9,effects:{simulation:4}},
   {id:'mechanic01',typeId:'mechanic',name:'Eli Turner',overall:60,pay:.55,effects:{repairDiscount:.12}},
   {id:'mechanic02',typeId:'mechanic',name:'Rosa Delgado',overall:70,pay:.75,effects:{repairDiscount:.18}},
-  {id:'mechanic03',typeId:'mechanic',name:'Byron Hill',overall:79,pay:1,effects:{repairDiscount:.25}},
+  {id:'mechanic03',typeId:'mechanic',name:'Byron Hill',overall:99,pay:1,effects:{repairDiscount:.25}},
   {id:'mechanic04',typeId:'mechanic',name:'Claire Dawson',overall:87,pay:1.35,effects:{repairDiscount:.30}},
   {id:'mechanic05',typeId:'mechanic',name:'Travis Morgan',overall:95,pay:1.9,effects:{repairDiscount:.35}},
   {id:'analyst01',typeId:'data_analyst',name:'Leah Grant',overall:60,pay:.55,effects:{qualifying:3,upgradeSlots:1,simulation:.5}},

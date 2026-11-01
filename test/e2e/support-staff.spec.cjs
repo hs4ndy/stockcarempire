@@ -7,7 +7,7 @@ for(const [width,file]of [[1440,'index.html'],[390,'releases/Stock-Car-Empire.ht
  await page.evaluate(()=>{newGame('Staff Racing','Driver','Car');game.tutorial.status='skipped';game.money=1000000;enterGame();showTab('team');showTeamView('staff');});
  await expect(page.locator('[data-staff-candidate]')).toHaveCount(25);
  await page.locator('#staff-role-filter').selectOption('mechanic');await expect(page.locator('[data-staff-candidate]')).toHaveCount(5);
- const byron=page.locator('[data-staff-candidate="mechanic03"]');await expect(byron).toContainText('Byron Hill');await expect(byron).toContainText('79 OVR');await expect(byron).toContainText('25% repair discount');
+ const byron=page.locator('[data-staff-candidate="mechanic03"]');await expect(byron).toContainText('Byron Hill');await expect(byron).toContainText('99 OVR');await expect(byron).toContainText('25% repair discount');
  await byron.getByRole('button',{name:'Hire Byron Hill',exact:true}).click();await expect(page.locator('.team-roster')).toContainText('Byron Hill');await expect(page.locator('[data-staff-candidate="mechanic03"]')).toHaveCount(0);
  await page.locator('#staff-role-filter').selectOption('data_analyst');await page.getByRole('button',{name:'Hire Avery Chen',exact:true}).click();
  expect(await page.evaluate(()=>tierCapacity()-MAX_PER_TIER)).toBe(2);await expect(page.locator('.team-roster')).toContainText('95 OVR');
