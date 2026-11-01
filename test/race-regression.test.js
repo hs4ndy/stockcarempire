@@ -32,8 +32,7 @@ function makeContext(seed = 123456789) {
     clearTimeout,
   });
 
-  for (const file of SOURCE_FILES) {
-    const source = fs.readFileSync(path.join(ROOT, file), 'utf8');
+  for (const [file, source] of require('./helpers/race-sources.cjs').entries(SOURCE_FILES)) {
     vm.runInContext(source, context, { filename: file });
   }
   return context;

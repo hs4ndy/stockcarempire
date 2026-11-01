@@ -16,7 +16,8 @@ const path = require('node:path');
         contentType: 'application/javascript',
       }));
       if (baseline) {
-        for (const file of ['js/race3d.js', 'assets/cars/stock-car-model.js']) {
+        await require('../test/helpers/race-sources.cjs').routeRace(page,ref);
+        for (const file of ['assets/cars/stock-car-model.js']) {
           const body = execFileSync('git', ['show', `${ref}:${file}`], { encoding: 'utf8', maxBuffer: 5e6 });
           await page.route(`**/${file}`, route => route.fulfill({ body, contentType: 'application/javascript' }));
         }

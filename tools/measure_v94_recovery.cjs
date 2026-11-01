@@ -1,6 +1,6 @@
 const fs=require('fs'),vm=require('vm');
 const c=vm.createContext({console,Math,window:{},document:{},localStorage:{getItem(){return null},setItem(){}},setTimeout,clearTimeout});
-for(const f of ['js/data.js','js/game.js','js/race.js','js/race3d.js','js/ui.js'])vm.runInContext(fs.readFileSync(f,'utf8'),c);
+for(const [file,source] of require('../test/helpers/race-sources.cjs').entries(['js/data.js','js/game.js','js/race.js','js/race3d.js','js/ui.js']))vm.runInContext(source,c);
 const rows=JSON.parse(vm.runInContext(`JSON.stringify(DIFFICULTIES.flatMap(d=>['grassroots','challenger','premier'].flatMap(series=>[.75,.5771527778].map(power=>{
  const scale=series==='grassroots'?.9:1;
  const car=(id,z,speed)=>({entrantId:id,isPlayer:id==='player',power,x:0,z,speed,lv:0,lvx:0,mesh:{position:{set(){}},rotation:{x:0,y:0,z:0}},draftMomentum:0,draftBoost:0,contactCooldown:0});

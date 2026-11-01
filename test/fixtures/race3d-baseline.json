@@ -1,0 +1,550 @@
+{
+  "r3d": "32010129343d6c8e571f4d477fb7c0e267829475f7f8523083b70784bacbf0c3",
+  "methods": [
+    {
+      "name": "constructor",
+      "length": 3,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "526b731491914dccc8a56c797c1ca664e143ccd834d3e69081291271f9c9aca5"
+    },
+    {
+      "name": "_init",
+      "length": 0,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "8eaf4e74a3507d06967d4a15f550baf266f0c2a429111265991f52174016883d"
+    },
+    {
+      "name": "_initGeometries",
+      "length": 0,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "428b7a60d8f6b4735f21540f0c81fff4dc6fc3a3bfd5ddd5454278e56222e100"
+    },
+    {
+      "name": "_loadSurfaceTexture",
+      "length": 2,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "e94707e72c9bd09f90c3d976ce3e9ec95c762dc92d4b938b90951baf8c1b2efe"
+    },
+    {
+      "name": "_positionTrack",
+      "length": 0,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "a85f1561ee9ae9bf218ffbc2c78b0e522079f6a6b1645c1f537b4e7bc9cb778c"
+    },
+    {
+      "name": "_buildTrack",
+      "length": 0,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "31d796c87428dd61eaad4fcb0c767f36f35913f9803256b6d3037e209d8e8ec3"
+    },
+    {
+      "name": "_buildEnvironment",
+      "length": 0,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "d06a44d8e5c246db25feb35109b88463009806eecf760d4a3760128582e53a95"
+    },
+    {
+      "name": "_buildGrandstands",
+      "length": 0,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "b572f49d4b83c2bc20f3c086eeb51c6ea0e497dc4aab5b9488fb8aeb21db51f4"
+    },
+    {
+      "name": "_positionGrandstands",
+      "length": 0,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "5f19e53c93dee9514813cd2950d20485ef35d16c0b2bbbc8aa42e163f1d77712"
+    },
+    {
+      "name": "_buildCars",
+      "length": 0,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "da3a5f66334d17d73a881289d38e6c7c0a4abe935d89b86cab8f0a521210fc92"
+    },
+    {
+      "name": "_withSecond",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "3817d4114d40901691604c378c7f74c991e227d084f8b41b7c10ff1e813a36f8"
+    },
+    {
+      "name": "_makeCar",
+      "length": 3,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "875caafeaa4aeb3c9f12708096252976fd13dbb6416f139faea12bdd26c6d61f"
+    },
+    {
+      "name": "_buildMinimap",
+      "length": 0,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "c060360442e569e8ef8eacaddf41c001e630339b769f377e7ae74a00e43ab97d"
+    },
+    {
+      "name": "_countdown",
+      "length": 0,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "39ba1348aaf10521979f9ad300633caad1ea8ac4d7a7eb95366dfac7f6dab88f"
+    },
+    {
+      "name": "_update",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "8992c031c53377df3c7ae394b0a78b5b4d428bf899428c55f041759b0cbe4e18"
+    },
+    {
+      "name": "_updatePaceLap",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "1b8a44049d2c148f32161e7827e872b5f49f1f98d849bc15bca6de4a240b755e"
+    },
+    {
+      "name": "_updatePlayer",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "276ba424fcdd75283c168e1d558b3cfc718c0e2a2c175b01294447f30f2e7d76"
+    },
+    {
+      "name": "_naturalAIPace",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "1630236cdc41c5a56b4140a9e8ced42bf32463ec0ad7829f88a04121b7371bc5"
+    },
+    {
+      "name": "_aeroPace",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "9f174edc1d06ccec2a0829565e22e9269d3e313982d294e057ba443b21d1e185"
+    },
+    {
+      "name": "_playerRecoveryTarget",
+      "length": 3,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "ff5f6170787c39c21272416a64978d6a6ceb3df7b77a61e055f17b2b7f27ef9f"
+    },
+    {
+      "name": "_racingGroups",
+      "length": 0,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "529d718e6079012930abb435215cff1e82566b3eba6abf3f0b852cb65357bb02"
+    },
+    {
+      "name": "_updateAI",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "9295009f549c994aa07b9a0bfc99105d7e8adc8fde47ab1850ac4e491a53bf25"
+    },
+    {
+      "name": "_raceAggression",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "2cabd963b8e0ec418afd73b60f10920e53388962fda019032167143528b651a0"
+    },
+    {
+      "name": "_wantsTrain",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "8d6c73e4dc756b470182cbae33e32c08779e9aaea767a3ecdc578e3990da7e74"
+    },
+    {
+      "name": "_laneSafe",
+      "length": 2,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "19febd70f2ec99101f4d5256fe76d35a928e654ef3b79ecbc88acde9113d7910"
+    },
+    {
+      "name": "_chooseAILine",
+      "length": 3,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "7025bea0b774c2fb583ee6f2510e090e86a01c380e339c4534925df26d722a40"
+    },
+    {
+      "name": "_scoreLane",
+      "length": 3,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "6e50475d3994f301dd2627c9b16abde5a353e51bbae48c1d923a122d2b1fa512"
+    },
+    {
+      "name": "_calcDraft",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "0cc2f89808c3f0c81db1c89eb08b2bfd0537abe829bf4ece9f4507daa778cc79"
+    },
+    {
+      "name": "_separateCars",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "744a6650dd9c2362d751e472c218968cb0cf4b8ee8ca25fb7d810cbd10bdbe8b"
+    },
+    {
+      "name": "_incidentRules",
+      "length": 0,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "b4cc6a6c8a960d2a4c9258df533c86425d6fdce4e2d07df65fa4ffbfc6e44d72"
+    },
+    {
+      "name": "_healthPace",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "288a742a31c1b8b58dc33d68ae8f098ce3b1f7d042fd07d65053d83ce151821f"
+    },
+    {
+      "name": "_damageCar",
+      "length": 2,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "24997c0a85596932ee32321e682f01a79df0791430e2ca16031c559421710f64"
+    },
+    {
+      "name": "_sideContact",
+      "length": 6,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "aae29616fc7bebf8cf5a56e25077bdbccc0bb2b1c071db457b0e3e76ea42fc2d"
+    },
+    {
+      "name": "_crashThreshold",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "e8532db7ad9216589e2b3cc4f2309565287691b45652ac6f6d1c0e35487bd494"
+    },
+    {
+      "name": "_beginCrash",
+      "length": 3,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "4d57929d5ceade8995c501762ae4ab5dc15b548553a870d2c4bb0a0d5cdd4cc4"
+    },
+    {
+      "name": "_advanceCrash",
+      "length": 2,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "4188a8f71b9b8e345ff35ffd77e5a8c081247f52d2ab2c99dd1b1234f60593eb"
+    },
+    {
+      "name": "_stepContactState",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "8d244c31be4994edd4ebc9f5b03574ddbc7baad3b9540dc96268f63e33a446aa"
+    },
+    {
+      "name": "_wreckOverlap",
+      "length": 2,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "b977652cf08e8b63782cf82af234f743ee630a4880e21f6675e7288cd1be691b"
+    },
+    {
+      "name": "_shoulderRace",
+      "length": 2,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "3b3b85f891d614ad9e1393e5c5639c539daa9f9634aa0b577057806c8499033b"
+    },
+    {
+      "name": "_wallExtent",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "e877e847f644bdb4d9457d07c4c9bcefe24d67a09bf142c99b0b5c63625bb7b9"
+    },
+    {
+      "name": "_resolveWalls",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "fc5f88ab0cfd0b8decb422e598638fe05ac84eb0a96afd6fe15aa4b1ad3ea1ff"
+    },
+    {
+      "name": "_emitWallSparks",
+      "length": 5,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "fce02aaabde2b8c8e4eec65b73df3a8d712103522f8a59b4674dec56f5f81fdc"
+    },
+    {
+      "name": "_stepWallSparks",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "383d6692f63cf5b56a5eaebd40655e6ae09012dac6636d5bcf126f611f2bd846"
+    },
+    {
+      "name": "_checkCollisions",
+      "length": 0,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "2568cbc1d1204f4cf51274a6bef38b55b80983ba77473bc2f6e70a1bb7bc3f45"
+    },
+    {
+      "name": "_bumpPlayer",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "05235a50d24d3d80f832765ac488174b66690b40f095af4527f71db6349f8012"
+    },
+    {
+      "name": "_spinPlayer",
+      "length": 3,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "b84eb8a801967f9557367eb271c1b6d6ddc57a45d0f087431419742da6f3bbda"
+    },
+    {
+      "name": "_animateCars",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "79db8b1a4bdd9c12cb1d59d1e3cfe611f1b9ab51cb389d9701c3d972abe49c2d"
+    },
+    {
+      "name": "_togglePause",
+      "length": 0,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "36fb8c6d5ad715d5f1e949705675092af46e996142bc3cd51129f74c3026bbba"
+    },
+    {
+      "name": "_checkFinish",
+      "length": 0,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "515341e66eee1065240dfaee978303b12474532db71a26c3dea9828b862c8b82"
+    },
+    {
+      "name": "_captureFinishPhoto",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "bf021c7ff03f03294fd9f0b7e0361f3be1925c66f86c64149bde0288f9b5bcd1"
+    },
+    {
+      "name": "finalOrder",
+      "length": 0,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "e15807aa96bd211d3a3ccd10a9f7a517006b76ee0a88beddbfc6775ef89a3b8e"
+    },
+    {
+      "name": "_triggerWreck",
+      "length": 0,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "8c96455cf9c9acc2baa39a50b3c94ef7bcbfb7dc820e0e4f25157ebe7cdcfd5b"
+    },
+    {
+      "name": "_dropDebris",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "f29c856b49a28b540ded0c06b8ae6a80e9ead6bc20adf4aada082f773df74f68"
+    },
+    {
+      "name": "_updateCamera",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "c5ab0b97cc782d3adcb1ae47962079c7e0272673ffb05c191d9c3202073f8b17"
+    },
+    {
+      "name": "_initMirrorTarget",
+      "length": 2,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "92651c9dac47602eff6271b0ab3248f90944409d1ff26b8967a33d0da5ddf1d4"
+    },
+    {
+      "name": "_renderMirror",
+      "length": 0,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "a0a6da161754593129fac5b77297e571e0379ba2510b4566d3fea01f481010c3"
+    },
+    {
+      "name": "_updateHUD",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "e9c5c9d260476ece061d1f70751251ac9a43775e2832abd1a9732dffc0356e18"
+    },
+    {
+      "name": "_updateOrder",
+      "length": 2,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "180b8f94f20d6d71e47405224d12e76b38fcc6b28874d0f2a4b38406d94ef27e"
+    },
+    {
+      "name": "_warn",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "eb78dd376850dfb9bc7d4a7eb06cdc73924ff03a3a8b08729c3320a6d6934585"
+    },
+    {
+      "name": "_showFinish",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "19b345eb0d79c193eef326a9cac0c91508852d5587b89a44a28a7e56bfacf787"
+    },
+    {
+      "name": "_updateDualHUD",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "f03f6851b9544c0b7f0c1dd58e6d42375ac84ab4fff0b88202cb5d8c5624cce9"
+    },
+    {
+      "name": "_renderDual",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "9f155d0ee0fa2a5d8222f3906feaed3b7139a7d96c0974327d9e661725ef1eca"
+    },
+    {
+      "name": "_loop",
+      "length": 0,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "54ed85cae88b5f199f8db3de3bf6d094629375ffd4eaf5ce2a747c5507889747"
+    },
+    {
+      "name": "destroy",
+      "length": 0,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "ddb7e41f0ca490ad5c925ab6101a69ebe44e628fbb6d07972af7fbbc627c3a0b"
+    }
+  ],
+  "helpers": [
+    {
+      "name": "r3dSmooth",
+      "length": 1,
+      "hash": "7e0bf38aafffef3380fafcd3fe632d3955dd411d1d2e84e2b90b74d5c804e8b0"
+    },
+    {
+      "name": "r3dWake",
+      "length": 2,
+      "hash": "6d1c84a30132a29bddd69f2149ede61a5c11c3d28f0a7d5db5a6ced0d7cab8f0"
+    },
+    {
+      "name": "r3dTex",
+      "length": 3,
+      "hash": "e504b068428a5f7c4cbc1bfb7ddf1b454a77de3ae82f2a1e74d9eb747f03453f"
+    },
+    {
+      "name": "r3dHex",
+      "length": 1,
+      "hash": "db8deb0eabbd8f3819394e2b037969102af1f105499154b044e74aa3f6cb82b5"
+    },
+    {
+      "name": "r3dRoundelTex",
+      "length": 1,
+      "hash": "c53ed3391389bdc2dcd5c349c54567e1c97ebf26db01966768a67250882095cd"
+    },
+    {
+      "name": "launch3DRace",
+      "length": 2,
+      "hash": "01cada94da0e1040de2030b764bcfa2c17b1231c564421f709dc3380a2f3630b"
+    }
+  ],
+  "sourceCommit": "20c3f0c77f0934c085371c2e19c73357fe1c9b58"
+}

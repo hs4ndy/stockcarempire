@@ -1,5 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
-function fixture(){const c=vm.createContext({console});for(const f of ['data','game','race3d'])vm.runInContext(fs.readFileSync(`js/${f}.js`,'utf8'),c);return c;}
+function fixture(){const c=vm.createContext({console});for(const [file,source] of require('./helpers/race-sources.cjs').entries(['js/data.js','js/game.js','js/race3d.js']))vm.runInContext(source,c);return c;}
 test('shared wall contact distinguishes proximity, impact, scraping and release for either human or AI',()=>{
  const c=fixture();vm.runInContext(`
  const e=Object.create(Race3DEngine.prototype);e.wallInnerX=11.2;e.camShake=0;

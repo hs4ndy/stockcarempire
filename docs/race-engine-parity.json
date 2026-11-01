@@ -1,0 +1,152 @@
+[
+  {
+    "seriesId": "grassroots",
+    "diff": "beginner",
+    "seed": 17,
+    "finish": 2,
+    "overtakes": 26,
+    "aiCrashes": 0,
+    "playerCrashes": 0,
+    "matching": true
+  },
+  {
+    "seriesId": "grassroots",
+    "diff": "amateur",
+    "seed": 17,
+    "finish": 1,
+    "overtakes": 35,
+    "aiCrashes": 0,
+    "playerCrashes": 0,
+    "matching": true
+  },
+  {
+    "seriesId": "grassroots",
+    "diff": "semipro",
+    "seed": 17,
+    "finish": 2,
+    "overtakes": 29,
+    "aiCrashes": 0,
+    "playerCrashes": 0,
+    "matching": true
+  },
+  {
+    "seriesId": "grassroots",
+    "diff": "pro",
+    "seed": 17,
+    "finish": 1,
+    "overtakes": 27,
+    "aiCrashes": 0,
+    "playerCrashes": 0,
+    "matching": true
+  },
+  {
+    "seriesId": "grassroots",
+    "diff": "allout",
+    "seed": 17,
+    "finish": 1,
+    "overtakes": 39,
+    "aiCrashes": 0,
+    "playerCrashes": 0,
+    "matching": true
+  },
+  {
+    "seriesId": "challenger",
+    "diff": "beginner",
+    "seed": 17,
+    "finish": 1,
+    "overtakes": 33,
+    "aiCrashes": 0,
+    "playerCrashes": 0,
+    "matching": true
+  },
+  {
+    "seriesId": "challenger",
+    "diff": "amateur",
+    "seed": 17,
+    "finish": 2,
+    "overtakes": 35,
+    "aiCrashes": 0,
+    "playerCrashes": 0,
+    "matching": true
+  },
+  {
+    "seriesId": "challenger",
+    "diff": "semipro",
+    "seed": 17,
+    "finish": 1,
+    "overtakes": 37,
+    "aiCrashes": 11,
+    "playerCrashes": 0,
+    "matching": true
+  },
+  {
+    "seriesId": "challenger",
+    "diff": "pro",
+    "seed": 17,
+    "finish": 1,
+    "overtakes": 36,
+    "aiCrashes": 10,
+    "playerCrashes": 0,
+    "matching": true
+  },
+  {
+    "seriesId": "challenger",
+    "diff": "allout",
+    "seed": 17,
+    "finish": 1,
+    "overtakes": 31,
+    "aiCrashes": 19,
+    "playerCrashes": 0,
+    "matching": true
+  },
+  {
+    "seriesId": "premier",
+    "diff": "beginner",
+    "seed": 17,
+    "finish": 1,
+    "overtakes": 43,
+    "aiCrashes": 0,
+    "playerCrashes": 0,
+    "matching": true
+  },
+  {
+    "seriesId": "premier",
+    "diff": "amateur",
+    "seed": 17,
+    "finish": 1,
+    "overtakes": 53,
+    "aiCrashes": 0,
+    "playerCrashes": 0,
+    "matching": true
+  },
+  {
+    "seriesId": "premier",
+    "diff": "semipro",
+    "seed": 17,
+    "finish": 1,
+    "overtakes": 71,
+    "aiCrashes": 0,
+    "playerCrashes": 0,
+    "matching": true
+  },
+  {
+    "seriesId": "premier",
+    "diff": "pro",
+    "seed": 17,
+    "finish": 4,
+    "overtakes": 77,
+    "aiCrashes": 0,
+    "playerCrashes": 0,
+    "matching": true
+  },
+  {
+    "seriesId": "premier",
+    "diff": "allout",
+    "seed": 17,
+    "finish": 7,
+    "overtakes": 80,
+    "aiCrashes": 0,
+    "playerCrashes": 0,
+    "matching": true
+  }
+]

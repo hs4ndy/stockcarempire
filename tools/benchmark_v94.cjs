@@ -4,7 +4,7 @@ const {runRearStart}=require('../test/race-dynamics.test.js');
 if(!isMainThread){parentPort.on('message',job=>{try{const start=Date.now();const result=runRearStart(job.seed,job.size,job.diff,job.strategy,workerData.sources[job.version],job.options);parentPort.postMessage({...job,...result,elapsedMs:Date.now()-start});}catch(e){parentPort.postMessage({...job,error:e.stack});}});}
 else {
  const files=['js/data.js','js/game.js','js/race.js','js/race3d.js','js/ui.js'];
- const sources={v93:Object.fromEntries(files.map(f=>[f,cp.execFileSync('git',['show',`5ebd597:${f}`],{encoding:'utf8'})])),v94:Object.fromEntries(files.map(f=>[f,fs.readFileSync(f,'utf8')]))};
+ const sources={v93:Object.fromEntries(files.map(f=>[f,cp.execFileSync('git',['show',`5ebd597:${f}`],{encoding:'utf8'})])),v94:require('../test/helpers/race-sources.cjs').snapshot()};
  const jobs=[],seeds=[3,17,41,73,101],modes=['beginner','amateur','semipro','pro','allout'],series=[['grassroots',20],['challenger',26],['premier',40]];
  const suite=process.argv[2]||'all';
  if(['all','quick'].includes(suite))for(const [seriesId,size] of series)for(const diff of modes)for(const seed of seeds)for(const version of ['v93','v94'])jobs.push({suite:'quick',version,seed,size,diff,strategy:'managed',options:{quickRace:true,openingPace:true,playerPower:.75,seriesId}});

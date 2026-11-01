@@ -1,0 +1,118 @@
+{
+  "baselineCommit": "20c3f0c77f0934c085371c2e19c73357fe1c9b58",
+  "fullBrowser": {
+    "passed": 84,
+    "failed": 18,
+    "total": 102
+  },
+  "comparisons": [
+    {
+      "file": "grassroots.spec.cjs",
+      "title": "Grassroots has its own track, legacy cars and 90-percent player and AI pace",
+      "sameFailureOn109": true,
+      "assertion": "for(const key of ['surface','walls','contactInside','allSameModel']) expect(report[key], key).toBe(true);"
+    },
+    {
+      "file": "menu-clarity.spec.cjs",
+      "title": "career menus keep decisions visible and reveal details on demand (desktop)",
+      "sameFailureOn109": true,
+      "assertion": "await page.getByText('Explore loan options', { exact: true }).click();"
+    },
+    {
+      "file": "menu-clarity.spec.cjs",
+      "title": "career menus keep decisions visible and reveal details on demand (mobile)",
+      "sameFailureOn109": true,
+      "assertion": "await page.getByText('Explore loan options', { exact: true }).click();"
+    },
+    {
+      "file": "quick-race.spec.cjs",
+      "title": "quick race confirms readable selections with a full-width action (desktop)",
+      "sameFailureOn109": true,
+      "assertion": "expect(await page.evaluate(() => window.quickRaceLaunches.map(c => ({ difficulty: c.difficulty, seriesId: c.seriesId, fieldSize: c.fieldSize })))).toEqual(["
+    },
+    {
+      "file": "quick-race.spec.cjs",
+      "title": "quick race confirms readable selections with a full-width action (mobile)",
+      "sameFailureOn109": true,
+      "assertion": "expect(await page.evaluate(() => window.quickRaceLaunches.map(c => ({ difficulty: c.difficulty, seriesId: c.seriesId, fieldSize: c.fieldSize })))).toEqual(["
+    },
+    {
+      "file": "quick-race.spec.cjs",
+      "title": "quick race confirms readable selections with a full-width action (landscape)",
+      "sameFailureOn109": true,
+      "assertion": "expect(await page.evaluate(() => window.quickRaceLaunches.map(c => ({ difficulty: c.difficulty, seriesId: c.seriesId, fieldSize: c.fieldSize })))).toEqual(["
+    },
+    {
+      "file": "race-balance.spec.cjs",
+      "title": "complete a contested race on beginner",
+      "sameFailureOn109": true,
+      "assertion": "expect(report.done).toBe(true);"
+    },
+    {
+      "file": "race-balance.spec.cjs",
+      "title": "complete a contested race on amateur",
+      "sameFailureOn109": true,
+      "assertion": "expect(report.done).toBe(true);"
+    },
+    {
+      "file": "race-balance.spec.cjs",
+      "title": "complete a contested race on semipro",
+      "sameFailureOn109": true,
+      "assertion": "expect(report.done).toBe(true);"
+    },
+    {
+      "file": "race-balance.spec.cjs",
+      "title": "complete a contested race on pro",
+      "sameFailureOn109": true,
+      "assertion": "expect(report.done).toBe(true);"
+    },
+    {
+      "file": "race-balance.spec.cjs",
+      "title": "complete a contested race on allout",
+      "sameFailureOn109": true,
+      "assertion": "expect(report.done).toBe(true);"
+    },
+    {
+      "file": "stock-car-model.spec.cjs",
+      "title": "Series cars share geometry and retain identities in the 36-car series",
+      "sameFailureOn109": true,
+      "assertion": "expect(report.count).toBe(fieldSize);"
+    },
+    {
+      "file": "team-management.spec.cjs",
+      "title": "Team views preserve the career and hiring/release works (desktop)",
+      "sameFailureOn109": true,
+      "assertion": "await expect(page.locator('.team-roster')).toContainText('Blue Ridge');"
+    },
+    {
+      "file": "team-management.spec.cjs",
+      "title": "Team views preserve the career and hiring/release works (user)",
+      "sameFailureOn109": true,
+      "assertion": "await expect(page.locator('.team-roster')).toContainText('Blue Ridge');"
+    },
+    {
+      "file": "team-management.spec.cjs",
+      "title": "Team views preserve the career and hiring/release works (mobile)",
+      "sameFailureOn109": true,
+      "assertion": "await expect(page.locator('.team-roster')).toContainText('Blue Ridge');"
+    },
+    {
+      "file": "tutorial.spec.cjs",
+      "title": "practice has its own short finish and never changes career progress",
+      "sameFailureOn109": true,
+      "assertion": "await expect(page.locator('#career-tutorial-title')).toHaveText('Practice behind the wheel');"
+    },
+    {
+      "file": "ui-polish.spec.cjs",
+      "title": "menu choices work by keyboard and long career names fit (desktop)",
+      "sameFailureOn109": true,
+      "assertion": "Error: page.evaluate: ReferenceError: renderPremierChoiceModal is not defined"
+    },
+    {
+      "file": "ui-polish.spec.cjs",
+      "title": "menu choices work by keyboard and long career names fit (mobile)",
+      "sameFailureOn109": true,
+      "assertion": "Error: page.evaluate: ReferenceError: renderPremierChoiceModal is not defined"
+    }
+  ]
+}

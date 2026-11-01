@@ -1028,7 +1028,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 109</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 110</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -3686,51 +3686,193 @@ class Race3DEngine {
     this._countdown();
   }
 
-  // Shared geometries (reused across all cars for memory/perf)
-  _initGeometries() {
-    // Blender exports local, indexed geometry. Decode once per race; every car
-    // shares these GPU buffers. No asynchronous model loading during a start.
-    const decode = data => {
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute('position', new THREE.Float32BufferAttribute(data.position, 3));
-      geometry.setAttribute('normal', new THREE.Float32BufferAttribute(data.normal, 3));
-      if (data.color) geometry.setAttribute('color', new THREE.Float32BufferAttribute(data.color, 3));
-      if (data.uv) geometry.setAttribute('uv', new THREE.Float32BufferAttribute(data.uv, 2));
-      geometry.setIndex(data.index);
-      geometry.computeBoundingSphere();
-      return geometry;
-    };
-    this.G = {
-      parts: Object.fromEntries(Object.entries(this.carModel.parts)
-        .map(([name, data]) => [name, decode(data)])),
-      wheel: decode(this.carModel.wheel),
-      decalDoor: new THREE.PlaneGeometry(0.80, this.isGrassroots ? 0.58 : 0.48),
-      decalRoof: this.isGrassroots ? new THREE.PlaneGeometry(1.04, 1.04) : decode(this.carModel.roofDecal),
-      teamBand: this.isGrassroots ? new THREE.BoxGeometry(1.48, .012, .12) : decode(this.carModel.teamBand),
-    };
-    // The track uses intentionally bright arcade lighting. A paint-only
-    // reflectance layer keeps saturated liveries from clipping into flat neon,
-    // so the new hood and fender normals remain readable without relighting
-    // the track or changing the entrant's actual team color.
-    const paint = this.G.parts.paint;
-    const reflectance = new Float32Array(paint.attributes.position.count * 3);
-    for (let i = 0; i < paint.attributes.position.count; i++) {
-      const y = paint.attributes.position.getY(i);
-      const value = 0.56 + 0.10 * clamp((y - 0.15) / 0.9, 0, 1);
-      reflectance.set([value, value, value], i * 3);
-    }
-    paint.setAttribute('color', new THREE.BufferAttribute(reflectance, 3));
-    this.M = {
-      trim: new THREE.MeshLambertMaterial({ color: 0x191d23, side: THREE.DoubleSide }),
-      glass: new THREE.MeshPhongMaterial({ color: 0x233e50, shininess: 65, side: THREE.DoubleSide }),
-      metal: new THREE.MeshPhongMaterial({ color: 0x8d989e, shininess: 48, side: THREE.DoubleSide }),
-      headlight: new THREE.MeshBasicMaterial({ color: 0xe5ece3, side: THREE.DoubleSide }),
-      taillight: new THREE.MeshBasicMaterial({ color: 0x9c1223, side: THREE.DoubleSide }),
-      wheel: new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }),
-    };
+  // Second-player context
+  _withSecond(callback) {
+    const player = this.player, keys = this.keys, camera = this.camera;
+    try { this.player = this.player2; this.keys = this.keys2; this.camera = this.camera2 || camera; return callback(); }
+    finally { this.player = player; this.keys = keys; this.camera = camera; }
   }
 
-  // ── Track ────────────────────────────────────────────────────
+  // Rolling start
+  _countdown() {
+    const el   = document.getElementById('r3d-countdown');
+    const hint = document.getElementById('r3d-hint');
+    this.paceMode = true;
+
+    const setMsg = (txt, big = false) => {
+      if (!el) return;
+      el.textContent = txt;
+      el.style.opacity = '1';
+      el.style.fontSize = big ? '1.5rem' : '';
+      el.style.letterSpacing = big ? '0.12em' : '';
+      el.classList.remove('go');
+    };
+
+    setMsg(`FORMATION LAP  -  P${this._startingPos} START`, true);
+    setTimeout(() => {
+      if (this.done) return;
+      setMsg('3');
+      setTimeout(() => {
+        if (this.done) return;
+        setMsg('2');
+        setTimeout(() => {
+          if (this.done) return;
+          setMsg('1');
+          setTimeout(() => {
+            if (this.done) return;
+            if (el) {
+              el.textContent = 'GREEN FLAG';
+              el.style.fontSize = ''; el.style.letterSpacing = '';
+              el.classList.add('go');
+            }
+            this.paceMode = false;
+            this.racing = true;
+            if (hint) hint.style.opacity = '0';
+            setTimeout(() => { if (el) el.style.opacity = '0'; }, 1100);
+          }, 1000);
+        }, 1000);
+      }, 1000);
+    }, 3000);
+  }
+
+  // ── Main update ──────────────────────────────────────────────
+  _update(dt) {
+    if (this.paused) return;
+
+    if (this.paceMode) {
+      this._updatePaceLap(dt);
+      this._animateCars(dt);
+      if (!this.player2) this._updateCamera(dt);
+      this._updateHUD(dt);
+      return;
+    }
+    if (!this.racing || this.done) return;
+
+    for (const car of this.cars) car._frameStartX = car.x;
+
+    // NOTE: _pushLocked is cleared inside _separateCars, not here. It is set
+    // by the contact solver which runs AFTER _updateAI, so clearing it here
+    // meant _updateAI always saw false and cars in a pack kept making lane
+    // decisions while locked bumper-to-bumper - a big source of the twitching.
+    // Both humans read the same pre-step traffic state, regardless of update order.
+    this._playerTraffic = this.player2 ? this.cars.filter(c => !c.dnf && !c.finished).map(c => ({ car:c,z:c.z,speed:c.speed })) : null;
+    this._stepContactState(dt);
+    this._updatePlayer(dt);
+    if (this.player2) this._withSecond(() => this._updatePlayer(dt));
+    this._playerTraffic = null;
+    this._updateAI(dt);
+    this._calcDraft(dt);
+    this._separateCars(dt);
+    this._checkCollisions();
+    if (this.player2) this._withSecond(() => this._checkCollisions());
+    this._resolveWalls(dt);
+    this._stepWallSparks(dt);
+    this._checkFinish();
+    this._animateCars(dt);
+    if (!this.player2) this._updateCamera(dt);
+    this._updateHUD(dt);
+
+  }
+
+  _updatePaceLap(dt) {
+    for (const [p, keys] of [[this.player,this.keys], ...(this.player2 ? [[this.player2,this.keys2]] : [])]) {
+      const hw = (this.trackHalfWidth ?? R3D.HALF_W) - 1.2;
+      const desired = (Number(keys.a)-Number(keys.d))*R3D.LAT_MAX*.6;
+      p.lv = (p.lv || 0) + clamp((desired-(p.lv || 0))*(1-Math.exp(-4*dt)),-R3D.LAT_ACC*dt,R3D.LAT_ACC*dt);
+      p.lv=clamp(p.lv,-R3D.LAT_MAX*.6,R3D.LAT_MAX*.6);
+      p.x=clamp(p.x+p.lv*dt,-hw,hw);
+    }
+    for (const car of this.cars) {
+      // Every row advances together on the formation lap. Letting each car
+      // converge from its power-based race speed changed the live order before
+      // the green flag, so the HUD could disagree with the announced grid spot.
+      car.speed = R3D.PACE_SPEED * (this.speedScale ?? 1);
+      car.z += car.speed * dt;
+      car.mesh.position.set(car.x, 0, car.z);
+    }
+  }
+
+  // Pause
+  _togglePause() {
+    if (this.done) return;
+    this.paused = !this.paused;
+    this.keys.a = this.keys.d = this.keys.s = false;
+    if (this.keys2) this.keys2.a = this.keys2.d = this.keys2.s = false;
+    this._physicsAcc = 0;
+    const overlay  = document.getElementById('r3d-pause-overlay');
+    const pauseBtn = document.getElementById('r3d-pause-btn');
+    if (overlay)  overlay.classList.toggle('active', this.paused);
+    if (pauseBtn) pauseBtn.textContent = this.paused ? 'RESUME' : 'PAUSE';
+    if (!this.paused && this.clock) this.clock.getDelta();
+  }
+
+  // Frame scheduling
+  _loop() {
+    this._raf = requestAnimationFrame(() => this._loop());
+    const dt = Math.min(this.clock.getDelta(), 0.1);
+    // Fixed steps keep contact and steering consistent at 30/60/120Hz.
+    this._physicsAcc += dt;
+    while (this._physicsAcc >= 1 / 120) {
+      this._update(1 / 120);
+      this._physicsAcc -= 1 / 120;
+    }
+    if (this.renderer && this.scene && this.camera) {
+      if (this.player2) { this._renderDual(dt); return; }
+      this.renderer.autoClear = true;
+      this.renderer.render(this.scene, this.camera);
+      this.renderer.autoClear = false;
+      this._renderMirror();
+      this.renderer.autoClear = true;
+    }
+  }
+
+  destroy() {
+    this._disposed = true;
+    cancelAnimationFrame(this._raf);
+    this._raf = null;
+    clearTimeout(this._warnTimeout);
+    document.removeEventListener('keydown', this._kd);
+    document.removeEventListener('keyup',   this._ku);
+    window.removeEventListener('resize',    this._onResize);
+    window.removeEventListener('blur',      this._onBlur);
+
+    // Release GPU resources - without this, every race leaks its track,
+    // car geometry and canvas textures for the life of the page.
+    if (this.scene && this.scene.traverse) {
+      const shared = new Set(_r3dRoundelCache.values()); // reused across races - keep
+      const seen = new Set();
+      this.scene.traverse(obj => {
+        if (obj.geometry && !seen.has(obj.geometry)) {
+          seen.add(obj.geometry);
+          obj.geometry.dispose && obj.geometry.dispose();
+        }
+        const mats = Array.isArray(obj.material) ? obj.material : (obj.material ? [obj.material] : []);
+        for (const m of mats) {
+          if (!m || seen.has(m)) continue;
+          seen.add(m);
+          if (m.map && m.map.dispose && !shared.has(m.map)) m.map.dispose();
+          m.dispose && m.dispose();
+        }
+      });
+    }
+    if (this.mirrorRT) { this.mirrorRT.dispose(); this.mirrorRT = null; }
+    if (this.mirrorQuadMat) { this.mirrorQuadMat.dispose(); this.mirrorQuadMat = null; }
+    if (this.mirrorQuad) { this.mirrorQuad.geometry.dispose(); this.mirrorQuad = null; }
+    this.mirrorScene = null;
+    if (this.renderer) { this.renderer.dispose(); this.renderer = null; }
+    this.scene  = null;
+    this.camera = null;
+    this.cars   = [];
+    this.done   = true;
+  }
+}
+
+</script>
+<script>
+/* js/race3d/world.js */
+// World responsibilities for the shared race engine.
+(() => {
+  class Methods {
   _loadSurfaceTexture(source, fallbackColor, cutout = false) {
     // A valid tiny image is present before decode, and remains on failure.
     // Empty/failed GPU textures otherwise multiply the pavement to black.
@@ -3851,7 +3993,6 @@ class Race3DEngine {
     // Starting positions remain unchanged; the old yellow grid stripes are gone.
   }
 
-  // ── Environment ──────────────────────────────────────────────
   _buildEnvironment() {
     this._buildGrandstands();
     const asset = SC_ENVIRONMENT, model = asset.models[this._grandstandModel.id];
@@ -3954,8 +4095,62 @@ class Race3DEngine {
       for (const mesh of meshes) { mesh.count = index; mesh.instanceMatrix.needsUpdate = true; }
     }
   }
+  }
+  for (const name of Object.getOwnPropertyNames(Methods.prototype)) {
+    if (name !== "constructor") Object.defineProperty(Race3DEngine.prototype, name,
+      Object.getOwnPropertyDescriptor(Methods.prototype, name));
+  }
+})();
 
-  // ── Cars ─────────────────────────────────────────────────────
+</script>
+<script>
+/* js/race3d/cars.js */
+// Cars responsibilities for the shared race engine.
+(() => {
+  class Methods {
+  _initGeometries() {
+    // Blender exports local, indexed geometry. Decode once per race; every car
+    // shares these GPU buffers. No asynchronous model loading during a start.
+    const decode = data => {
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(data.position, 3));
+      geometry.setAttribute('normal', new THREE.Float32BufferAttribute(data.normal, 3));
+      if (data.color) geometry.setAttribute('color', new THREE.Float32BufferAttribute(data.color, 3));
+      if (data.uv) geometry.setAttribute('uv', new THREE.Float32BufferAttribute(data.uv, 2));
+      geometry.setIndex(data.index);
+      geometry.computeBoundingSphere();
+      return geometry;
+    };
+    this.G = {
+      parts: Object.fromEntries(Object.entries(this.carModel.parts)
+        .map(([name, data]) => [name, decode(data)])),
+      wheel: decode(this.carModel.wheel),
+      decalDoor: new THREE.PlaneGeometry(0.80, this.isGrassroots ? 0.58 : 0.48),
+      decalRoof: this.isGrassroots ? new THREE.PlaneGeometry(1.04, 1.04) : decode(this.carModel.roofDecal),
+      teamBand: this.isGrassroots ? new THREE.BoxGeometry(1.48, .012, .12) : decode(this.carModel.teamBand),
+    };
+    // The track uses intentionally bright arcade lighting. A paint-only
+    // reflectance layer keeps saturated liveries from clipping into flat neon,
+    // so the new hood and fender normals remain readable without relighting
+    // the track or changing the entrant's actual team color.
+    const paint = this.G.parts.paint;
+    const reflectance = new Float32Array(paint.attributes.position.count * 3);
+    for (let i = 0; i < paint.attributes.position.count; i++) {
+      const y = paint.attributes.position.getY(i);
+      const value = 0.56 + 0.10 * clamp((y - 0.15) / 0.9, 0, 1);
+      reflectance.set([value, value, value], i * 3);
+    }
+    paint.setAttribute('color', new THREE.BufferAttribute(reflectance, 3));
+    this.M = {
+      trim: new THREE.MeshLambertMaterial({ color: 0x191d23, side: THREE.DoubleSide }),
+      glass: new THREE.MeshPhongMaterial({ color: 0x233e50, shininess: 65, side: THREE.DoubleSide }),
+      metal: new THREE.MeshPhongMaterial({ color: 0x8d989e, shininess: 48, side: THREE.DoubleSide }),
+      headlight: new THREE.MeshBasicMaterial({ color: 0xe5ece3, side: THREE.DoubleSide }),
+      taillight: new THREE.MeshBasicMaterial({ color: 0x9c1223, side: THREE.DoubleSide }),
+      wheel: new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }),
+    };
+  }
+
   _buildCars() {
     const { config } = this;
     const fieldSize  = Math.min(config.aiEntries.length + 1, config.fieldSize);
@@ -4035,12 +4230,6 @@ class Race3DEngine {
       }
     }
     this._newsGrid = Object.fromEntries([...this.cars].sort((a,b)=>b.z-a.z).map((c,i)=>[c.entrantId,i+1]));
-  }
-
-  _withSecond(callback) {
-    const player = this.player, keys = this.keys, camera = this.camera;
-    try { this.player = this.player2; this.keys = this.keys2; this.camera = this.camera2 || camera; return callback(); }
-    finally { this.player = player; this.keys = keys; this.camera = camera; }
   }
 
   _makeCar(x, z, { entrantId, color, number, power, isPlayer, isTeammate, label, teamName, carId, raceNerve, isContender }) {
@@ -4130,119 +4319,26 @@ class Race3DEngine {
     };
   }
 
-  // ── Minimap dots (DOM) ───────────────────────────────────────
-  _buildMinimap() {
-    const track = document.getElementById('r3d-map-track');
-    if (!track) return;
+  _animateCars(dt) {
     for (const car of this.cars) {
-      const dot = document.createElement('div');
-      dot.className = 'r3d-map-dot';
-      if (car.isPlayer) dot.classList.add('is-player');
-      else dot.style.background = r3dHex(car.hex);
-      track.appendChild(dot);
-      car._dot = dot;
+      if (!car.wheels) continue;
+      const droll = car.speed * dt / R3D.WHEEL_R;
+      for (const w of car.wheels) w.rotation.x -= droll;
     }
   }
-
-  // ── Rolling start sequence ───────────────────────────────────
-  _countdown() {
-    const el   = document.getElementById('r3d-countdown');
-    const hint = document.getElementById('r3d-hint');
-    this.paceMode = true;
-
-    const setMsg = (txt, big = false) => {
-      if (!el) return;
-      el.textContent = txt;
-      el.style.opacity = '1';
-      el.style.fontSize = big ? '1.5rem' : '';
-      el.style.letterSpacing = big ? '0.12em' : '';
-      el.classList.remove('go');
-    };
-
-    setMsg(`FORMATION LAP  -  P${this._startingPos} START`, true);
-    setTimeout(() => {
-      if (this.done) return;
-      setMsg('3');
-      setTimeout(() => {
-        if (this.done) return;
-        setMsg('2');
-        setTimeout(() => {
-          if (this.done) return;
-          setMsg('1');
-          setTimeout(() => {
-            if (this.done) return;
-            if (el) {
-              el.textContent = 'GREEN FLAG';
-              el.style.fontSize = ''; el.style.letterSpacing = '';
-              el.classList.add('go');
-            }
-            this.paceMode = false;
-            this.racing = true;
-            if (hint) hint.style.opacity = '0';
-            setTimeout(() => { if (el) el.style.opacity = '0'; }, 1100);
-          }, 1000);
-        }, 1000);
-      }, 1000);
-    }, 3000);
   }
-
-  // ── Main update ──────────────────────────────────────────────
-  _update(dt) {
-    if (this.paused) return;
-
-    if (this.paceMode) {
-      this._updatePaceLap(dt);
-      this._animateCars(dt);
-      if (!this.player2) this._updateCamera(dt);
-      this._updateHUD(dt);
-      return;
-    }
-    if (!this.racing || this.done) return;
-
-    for (const car of this.cars) car._frameStartX = car.x;
-
-    // NOTE: _pushLocked is cleared inside _separateCars, not here. It is set
-    // by the contact solver which runs AFTER _updateAI, so clearing it here
-    // meant _updateAI always saw false and cars in a pack kept making lane
-    // decisions while locked bumper-to-bumper - a big source of the twitching.
-    // Both humans read the same pre-step traffic state, regardless of update order.
-    this._playerTraffic = this.player2 ? this.cars.filter(c => !c.dnf && !c.finished).map(c => ({ car:c,z:c.z,speed:c.speed })) : null;
-    this._stepContactState(dt);
-    this._updatePlayer(dt);
-    if (this.player2) this._withSecond(() => this._updatePlayer(dt));
-    this._playerTraffic = null;
-    this._updateAI(dt);
-    this._calcDraft(dt);
-    this._separateCars(dt);
-    this._checkCollisions();
-    if (this.player2) this._withSecond(() => this._checkCollisions());
-    this._resolveWalls(dt);
-    this._stepWallSparks(dt);
-    this._checkFinish();
-    this._animateCars(dt);
-    if (!this.player2) this._updateCamera(dt);
-    this._updateHUD(dt);
-
+  for (const name of Object.getOwnPropertyNames(Methods.prototype)) {
+    if (name !== "constructor") Object.defineProperty(Race3DEngine.prototype, name,
+      Object.getOwnPropertyDescriptor(Methods.prototype, name));
   }
+})();
 
-  _updatePaceLap(dt) {
-    for (const [p, keys] of [[this.player,this.keys], ...(this.player2 ? [[this.player2,this.keys2]] : [])]) {
-      const hw = (this.trackHalfWidth ?? R3D.HALF_W) - 1.2;
-      const desired = (Number(keys.a)-Number(keys.d))*R3D.LAT_MAX*.6;
-      p.lv = (p.lv || 0) + clamp((desired-(p.lv || 0))*(1-Math.exp(-4*dt)),-R3D.LAT_ACC*dt,R3D.LAT_ACC*dt);
-      p.lv=clamp(p.lv,-R3D.LAT_MAX*.6,R3D.LAT_MAX*.6);
-      p.x=clamp(p.x+p.lv*dt,-hw,hw);
-    }
-    for (const car of this.cars) {
-      // Every row advances together on the formation lap. Letting each car
-      // converge from its power-based race speed changed the live order before
-      // the green flag, so the HUD could disagree with the announced grid spot.
-      car.speed = R3D.PACE_SPEED * (this.speedScale ?? 1);
-      car.z += car.speed * dt;
-      car.mesh.position.set(car.x, 0, car.z);
-    }
-  }
-
+</script>
+<script>
+/* js/race3d/driving.js */
+// Driving responsibilities for the shared race engine.
+(() => {
+  class Methods {
   _updatePlayer(dt) {
     const p  = this.player;
     if (p.finished || p.dnf) return;
@@ -4321,8 +4417,6 @@ class Race3DEngine {
     return Math.min(R3D.RECOVERY_MAX,Math.max(normalPace,floor));
   }
 
-  // One snapshot per AI update. Recovery is excluded from every reference,
-  // so one assisted group cannot ratchet all following groups toward the cap.
   _racingGroups() {
     const active = this.cars.filter(c => !c.dnf && !c.finished && !c.spinning).sort((a,b) => b.z-a.z);
     const groups = [], membership = new Map();
@@ -4340,6 +4434,162 @@ class Race3DEngine {
     return {groups,membership};
   }
 
+  _calcDraft(dt) {
+    const active = this.cars.filter(c => !c.dnf && !c.finished && !c.spinning)
+      .slice().sort((a, b) => b.z - a.z);
+    for (const car of this.cars) {
+      car.towStrength = 0;
+      car.pushStrength = 0;
+      car.receivedPush = 0;
+      car.chainLen = 1;
+      car._wakeLeader = null;
+      car._pushTarget = 0;
+      car._draftDepth = 1;
+      if (car.dnf || car.finished || car.spinning) {
+        car.draftBoost = car.draftMomentum = 0;
+        car._draftCarryMomentum = car._draftCarryTimer = 0;
+      }
+    }
+
+    const trains = new Map();
+    // Forward-only links cannot cycle. A distant or offset wake still gives
+    // a tow, but only close aligned cars share a train's efficiency benefit.
+    for (const car of active) {
+      for (const other of active) {
+        if (other === car) continue;
+        const wake = r3dWake(car, other);
+        if (wake.tow > car.towStrength) {
+          car.towStrength = wake.tow;
+          car._wakeLeader = other;
+        }
+        const bonus = R3D.PUSH_BONUS;
+        car.pushStrength = Math.max(car.pushStrength, wake.push);
+        car._pushTarget = Math.max(car._pushTarget, wake.push * bonus);
+        // Direct push only; do not recirculate accumulated aero through a pair.
+        other.receivedPush = Math.max(other.receivedPush, wake.push * bonus * .75);
+      }
+      car._draftDepth = car._wakeLeader ? (car._wakeLeader._draftDepth || 1) + 1 : 1;
+      const leader = car._wakeLeader;
+      car._trainRoot = leader && leader.z-car.z < R3D.CHAIN_LINK_Z && car.towStrength > .55
+        ? leader._trainRoot : car;
+      const members = trains.get(car._trainRoot) || [];
+      members.push(car);
+      trains.set(car._trainRoot,members);
+    }
+
+    for (const members of trains.values()) for (const car of members) car.chainLen = members.length;
+    // Every additional linked car helps the whole line, with diminishing gains.
+    // Two cars no longer get an advantage that a larger chasing line cannot earn.
+    for (const car of active) {
+      const chain = R3D.CHAIN_MAX * (1 - Math.exp(-(car.chainLen-1) / 3));
+      const rawTarget = car.towStrength * R3D.DRAFT_BOOST + car._pushTarget + chain + car.receivedPush;
+      const draftGain = car.isPlayer ? R3D.PLAYER_DRAFT_STRENGTH : 1;
+      let target = Math.min(R3D.AERO_MAX * draftGain * (car.isPlayer ? 1 : (this.diff.aiDraft ?? 1)),
+        rawTarget * draftGain * (car.isPlayer ? this.diff.playerDraft : (this.diff.aiDraft ?? 1)));
+      const before = car.draftMomentum || 0;
+      const activeDraft = car.towStrength > 0.12 || car.pushStrength > 0.12 || car.receivedPush > 1;
+      if (activeDraft) {
+        car._draftCarryMomentum = before;
+        car._draftCarryDuration = R3D.DRAFT_CARRY;
+        car._draftCarryTimer = car._draftCarryDuration;
+      } else if ((car._draftCarryTimer || 0) > 0 && (car._draftCarryMomentum || 0) > 8) {
+        car._draftCarryTimer = Math.max(0, car._draftCarryTimer - dt);
+        const carryFrac = car._draftCarryTimer / (car._draftCarryDuration || R3D.DRAFT_CARRY);
+        target = Math.max(target, car._draftCarryMomentum * (0.72 + carryFrac * 0.28));
+      }
+      const rate = target > before ? R3D.DRAFT_BUILD : R3D.DRAFT_RELEASE;
+      car.draftMomentum = before + (target - before) * (1 - Math.exp(-rate * dt));
+      car.draftBoost = car.draftMomentum;
+    }
+  }
+
+  _separateCars(dt) {
+    const step = Math.max(dt || 0.016, 0.001);
+    const active = this.cars.filter(c => !c.finished && !c.dnf && !c.spinning);
+    const startX = new Map(active.map(c => [c,
+      Number.isFinite(c._frameStartX) ? c._frameStartX : c.x]));
+    // Cleared here so _updateAI (which runs first) reads last frame's value
+    for (const c of this.cars) c._pushLocked = false;
+
+    // Two passes so a shunt propagates down a queue in the same frame
+    for (let pass = 0; pass < 2; pass++) {
+      active.sort((a, b) => b.z - a.z);
+      for (let i = 0; i < active.length; i++) {
+        for (let j = i + 1; j < active.length; j++) {
+          const A = active[i], B = active[j];      // A ahead, B behind
+          const dz = A.z - B.z, dx = B.x - A.x, adx = Math.abs(dx);
+          if (dz >= R3D.CAR_SEP_Z || adx >= R3D.CAR_SEP_X) continue;
+
+          A._pushLocked = true; B._pushLocked = true;
+
+          // Blend from bumper compression to door contact as overlap changes.
+          // A car pulling away sideways must not receive a fresh fixed kick
+          // every solver pass or be held back behind the old bumper plane.
+          const bumper = 1 - r3dSmooth((adx - 0.8) / 0.7);
+          if (bumper > 0) {
+            const overlapZ = R3D.CAR_SEP_Z - dz;
+            B.z -= Math.min(overlapZ, R3D.SEP_Z_RATE * step * 0.5) * bumper;
+            const floorZ = A.z - R3D.CAR_SEP_Z * 0.82;
+            if (adx < 0.8 && B.z > floorZ) B.z = floorZ;
+            B.mesh.position.z = B.z;
+            const diff = B.speed - A.speed;
+            if (diff > 0) {
+              const give = Math.min(diff, 60) * (1 - Math.exp(-2.6 * step)) * bumper;
+              const transfer = Math.min(give, Math.max(0,R3D.RECOVERY_MAX*(this.speedScale ?? 1)-A.speed), Math.max(0,B.speed-40));
+              A.speed += transfer;
+              B.speed -= transfer;
+            }
+          }
+
+          if (adx > 0.8) {
+            const dir = dx > 0 ? 1 : -1;
+            const av = A.isPlayer ? (A.lv || 0) : (A.lvx || 0);
+            const bv = B.isPlayer ? (B.lv || 0) : (B.lvx || 0);
+            const closing = Math.max(0, (av - bv) * dir);
+            const overlap = (R3D.CAR_SEP_X - adx) / R3D.CAR_SEP_X;
+            const side = r3dSmooth((adx - 0.8) / 0.7);
+            // Pressure and damping scale with elapsed time; separating cars
+            // retain their intended motion. Half strength per solver pass.
+            if(dz<R3D.CAR_SEP_Z*.62) this._sideContact(A,B,closing,overlap*side,step*.5,dir);
+            const imp = (overlap * R3D.CONTACT_IMPULSE + closing * 2) * side * step * 0.5;
+            const corr = Math.min((R3D.CAR_SEP_X - adx) * 0.5,
+              R3D.SEP_X_RATE * step * 0.5) * side;
+            A.x -= dir * corr;
+            B.x += dir * corr;
+            A.mesh.position.x = A.x; B.mesh.position.x = B.x;
+            if (A.isPlayer) A.lv = clamp(av - dir * imp, -R3D.LAT_MAX, R3D.LAT_MAX);
+            else A.lvx = clamp(av - dir * imp, -R3D.AI_LAT_MAX * 1.5, R3D.AI_LAT_MAX * 1.5);
+            if (B.isPlayer) B.lv = clamp(bv + dir * imp, -R3D.LAT_MAX, R3D.LAT_MAX);
+            else B.lvx = clamp(bv + dir * imp, -R3D.AI_LAT_MAX * 1.5, R3D.AI_LAT_MAX * 1.5);
+          }
+        }
+      }
+    }
+    // A car can overlap more than one neighbor in dense traffic. Cap the total
+    // correction from all solver pairs, not only each pair, so traffic pressure
+    // cannot add up to a sideways jump in a single physics step.
+    for (const car of active) {
+      const origin = startX.get(car);
+      const maxRate = car.isPlayer ? R3D.LAT_MAX : R3D.AI_LAT_MAX * 1.5 + R3D.SEP_X_RATE;
+      car.x = clamp(car.x, origin - maxRate * step, origin + maxRate * step);
+      car.mesh.position.x = car.x;
+    }
+    const speedLimit = R3D.RECOVERY_MAX*(this.speedScale ?? 1);
+    for (const car of active) car.speed=Math.min(car.speed,speedLimit);
+  }
+  }
+  for (const name of Object.getOwnPropertyNames(Methods.prototype)) {
+    if (name !== "constructor") Object.defineProperty(Race3DEngine.prototype, name,
+      Object.getOwnPropertyDescriptor(Methods.prototype, name));
+  }
+})();
+
+</script>
+<script>
+/* js/race3d/ai.js */
+// Ai responsibilities for the shared race engine.
+(() => {
+  class Methods {
   _updateAI(dt) {
     // Where the race leader is, so stragglers know how much ground to make up
     this._leadZ = this.cars.reduce(
@@ -4599,10 +4849,6 @@ class Race3DEngine {
     car.tacticTimer = car.laneTimer;
   }
 
-  // ── Lane judgement ───────────────────────────────────────────
-  // Score how good a piece of track would be for this car right now. Higher is
-  // better. This is what gives the AI race IQ: it moves for a reason (clear
-  // air, a tow, avoiding someone alongside) instead of drifting at random.
   _scoreLane(car, laneX, aggro) {
     const hw = (this.trackHalfWidth ?? R3D.HALF_W) - 1.4;
     if (Math.abs(laneX) > hw) return -100;
@@ -4659,154 +4905,30 @@ class Race3DEngine {
     return score;
   }
 
-  _calcDraft(dt) {
-    const active = this.cars.filter(c => !c.dnf && !c.finished && !c.spinning)
-      .slice().sort((a, b) => b.z - a.z);
-    for (const car of this.cars) {
-      car.towStrength = 0;
-      car.pushStrength = 0;
-      car.receivedPush = 0;
-      car.chainLen = 1;
-      car._wakeLeader = null;
-      car._pushTarget = 0;
-      car._draftDepth = 1;
-      if (car.dnf || car.finished || car.spinning) {
-        car.draftBoost = car.draftMomentum = 0;
-        car._draftCarryMomentum = car._draftCarryTimer = 0;
-      }
-    }
-
-    const trains = new Map();
-    // Forward-only links cannot cycle. A distant or offset wake still gives
-    // a tow, but only close aligned cars share a train's efficiency benefit.
-    for (const car of active) {
-      for (const other of active) {
-        if (other === car) continue;
-        const wake = r3dWake(car, other);
-        if (wake.tow > car.towStrength) {
-          car.towStrength = wake.tow;
-          car._wakeLeader = other;
-        }
-        const bonus = R3D.PUSH_BONUS;
-        car.pushStrength = Math.max(car.pushStrength, wake.push);
-        car._pushTarget = Math.max(car._pushTarget, wake.push * bonus);
-        // Direct push only; do not recirculate accumulated aero through a pair.
-        other.receivedPush = Math.max(other.receivedPush, wake.push * bonus * .75);
-      }
-      car._draftDepth = car._wakeLeader ? (car._wakeLeader._draftDepth || 1) + 1 : 1;
-      const leader = car._wakeLeader;
-      car._trainRoot = leader && leader.z-car.z < R3D.CHAIN_LINK_Z && car.towStrength > .55
-        ? leader._trainRoot : car;
-      const members = trains.get(car._trainRoot) || [];
-      members.push(car);
-      trains.set(car._trainRoot,members);
-    }
-
-    for (const members of trains.values()) for (const car of members) car.chainLen = members.length;
-    // Every additional linked car helps the whole line, with diminishing gains.
-    // Two cars no longer get an advantage that a larger chasing line cannot earn.
-    for (const car of active) {
-      const chain = R3D.CHAIN_MAX * (1 - Math.exp(-(car.chainLen-1) / 3));
-      const rawTarget = car.towStrength * R3D.DRAFT_BOOST + car._pushTarget + chain + car.receivedPush;
-      const draftGain = car.isPlayer ? R3D.PLAYER_DRAFT_STRENGTH : 1;
-      let target = Math.min(R3D.AERO_MAX * draftGain * (car.isPlayer ? 1 : (this.diff.aiDraft ?? 1)),
-        rawTarget * draftGain * (car.isPlayer ? this.diff.playerDraft : (this.diff.aiDraft ?? 1)));
-      const before = car.draftMomentum || 0;
-      const activeDraft = car.towStrength > 0.12 || car.pushStrength > 0.12 || car.receivedPush > 1;
-      if (activeDraft) {
-        car._draftCarryMomentum = before;
-        car._draftCarryDuration = R3D.DRAFT_CARRY;
-        car._draftCarryTimer = car._draftCarryDuration;
-      } else if ((car._draftCarryTimer || 0) > 0 && (car._draftCarryMomentum || 0) > 8) {
-        car._draftCarryTimer = Math.max(0, car._draftCarryTimer - dt);
-        const carryFrac = car._draftCarryTimer / (car._draftCarryDuration || R3D.DRAFT_CARRY);
-        target = Math.max(target, car._draftCarryMomentum * (0.72 + carryFrac * 0.28));
-      }
-      const rate = target > before ? R3D.DRAFT_BUILD : R3D.DRAFT_RELEASE;
-      car.draftMomentum = before + (target - before) * (1 - Math.exp(-rate * dt));
-      car.draftBoost = car.draftMomentum;
-    }
+  _shoulderRace(car,dt) {
+    if(!this._incidentRules().crashes || car.z<1000 || car.spinning) return;
+    car._shoulderWait=Math.max(0,(car._shoulderWait||0)-dt);
+    if(car._shoulderTime>0) {car._shoulderTime-=dt;car.targetX=car._shoulderTarget;return;}
+    if(car._shoulderWait>0 || Math.random()>.04*dt*this.diff.aiAggro) return;
+    const other=this.cars.filter(c=>c!==car && !c.isPlayer && !c.spinning && !c.dnf && !c.finished && Math.abs(c.z-car.z)<2 && Math.abs(c.x-car.x)>1.5 && Math.abs(c.x-car.x)<3).sort((a,b)=>Math.abs(a.x-car.x)-Math.abs(b.x-car.x))[0];
+    if(!other) return;
+    car._shoulderWait=12;car._shoulderTime=.8;
+    car._shoulderTarget=clamp(other.x-Math.sign(other.x-car.x)*1.1,-7.5,7.5);
+    car.targetX=car._shoulderTarget;
   }
-
-  // ── Contact resolution ───────────────────────────────────────
-  // Cars are pushed apart at a bounded RATE and nudged with velocity impulses,
-  // never snapped to a new position. That is the difference between a stock car
-  // leaning on another one and a car teleporting sideways when you touch it.
-  _separateCars(dt) {
-    const step = Math.max(dt || 0.016, 0.001);
-    const active = this.cars.filter(c => !c.finished && !c.dnf && !c.spinning);
-    const startX = new Map(active.map(c => [c,
-      Number.isFinite(c._frameStartX) ? c._frameStartX : c.x]));
-    // Cleared here so _updateAI (which runs first) reads last frame's value
-    for (const c of this.cars) c._pushLocked = false;
-
-    // Two passes so a shunt propagates down a queue in the same frame
-    for (let pass = 0; pass < 2; pass++) {
-      active.sort((a, b) => b.z - a.z);
-      for (let i = 0; i < active.length; i++) {
-        for (let j = i + 1; j < active.length; j++) {
-          const A = active[i], B = active[j];      // A ahead, B behind
-          const dz = A.z - B.z, dx = B.x - A.x, adx = Math.abs(dx);
-          if (dz >= R3D.CAR_SEP_Z || adx >= R3D.CAR_SEP_X) continue;
-
-          A._pushLocked = true; B._pushLocked = true;
-
-          // Blend from bumper compression to door contact as overlap changes.
-          // A car pulling away sideways must not receive a fresh fixed kick
-          // every solver pass or be held back behind the old bumper plane.
-          const bumper = 1 - r3dSmooth((adx - 0.8) / 0.7);
-          if (bumper > 0) {
-            const overlapZ = R3D.CAR_SEP_Z - dz;
-            B.z -= Math.min(overlapZ, R3D.SEP_Z_RATE * step * 0.5) * bumper;
-            const floorZ = A.z - R3D.CAR_SEP_Z * 0.82;
-            if (adx < 0.8 && B.z > floorZ) B.z = floorZ;
-            B.mesh.position.z = B.z;
-            const diff = B.speed - A.speed;
-            if (diff > 0) {
-              const give = Math.min(diff, 60) * (1 - Math.exp(-2.6 * step)) * bumper;
-              const transfer = Math.min(give, Math.max(0,R3D.RECOVERY_MAX*(this.speedScale ?? 1)-A.speed), Math.max(0,B.speed-40));
-              A.speed += transfer;
-              B.speed -= transfer;
-            }
-          }
-
-          if (adx > 0.8) {
-            const dir = dx > 0 ? 1 : -1;
-            const av = A.isPlayer ? (A.lv || 0) : (A.lvx || 0);
-            const bv = B.isPlayer ? (B.lv || 0) : (B.lvx || 0);
-            const closing = Math.max(0, (av - bv) * dir);
-            const overlap = (R3D.CAR_SEP_X - adx) / R3D.CAR_SEP_X;
-            const side = r3dSmooth((adx - 0.8) / 0.7);
-            // Pressure and damping scale with elapsed time; separating cars
-            // retain their intended motion. Half strength per solver pass.
-            if(dz<R3D.CAR_SEP_Z*.62) this._sideContact(A,B,closing,overlap*side,step*.5,dir);
-            const imp = (overlap * R3D.CONTACT_IMPULSE + closing * 2) * side * step * 0.5;
-            const corr = Math.min((R3D.CAR_SEP_X - adx) * 0.5,
-              R3D.SEP_X_RATE * step * 0.5) * side;
-            A.x -= dir * corr;
-            B.x += dir * corr;
-            A.mesh.position.x = A.x; B.mesh.position.x = B.x;
-            if (A.isPlayer) A.lv = clamp(av - dir * imp, -R3D.LAT_MAX, R3D.LAT_MAX);
-            else A.lvx = clamp(av - dir * imp, -R3D.AI_LAT_MAX * 1.5, R3D.AI_LAT_MAX * 1.5);
-            if (B.isPlayer) B.lv = clamp(bv + dir * imp, -R3D.LAT_MAX, R3D.LAT_MAX);
-            else B.lvx = clamp(bv + dir * imp, -R3D.AI_LAT_MAX * 1.5, R3D.AI_LAT_MAX * 1.5);
-          }
-        }
-      }
-    }
-    // A car can overlap more than one neighbor in dense traffic. Cap the total
-    // correction from all solver pairs, not only each pair, so traffic pressure
-    // cannot add up to a sideways jump in a single physics step.
-    for (const car of active) {
-      const origin = startX.get(car);
-      const maxRate = car.isPlayer ? R3D.LAT_MAX : R3D.AI_LAT_MAX * 1.5 + R3D.SEP_X_RATE;
-      car.x = clamp(car.x, origin - maxRate * step, origin + maxRate * step);
-      car.mesh.position.x = car.x;
-    }
-    const speedLimit = R3D.RECOVERY_MAX*(this.speedScale ?? 1);
-    for (const car of active) car.speed=Math.min(car.speed,speedLimit);
   }
+  for (const name of Object.getOwnPropertyNames(Methods.prototype)) {
+    if (name !== "constructor") Object.defineProperty(Race3DEngine.prototype, name,
+      Object.getOwnPropertyDescriptor(Methods.prototype, name));
+  }
+})();
 
+</script>
+<script>
+/* js/race3d/contact.js */
+// Contact responsibilities for the shared race engine.
+(() => {
+  class Methods {
   _incidentRules() {
     if(this._raceFeatures) return this._raceFeatures;
     if(this.config?.practiceTips || !this.config?.raceRules) return {crashes:false,damage:false};
@@ -4911,8 +5033,6 @@ class Race3DEngine {
     }
   }
 
-  // Separating-axis test for rotated car footprints. Only used against a
-  // crashing car; ordinary bumper drafting never enters this path.
   _wreckOverlap(a,b) {
     const ay=a.mesh?.rotation?.y||0,by=b.mesh?.rotation?.y||0;
     const axes=[{x:Math.cos(ay),z:-Math.sin(ay)},{x:Math.sin(ay),z:Math.cos(ay)},
@@ -4920,18 +5040,6 @@ class Race3DEngine {
     const radius=(c,y,n)=>Math.abs(n.x*Math.cos(y)-n.z*Math.sin(y))*(c.wallHalfX??R3D.CAR_SEP_X/2)+
       Math.abs(n.x*Math.sin(y)+n.z*Math.cos(y))*(c.wallHalfZ??R3D.CAR_SEP_Z/2);
     return axes.every(n=>Math.abs((a.x-b.x)*n.x+(a.z-b.z)*n.z)<radius(a,ay,n)+radius(b,by,n));
-  }
-
-  _shoulderRace(car,dt) {
-    if(!this._incidentRules().crashes || car.z<1000 || car.spinning) return;
-    car._shoulderWait=Math.max(0,(car._shoulderWait||0)-dt);
-    if(car._shoulderTime>0) {car._shoulderTime-=dt;car.targetX=car._shoulderTarget;return;}
-    if(car._shoulderWait>0 || Math.random()>.04*dt*this.diff.aiAggro) return;
-    const other=this.cars.filter(c=>c!==car && !c.isPlayer && !c.spinning && !c.dnf && !c.finished && Math.abs(c.z-car.z)<2 && Math.abs(c.x-car.x)>1.5 && Math.abs(c.x-car.x)<3).sort((a,b)=>Math.abs(a.x-car.x)-Math.abs(b.x-car.x))[0];
-    if(!other) return;
-    car._shoulderWait=12;car._shoulderTime=.8;
-    car._shoulderTarget=clamp(other.x-Math.sign(other.x-car.x)*1.1,-7.5,7.5);
-    car.targetX=car._shoulderTarget;
   }
 
   _wallExtent(car,side=1) {
@@ -5057,142 +5165,6 @@ class Race3DEngine {
 
   _spinPlayer(duration, dir, shake) { this._beginCrash(this.player,dir,'contact'); }
 
-  // Visual-only: roll the wheels at road speed
-  _animateCars(dt) {
-    for (const car of this.cars) {
-      if (!car.wheels) continue;
-      const droll = car.speed * dt / R3D.WHEEL_R;
-      for (const w of car.wheels) w.rotation.x -= droll;
-    }
-  }
-
-  _togglePause() {
-    if (this.done) return;
-    this.paused = !this.paused;
-    this.keys.a = this.keys.d = this.keys.s = false;
-    if (this.keys2) this.keys2.a = this.keys2.d = this.keys2.s = false;
-    this._physicsAcc = 0;
-    const overlay  = document.getElementById('r3d-pause-overlay');
-    const pauseBtn = document.getElementById('r3d-pause-btn');
-    if (overlay)  overlay.classList.toggle('active', this.paused);
-    if (pauseBtn) pauseBtn.textContent = this.paused ? 'RESUME' : 'PAUSE';
-    if (!this.paused && this.clock) this.clock.getDelta();
-  }
-
-  _checkFinish() {
-    const TL = this.raceLength || R3D.TRACK_LEN;
-    // Several cars can cross on the same frame - at 200+ units/sec a frame is
-    // worth ~10 units of track. They must be credited in the order they are
-    // actually down the road, NOT in array order: the player sits at index 0,
-    // so iterating the array credited you ahead of a team-mate you had just
-    // pushed to the line.
-    const crossed = [];
-    for (const car of this.cars) {
-      if (!car.finished && car.z >= TL) crossed.push(car);
-    }
-    if (!crossed.length) return;
-    crossed.sort((a, b) => b.z - a.z);        // furthest down the track first
-
-    // One capture at the first crossing, not when the human later finishes.
-    // Practice has no news flow. No extra render work during ordinary racing.
-    if (!this.finishOrder.length && this.config?.qualifyAI && this.renderer) this._captureFinishPhoto(crossed[0]);
-
-    for (const car of crossed) {
-      car.finished = true;
-      this.finishOrder.push(car);
-    }
-    const player = crossed.find(c => c.isPlayer);
-    if (this.player2) {
-      if (this.player.finished && this.player2.finished) {
-        this.done = true;
-        this._updateDualHUD(1);
-        const p1 = this.finishOrder.indexOf(this.player)+1, p2 = this.finishOrder.indexOf(this.player2)+1;
-        const el = document.getElementById('r3d-finish');
-        el.innerHTML = `<div class="r3d-finish-box"><h2>Race Results</h2><p>Player 1 · #${this.player.number} · ${p1}${ordinal(p1)}</p><p>Player 2 · #${this.player2.number} · ${p2}${ordinal(p2)}</p><button class="btn btn-primary btn-lg" onclick="window._r3dFinish(${p1})">Continue</button></div>`;
-        el.style.display = 'flex';
-      }
-      return;
-    }
-    if (player) {
-      this.done = true;
-      const pos = this.finishOrder.indexOf(player) + 1;
-      // The tower normally refreshes at 5fps. Once done is set the main loop
-      // stops updating it, so force one authoritative final refresh here.
-      this._updateOrder(pos, this.cars.filter(c => !c.dnf).length);
-      this._showFinish(pos);
-    }
-  }
-
-  _captureFinishPhoto(leader) {
-    if (!this.renderer || !this.scene || this._finishPhotoAttempted) return;
-    this._finishPhotoAttempted = true;
-    const r=this.renderer, width=1024, height=576, line=this.raceLength || R3D.TRACK_LEN;
-    const target=new THREE.WebGLRenderTarget(width,height,{minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter});
-    const camera=new THREE.PerspectiveCamera(48,width/height,0.5,2200);
-    // A high trackside eye just beyond the line sees noses and the approaching
-    // pack. The finish structure remains visible behind the crossing cars.
-    camera.position.set((this.trackHalfWidth ?? R3D.HALF_W)-1,7,line+24);
-    camera.lookAt(0,0.9,line-7);
-    const old={target:r.getRenderTarget(),viewport:r.getViewport(new THREE.Vector4()),
-      scissor:r.getScissor(new THREE.Vector4()),scissorTest:r.getScissorTest(),autoClear:r.autoClear,
-      player:this.player,shadowAutoUpdate:r.shadowMap.autoUpdate};
-    const positions=this.cars.map(c=>[c.mesh,c.mesh.position.clone()]);
-    try {
-      // Windowed track/stands must be present at the leader even when the human
-      // is far behind. Restore those pools before the next chase/mirror pass.
-      this.player={z:line}; this._positionTrack(); this._positionGrandstands();
-      this.cars.forEach(c=>c.mesh.position.set(c.x,0,c.z));
-      r.setScissorTest(false); r.setRenderTarget(target); r.autoClear=true;
-      r.shadowMap.autoUpdate=false;
-      r.clear(true,true,true); r.render(this.scene,camera);
-      const pixels=new Uint8Array(width*height*4);
-      r.readRenderTargetPixels(target,0,0,width,height,pixels);
-      const canvas=document.createElement('canvas'); canvas.width=width; canvas.height=height;
-      const ctx=canvas.getContext('2d'), frame=ctx.createImageData(width,height);
-      for(let y=0;y<height;y++) frame.data.set(pixels.subarray((height-1-y)*width*4,(height-y)*width*4),y*width*4);
-      ctx.putImageData(frame,0,0);
-      this.finishPhoto={dataUrl:canvas.toDataURL('image/jpeg',0.88),leaderName:leader.label || 'The race winner',leaderId:leader.entrantId,grid:this._newsGrid,width,height};
-    } catch(error) {
-      // Photo failure must not interrupt classification or saving.
-      this.finishPhoto=null;
-      console.warn('Finish photograph unavailable:',error.message);
-    } finally {
-      this.player=old.player;
-      for(const [mesh,position] of positions) mesh.position.copy(position);
-      this._positionTrack(); this._positionGrandstands();
-      r.shadowMap.autoUpdate=old.shadowAutoUpdate;
-      r.setRenderTarget(old.target); r.setViewport(old.viewport); r.setScissor(old.scissor);
-      r.setScissorTest(old.scissorTest); r.autoClear=old.autoClear;
-      target.dispose();
-    }
-  }
-
-  // The real running order at the moment the player takes the flag: cars that
-  // already finished in the order they crossed, then everyone else by distance,
-  // then retirements. Used so the on-track result - including your team-mates -
-  // is what actually goes in the results table.
-  finalOrder() {
-    const finished = this.finishOrder.slice();
-    const running  = this.cars
-      .filter(c => !c.finished && !c.dnf)
-      .sort((a, b) => b.z - a.z);
-    const retired  = this.cars.filter(c => c.dnf);
-    return [...finished, ...running, ...retired].map((c, i) => ({
-      entrantId: c.entrantId || null,
-      carId:    c.carId || null,
-      isPlayer: !!c.isPlayer,
-      number:   c.number,
-      label:    c.label,
-      teamName: c.teamName || null,
-      teamColor: r3dHex(c.hex),
-      raceHealth: c.raceHealth ?? 100,
-      crashes: c.crashCount || 0,
-      position: i + 1,
-      dnf:      !!c.dnf,
-    }));
-  }
-
-  // Kept as a harmless compatibility hook; no timer-generated wrecks.
   _triggerWreck() {}
 
   _dropDebris(car) {
@@ -5206,7 +5178,19 @@ class Race3DEngine {
       new THREE.MeshBasicMaterial({ color: 0x8a8a90, transparent: true, opacity: 0.38 }));
     smoke.position.set(wx, 1.9, wz); this.scene.add(smoke);
   }
+  }
+  for (const name of Object.getOwnPropertyNames(Methods.prototype)) {
+    if (name !== "constructor") Object.defineProperty(Race3DEngine.prototype, name,
+      Object.getOwnPropertyDescriptor(Methods.prototype, name));
+  }
+})();
 
+</script>
+<script>
+/* js/race3d/cameras.js */
+// Cameras responsibilities for the shared race engine.
+(() => {
+  class Methods {
   _updateCamera(dt) {
     this._positionTrack();
     this._positionGrandstands();
@@ -5245,13 +5229,6 @@ class Race3DEngine {
     this.mirrorCam.lookAt(p.x, -0.5, p.z - 24);
   }
 
-  // Rear-view mirror.
-  //
-  // The old approach negated projectionMatrix.elements[0] to flip left/right.
-  // That also reverses triangle winding, so every front face was drawn as a
-  // back face - surfaces looked hollow and textures read wrong. Instead we
-  // render the rear view normally into an offscreen target (correct winding,
-  // correct lighting) and then blit it through a quad with mirrored UVs.
   _initMirrorTarget(w, h) {
     if (this.mirrorRT) this.mirrorRT.dispose();
     const Target = this.renderer.capabilities.isWebGL2 && !this.lowPower
@@ -5362,7 +5339,51 @@ class Race3DEngine {
     r.setViewport(0, 0, sz.x, sz.y);
   }
 
-  // ── HUD ──────────────────────────────────────────────────────
+  _renderDual(dt) {
+    const r=this.renderer, size=r.getSize(new THREE.Vector2());
+    r.setScissorTest(false); r.setViewport(0,0,size.x,size.y); r.autoClear=false; r.clear();
+    const renderView = (n) => {
+      const pane=document.getElementById(`dual-view-${n}`).getBoundingClientRect(), cr=this.canvas.getBoundingClientRect();
+      const x=Math.round((pane.left-cr.left)*size.x/cr.width), y=Math.round((cr.bottom-pane.bottom)*size.y/cr.height);
+      const w=Math.round(pane.width*size.x/cr.width), h=Math.round(pane.height*size.y/cr.height);
+      this.camera.aspect=w/h; this.camera.updateProjectionMatrix();
+      this._updateCamera(dt);
+      r.setScissorTest(true); r.setScissor(x,y,w,h); r.setViewport(x,y,w,h); r.clear(); r.render(this.scene,this.camera);
+      r.setScissorTest(false);
+      this._mirrorWrapId=`dual-mirror-${n}`;
+      this._renderMirror();
+      this._mirrorWrapId=null;
+    };
+    renderView(1);
+    this._withSecond(()=>renderView(2));
+    r.setScissorTest(false); r.setViewport(0,0,size.x,size.y); r.autoClear=true;
+  }
+  }
+  for (const name of Object.getOwnPropertyNames(Methods.prototype)) {
+    if (name !== "constructor") Object.defineProperty(Race3DEngine.prototype, name,
+      Object.getOwnPropertyDescriptor(Methods.prototype, name));
+  }
+})();
+
+</script>
+<script>
+/* js/race3d/hud.js */
+// Hud responsibilities for the shared race engine.
+(() => {
+  class Methods {
+  _buildMinimap() {
+    const track = document.getElementById('r3d-map-track');
+    if (!track) return;
+    for (const car of this.cars) {
+      const dot = document.createElement('div');
+      dot.className = 'r3d-map-dot';
+      if (car.isPlayer) dot.classList.add('is-player');
+      else dot.style.background = r3dHex(car.hex);
+      track.appendChild(dot);
+      car._dot = dot;
+    }
+  }
+
   _updateHUD(dt) {
     const health=Math.ceil(this.player.raceHealth ?? 100), bar=document.getElementById('r3d-health');
     if(bar){bar.classList.toggle('low',health<=25);bar.setAttribute('aria-valuenow',health);document.getElementById('r3d-health-value').textContent=health+'%';document.getElementById('r3d-health-fill').style.transform=`scaleX(${health/100})`;}
@@ -5517,86 +5538,133 @@ class Race3DEngine {
       if(el.innerHTML!==html) el.innerHTML=html;
     });
   }
+  }
+  for (const name of Object.getOwnPropertyNames(Methods.prototype)) {
+    if (name !== "constructor") Object.defineProperty(Race3DEngine.prototype, name,
+      Object.getOwnPropertyDescriptor(Methods.prototype, name));
+  }
+})();
 
-  _renderDual(dt) {
-    const r=this.renderer, size=r.getSize(new THREE.Vector2());
-    r.setScissorTest(false); r.setViewport(0,0,size.x,size.y); r.autoClear=false; r.clear();
-    const renderView = (n) => {
-      const pane=document.getElementById(`dual-view-${n}`).getBoundingClientRect(), cr=this.canvas.getBoundingClientRect();
-      const x=Math.round((pane.left-cr.left)*size.x/cr.width), y=Math.round((cr.bottom-pane.bottom)*size.y/cr.height);
-      const w=Math.round(pane.width*size.x/cr.width), h=Math.round(pane.height*size.y/cr.height);
-      this.camera.aspect=w/h; this.camera.updateProjectionMatrix();
-      this._updateCamera(dt);
-      r.setScissorTest(true); r.setScissor(x,y,w,h); r.setViewport(x,y,w,h); r.clear(); r.render(this.scene,this.camera);
-      r.setScissorTest(false);
-      this._mirrorWrapId=`dual-mirror-${n}`;
-      this._renderMirror();
-      this._mirrorWrapId=null;
-    };
-    renderView(1);
-    this._withSecond(()=>renderView(2));
-    r.setScissorTest(false); r.setViewport(0,0,size.x,size.y); r.autoClear=true;
+</script>
+<script>
+/* js/race3d/results.js */
+// Results responsibilities for the shared race engine.
+(() => {
+  class Methods {
+  _checkFinish() {
+    const TL = this.raceLength || R3D.TRACK_LEN;
+    // Several cars can cross on the same frame - at 200+ units/sec a frame is
+    // worth ~10 units of track. They must be credited in the order they are
+    // actually down the road, NOT in array order: the player sits at index 0,
+    // so iterating the array credited you ahead of a team-mate you had just
+    // pushed to the line.
+    const crossed = [];
+    for (const car of this.cars) {
+      if (!car.finished && car.z >= TL) crossed.push(car);
+    }
+    if (!crossed.length) return;
+    crossed.sort((a, b) => b.z - a.z);        // furthest down the track first
+
+    // One capture at the first crossing, not when the human later finishes.
+    // Practice has no news flow. No extra render work during ordinary racing.
+    if (!this.finishOrder.length && this.config?.qualifyAI && this.renderer) this._captureFinishPhoto(crossed[0]);
+
+    for (const car of crossed) {
+      car.finished = true;
+      this.finishOrder.push(car);
+    }
+    const player = crossed.find(c => c.isPlayer);
+    if (this.player2) {
+      if (this.player.finished && this.player2.finished) {
+        this.done = true;
+        this._updateDualHUD(1);
+        const p1 = this.finishOrder.indexOf(this.player)+1, p2 = this.finishOrder.indexOf(this.player2)+1;
+        const el = document.getElementById('r3d-finish');
+        el.innerHTML = `<div class="r3d-finish-box"><h2>Race Results</h2><p>Player 1 · #${this.player.number} · ${p1}${ordinal(p1)}</p><p>Player 2 · #${this.player2.number} · ${p2}${ordinal(p2)}</p><button class="btn btn-primary btn-lg" onclick="window._r3dFinish(${p1})">Continue</button></div>`;
+        el.style.display = 'flex';
+      }
+      return;
+    }
+    if (player) {
+      this.done = true;
+      const pos = this.finishOrder.indexOf(player) + 1;
+      // The tower normally refreshes at 5fps. Once done is set the main loop
+      // stops updating it, so force one authoritative final refresh here.
+      this._updateOrder(pos, this.cars.filter(c => !c.dnf).length);
+      this._showFinish(pos);
+    }
   }
 
-  _loop() {
-    this._raf = requestAnimationFrame(() => this._loop());
-    const dt = Math.min(this.clock.getDelta(), 0.1);
-    // Fixed steps keep contact and steering consistent at 30/60/120Hz.
-    this._physicsAcc += dt;
-    while (this._physicsAcc >= 1 / 120) {
-      this._update(1 / 120);
-      this._physicsAcc -= 1 / 120;
-    }
-    if (this.renderer && this.scene && this.camera) {
-      if (this.player2) { this._renderDual(dt); return; }
-      this.renderer.autoClear = true;
-      this.renderer.render(this.scene, this.camera);
-      this.renderer.autoClear = false;
-      this._renderMirror();
-      this.renderer.autoClear = true;
+  _captureFinishPhoto(leader) {
+    if (!this.renderer || !this.scene || this._finishPhotoAttempted) return;
+    this._finishPhotoAttempted = true;
+    const r=this.renderer, width=1024, height=576, line=this.raceLength || R3D.TRACK_LEN;
+    const target=new THREE.WebGLRenderTarget(width,height,{minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter});
+    const camera=new THREE.PerspectiveCamera(48,width/height,0.5,2200);
+    // A high trackside eye just beyond the line sees noses and the approaching
+    // pack. The finish structure remains visible behind the crossing cars.
+    camera.position.set((this.trackHalfWidth ?? R3D.HALF_W)-1,7,line+24);
+    camera.lookAt(0,0.9,line-7);
+    const old={target:r.getRenderTarget(),viewport:r.getViewport(new THREE.Vector4()),
+      scissor:r.getScissor(new THREE.Vector4()),scissorTest:r.getScissorTest(),autoClear:r.autoClear,
+      player:this.player,shadowAutoUpdate:r.shadowMap.autoUpdate};
+    const positions=this.cars.map(c=>[c.mesh,c.mesh.position.clone()]);
+    try {
+      // Windowed track/stands must be present at the leader even when the human
+      // is far behind. Restore those pools before the next chase/mirror pass.
+      this.player={z:line}; this._positionTrack(); this._positionGrandstands();
+      this.cars.forEach(c=>c.mesh.position.set(c.x,0,c.z));
+      r.setScissorTest(false); r.setRenderTarget(target); r.autoClear=true;
+      r.shadowMap.autoUpdate=false;
+      r.clear(true,true,true); r.render(this.scene,camera);
+      const pixels=new Uint8Array(width*height*4);
+      r.readRenderTargetPixels(target,0,0,width,height,pixels);
+      const canvas=document.createElement('canvas'); canvas.width=width; canvas.height=height;
+      const ctx=canvas.getContext('2d'), frame=ctx.createImageData(width,height);
+      for(let y=0;y<height;y++) frame.data.set(pixels.subarray((height-1-y)*width*4,(height-y)*width*4),y*width*4);
+      ctx.putImageData(frame,0,0);
+      this.finishPhoto={dataUrl:canvas.toDataURL('image/jpeg',0.88),leaderName:leader.label || 'The race winner',leaderId:leader.entrantId,grid:this._newsGrid,width,height};
+    } catch(error) {
+      // Photo failure must not interrupt classification or saving.
+      this.finishPhoto=null;
+      console.warn('Finish photograph unavailable:',error.message);
+    } finally {
+      this.player=old.player;
+      for(const [mesh,position] of positions) mesh.position.copy(position);
+      this._positionTrack(); this._positionGrandstands();
+      r.shadowMap.autoUpdate=old.shadowAutoUpdate;
+      r.setRenderTarget(old.target); r.setViewport(old.viewport); r.setScissor(old.scissor);
+      r.setScissorTest(old.scissorTest); r.autoClear=old.autoClear;
+      target.dispose();
     }
   }
 
-  destroy() {
-    this._disposed = true;
-    cancelAnimationFrame(this._raf);
-    this._raf = null;
-    clearTimeout(this._warnTimeout);
-    document.removeEventListener('keydown', this._kd);
-    document.removeEventListener('keyup',   this._ku);
-    window.removeEventListener('resize',    this._onResize);
-    window.removeEventListener('blur',      this._onBlur);
-
-    // Release GPU resources - without this, every race leaks its track,
-    // car geometry and canvas textures for the life of the page.
-    if (this.scene && this.scene.traverse) {
-      const shared = new Set(_r3dRoundelCache.values()); // reused across races - keep
-      const seen = new Set();
-      this.scene.traverse(obj => {
-        if (obj.geometry && !seen.has(obj.geometry)) {
-          seen.add(obj.geometry);
-          obj.geometry.dispose && obj.geometry.dispose();
-        }
-        const mats = Array.isArray(obj.material) ? obj.material : (obj.material ? [obj.material] : []);
-        for (const m of mats) {
-          if (!m || seen.has(m)) continue;
-          seen.add(m);
-          if (m.map && m.map.dispose && !shared.has(m.map)) m.map.dispose();
-          m.dispose && m.dispose();
-        }
-      });
-    }
-    if (this.mirrorRT) { this.mirrorRT.dispose(); this.mirrorRT = null; }
-    if (this.mirrorQuadMat) { this.mirrorQuadMat.dispose(); this.mirrorQuadMat = null; }
-    if (this.mirrorQuad) { this.mirrorQuad.geometry.dispose(); this.mirrorQuad = null; }
-    this.mirrorScene = null;
-    if (this.renderer) { this.renderer.dispose(); this.renderer = null; }
-    this.scene  = null;
-    this.camera = null;
-    this.cars   = [];
-    this.done   = true;
+  finalOrder() {
+    const finished = this.finishOrder.slice();
+    const running  = this.cars
+      .filter(c => !c.finished && !c.dnf)
+      .sort((a, b) => b.z - a.z);
+    const retired  = this.cars.filter(c => c.dnf);
+    return [...finished, ...running, ...retired].map((c, i) => ({
+      entrantId: c.entrantId || null,
+      carId:    c.carId || null,
+      isPlayer: !!c.isPlayer,
+      number:   c.number,
+      label:    c.label,
+      teamName: c.teamName || null,
+      teamColor: r3dHex(c.hex),
+      raceHealth: c.raceHealth ?? 100,
+      crashes: c.crashCount || 0,
+      position: i + 1,
+      dnf:      !!c.dnf,
+    }));
   }
-}
+  }
+  for (const name of Object.getOwnPropertyNames(Methods.prototype)) {
+    if (name !== "constructor") Object.defineProperty(Race3DEngine.prototype, name,
+      Object.getOwnPropertyDescriptor(Methods.prototype, name));
+  }
+})();
 
 </script>
 <script>

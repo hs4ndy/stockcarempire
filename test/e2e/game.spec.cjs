@@ -17,7 +17,7 @@ test('sports career UI stays flat and free of decorative icons and em dashes', a
   const audit = await page.evaluate(async () => {
     const paths = [
       '/index.html', '/style.css', '/js/data.js', '/js/game.js',
-      '/js/race.js', '/js/race3d.js', '/js/ui.js', '/js/main.js',
+      '/js/race.js', ...[...document.scripts].map(s=>new URL(s.src).pathname).filter(p=>/^\/js\/race3d(?:\/[^/]+)?\.js$/.test(p)), '/js/ui.js', '/js/main.js',
     ];
     const source = (await Promise.all(paths.map(async path => (await fetch(path)).text()))).join('\n');
     return {

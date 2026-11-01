@@ -1,5 +1,5 @@
 const fs=require('fs'),vm=require('vm');const c=vm.createContext({console,Math,window:{},document:{},localStorage:{getItem(){return null},setItem(){}},setTimeout,clearTimeout});
-for(const f of ['js/data.js','js/game.js','js/race.js','js/race3d.js','js/ui.js'])vm.runInContext(fs.readFileSync(f,'utf8'),c);
+for(const [file,source] of require('../test/helpers/race-sources.cjs').entries(['js/data.js','js/game.js','js/race.js','js/race3d.js','js/ui.js']))vm.runInContext(source,c);
 const rows=JSON.parse(vm.runInContext(`JSON.stringify(DIFFICULTIES.flatMap(d=>['grassroots','challenger','premier'].flatMap(series=>[.75,.5771527778].flatMap(power=>[300,600,1000].flatMap(startGap=>[250,260,270].map(pace=>{
  const scale=series==='grassroots'?.9:1,car=(id,z,speed)=>({entrantId:id,isPlayer:id==='player',power,x:0,z,speed,lv:0,lvx:0,mesh:{position:{set(){}},rotation:{x:0,y:0,z:0}},draftMomentum:0,draftBoost:0,contactCooldown:0});
  const p=car('player',0,210*scale),b=car('ai',startGap,pace*scale),e=Object.create(Race3DEngine.prototype);Object.assign(e,{config:{qualifyAI:power<.6},cars:[p,b],player:p,diff:d,speedScale:scale,keys:{a:false,d:false,s:false},camShake:0,_warn(){}});

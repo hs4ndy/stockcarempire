@@ -2,7 +2,7 @@ const fs=require('fs'),cp=require('child_process'),{Worker,isMainThread,parentPo
 const {runRearStart}=require('../test/race-dynamics.test.js');
 if(!isMainThread){parentPort.on('message',job=>{try{parentPort.postMessage({...job,...runRearStart(job.seed,job.size,job.diff,job.strategy,workerData.sources[job.version],job.options)});}catch(e){parentPort.postMessage({...job,error:e.stack});}});}
 else{
-const files=['js/data.js','js/game.js','js/race.js','js/race3d.js','js/ui.js'];const sources={v94:Object.fromEntries(files.map(f=>[f,cp.execFileSync('git',['show',`69f0be3:${f}`],{encoding:'utf8'})])),v95:Object.fromEntries(files.map(f=>[f,fs.readFileSync(f,'utf8')]))};
+const files=['js/data.js','js/game.js','js/race.js','js/race3d.js','js/ui.js'];const sources={v94:Object.fromEntries(files.map(f=>[f,cp.execFileSync('git',['show',`69f0be3:${f}`],{encoding:'utf8'})])),v95:require('../test/helpers/race-sources.cjs').snapshot()};
 const suite=process.argv[2]||'pilot',label=process.argv[3]||suite,jobs=[];
 if(suite==='pilot'){
  for(const [seriesId,size]of [['grassroots',20],['premier',40]])for(const diff of ['pro','allout'])for(const seed of [3,17])jobs.push({version:'v95',seed,size,diff,strategy:'race',options:{seriesId,quickRace:true,openingPace:true,playerPower:.75}});

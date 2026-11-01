@@ -12,7 +12,7 @@ const path = require('node:path');
         Object.defineProperty(navigator,'deviceMemory',{get:()=>4});
       });
       await page.route('**/three.min.js',r=>r.fulfill({path:path.resolve(__dirname,'../node_modules/three/build/three.min.js')}));
-      if(baseline) await page.route('**/js/race3d.js',r=>r.fulfill({body:execFileSync('git',['show','32bfd54:js/race3d.js'],{encoding:'utf8'})}));
+      if(baseline) await require('../test/helpers/race-sources.cjs').routeRace(page,'32bfd54');
       await page.goto(process.env.STOCKCAR_BASE_URL || 'http://127.0.0.1:4190');
       await page.locator('#btn-quick-race').click();
       await page.locator('.quick-series-btn').last().click();

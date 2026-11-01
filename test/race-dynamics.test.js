@@ -25,9 +25,7 @@ function runRearStart(seed, fieldSize = 36, difficulty = 'beginner', strategy = 
     setTimeout,
     clearTimeout,
   });
-  for (const file of SOURCE_FILES) {
-    const source = baseline && typeof baseline === 'object' ? baseline[file] : baseline ? require('node:child_process').execFileSync('git', ['show', `${baseline}:${file}`], {encoding:'utf8'})
-      : fs.readFileSync(path.join(ROOT, file), 'utf8');
+  for (const [file, source] of require('./helpers/race-sources.cjs').entries(SOURCE_FILES,baseline)) {
     vm.runInContext(source, context, { filename: file });
   }
   vm.runInContext(fs.readFileSync(path.join(ROOT,'test/helpers/race-driver.js'),'utf8'), context);
@@ -96,6 +94,7 @@ function runRearStart(seed, fieldSize = 36, difficulty = 'beginner', strategy = 
     Object.assign(engine, {
       config:{seriesId:'${options.seriesId||'premier'}',qualifyAI:${!!options.careerFixture},difficulty:'${difficulty}',raceRules:${JSON.stringify(options.raceRules || {crashes:false,damage:false})}},cars, player, diff: difficultyById('${difficulty}'),
       speedScale: ${options.seriesId==='grassroots' ? .9 : 1},
+      ...(${options.raceLength ? 'true' : 'false'} ? {raceLength:${options.raceLength || 0}} : {}),
       keys: { a: false, d: false, s: false },
       wrecks: [], wreckCount: 0, wreckCooldown: Infinity, camShake: 0,
       finishOrder: [], done: false, racing: true, paused: false, paceMode: false,
@@ -111,7 +110,7 @@ function runRearStart(seed, fieldSize = 36, difficulty = 'beginner', strategy = 
     let dropoutStarted=false, dropoutReleased=null, usefulTowAfterRelease=null;
     let overtakes=0, priorAhead=new Set(cars.filter(c=>c!==player && c.z>player.z));
 
-    for (let frame = 0; frame < 60 * 140 && !engine.done; frame++) {
+    for (let frame = 0; frame < 60 * ${options.durationSeconds ?? 140} && !engine.done; frame++) {
       if (['ride','push','swap'].includes('${strategy}')) {
         const mate=cars.filter(c=>(c.isTeammate || ${!!options.rivalPartners} || '${strategy}'!=='ride') && c!==player && !c.dnf && !c.finished && c.z>player.z).sort((a,b)=>a.z-b.z)[0];
         const exiting='${strategy}'==='swap' ? frame/60%10>7 : '${strategy}'!=='push' && player.z/R3D.TRACK_LEN>.92;
@@ -170,6 +169,7 @@ function runRearStart(seed, fieldSize = 36, difficulty = 'beginner', strategy = 
       if(samples[i].nearestGap<=120 && detachedAt!==null){rejoinTimes.push(i-detachedAt);detachedAt=null;}
     }
     return {
+      ...(${!!options.captureState} ? {trace:samples,order:engine.finalOrder(),states:cars.map(c=>({id:c.entrantId,x:c.x,z:c.z,speed:c.speed,lv:c.lv,lvx:c.lvx,health:c.raceHealth,strain:c.sideStrain,tactic:c._tactic}))} : {}),
       aiCrashes: cars.filter(c=>!c.isPlayer).reduce((n,c)=>n+(c.crashCount||0),0),
       playerCrashes: player.crashCount||0,
       playerHealth: player.raceHealth ?? 100,
