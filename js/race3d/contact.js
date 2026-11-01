@@ -10,15 +10,15 @@
   _healthPace(car) {
     const rules=this._incidentRules();
     const health=(car.raceHealth ?? 100)/100;
-    return (rules.damage ? (car.isPlayer ? .85+.15*health : .70+.30*health) : 1) *
-      (rules.crashes ? Math.max(car.isPlayer ? .88 : .74,1-(car.crashCount||0)*(car.isPlayer ? .03 : .06)) : 1);
+    return (rules.damage ? (car.isPlayer ? .92+.08*health : .70+.30*health) : 1) *
+      (rules.crashes ? Math.max(car.isPlayer ? .94 : .74,1-(car.crashCount||0)*(car.isPlayer ? .015 : .06)) : 1);
   }
 
   _damageCar(car,amount) {
     if(!this._incidentRules().damage || car.finished || car.dnf || amount<=0) return;
     // Race health is deliberately forgiving: side rubs, walls and crash
     // impacts all use one scale, independently of loss-of-control strain.
-    car.raceHealth=clamp((car.raceHealth ?? 100)-amount*.20,0,100);
+    car.raceHealth=clamp((car.raceHealth ?? 100)-amount*.04,0,100);
     if(car.raceHealth<=0 && !car._zeroHealthHandled) {
       car._zeroHealthHandled=true;
       if(this._incidentRules().crashes) {

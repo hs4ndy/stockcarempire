@@ -1028,7 +1028,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 112</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 113</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -4938,15 +4938,15 @@ class Race3DEngine {
   _healthPace(car) {
     const rules=this._incidentRules();
     const health=(car.raceHealth ?? 100)/100;
-    return (rules.damage ? (car.isPlayer ? .85+.15*health : .70+.30*health) : 1) *
-      (rules.crashes ? Math.max(car.isPlayer ? .88 : .74,1-(car.crashCount||0)*(car.isPlayer ? .03 : .06)) : 1);
+    return (rules.damage ? (car.isPlayer ? .92+.08*health : .70+.30*health) : 1) *
+      (rules.crashes ? Math.max(car.isPlayer ? .94 : .74,1-(car.crashCount||0)*(car.isPlayer ? .015 : .06)) : 1);
   }
 
   _damageCar(car,amount) {
     if(!this._incidentRules().damage || car.finished || car.dnf || amount<=0) return;
     // Race health is deliberately forgiving: side rubs, walls and crash
     // impacts all use one scale, independently of loss-of-control strain.
-    car.raceHealth=clamp((car.raceHealth ?? 100)-amount*.20,0,100);
+    car.raceHealth=clamp((car.raceHealth ?? 100)-amount*.04,0,100);
     if(car.raceHealth<=0 && !car._zeroHealthHandled) {
       car._zeroHealthHandled=true;
       if(this._incidentRules().crashes) {
@@ -5817,6 +5817,7 @@ function condBar(val) {
 
 // ─── Dashboard ───────────────────────────────────────────────
 function renderDashboard() {
+  const repairCars = game.cars.filter(c => c.races > 0 && c.condition < 100);
   const series   = SERIES[game.currentSeries];
   const race     = currentRace();
   const track    = race ? TRACKS.find(t => t.id === race.trackId) : null;
@@ -5857,6 +5858,12 @@ function renderDashboard() {
     <h2>Dashboard</h2>
     <p>${series.name} <span>Season ${game.season.year}</span></p>
   </div>
+  ${repairCars.length ? `<section class="card mb" id="dashboard-repair-reminder" role="status" aria-label="Repair reminder">
+    <div class="card-header">Repair reminder</div>
+    <div class="card-body"><p>${repairCars.length === 1 ? 'Your car needs repairs' : `${repairCars.length} cars need repairs`} before the next race. Restore vehicle condition in the Garage.</p>
+      <div class="btn-row"><button class="btn btn-warning" onclick="showTab('garage')">Repair cars</button></div>
+    </div>
+  </section>` : ''}
   <div class="cmd-strip">
     <div class="cmd-cell">
       <span class="cmd-label">Championship</span>

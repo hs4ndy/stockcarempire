@@ -12,10 +12,10 @@ test('repeated side force crashes AI sooner; recovery is finite and slower, neve
  assert.equal(run(`(()=>{const e=engine(),a=car(),b=car(true);e.cars=[a,b];for(let i=0;i<8;i++)e._sideContact(a,b,12,1,.1,1);if(!a.spinning||b.spinning)return false;for(let i=0;i<100;i++)e._advanceCrash(a,.05);return !a.spinning&&!a.dnf&&e._healthPace(a)<1;})()`),true);
 });
 test('zero health causes one recoverable blowout only when crashes enabled',()=>{
- assert.equal(run(`(()=>{for(const crashes of [false,true]){const e=engine('pro',{crashes,damage:true}),p=car(true);e.cars=[p];e._damageCar(p,600);if(!!p.spinning!==crashes||p.raceHealth!==0||e._healthPace(p)>=1)return false;e._damageCar(p,10);if((p.crashCount||0)!==(crashes?1:0))return false;}return true;})()`),true);
+ assert.equal(run(`(()=>{for(const crashes of [false,true]){const e=engine('pro',{crashes,damage:true}),p=car(true);e.cars=[p];e._damageCar(p,3000);if(!!p.spinning!==crashes||p.raceHealth!==0||e._healthPace(p)>=1)return false;e._damageCar(p,10);if((p.crashCount||0)!==(crashes?1:0))return false;}return true;})()`),true);
 });
-test('race damage is reduced by 80 percent equally for humans and AI',()=>{
- assert.equal(run(`(()=>{const e=engine();for(const human of [true,false]){const c=car(human);e._damageCar(c,50);if(c.raceHealth!==90||c.spinning)return false;}return true;})()`),true);
+test('race damage uses four percent of raw impact equally for humans and AI',()=>{
+ assert.equal(run(`(()=>{const e=engine();for(const human of [true,false]){const c=car(human);e._damageCar(c,50);if(c.raceHealth!==98||c.spinning)return false;}return true;})()`),true);
 });
 test('disabled damage cannot change health, and bumper nudges cannot start crashes',()=>{
  assert.equal(run(`(()=>{const e=engine('pro',{crashes:true,damage:false}),p=car(true);e.cars=[p];e.player=p;e._damageCar(p,100);for(let i=0;i<100;i++)e._bumpPlayer(1,0);return p.raceHealth===100&&!p.spinning;})()`),true);
@@ -56,5 +56,5 @@ test('condition sparks require below fifty, moving, damage-enabled traffic and f
 });
 
 test('human damage and accumulated crash penalties soften while AI pace stays unchanged',()=>{
- assert.equal(run(`(()=>{const e=engine(),p=car(true),a=car();p.raceHealth=a.raceHealth=0;p.crashCount=a.crashCount=1;return Math.abs(e._healthPace(p)-.85*.97)<1e-9&&Math.abs(e._healthPace(a)-.70*.94)<1e-9;})()`),true);
+ assert.equal(run(`(()=>{const e=engine(),p=car(true),a=car();p.raceHealth=a.raceHealth=0;p.crashCount=a.crashCount=1;return Math.abs(e._healthPace(p)-.92*.985)<1e-9&&Math.abs(e._healthPace(a)-.70*.94)<1e-9;})()`),true);
 });

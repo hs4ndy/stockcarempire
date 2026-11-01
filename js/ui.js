@@ -129,6 +129,7 @@ function condBar(val) {
 
 // ─── Dashboard ───────────────────────────────────────────────
 function renderDashboard() {
+  const repairCars = game.cars.filter(c => c.races > 0 && c.condition < 100);
   const series   = SERIES[game.currentSeries];
   const race     = currentRace();
   const track    = race ? TRACKS.find(t => t.id === race.trackId) : null;
@@ -169,6 +170,12 @@ function renderDashboard() {
     <h2>Dashboard</h2>
     <p>${series.name} <span>Season ${game.season.year}</span></p>
   </div>
+  ${repairCars.length ? `<section class="card mb" id="dashboard-repair-reminder" role="status" aria-label="Repair reminder">
+    <div class="card-header">Repair reminder</div>
+    <div class="card-body"><p>${repairCars.length === 1 ? 'Your car needs repairs' : `${repairCars.length} cars need repairs`} before the next race. Restore vehicle condition in the Garage.</p>
+      <div class="btn-row"><button class="btn btn-warning" onclick="showTab('garage')">Repair cars</button></div>
+    </div>
+  </section>` : ''}
   <div class="cmd-strip">
     <div class="cmd-cell">
       <span class="cmd-label">Championship</span>

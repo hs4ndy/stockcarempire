@@ -247,7 +247,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "4e487f3750d0c30dd8c8d6fea1521d5f001fffd3ed24ededb5c7b60efef96a42"
+      "hash": "99058b7babef672e492df7b7c618f7482c5d7eff198cc0716a0182f8059762e9"
     },
     {
       "name": "_damageCar",
@@ -255,7 +255,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "24997c0a85596932ee32321e682f01a79df0791430e2ca16031c559421710f64"
+      "hash": "f1b0a3f745a732eed7d2656fd571e34014f123038411a83126211f35a6cf2b11"
     },
     {
       "name": "_sideContact",
@@ -549,6 +549,7 @@
   "sourceCommit": "20c3f0c77f0934c085371c2e19c73357fe1c9b58",
   "approvedUpdates": {
     "version111": "Only spark emitter/step, dual HUD and launch labels updated for requested condition visuals.",
-    "version112": "Intentional player penalty/draft and AI-only contact tuning; opening/dual traces refreshed."
+    "version112": "Intentional player penalty/draft and AI-only contact tuning; opening/dual traces refreshed.",
+    "version113": "Requested 80% less condition loss and softer human condition/wreck pace; trace baselines refreshed."
   }
 }
