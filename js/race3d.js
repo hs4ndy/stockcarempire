@@ -1542,7 +1542,9 @@ class Race3DEngine {
 
   _damageCar(car,amount) {
     if(!this._incidentRules().damage || car.finished || car.dnf || amount<=0) return;
-    car.raceHealth=clamp((car.raceHealth ?? 100)-amount,0,100);
+    // Race health is deliberately forgiving: side rubs, walls and crash
+    // impacts all use one scale, independently of loss-of-control strain.
+    car.raceHealth=clamp((car.raceHealth ?? 100)-amount*.20,0,100);
     if(car.raceHealth<=0 && !car._zeroHealthHandled) {
       car._zeroHealthHandled=true;
       if(this._incidentRules().crashes) {

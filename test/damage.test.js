@@ -12,7 +12,10 @@ test('repeated side force crashes AI sooner; recovery is finite and slower, neve
  assert.equal(run(`(()=>{const e=engine(),a=car(),b=car(true);e.cars=[a,b];for(let i=0;i<8;i++)e._sideContact(a,b,12,1,.1,1);if(!a.spinning||b.spinning)return false;for(let i=0;i<100;i++)e._advanceCrash(a,.05);return !a.spinning&&!a.dnf&&e._healthPace(a)<1;})()`),true);
 });
 test('zero health causes one recoverable blowout only when crashes enabled',()=>{
- assert.equal(run(`(()=>{for(const crashes of [false,true]){const e=engine('pro',{crashes,damage:true}),p=car(true);e.cars=[p];e._damageCar(p,120);if(!!p.spinning!==crashes||p.raceHealth!==0||e._healthPace(p)>=1)return false;e._damageCar(p,10);if((p.crashCount||0)!==(crashes?1:0))return false;}return true;})()`),true);
+ assert.equal(run(`(()=>{for(const crashes of [false,true]){const e=engine('pro',{crashes,damage:true}),p=car(true);e.cars=[p];e._damageCar(p,600);if(!!p.spinning!==crashes||p.raceHealth!==0||e._healthPace(p)>=1)return false;e._damageCar(p,10);if((p.crashCount||0)!==(crashes?1:0))return false;}return true;})()`),true);
+});
+test('race damage is reduced by 80 percent equally for humans and AI',()=>{
+ assert.equal(run(`(()=>{const e=engine();for(const human of [true,false]){const c=car(human);e._damageCar(c,50);if(c.raceHealth!==90||c.spinning)return false;}return true;})()`),true);
 });
 test('disabled damage cannot change health, and bumper nudges cannot start crashes',()=>{
  assert.equal(run(`(()=>{const e=engine('pro',{crashes:true,damage:false}),p=car(true);e.cars=[p];e.player=p;e._damageCar(p,100);for(let i=0;i<100;i++)e._bumpPlayer(1,0);return p.raceHealth===100&&!p.spinning;})()`),true);
