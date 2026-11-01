@@ -260,9 +260,11 @@ class Race3DEngine {
   constructor(canvas, config, onComplete) {
     this.canvas       = canvas;
     this.config       = config;
+    const seriesId = config.seriesId || SERIES.find(s => s.fieldSize === config.fieldSize)?.id;
+    const fullDistance = R3D.TRACK_LEN * (seriesId === 'premier' ? 1.25 : 1.15);
     this.raceLength   = Number.isFinite(config.finishDistance) &&
-      config.finishDistance >= 1000 && config.finishDistance <= R3D.TRACK_LEN
-      ? config.finishDistance : R3D.TRACK_LEN;
+      config.finishDistance >= 1000 && config.finishDistance <= fullDistance
+      ? config.finishDistance : fullDistance;
     this.isGrassroots = (config.seriesId || SERIES.find(s => s.fieldSize === config.fieldSize)?.id) === 'grassroots';
     this.speedScale = this.isGrassroots ? 0.9 : 1;
     this.trackHalfWidth = R3D.HALF_W * (this.isGrassroots ? .94 : 1);
@@ -500,7 +502,7 @@ class Race3DEngine {
 
   _buildTrack() {
     const s  = this.scene;
-    const TL = R3D.TRACK_LEN;
+    const TL = Math.max(this.raceLength, R3D.TRACK_LEN);
     const d  = this._dummy;
 
     // Blender-authored straight selected by series. Grassroots has a narrower
@@ -524,7 +526,7 @@ class Race3DEngine {
         alphaTest: 0.35, alphaToCoverage: true }),
     };
     // Visual runout extends past the cameras' 4,000-unit far plane at both
-    // endpoints. Normal races still use the original 15,000-unit finish.
+    // endpoints, including the longer series-specific racing distances.
     const runoutModules = Math.ceil(4200 / track.moduleLength);
     const moduleCount = Math.ceil(TL / track.moduleLength) + 2 * runoutModules;
     this._trackLayout = {length: track.moduleLength, count: moduleCount};
@@ -581,7 +583,7 @@ class Race3DEngine {
     this.environmentGroup.name = 'environment:ground';
     this.environmentGroup.userData = { seriesId: this._grandstandModel.id, frontX: model.frontX, backX: model.backX };
     const runout = Math.ceil(4200 / asset.moduleLength);
-    const count = Math.ceil(R3D.TRACK_LEN / asset.moduleLength) + runout * 2;
+    const count = Math.ceil(Math.max(this.raceLength, R3D.TRACK_LEN) / asset.moduleLength) + runout * 2;
     for (const [name, data] of Object.entries(model.parts)) {
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute('position', new THREE.Float32BufferAttribute(data.position, 3));

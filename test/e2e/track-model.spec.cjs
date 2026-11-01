@@ -68,15 +68,15 @@ for (const [label, viewport, dpr] of [
       // or an off-by-several-units visual finish inherited from the old gantry.
       let finishPaint = true;
       for (const x of [-10.5, -3.5, .5, 3.5, 10.5]) {
-        for (const z of [R3D.TRACK_LEN - .5, R3D.TRACK_LEN + .5]) {
+        for (const z of [e.raceLength - .5, e.raceLength + .5]) {
           ray.set(new THREE.Vector3(x, 1, z), new THREE.Vector3(0, -1, 0));
           const hits = ray.intersectObjects(finish.children);
           finishPaint &&= hits.length > 0 && Math.abs(hits[0].point.y - .014) < .0001;
         }
       }
       return {
-        surface, barriers, width: R3D.TRACK_W, length: R3D.TRACK_LEN,
-        finishPaint, finishAtEnd: finish.position.z === R3D.TRACK_LEN && finish.children.length === 4,
+        surface, barriers, width: R3D.TRACK_W, length: e.raceLength,
+        finishPaint, finishAtEnd: finish.position.z === e.raceLength && finish.children.length === 4,
         noYellowGrid: !startColors.includes(0xf0c020),
         finite: geo.every(g => Object.values(g.attributes).every(a => Array.from(a.array).every(Number.isFinite))),
         indices: geo.every(g => Array.from(g.index.array).every(i => i >= 0 && i < g.attributes.position.count)),
@@ -87,7 +87,7 @@ for (const [label, viewport, dpr] of [
       };
     });
     for (const key of ['surface','barriers','finite','indices','uvs','fenceDepth','finishPaint','finishAtEnd','noYellowGrid']) expect(report[key], key).toBe(true);
-    expect(report.width).toBe(22); expect(report.length).toBe(15000);
+    expect(report.width).toBe(22); expect(report.length).toBe(18750);
     expect(report.meshes).toBe(7); expect(report.trianglesPerModule).toBeLessThan(2500);
 
     for (const z of [120, 7500, 14960, 14990, 15020]) {
