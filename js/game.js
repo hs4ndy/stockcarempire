@@ -327,6 +327,7 @@ function newGame(teamName, driverName, firstCarName) {
     activeSponsors: [],  // sponsor deal ids
     loans: [],           // bank loans currently outstanding
     difficulty: DEFAULT_DIFFICULTY,
+    winsByDifficulty: {},
 
     season: {
       year: 1,
@@ -459,6 +460,13 @@ function applyRaceResults(results) {
 
 // ─── Post-race: update player & cars ─────────────────────────
 function postRaceUpdate(playerResult, earnings, allResults) {
+  // Older saves have no reliable difficulty history. Track only newly
+  // completed player wins, per career; teammate wins do not count here.
+  if (playerResult.position === 1 && !playerResult.dnf) {
+    const difficulty = game.difficulty || DEFAULT_DIFFICULTY;
+    game.winsByDifficulty ||= {};
+    game.winsByDifficulty[difficulty] = (game.winsByDifficulty[difficulty] || 0) + 1;
+  }
   // Money
   game.money += earnings;
 

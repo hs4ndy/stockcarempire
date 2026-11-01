@@ -1267,7 +1267,7 @@ function renderSettings() {
         ${DIFFICULTIES.map(d => `
           <button type="button" class="difficulty-card${d.id === curDiff ? ' selected' : ''}"
                data-diff="${d.id}" aria-pressed="${d.id === curDiff}" onclick="handleSetDifficulty('${d.id}')">
-            <span class="difficulty-name">${d.name}</span>
+            <span class="difficulty-name">${d.name} <span class="difficulty-wins">${game.winsByDifficulty?.[d.id] || 0} ${(game.winsByDifficulty?.[d.id] || 0) === 1 ? 'win' : 'wins'}</span></span>
             <span class="difficulty-blurb">${d.blurb}</span>
           </button>`).join('')}
       </div>

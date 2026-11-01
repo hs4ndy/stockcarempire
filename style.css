@@ -345,6 +345,8 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .difficulty-card:hover { background: var(--panel-3); } .difficulty-card.selected { background: var(--text); color: var(--bg); }
 .difficulty-name { font-size: 18px; font-weight: 600; } .difficulty-blurb { font-size: 14px; color: var(--text-dim); line-height: 1.5; }
 .difficulty-card.selected .difficulty-blurb { color: #454a4e; }
+.difficulty-wins { display: inline-block; margin-left: 8px; font-size: 14px; font-weight: 400; color: var(--text-dim); }
+.difficulty-card.selected .difficulty-wins { color: #454a4e; }
 .quick-series { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
 .quick-series-btn { display: flex; flex-direction: column; gap: 6px; text-align: left; padding: 20px; background: var(--panel-2); border-radius: 6px; transition: background-color var(--t), color var(--t); }
 .quick-series-btn:hover, .quick-series-btn.selected { background: var(--text); color: var(--bg); }

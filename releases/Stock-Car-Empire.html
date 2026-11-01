@@ -364,6 +364,8 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .difficulty-card:hover { background: var(--panel-3); } .difficulty-card.selected { background: var(--text); color: var(--bg); }
 .difficulty-name { font-size: 18px; font-weight: 600; } .difficulty-blurb { font-size: 14px; color: var(--text-dim); line-height: 1.5; }
 .difficulty-card.selected .difficulty-blurb { color: #454a4e; }
+.difficulty-wins { display: inline-block; margin-left: 8px; font-size: 14px; font-weight: 400; color: var(--text-dim); }
+.difficulty-card.selected .difficulty-wins { color: #454a4e; }
 .quick-series { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
 .quick-series-btn { display: flex; flex-direction: column; gap: 6px; text-align: left; padding: 20px; background: var(--panel-2); border-radius: 6px; transition: background-color var(--t), color var(--t); }
 .quick-series-btn:hover, .quick-series-btn.selected { background: var(--text); color: var(--bg); }
@@ -1026,7 +1028,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 103</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 104</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -1973,6 +1975,7 @@ function newGame(teamName, driverName, firstCarName) {
     activeSponsors: [],  // sponsor deal ids
     loans: [],           // bank loans currently outstanding
     difficulty: DEFAULT_DIFFICULTY,
+    winsByDifficulty: {},
 
     season: {
       year: 1,
@@ -2105,6 +2108,13 @@ function applyRaceResults(results) {
 
 // ─── Post-race: update player & cars ─────────────────────────
 function postRaceUpdate(playerResult, earnings, allResults) {
+  // Older saves have no reliable difficulty history. Track only newly
+  // completed player wins, per career; teammate wins do not count here.
+  if (playerResult.position === 1 && !playerResult.dnf) {
+    const difficulty = game.difficulty || DEFAULT_DIFFICULTY;
+    game.winsByDifficulty ||= {};
+    game.winsByDifficulty[difficulty] = (game.winsByDifficulty[difficulty] || 0) + 1;
+  }
   // Money
   game.money += earnings;
 
@@ -6842,7 +6852,7 @@ function renderSettings() {
         ${DIFFICULTIES.map(d => `
           <button type="button" class="difficulty-card${d.id === curDiff ? ' selected' : ''}"
                data-diff="${d.id}" aria-pressed="${d.id === curDiff}" onclick="handleSetDifficulty('${d.id}')">
-            <span class="difficulty-name">${d.name}</span>
+            <span class="difficulty-name">${d.name} <span class="difficulty-wins">${game.winsByDifficulty?.[d.id] || 0} ${(game.winsByDifficulty?.[d.id] || 0) === 1 ? 'win' : 'wins'}</span></span>
             <span class="difficulty-blurb">${d.blurb}</span>
           </button>`).join('')}
       </div>
