@@ -25,7 +25,7 @@ function saveToSlot(slot) {
       teamName: game.teamName,
       series: SERIES[game.currentSeries]?.name || 'N/A',
       year: game.season.year,
-      wins: game.cars.reduce((s, c) => s + (c.wins || 0), 0),
+      wins: [...game.cars,...(game.retiredCars||[])].reduce((s, c) => s + (c.wins || 0), 0),
       savedAt: Date.now(),
     };
     localStorage.setItem(META_KEY, JSON.stringify(meta));
@@ -69,6 +69,8 @@ function loadFromSlot(slot) {
       }
     }
     game = loaded;
+    normalizeVehicleState();
+    retireExhaustedCars();
     currentSlot = slot;
     return true;
   } catch(e) { console.warn('Load failed:', e); return false; }
@@ -123,12 +125,33 @@ function makeCar(name, classId, overrideStats, opts = {}) {
     handling:    stats.handling,
     reliability: stats.reliability,
     condition:   100,       // 0–100; degrades with racing
+    lifetimeHealth: 100,
     appliedUpgrades: [],    // upgrade ids applied
     assignedDriverId: null, // null = unassigned; 'player' = player's seat
     wins: 0,
     races: 0,
     totalPoints: 0,
   };
+}
+
+function normalizeVehicleState() {
+  game.raceRules={crashes:game.raceRules?.crashes!==false,damage:game.raceRules?.damage!==false};
+  game.retiredCars=Array.isArray(game.retiredCars)?game.retiredCars:[];
+  game.cars.forEach(c=>{c.lifetimeHealth=Number.isFinite(c.lifetimeHealth)?clamp(c.lifetimeHealth,0,100):100;});
+}
+
+function retireExhaustedCars() {
+  if(!raceFeatureRules(game.difficulty,game.raceRules).damage) return [];
+  normalizeVehicleState();
+  const retired=game.cars.filter(c=>c.lifetimeHealth<=0);
+  for(const car of retired) {
+    const hire=(game.hiredDrivers||[]).find(h=>h.carId===car.id);
+    game.retiredCars.push({...JSON.parse(JSON.stringify(car)),lastDriver:car.assignedDriverId==='player'?game.driverName:HIREABLE_DRIVERS.find(d=>d.id===hire?.driverId)?.name || 'Unassigned',retiredYear:game.season.year,retiredRace:game.season.raceIndex+1});
+    (game.hiredDrivers||[]).filter(h=>h.carId===car.id).forEach(h=>h.carId=null);
+  }
+  game.cars=game.cars.filter(c=>c.lifetimeHealth>0);
+  if(retired.length) game.pendingRetirementNotice=retired.map(c=>c.name).join(', ');
+  return retired;
 }
 
 function setCarColor(carId, color) {
@@ -297,6 +320,8 @@ function newGame(teamName, driverName, firstCarName) {
     currentSeries: 0,
 
     cars: [firstCar],
+    retiredCars: [],
+    raceRules: {crashes:true,damage:true},
     hiredDrivers: [],    // { driverId, carId }
     staff: [],           // { staffType, name, weeklyCost }
     activeSponsors: [],  // sponsor deal ids
@@ -464,7 +489,10 @@ function postRaceUpdate(playerResult, earnings, allResults) {
   game.cars.forEach(car => {
     const res = car.id === playerResult.carId ? playerResult : byCar.get(car.id);
     if (res) {
-      car.condition = clamp(car.condition - randInt(8, 18), 0, 100);
+      const rules=raceFeatureRules(game.difficulty,game.raceRules);
+      const damageLoss=rules.damage && Number.isFinite(res.raceHealth) ? Math.max(0,car.condition-res.raceHealth) : 0;
+      car.condition = clamp(car.condition - randInt(8, 18) - damageLoss, 0, 100);
+      if(rules.damage) car.lifetimeHealth=clamp((car.lifetimeHealth ?? 100)-2.5*(.9+damageLoss/100+Math.min(res.crashes||0,3)*.15),0,100);
       car.races += 1;
       if (res.position === 1) car.wins += 1;
       car.totalPoints += series.points[res.position - 1] || 0;
@@ -508,6 +536,7 @@ function postRaceUpdate(playerResult, earnings, allResults) {
   game.lastLoanNotes = tickLoans();
 
   // Advance race index
+  retireExhaustedCars();
   game.season.raceIndex += 1;
 }
 
@@ -690,6 +719,7 @@ function buyCar(name) {
   let num = 1;
   while (taken.has(num) && num < 99) num++;
   const car = makeCar(carName, classId, null, { number: num });
+  if(!game.cars.some(c=>c.assignedDriverId==='player')) car.assignedDriverId='player';
   game.cars.push(car);
   saveGame();
   return { ok: true, car };

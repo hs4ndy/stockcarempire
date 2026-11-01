@@ -144,6 +144,7 @@ function r3dRoundelTex(num) {
 
 // ─── Public launcher ─────────────────────────────────────────
 function launch3DRace(config, onComplete) {
+  config={...config,raceRules:config.raceRules || {crashes:true,damage:true}};
   const container = document.getElementById('race-3d-container');
   if (!container) { console.error('race-3d-container not found'); return; }
 
@@ -186,6 +187,7 @@ function launch3DRace(config, onComplete) {
           <div class="r3d-draft-label" id="r3d-draft">Draft</div>
           <div class="r3d-draft-meter"><div class="r3d-draft-fill" id="r3d-draft-fill"></div></div>
         </div>
+      ${!config.practiceTips && raceFeatureRules(config.difficulty,config.raceRules).damage ? '<div class="r3d-health" id="r3d-health" role="progressbar" aria-label="Vehicle health" aria-valuemin="0" aria-valuemax="100"><span>Vehicle health <strong id="r3d-health-value">100%</strong></span><div><i id="r3d-health-fill"></i></div></div>' : ''}
       </div>
 
       <div class="r3d-progress-wrap">
@@ -224,7 +226,7 @@ function launch3DRace(config, onComplete) {
         <div class="dual-player-label">Player ${n} · ${n === 1 ? 'A / S / D' : 'J / K / L'}</div>
         <div class="dual-mirror" id="dual-mirror-${n}"></div>
         ${n === 1 ? '<div class="r3d-order dual-order" id="dual-order-1"></div>' : ''}
-        <div class="dual-data"><span id="dual-pos-${n}"></span><span><strong id="dual-speed-${n}">0</strong> MPH</span><span>Draft <strong id="dual-draft-${n}">0</strong>%</span></div>
+        <div class="dual-data">${raceFeatureRules(config.difficulty,config.raceRules).damage ? `<span class="dual-health" id="dual-health-${n}">Vehicle health 100%</span>` : ''}<span id="dual-pos-${n}"></span><span><strong id="dual-speed-${n}">0</strong> MPH</span><span>Draft <strong id="dual-draft-${n}">0</strong>%</span></div>
       </section>`).join('')}</div><div class="dual-progress" aria-label="Race progress for both players"><span>Start</span><span>Finish</span><div>${[1,2].map(n=>`<i id="dual-progress-${n}" aria-label="Player ${n} progress"></i>`).join('')}</div></div>`);
     document.getElementById('r3d-hint').textContent = 'P1: A / S / D     P2: J / K / L     Esc: Pause';
   }
@@ -713,6 +715,7 @@ class Race3DEngine {
       label:      config.playerName || 'YOU',
       carId:      config.playerCarId || null,
     });
+    this.player.raceHealth=clamp(config.playerHealth ?? 100,0,100);
     this.cars.push(this.player);
 
     const aiEntries = config.aiEntries.slice(0,fieldSize-1);
@@ -739,6 +742,7 @@ class Race3DEngine {
         raceNerve:  entry.raceNerve,
         isContender: entry.isContender,
       }));
+      this.cars[this.cars.length-1].raceHealth=clamp(entry.health ?? 100,0,100);
     }
     if (config.dualPlayer) {
       this.player2 = this.cars.find(c => c.entrantId === 'player2');
@@ -925,6 +929,7 @@ class Race3DEngine {
     // decisions while locked bumper-to-bumper - a big source of the twitching.
     // Both humans read the same pre-step traffic state, regardless of update order.
     this._playerTraffic = this.player2 ? this.cars.filter(c => !c.dnf && !c.finished).map(c => ({ car:c,z:c.z,speed:c.speed })) : null;
+    this._stepContactState(dt);
     this._updatePlayer(dt);
     if (this.player2) this._withSecond(() => this._updatePlayer(dt));
     this._playerTraffic = null;
@@ -940,17 +945,6 @@ class Race3DEngine {
     if (!this.player2) this._updateCamera(dt);
     this._updateHUD(dt);
 
-    const endgameGlobal = this.player.z / (this.raceLength || R3D.TRACK_LEN) >= R3D.ENDGAME_FRAC;
-    const maxWrecks = endgameGlobal ? R3D.MAX_WRECKS + 3 : R3D.MAX_WRECKS;
-    if (this.wreckCount < maxWrecks) {
-      this.wreckCooldown -= dt;
-      if (this.wreckCooldown <= 0) {
-        this._triggerWreck();
-        const minCD = endgameGlobal ? R3D.WRECK_MIN * 0.40 : R3D.WRECK_MIN;
-        const maxCD = endgameGlobal ? R3D.WRECK_MAX * 0.50 : R3D.WRECK_MAX;
-        this.wreckCooldown = minCD + Math.random() * (maxCD - minCD);
-      }
-    }
   }
 
   _updatePaceLap(dt) {
@@ -974,16 +968,7 @@ class Race3DEngine {
   _updatePlayer(dt) {
     const p  = this.player;
     if (p.finished || p.dnf) return;
-    if (p.spinning) {
-      p.spinTimer -= dt;
-      p.mesh.rotation.y += p.spinDir * 4.5 * dt;
-      p.speed = Math.max(15, p.speed - 120 * dt);
-      p.z += p.speed * dt;
-      p.mesh.position.z = p.z;
-      if (p.spinTimer <= 0) { p.spinning = false; p.mesh.rotation.y = 0; }
-      return;
-    }
-
+    if (this._advanceCrash(p,dt)) return;
     // Steering authority falls off slightly with speed (less twitchy at top speed)
     const spdFrac = clamp((p.speed - R3D.SPEED_BASE) / (R3D.SPEED_MAX - R3D.SPEED_BASE), 0, 1);
     const steerAuth = 1 - spdFrac * R3D.STEER_FALLOFF;
@@ -1013,7 +998,7 @@ class Race3DEngine {
     const gap = nextCar ? nextCar.z - startZ : 0;
     const basePace = R3D.SPEED_BASE * (0.83 + p.power * 0.28);
     const normalPace = Math.min(R3D.SPEED_MAX, basePace + this._aeroPace(p) + rubberBand);
-    const tgt = this._playerRecoveryTarget(normalPace, nextCar, gap) * (this.speedScale ?? 1);
+    const tgt = this._playerRecoveryTarget(normalPace, nextCar, gap) * (this.speedScale ?? 1) * this._healthPace(p);
     let braking = false;
     if (this.keys.s) {
       p.speed = Math.max(tgt * 0.38, p.speed - R3D.BRAKE_FORCE * dt);
@@ -1092,27 +1077,12 @@ class Race3DEngine {
       if (car.finished) continue;
 
       if (car.dnf) { car.mesh.rotation.y += 0.35 * dt; continue; }
-      if (car.spinning) {
-        car.spinTimer -= dt;
-        if (car.debrisTimer != null) {
-          car.debrisTimer -= dt;
-          if (car.debrisTimer <= 0) {
-            this._dropDebris(car);
-            car.debrisTimer = null;
-          }
-        }
-        car.mesh.rotation.y += car.spinDir * 3.5 * dt;
-        car.speed = Math.max(8, car.speed - 70 * dt);
-        car.z += car.speed * dt;
-        car.mesh.position.z = car.z;
-        if (car.spinTimer <= 0) { car.dnf = true; car.spinning = false; }
-        continue;
-      }
-
+      if (this._advanceCrash(car,dt)) continue;
       const aggro = this._raceAggression(car);
       const aggroMul = this.diff.aiAggro;
       const mix = (calm, wild) => calm + (wild - calm) * aggro;
       this._chooseAILine(car, aggro, dt);
+      this._shoulderRace(car,dt);
 
       // Difficulty lifts both the AI's pace and its ceiling. Individual power
       // creates natural separation; bounded recovery helps detached cars
@@ -1142,7 +1112,7 @@ class Race3DEngine {
       // Ordinary pack pressure cannot consume the headroom reserved for
       // detached groups. In-pack humans no longer receive the same free pace.
       const ordinary = Math.min(normalPace+catchUp,Math.max(normalPace,leaderPace+6),ahead ? R3D.RECOVERY_MAX : R3D.SPEED_MAX);
-      const tgt = Math.min(Math.max(ordinary,pursuit), R3D.RECOVERY_MAX) * (this.speedScale ?? 1);
+      const tgt = Math.min(Math.max(ordinary,pursuit), R3D.RECOVERY_MAX) * (this.speedScale ?? 1) * this._healthPace(car);
       car.speed += (tgt - car.speed) * (1 - Math.exp(-2.2 * dt));   // frame-rate independent
 
       // ── Lateral motion with inertia ─────────────────────────
@@ -1530,6 +1500,7 @@ class Race3DEngine {
             const side = r3dSmooth((adx - 0.8) / 0.7);
             // Pressure and damping scale with elapsed time; separating cars
             // retain their intended motion. Half strength per solver pass.
+            if(dz<R3D.CAR_SEP_Z*.62) this._sideContact(A,B,closing,overlap*side,step*.5,dir);
             const imp = (overlap * R3D.CONTACT_IMPULSE + closing * 2) * side * step * 0.5;
             const corr = Math.min((R3D.CAR_SEP_X - adx) * 0.5,
               R3D.SEP_X_RATE * step * 0.5) * side;
@@ -1555,6 +1526,117 @@ class Race3DEngine {
     }
     const speedLimit = R3D.RECOVERY_MAX*(this.speedScale ?? 1);
     for (const car of active) car.speed=Math.min(car.speed,speedLimit);
+  }
+
+  _incidentRules() {
+    if(this._raceFeatures) return this._raceFeatures;
+    if(this.config?.practiceTips || !this.config?.raceRules) return {crashes:false,damage:false};
+    return this._raceFeatures=raceFeatureRules(this.config.difficulty || this.diff?.id,this.config.raceRules);
+  }
+
+  _healthPace(car) {
+    const rules=this._incidentRules();
+    return (rules.damage ? .70+.30*(car.raceHealth ?? 100)/100 : 1) *
+      (rules.crashes ? Math.max(.74,1-(car.crashCount||0)*.06) : 1);
+  }
+
+  _damageCar(car,amount) {
+    if(!this._incidentRules().damage || car.finished || car.dnf || amount<=0) return;
+    car.raceHealth=clamp((car.raceHealth ?? 100)-amount,0,100);
+    if(car.raceHealth<=0 && !car._zeroHealthHandled) {
+      car._zeroHealthHandled=true;
+      if(this._incidentRules().crashes) {
+        if(car.wheels?.[0]) car.wheels[0].scale.set(1,.55,.8);
+        this._beginCrash(car,Math.sign(car.x)||1,'blowout');
+      }
+    }
+  }
+
+  _sideContact(a,b,closing,pressure,dt,dir) {
+    const rules=this._incidentRules();if(!rules.crashes && !rules.damage) return;
+    // Bumper drafts never call this path. Brief/light rubs produce negligible
+    // strain; repeated sustained lateral force builds toward loss of control.
+    const strain=(Math.max(0,closing-1)*3+pressure*1.5)*dt;
+    for(const [car,side] of [[a,-dir],[b,dir]]) {
+      if(car.spinning || car._crashGrace>0) continue;
+      this._damageCar(car,(Math.max(0,closing-1)*5+pressure*.8)*dt);
+      car.sideStrain=(car.sideStrain||0)+strain;car._recentSide=.5;
+      const threshold=this._crashThreshold(car);
+      if(rules.crashes && car.sideStrain>=threshold) this._beginCrash(car,side,'side contact');
+    }
+  }
+
+  _crashThreshold(car) {
+    if(car.isPlayer) return 62;
+    return this.config?.seriesId==='grassroots' ? 10 : this.config?.seriesId==='challenger' ? 4 : 7;
+  }
+
+  _beginCrash(car,side,cause) {
+    if(!this._incidentRules().crashes || car.spinning || car.finished || car.dnf || car._crashGrace>0) return false;
+    if(cause==='collected' && ((this._collectedCount||0)>=2 || this.cars.filter(c=>c.spinning).length>=3)) return false;
+    if(cause==='collected') this._collectedCount=(this._collectedCount||0)+1;
+    car.spinning=true;car._crashPhase='veer';car._veerTime=.85;car.spinTimer=2.5;car.spinDir=side||1;
+    car.crashCount=(car.crashCount||0)+1;car.sideStrain=0;car._crashCause=cause;
+    this.wreckCount=(this.wreckCount||0)+1;
+    this._damageCar(car,cause==='blowout'?0:18);
+    if(cause==='blowout' && car.wheels?.[0]) car.wheels[0].scale.set(1,.55,.8);
+    if(car.isPlayer) this.camShake=Math.max(this.camShake||0,.5);
+    return true;
+  }
+
+  _advanceCrash(car,dt) {
+    if(!car.spinning) return false;
+    if(!this._incidentRules().crashes) {car.spinning=false;car._crashPhase=null;return false;}
+    if(car._crashPhase==='veer') {
+      car._veerTime-=dt;car.x+=car.spinDir*14*dt;car[car.isPlayer?'lv':'lvx']=car.spinDir*14;
+      car.speed=Math.max(45,car.speed-80*dt);
+      car.mesh.rotation.y=car.spinDir*.35;
+      if(car._veerTime<=0) car._crashPhase='spin';
+    } else {
+      car.spinTimer=(car.spinTimer ?? 2.5)-dt;car.mesh.rotation.y+=car.spinDir*4.5*dt;
+      car.speed=Math.max(30,car.speed-65*dt);
+      if(car.spinTimer<=0) {
+        car.spinning=false;car._crashPhase=null;car._crashGrace=5;car.mesh.rotation.y=0;
+        car.lv=car.lvx=0;car.targetX=clamp(car.x,-6,6);
+      }
+    }
+    car.z+=car.speed*dt;car.mesh.position.set(car.x,0,car.z);
+    return true;
+  }
+
+  _stepContactState(dt) {
+    const rules=this._incidentRules();
+    if(!rules.crashes && !rules.damage) return;
+    for(const car of this.cars) {
+      car._crashGrace=Math.max(0,(car._crashGrace||0)-dt);
+      car._recentSide=Math.max(0,(car._recentSide||0)-dt);
+      if(!car._recentSide) car.sideStrain=Math.max(0,(car.sideStrain||0)-.35*dt);
+      if(rules.damage && (car.raceHealth ?? 100)<=0 && !car._zeroHealthHandled) this._damageCar(car,.001);
+    }
+    if(!rules.crashes) return;
+    // A car broadside in a spin can collect traffic; normal front/rear drafts
+    // do not count. Grace and pair cooldowns bound chain reactions.
+    for(const wreck of this.cars.filter(c=>c.spinning)) for(const car of this.cars) {
+      if(car===wreck || car.spinning || car.finished || car.dnf || car._crashGrace>0 || car._recentSide>0) continue;
+      if(Math.abs(car.x-wreck.x)<2 && Math.abs(car.z-wreck.z)<3.5 && Math.abs(Math.sin(wreck.mesh.rotation.y))>.45) {
+        this._damageCar(car,14);car._recentSide=1;
+        car.sideStrain=(car.sideStrain||0)+(car.isPlayer?18:25);
+        car.speed*=.8;
+        if(car.sideStrain>=this._crashThreshold(car)) this._beginCrash(car,Math.sign(car.x-wreck.x)||1,'collected');
+      }
+    }
+  }
+
+  _shoulderRace(car,dt) {
+    if(!this._incidentRules().crashes || car.z<1000 || car.spinning) return;
+    car._shoulderWait=Math.max(0,(car._shoulderWait||0)-dt);
+    if(car._shoulderTime>0) {car._shoulderTime-=dt;car.targetX=car._shoulderTarget;return;}
+    if(car._shoulderWait>0 || Math.random()>.10*dt*this.diff.aiAggro) return;
+    const other=this.cars.filter(c=>c!==car && !c.isPlayer && !c.spinning && !c.dnf && !c.finished && Math.abs(c.z-car.z)<2 && Math.abs(c.x-car.x)>1.5 && Math.abs(c.x-car.x)<3).sort((a,b)=>Math.abs(a.x-car.x)-Math.abs(b.x-car.x))[0];
+    if(!other) return;
+    car._shoulderWait=8;car._shoulderTime=.8;
+    car._shoulderTarget=clamp(other.x-Math.sign(other.x-car.x)*1.1,-7.5,7.5);
+    car.targetX=car._shoulderTarget;
   }
 
   _wallExtent(car,side=1) {
@@ -1590,6 +1672,11 @@ class Race3DEngine {
       // Inelastic normal response plus tangential scraping. Never grant speed
       // at the wall, and never penalize a car whose body has not reached it.
       car.speed=Math.max(0,car.speed-(impact ? normal*.22 : 0)-(2+car.speed*.055+normal*.65)*dt);
+      if(impact) {
+        this._damageCar(car,normal*.85);
+        if(car._crashPhase==='veer') {car._crashPhase='spin';car.spinTimer=2.5;}
+      }
+      if(!car.spinning) this._damageCar(car,(normal*.25+.4)*dt);
       car._wallContact=true;
       if(car.isPlayer) this.camShake=Math.max(this.camShake||0,Math.min(.5,normal*.025));
       if(car.speed>25 && !car._sparkWait) {
@@ -1671,19 +1758,9 @@ class Race3DEngine {
     // made a harmless rub turn into a sudden sideways launch.
     p.speed = Math.max(p.speed * (1 - clamp(severity * 0.004, 0, 0.025)), 80);
     this.camShake = Math.max(this.camShake, 0.2);
-    if (severity > R3D.LAT_MAX * 0.95) {
-      this._spinPlayer(1.6, pushDir, 1.1);
-      this._warn('SPIN OUT');
-    }
   }
 
-  _spinPlayer(duration, dir, shake) {
-    const p = this.player;
-    if (p.spinning) return;
-    p.spinning = true; p.spinTimer = duration; p.spinDir = dir || 1;
-    p.speed = 20;
-    this.camShake = Math.max(this.camShake, shake);
-  }
+  _spinPlayer(duration, dir, shake) { this._beginCrash(this.player,dir,'contact'); }
 
   // Visual-only: roll the wheels at road speed
   _animateCars(dt) {
@@ -1813,34 +1890,15 @@ class Race3DEngine {
       label:    c.label,
       teamName: c.teamName || null,
       teamColor: r3dHex(c.hex),
+      raceHealth: c.raceHealth ?? 100,
+      crashes: c.crashCount || 0,
       position: i + 1,
       dnf:      !!c.dnf,
     }));
   }
 
-  _triggerWreck() {
-    const p = this.player;
-    // Budget for the player's closing speed even if the victim stops dead.
-    const notice = Math.max(350, p.speed * R3D.WRECK_NOTICE);
-    const lanes = [-6, 0, 6];
-    const cands = this.cars.filter(c =>
-      !c.isPlayer && !c.spinning && !c.finished && !c.dnf &&
-      c.z > p.z + notice && c.z < (this.raceLength || R3D.TRACK_LEN) - notice &&
-      lanes.some(x => Math.abs(c.x - x) > 4 &&
-        !this.wrecks.some(w => Math.abs(w.x - x) < 3 && Math.abs(w.z - c.z) < 100) &&
-        !this.cars.some(o => o !== c && o.spinning && Math.abs(o.x - x) < 3 && Math.abs(o.z - c.z) < 100)));
-    if (!cands.length) return;
-
-    this.wreckCount++;
-    const victim = cands[Math.floor(Math.random() * cands.length)];
-    victim.spinning = true;
-    victim.spinTimer = 4;
-    victim.spinDir = Math.random() > 0.5 ? 1 : -1;
-    victim.debrisTimer = 1.2;
-    // Warn on initiation, not after a wall-clock timeout. The simulation timer
-    // below stops during pause and cannot spawn debris in a subsequent race.
-    this._warn('WRECK AHEAD - FIND A CLEAR LANE');
-  }
+  // Kept as a harmless compatibility hook; no timer-generated wrecks.
+  _triggerWreck() {}
 
   _dropDebris(car) {
     const wx = car.x, wz = car.z;
@@ -2011,6 +2069,8 @@ class Race3DEngine {
 
   // ── HUD ──────────────────────────────────────────────────────
   _updateHUD(dt) {
+    const health=Math.ceil(this.player.raceHealth ?? 100), bar=document.getElementById('r3d-health');
+    if(bar){bar.classList.toggle('low',health<=25);bar.setAttribute('aria-valuenow',health);document.getElementById('r3d-health-value').textContent=health+'%';document.getElementById('r3d-health-fill').style.transform=`scaleX(${health/100})`;}
     if (this.player2) { this._updateDualHUD(dt); return; }
     const p = this.player;
 
@@ -2149,6 +2209,7 @@ class Race3DEngine {
     });
     [this.player,this.player2].forEach((p,i)=>{
       const n=i+1, pos=ranked.indexOf(p)+1;
+      const health=document.getElementById(`dual-health-${n}`);if(health)health.textContent=`Vehicle health ${Math.ceil(p.raceHealth ?? 100)}%`;
       document.getElementById(`dual-pos-${n}`).textContent = p.finished ? `Finished P${pos}` : `P${pos} / ${this.cars.length}`;
       document.getElementById(`dual-speed-${n}`).textContent = Math.round(p.speed*.78+33*(this.speedScale ?? 1));
       document.getElementById(`dual-draft-${n}`).textContent = Math.round(clamp((p.draftMomentum || 0)/R3D.AERO_MAX,0,1)*100);

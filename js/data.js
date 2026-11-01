@@ -2,6 +2,12 @@
 // STOCK CAR EMPIRE - Game Data Constants
 // ============================================================
 
+// Preferences persist across difficulty changes; easy modes always mask them.
+function raceFeatureRules(difficulty, preferences = {}) {
+  const eligible=['semipro','pro','allout'].includes(difficulty);
+  return {crashes:eligible && preferences.crashes!==false,damage:eligible && preferences.damage!==false};
+}
+
 const SERIES = [
   {
     id: 'grassroots',

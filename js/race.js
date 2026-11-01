@@ -24,6 +24,15 @@ function simulateRace({ playerCarId, trackId }) {
 
   // --- Run the simulation in 5 phases ---
   const phases = ['start', 'early', 'mid', 'late', 'finish'];
+  const featureRules=raceFeatureRules(game.difficulty,game.raceRules);
+  // Abstract simulation has no collision geometry. One possible recoverable
+  // contact incident per event replaces independent per-car DNF lotteries.
+  if(featureRules.crashes && Math.random()<.40) {
+    const rivals=entries.filter(e=>!e.isPlayer);
+    const victim=pick(rivals);
+    if(victim) {victim.simCrashPhase=pick(['early','mid','late']);}
+  }
+  if(featureRules.crashes && Math.random()<.01) entries.find(e=>e.isPlayer).simCrashPhase='mid';
   const events  = [];
 
   // Starting grid (sorted by perf with some qualifying randomness).
@@ -91,6 +100,8 @@ function simulateRace({ playerCarId, trackId }) {
     teamColor:   e.teamColor,
     position:    e.position,
     dnf:         e.dnf,
+    raceHealth: featureRules.damage ? clamp((game.cars.find(c=>c.id===e.carId)?.condition ?? 100)-(e.damageTaken||0),0,100) : undefined,
+    crashes: e.crashes||0,
     isPlayer:    e.isPlayer,
     points:      series.points[e.position - 1] || 0,
     prize:       e.dnf ? Math.round(series.prize[Math.min(e.position - 1, series.prize.length - 1)] * 0.4)
@@ -363,19 +374,14 @@ function runPhase(entries, phase, track, currentLeader, cautionCount) {
     const momentum = e.position ? (fieldN - e.position) / fieldN * 6 : 0;
     const scatter = e.isContender ? 5 : 10;
     e.phaseScore = e.perfScore + rand(-scatter, scatter) + gridEdge + momentum;
-    // Reliability check - DNF risk
-    const relRisk = e.reliability !== undefined ? e.reliability : (e.syntheticPower || 0.5) * 80 + 30;
-    const dnfChance = clamp((100 - relRisk) / 1000, 0.005, 0.06);
-    if (Math.random() < dnfChance) {
-      e.dnf    = true;
-      e.dnfLap = randInt(track.laps * 0.2, track.laps * 0.9);
-      events.push({
-        phase,
-        type:     'dnf',
-        text:     pick(RACE_EVENTS.crash).replace('{car}', e.displayName.split(' / ')[0]),
-        isPlayer: e.isPlayer,
-      });
+    if(e.simCrashPhase===phase) {
+      e.crashes=1;e.damageTaken=18;e.incidentPenalty=14;
+      events.push({phase,type:'contact',text:`${e.displayName} spins after contact, recovers and rejoins at reduced pace.`,isPlayer:e.isPlayer});
     }
+    e.phaseScore-=(e.incidentPenalty||0);
+    const features=raceFeatureRules(game.difficulty,game.raceRules);
+    if(features.damage) e.damageTaken=(e.damageTaken||0)+rand(0,2);
+
   });
 
   // Sort by phaseScore
@@ -383,7 +389,7 @@ function runPhase(entries, phase, track, currentLeader, cautionCount) {
   active.forEach((e, i) => { e.position = i + 1; });
 
   // --- Caution flag (random, less likely late) ---
-  const cautionChance = phase === 'finish' ? 0.10 : 0.25;
+  const cautionChance = raceFeatureRules(game.difficulty,game.raceRules).crashes ? (phase === 'finish' ? 0.04 : 0.08) : 0;
   if (Math.random() < cautionChance && cautionCount < 4) {
     caution = true;
     events.push({

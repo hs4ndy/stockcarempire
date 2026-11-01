@@ -94,7 +94,7 @@ function runRearStart(seed, fieldSize = 36, difficulty = 'beginner', strategy = 
     if (${!!options.openingPace}) cars.forEach(c=>c.speed=65*${options.seriesId==='grassroots' ? .9 : 1});
     const engine = Object.create(Race3DEngine.prototype);
     Object.assign(engine, {
-      config:{qualifyAI:${!!options.careerFixture}},cars, player, diff: difficultyById('${difficulty}'),
+      config:{seriesId:'${options.seriesId||'premier'}',qualifyAI:${!!options.careerFixture},difficulty:'${difficulty}',raceRules:${JSON.stringify(options.raceRules || {crashes:false,damage:false})}},cars, player, diff: difficultyById('${difficulty}'),
       speedScale: ${options.seriesId==='grassroots' ? .9 : 1},
       keys: { a: false, d: false, s: false },
       wrecks: [], wreckCount: 0, wreckCooldown: Infinity, camShake: 0,
@@ -170,6 +170,9 @@ function runRearStart(seed, fieldSize = 36, difficulty = 'beginner', strategy = 
       if(samples[i].nearestGap<=120 && detachedAt!==null){rejoinTimes.push(i-detachedAt);detachedAt=null;}
     }
     return {
+      aiCrashes: cars.filter(c=>!c.isPlayer).reduce((n,c)=>n+(c.crashCount||0),0),
+      playerCrashes: player.crashCount||0,
+      playerHealth: player.raceHealth ?? 100,
       careerPower,installedParts,contenderFinishes:cars.filter(c=>c.isContender).map(c=>engine.finalOrder().find(r=>r.entrantId===c.entrantId).position),dropoutReleased,usefulTowAfterRelease,
       detachedSeconds:samples.filter(s=>s.nearestGap>120 && Number.isFinite(s.nearestGap)).length,
       unrecovered:detachedAt!==null,rejoinTimes,

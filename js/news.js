@@ -102,6 +102,6 @@ function finishRaceNews() {
   document.querySelectorAll('.screen').forEach(s=>s.inert=false);
   if(mode==='quick' || !game) { showScreen('intro'); document.getElementById('btn-quick-race')?.focus(); return; }
   showScreen('game'); updateHeader(); renderTab('dashboard');
-  reportLoanNotes(); checkSaveReminder();
+  reportLoanNotes(); if(!showRetirementNotice()) checkSaveReminder();
   document.getElementById('btn-hdr-menu')?.focus();
 }

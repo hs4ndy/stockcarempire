@@ -579,26 +579,10 @@ test('All-Out boosts simulated rivals without changing teammates or economy',()=
   assert.equal(allout.teammate,pro.teammate);assert.equal(allout.money,pro.money);
 });
 
-test('incidents require advance warning and harmless rubbing never randomly spins the player', () => {
-  const context = physicsContext();
-  const result = readJson(context, `(() => {
-    const p = car('player', 0, 1000, 200), near = car('near', 0, 1100), far = car('far', 0, 1800);
-    const e = engine([p, near]); const warnings = []; e._warn = msg => warnings.push(msg);
-    e._triggerWreck();
-    const rejected = e.wreckCount === 0;
-    e.cars.push(far); e._triggerWreck();
-    for (let i = 0; i < 500; i++) e._bumpPlayer(1, 0);
-    return { rejected, farSpins: far.spinning, nearSpins: near.spinning,
-      playerSpins: p.spinning, warnings: warnings.length, speed: p.speed };
-  })()`);
-  assert.equal(result.rejected, true);
-  assert.equal(result.farSpins, true);
-  assert.equal(result.nearSpins, false);
-  assert.equal(result.playerSpins, false);
-  assert.equal(result.warnings, 1);
-  assert.equal(result.speed, 200);
+test('legacy timer wreck hook cannot create incidents',()=>{
+ const c=makeContext();
+ vm.runInContext(`const e=Object.create(Race3DEngine.prototype);e.cars=[];e.wreckCount=0;e._triggerWreck();if(e.wreckCount!==0)throw Error('timer wreck');`,c);
 });
-
 test('seeded full races retain finite bounded motion and unique final classifications', () => {
   for (const difficulty of ['beginner', 'pro', 'allout']) {
     for (const seed of [3, 71]) {

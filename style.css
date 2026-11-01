@@ -955,3 +955,14 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .race-news-modal .modal-body { overscroll-behavior: contain; }
 .race-news-modal .race-news-article h2 { font-size: clamp(30px, 4vw, 40px); }
 .race-news-modal .race-news-copy { font-size: 16px; }
+.r3d-health { padding: 0 12px 10px; font-size: 12px; }
+.r3d-health > span { display: flex; justify-content: space-between; margin-bottom: 5px; }
+.r3d-health > div { height: 4px; background: var(--line); }
+.r3d-health i { display: block; height: 100%; background: var(--good); transform-origin: left; }
+.r3d-health.low i { background: var(--accent); }
+.race-rule-controls .form-hint { display: block; margin-top: 5px; font-weight: 400; }
+.race-rule-controls input { accent-color: var(--accent-solid); flex: none; }
+.graveyard-car h4 { font: 700 26px/1.2 var(--font-display); }
+.graveyard-car { overflow-wrap: anywhere; }
+.graveyard-car + .graveyard-car { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--line); }
+.dual-data { flex-wrap: wrap; justify-content: center; width: max-content; max-width: calc(100% - 24px); white-space: normal; }

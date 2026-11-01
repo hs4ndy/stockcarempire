@@ -149,7 +149,7 @@ Before the October 8 redesign commit, remote tip was verified at `5af567f`. Hist
 
 This replaces the obsolete September 5 Claude handoff. `HANDOFF_SOURCE.md` remains the historical `ca0245c` snapshot, not current source. Git preserves the old handoff. Its claims about missing tooling/tests/assets, stub-only rendering, fonts, deployment uncertainty, and tutorial absence are stale.
 
-Version rule (user request, 2026-10-29): Main-menu footer currently BETA / VERSION 101. Increment this displayed number by one with each subsequent committed game update; update source and offline releases together. Treat this as the project's display counter, not a verified Git-history count.
+Version rule (user request, 2026-10-29): Main-menu footer currently BETA / VERSION 102. Increment this displayed number by one with each subsequent committed game update; update source and offline releases together. Treat this as the project's display counter, not a verified Git-history count.
 
 VERSION94 initial tuning implemented2026-10-30. Balance acceptance failed: see docs/rebalance-v94-results.md and vault Sessions/2026-10-30 - Version94 fair racing.md for measured shortfalls, actual checks and delivery. Next committed game update increments footer to95. Detailed continuity remains at C:\Users\harri\OneDrive\Documents\vaults\stockcarempire.
 
@@ -164,3 +164,5 @@ VERSION98: Career-only scrolling Race News modal. Gavin Turnage is photographer 
 VERSION100: Shared model/track-derived wall contact replaces proximity brush penalty/AI clamp; bounded sparks, no wall message or persistent damage. See docs/wall-contact.md and vault Sessions/2026-10-31 - Version100 wall contact.md. Next101.
 
 VERSION101: Convex support hulls from actual runtime bodies/wheels remove empty box corner contact. Wall planes verified, sparks heavily intensified (384 cap/one draw). See docs/wall-contact.md and vault Sessions/2026-10-31 - Version101 precise walls and stronger sparks.md. Next102.
+
+VERSION102: Eligible-mode contact crashes recover instead of timer/DNF wrecks; race health, one damage/lifetime switch, approximately40-start permanent life, retirement/graveyard and replacement flow. Nine damage checks,101-test suite,24 targeted browser scenarios plus final offline5 passed. See docs/crashes-and-health.md and vault Sessions/2026-10-31 - Version102 crashes and vehicle health.md. Next103.

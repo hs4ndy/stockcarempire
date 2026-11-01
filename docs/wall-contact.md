@@ -10,4 +10,6 @@ No wall text warning. Human impact can shake the camera. Sparks are simulation-t
 
 No persistent damage, save schema, repair/economy changes or new classification rules. Future in-race car damage was mentioned by the user and explicitly deferred; no implementation commitment added.
 
+VERSION102 supersedes that deferral: optional race health now consumes wall-impact/scraping contact and feeds Career repairable condition/lifetime wear. The VERSION101 hull geometry/sparks remain. See crashes-and-health.md for current feature rules and data migration.
+
 Checks: two contact unit cases (human/AI, both walls, proximity/impact/release, asymmetric model box/yaw/roll); browser model/wall geometry and bounded sparks in all series; existing close-traffic mirror test; existing racing regressions. Session/vault records contain final run totals and delivery. Real hardware spark readability and subjective impact/friction feel still need player feedback.

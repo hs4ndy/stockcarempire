@@ -101,7 +101,7 @@ function resultName(r) {
 }
 
 // ─── Stat bar HTML ────────────────────────────────────────────
-function statBar(label, value, max = 100, color = '') {
+function statBar(label, value, max = 100, color = '', suffix = '') {
   const pct = Math.round((value / max) * 100);
   const cls = color || (pct >= 70 ? 'bar-green' : pct >= 40 ? 'bar-yellow' : 'bar-red');
   return `
@@ -110,7 +110,7 @@ function statBar(label, value, max = 100, color = '') {
       <div class="stat-bar-wrap">
         <div class="stat-bar ${cls}" style="width:${pct}%"></div>
       </div>
-      <span class="stat-value">${value}</span>
+      <span class="stat-value">${value}${suffix}</span>
     </div>`;
 }
 
@@ -345,6 +345,7 @@ function renderGarage() {
       </details>
       <div class="car-stats">
         ${condBar(car.condition)}
+        ${raceFeatureRules(game.difficulty,game.raceRules).damage ? statBar("Lifetime health (permanent)", Math.ceil((car.lifetimeHealth ?? 100)*10)/10,100,'','%') : ""}
       </div>
       <details class="ui-details">
         <summary>Performance and race record</summary>
@@ -366,8 +367,10 @@ function renderGarage() {
   return `
   <div class="page-header">
     <h2>Garage</h2>
+    <button class="btn btn-secondary" onclick="showVehicleGraveyard()">Vehicle Graveyard (${(game.retiredCars||[]).length})</button>
     <button class="btn btn-primary" onclick="showTab('market')">Browse Cars</button>
   </div>
+  ${game.cars.length ? '' : '<div class="card"><p>No active cars. Buy a replacement in Market. Loans are available if you need funds.</p></div>'}
   <div class="car-grid">${carCards}</div>`;
 }
 
@@ -484,6 +487,7 @@ function renderTeam() {
         </div>
         <div class="staff-meta muted-text">
           ${car ? `#${car.number || 1} ${car.name}` : 'Unassigned'}
+          ${!car ? `<select class="form-select" aria-label="Assign car to ${d.name}" onchange="handleAssignDriverCar('${d.id}',this.value)"><option value="">Assign another car</option>${game.cars.filter(c=>c.assignedDriverId!=='player'&&!hireForCar(c.id)).map(c=>`<option value="${c.id}">#${c.number} ${c.name}</option>`).join('')}</select>` : ''}
         </div>
         <details class="driver-development"><summary>Development</summary>
           <p>Aggression ${d.aggression} · Potential ${ceiling} · ${h.racesRun || 0} races run</p>
@@ -1123,7 +1127,7 @@ function renderCareerStats() {
   // All-time = every completed season plus what is banked this year
   const pastWins  = hist.reduce((s, h) => s + (h.wins || 0), 0);
   const allWins   = pastWins + seasonWins;
-  const allRaces  = game.cars.reduce((s, c) => s + (c.races || 0), 0);
+  const allRaces  = [...game.cars,...(game.retiredCars||[])].reduce((s, c) => s + (c.races || 0), 0);
   const titles    = game.titles || hist.filter(h => h.champion).length;
   const seasons   = hist.length;
   const earnings  = game.season.calendar
@@ -1270,6 +1274,7 @@ function renderSettings() {
     </div>
   </div>
 
+  <div class="card mb"><div class="card-header">Crashes and Vehicle Health</div><div class="card-body">${renderRaceRuleControls(curDiff,game.raceRules,'career')}</div></div>
   <div class="card mb">
     <div class="card-header">Auto Save</div>
     <div class="card-body">
@@ -1400,6 +1405,7 @@ function renderQuickRaceModal() {
               <span class="quick-series-meta">${s.fieldSize}-car field · ${s.description}</span>
             </button>`).join('')}
         </div>
+        <section id="quick-race-rules">${renderRaceRuleControls(quickRaceDifficulty,quickRaceRules,'quick')}</section>
         <div class="card-header mt">Players</div>
         <div class="quick-player-mode" role="group" aria-label="Player mode">
           <button class="btn" data-players="1" aria-pressed="${quickRacePlayers === 1}" onclick="setQuickRacePlayers(1)">Single player</button>
@@ -1419,4 +1425,16 @@ function renderQuickRaceModal() {
 // ─── Listeners wired after each tab render ───────────────────
 function attachTabListeners(tabName) {
   // Nothing extra for most tabs; specific interactions are via onclick attributes
+}
+
+function renderRaceRuleControls(difficulty,preferences={},scope='career') {
+  const eligible=['semipro','pro','allout'].includes(difficulty);
+  return `<div class="race-rule-controls"><p class="section-copy">${eligible ? 'Crashes recover at reduced performance. Normal front/rear drafting does not trigger side-contact crashes.' : 'Crashes and vehicle health are unavailable on Beginner and Amateur. Your preferences return on higher difficulties.'}</p>
+    <label class="radio-row"><input type="checkbox" data-race-rule="crashes" ${eligible&&preferences?.crashes!==false?'checked':''} ${eligible?'':'disabled'} onchange="handleRaceRule('crashes',this.checked,'${scope}')"><span>Contact crashes<span class="form-hint">Repeated aggressive side contact can cause recoverable wrecks. Off also prevents zero-health spinouts.</span></span></label>
+    <label class="radio-row"><input type="checkbox" data-race-rule="damage" ${eligible&&preferences?.damage!==false?'checked':''} ${eligible?'':'disabled'} onchange="handleRaceRule('damage',this.checked,'${scope}')"><span>Vehicle damage${scope==='career'?' and lifetime wear':''}<span class="form-hint">Hits lower race health and performance.${scope==='career'?' Repairs restore condition, not lifetime health. A typical car is intended to last about 40 races; rough treatment shortens its life.':''}</span></span></label></div>`;
+}
+function renderVehicleGraveyard() {
+ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const cars=(game.retiredCars||[]).map(c=>`<article class="graveyard-car"><h4>#${esc(c.number)} ${esc(c.name)}</h4><p class="muted-text">${esc(CAR_CLASSES[c.classId]?.name || c.classId)} · Retired in Year ${esc(c.retiredYear)}, race ${esc(c.retiredRace)}</p><div class="team-stat"><span>Last driver</span><span>${esc(c.lastDriver||'Not recorded')}</span></div><div class="team-stat"><span>Lifetime health</span><span>0%</span></div>${['speed','handling','reliability','condition','races','wins','totalPoints'].map(k=>`<div class="team-stat"><span>${{totalPoints:'Career points',speed:'Speed',handling:'Handling',reliability:'Reliability',condition:'Final condition',races:'Races',wins:'Wins'}[k]}</span><span>${esc(Math.round(c[k]||0))}</span></div>`).join('')}<p>Upgrades: ${(c.appliedUpgrades||[]).map(id=>esc(CAR_CLASSES[c.classId]?.upgrades.find(u=>u.id===id)?.name || id)).join(', ') || 'None'}</p></article>`).join('');
+ return `<div class="modal-overlay" id="graveyard-modal" role="dialog" aria-modal="true" aria-labelledby="graveyard-title"><div class="modal modal-wide"><div class="modal-header"><h3 id="graveyard-title">Vehicle Graveyard</h3><button class="btn btn-ghost" onclick="closeVehicleModal('graveyard-modal')">Close</button></div><div class="modal-body">${cars || '<p>No retired vehicles. Cars that reach zero lifetime health will be remembered here.</p>'}</div></div></div>`;
 }

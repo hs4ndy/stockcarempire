@@ -25,6 +25,7 @@ function enterGame() {
     updateHeader();
     showTab('dashboard');
     offerCareerTutorial();
+    showRetirementNotice();
   } catch (e) {
     console.error('Failed to load game UI:', e);
     toast('Save file could not be loaded. Starting fresh.', 'error');
@@ -124,6 +125,7 @@ function showQuickRaceScreen() {
 
 // Quick Race difficulty is chosen in the modal before launching
 let quickRaceDifficulty = DEFAULT_DIFFICULTY;
+const quickRaceRules={crashes:true,damage:true};
 let quickRaceSeries = null;
 let quickRacePlayers = 1;
 const quickRaceCars = [{number: 1, color: '#e8001d'}, {number: 2, color: '#58a6ff'}];
@@ -149,6 +151,7 @@ function setQuickRaceCar(index, key, value) {
 
 function setQuickRaceDifficulty(id) {
   quickRaceDifficulty = id;
+  const ruleRoot=document.getElementById("quick-race-rules");if(ruleRoot) ruleRoot.innerHTML=renderRaceRuleControls(id,quickRaceRules,"quick");
   document.querySelectorAll('#quick-race-modal .difficulty-card').forEach(el => {
     el.classList.toggle('selected', el.dataset.diff === id);
     el.setAttribute('aria-pressed', String(el.dataset.diff === id));
@@ -193,7 +196,7 @@ function handleStartQuickRace(fieldSize) {
   launch3DRace(
     { playerColor: quickRaceCars[0].color, playerNumber: quickRaceCars[0].number, playerName: quickRacePlayers === 2 ? 'PLAYER 1' : 'YOU', dualPlayer: quickRacePlayers === 2, playerPower: 0.75, fieldSize,
       seriesId: SERIES.find(s => s.fieldSize === fieldSize)?.id || 'grassroots',
-      difficulty: quickRaceDifficulty, aiEntries },
+      difficulty: quickRaceDifficulty, raceRules:{...quickRaceRules}, aiEntries },
     (pos) => {
       showScreen('intro');
       toast(`Quick Race finished - you placed ${pos}${ordinal(pos)}!`, pos <= 3 ? 'success' : 'info');
@@ -206,10 +209,12 @@ function handleSetDifficulty(id) {
   const keepFocus = document.activeElement?.matches('#main-content .difficulty-card');
   const d = difficultyById(id);
   game.difficulty = d.id;
+  retireExhaustedCars();
   saveGame();
   toast(`Difficulty set to ${d.name}.`, 'success');
   renderTab(activeTab());
   if (keepFocus) document.querySelector(`#main-content .difficulty-card[data-diff="${d.id}"]`)?.focus();
+  showRetirementNotice();
 }
 
 function setCareerCarAppearance(carId, key, value) {
@@ -464,12 +469,14 @@ function handleDropSponsor(sponsorId) {
 // any car being left at home so we can say so.
 function validateRaceEntry(playerCarId) {
   if (!game.cars || game.cars.length === 0) {
-    return { error: 'No car - you must buy a car before you can race.' };
+    return { error: 'No active car. Buy a replacement in Market, or take out a loan if needed. Retired cars are in the Garage graveyard.' };
   }
   if (!game.cars.some(c => c.id === playerCarId && !hireForCar(c.id))) {
     return { error: 'You need an available car to drive. Release a driver or buy another car before racing.' };
   }
 
+  const rules=raceFeatureRules(game.difficulty,game.raceRules);
+  if(rules.damage && enteredCars(playerCarId).some(c=>c.condition<=0)) return {error:'Repair the entered cars in Garage before racing: an entered car has zero condition.'};
   const idle = game.cars.filter(c =>
     c.id !== playerCarId && !hireForCar(c.id)
   );
@@ -563,6 +570,7 @@ function handleStartRace() {
       number:     nextNum(car.number),
       power:      careerRacePower(car, hiredDriverSkill(hired)),
       isTeammate: true,
+      health: car.condition,
       carId:      car.id,          // lets the 3D result map back to this car
     });
   });
@@ -611,6 +619,8 @@ function handleStartRace() {
       fieldSize:    series.fieldSize,
       seriesId:     series.id,
       difficulty:   game.difficulty || DEFAULT_DIFFICULTY,
+      raceRules: {...game.raceRules},
+      playerHealth: pCar?.condition ?? 100,
       onQuit: () => { game = JSON.parse(preRaceState); saveGame(); showScreen('game'); updateHeader(); showTab('dashboard'); toast('Race cancelled. Entry fees refunded; career unchanged.'); },
       qualifyBoost: analystCount(),   // Data Analysts sharpen the grid draw
       qualifyAI:    true,
@@ -644,6 +654,10 @@ function handleStartRace() {
       };
       const merged     = simResult.results.map(r => (r.isPlayer ? stub : r));
       const allResults = reRankWithTeamOrder(merged, playerPosition, teamOrder);
+      for(const actual of teamOrder) {
+        const result=allResults.find(r=>r.entrantId===actual.entrantId || (actual.carId && r.carId===actual.carId));
+        if(result){result.raceHealth=actual.raceHealth;result.crashes=actual.crashes;}
+      }
       const pr         = allResults.find(r => r.isPlayer);
       const prize      = pr.prize;
       const pts        = pr.points;
@@ -848,7 +862,7 @@ function handleCloseResults() {
   updateHeader();
   renderTab('dashboard');
   reportLoanNotes();
-  checkSaveReminder();     // back in the lobby - nudge if nothing is saved
+  if(!showRetirementNotice()) checkSaveReminder();
 }
 
 // ─── Settings / save ─────────────────────────────────────────
@@ -927,4 +941,46 @@ function returnToMainMenu() {
   game = null;
   currentSlot = null;
   showScreen('intro');
+}
+
+function handleRaceRule(key,value,scope='career') {
+  if(!['crashes','damage'].includes(key)) return;
+  if(scope==='quick') {quickRaceRules[key]=value;return;}
+  game.raceRules={crashes:game.raceRules?.crashes!==false,damage:game.raceRules?.damage!==false,[key]:value};
+  retireExhaustedCars();saveGame();renderTab('settings');showRetirementNotice();
+}
+function showRetirementNotice() {
+  if(!game?.pendingRetirementNotice || document.getElementById('retirement-modal')) return false;
+  const names=newsEscape(game.pendingRetirementNotice);delete game.pendingRetirementNotice;
+  document.body.insertAdjacentHTML('beforeend',`<div class="modal-overlay" id="retirement-modal" role="dialog" aria-modal="true" aria-labelledby="retirement-title"><div class="modal"><div class="modal-header"><h3 id="retirement-title">Vehicle Retired</h3></div><div class="modal-body"><p>${names} reached zero lifetime health and moved to your Vehicle Graveyard.</p><p>Buy a replacement in Market. Loans are available if you need funds. Hired drivers keep their contracts and can be assigned another car from Team.</p></div><div class="modal-footer"><button class="btn btn-secondary" onclick="closeVehicleModal('retirement-modal');showTab('garage')">Garage</button><button class="btn btn-primary" onclick="closeVehicleModal('retirement-modal');showTab('market')">Buy a Replacement</button></div></div></div>`);
+  bindVehicleModal('retirement-modal');
+  return true;
+}
+function showVehicleGraveyard() {
+  document.getElementById('graveyard-modal')?.remove();
+  document.body.insertAdjacentHTML('beforeend',renderVehicleGraveyard());
+  bindVehicleModal('graveyard-modal');
+}
+function handleAssignDriverCar(driverId,carId) {
+  const hire=game.hiredDrivers.find(h=>h.driverId===driverId), car=game.cars.find(c=>c.id===carId);
+  if(!hire || !car || car.assignedDriverId==='player' || hireForCar(carId)) return;
+  hire.carId=carId;car.assignedDriverId=driverId;saveGame();renderTab('team');
+}
+
+function bindVehicleModal(id) {
+  const modal=document.getElementById(id);modal._returnFocus=document.activeElement;
+  document.querySelectorAll('.screen').forEach(s=>s.inert=true);
+  modal.querySelector('button')?.focus();
+  modal.onkeydown=e=>{
+    if(e.key==='Escape'){closeVehicleModal(id);return;}
+    if(e.key!=='Tab')return;
+    const controls=[...modal.querySelectorAll('button,select')],first=controls[0],last=controls[controls.length-1];
+    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+  };
+}
+function closeVehicleModal(id) {
+  const modal=document.getElementById(id),focus=modal?._returnFocus;modal?.remove();
+  document.querySelectorAll('.screen').forEach(s=>s.inert=false);
+  if(focus?.isConnected)focus.focus();
 }
