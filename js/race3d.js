@@ -830,6 +830,7 @@ class Race3DEngine {
     const wallBounds={minX:bounds.min.x-x,maxX:bounds.max.x-x,minY:bounds.min.y,maxY:bounds.max.y,minZ:bounds.min.z-z,maxZ:bounds.max.z-z};
     return {
       wallHalfX, wallHalfZ, wallBounds,
+      wallHull: typeof SC_WALL_HULLS==='undefined' ? null : SC_WALL_HULLS[this.isGrassroots?'grassroots':'gen7'],
       mesh: g, wheels, isTeammate, carId, entrantId, teamName, isContender: !!isContender,
       isPlayer, power, label, hex, number, x, z,
       lv: 0,
@@ -1559,6 +1560,13 @@ class Race3DEngine {
   _wallExtent(car,side=1) {
     const yaw=car.mesh?.rotation?.y || 0;
     const roll=car.mesh?.rotation?.z || 0,b=car.wallBounds;
+    if(car.wallHull) {
+      const a=side*Math.cos(yaw)*Math.cos(roll),c=-side*Math.cos(yaw)*Math.sin(roll),d=side*Math.sin(yaw);
+      let support=-Infinity,point=0;
+      for(let i=0;i<car.wallHull.length;i+=3){const h=car.wallHull,v=a*h[i]+c*h[i+1]+d*h[i+2];if(v>support){support=v;point=i;}}
+      car._wallPoint=point;
+      return support;
+    }
     if(b) {
       const a=side*Math.cos(yaw)*Math.cos(roll),c=-side*Math.cos(yaw)*Math.sin(roll),d=side*Math.sin(yaw);
       return a*(a>=0?b.maxX:b.minX)+c*(c>=0?b.maxY:b.minY)+d*(d>=0?b.maxZ:b.minZ);
@@ -1585,8 +1593,10 @@ class Race3DEngine {
       car._wallContact=true;
       if(car.isPlayer) this.camShake=Math.max(this.camShake||0,Math.min(.5,normal*.025));
       if(car.speed>25 && !car._sparkWait) {
-        this._emitWallSparks(side*wall,car.z,car.speed,side,impact?8:3);
-        car._sparkWait=.045;
+        const h=car.wallHull,i=car._wallPoint||0,yaw=car.mesh.rotation.y||0,roll=car.mesh.rotation.z||0;
+        const contactZ=h ? car.z-Math.sin(yaw)*Math.cos(roll)*h[i]+Math.sin(yaw)*Math.sin(roll)*h[i+1]+Math.cos(yaw)*h[i+2] : car.z;
+        this._emitWallSparks(side*wall,contactZ,car.speed,side,impact?36:12);
+        car._sparkWait=.025;
       }
       // AI steers back into racing room after contact, with its existing
       // acceleration-limited steering. Contact itself is identical for all.
@@ -1598,20 +1608,20 @@ class Race3DEngine {
   _emitWallSparks(x,z,speed,side,count) {
     if(!this.scene) return; // headless physics uses the same contact solver
     if(!this._wallSparks) {
-      this._wallSparks=Array.from({length:128},()=>({life:0}));this._sparkCursor=0;this._sparkSeed=12345;
+      this._wallSparks=Array.from({length:384},()=>({life:0}));this._sparkCursor=0;this._sparkSeed=12345;
       const geometry=new THREE.BufferGeometry();
-      geometry.setAttribute('position',new THREE.BufferAttribute(new Float32Array(128*6),3).setUsage(THREE.DynamicDrawUsage));
-      geometry.setAttribute('color',new THREE.BufferAttribute(new Float32Array(128*6),3).setUsage(THREE.DynamicDrawUsage));
+      geometry.setAttribute('position',new THREE.BufferAttribute(new Float32Array(384*6),3).setUsage(THREE.DynamicDrawUsage));
+      geometry.setAttribute('color',new THREE.BufferAttribute(new Float32Array(384*6),3).setUsage(THREE.DynamicDrawUsage));
       geometry.setDrawRange(0,0);
       this._sparkMesh=new THREE.LineSegments(geometry,new THREE.LineBasicMaterial({vertexColors:true,blending:THREE.AdditiveBlending,transparent:true,depthWrite:false,toneMapped:false}));
       this._sparkMesh.name='wall:sparks';this._sparkMesh.frustumCulled=false;this.scene.add(this._sparkMesh);
     }
     const random=()=>{let n=this._sparkSeed;n^=n<<13;n^=n>>>17;n^=n<<5;this._sparkSeed=n;return (n>>>0)/4294967296;};
     for(let i=0;i<count;i++) {
-      const p=this._wallSparks[this._sparkCursor++%128];
-      p.x=x-side*.025;p.y=.35+random()*.3;p.z=z+(random()-.5)*2;
-      p.vx=-side*(1+random()*3);p.vy=1+random()*3;p.vz=-speed*(.12+random()*.12);
-      p.life=p.maxLife=.18+random()*.22;
+      const p=this._wallSparks[this._sparkCursor++%384];
+      p.x=x-side*.06;p.y=.4+random()*.4;p.z=z+(random()-.5)*.8;
+      p.vx=-side*(2+random()*7);p.vy=2+random()*6;p.vz=-speed*(.18+random()*.3);
+      p.life=p.maxLife=.35+random()*.3;
     }
   }
 
@@ -1624,7 +1634,7 @@ class Race3DEngine {
       if(p.y<.03){p.y=.03;p.vy=Math.abs(p.vy)*.2;}
       const fade=p.life/p.maxLife;
       pos.setXYZ(index,p.x,p.y,p.z);pos.setXYZ(index+1,p.x-p.vx*.06,p.y-p.vy*.06,p.z-p.vz*.06);
-      col.setXYZ(index,fade,.65*fade,.15*fade);col.setXYZ(index+1,.5*fade,.14*fade,0);index+=2;
+      col.setXYZ(index,3*fade,2.2*fade,.8*fade);col.setXYZ(index+1,1.8*fade,.5*fade,.04*fade);index+=2;
     }
     pos.needsUpdate=col.needsUpdate=true;g.setDrawRange(0,index);
   }

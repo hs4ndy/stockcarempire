@@ -23,3 +23,28 @@ test('model bounds include yaw, roll and asymmetric body offsets',()=>{
  if(e._wallExtent(p,1)===e._wallExtent(p,-1))throw Error('offset ignored');
  `,c);
 });
+test('hull support does not collide with an empty corner of the old box',()=>{
+ const c=fixture();vm.runInContext(`
+ const e=Object.create(Race3DEngine.prototype);e.wallInnerX=11.2;
+ const p={isPlayer:true,x:10.7,z:0,speed:220,lv:5,wallHull:[-1,0,1,1,0,-1],wallBounds:{minX:-1,maxX:1,minY:0,maxY:1,minZ:-1,maxZ:1},mesh:{rotation:{y:Math.PI/4,z:0},position:{}}};
+ e.cars=[p];e._resolveWalls(1/120);
+ if(p.speed!==220 || p.x!==10.7)throw Error('empty box corner still collides');
+ p.x=11.3;e._resolveWalls(1/120);if(Math.abs(p.x-11.2)>1e-8)throw Error('hull contact not resolved');
+ `,c);
+});
+test('both generated hulls match all original body/wheel vertices through varied wall approach angles',()=>{
+ const c=fixture();for(const f of ['stock-car-model','legacy-stock-car-model','wall-contact-hulls'])vm.runInContext(fs.readFileSync(`assets/cars/${f}.js`,'utf8'),c);
+ vm.runInContext(`
+ [SC_LEGACY_STOCK_CAR_MODEL,SC_STOCK_CAR_MODEL].forEach((model,index)=>{
+  const raw=[],sx=index===0?.91:1,sz=index===0?.9:1;
+  const add=(v,o=[0,0,0])=>{for(let i=0;i<v.length;i+=3)raw.push((v[i]+o[0])*sx,v[i+1]+o[1],(v[i+2]+o[2])*sz);};
+  Object.values(model.parts).forEach(part=>add(part.position));model.wheelPositions.forEach(o=>add(model.wheel.position,o));
+  const e=Object.create(Race3DEngine.prototype),car={wallHull:SC_WALL_HULLS[index===0?'grassroots':'gen7'],mesh:{rotation:{}}};
+  for(const side of [-1,1])for(let angle=0;angle<24;angle++)for(const roll of [-.055,0,.055]){
+   const yaw=angle*Math.PI/12;car.mesh.rotation.y=yaw;car.mesh.rotation.z=roll;
+   const a=side*Math.cos(yaw)*Math.cos(roll),b=-side*Math.cos(yaw)*Math.sin(roll),d=side*Math.sin(yaw);
+   let actual=-Infinity;for(let i=0;i<raw.length;i+=3)actual=Math.max(actual,a*raw[i]+b*raw[i+1]+d*raw[i+2]);
+   if(Math.abs(actual-e._wallExtent(car,side))>1e-6)throw Error('generated hull differs from runtime mesh');
+  }
+ });`,c);
+});
