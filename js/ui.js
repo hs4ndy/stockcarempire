@@ -1425,7 +1425,7 @@ function renderQuickRaceModal() {
               <span class="quick-series-meta">${s.fieldSize}-car field · ${s.description}</span>
             </button>`).join('')}
         </div>
-        <section id="quick-race-rules">${renderRaceRuleControls(quickRaceDifficulty,quickRaceRules,'quick')}</section>
+        </section><section class="quick-setup-section quick-setup-settings" aria-labelledby="quick-settings-title"><h4 id="quick-settings-title">Settings</h4><section id="quick-race-rules">${renderRaceRuleControls(quickRaceDifficulty,quickRaceRules,'quick')}</section>
         </section><section class="quick-setup-section quick-setup-drivers" aria-labelledby="quick-players-title"><h4 id="quick-players-title">Players and Cars</h4>
         <div class="quick-player-mode" role="group" aria-label="Player mode">
           <button class="btn" data-players="1" aria-pressed="${quickRacePlayers === 1}" onclick="setQuickRacePlayers(1)">Single player</button>

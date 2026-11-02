@@ -1032,6 +1032,26 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
  #quick-race-modal .difficulty-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
 
+/* Equal choice tiles and a wider, shallower four-column setup. */
+#quick-race-modal .quick-setup-modal { width: min(1680px, 96vw); max-width: 1680px; max-height: min(820px, calc(100svh - 32px)); }
+.quick-setup-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px; }
+.quick-setup-section + .quick-setup-section { border-left: 0; padding-left: 0; }
+#quick-race-modal .difficulty-grid { grid-auto-rows: 1fr; }
+#quick-race-modal .difficulty-card { min-height: 96px; height: 100%; }
+#quick-race-modal .quick-series { display: grid; grid-auto-rows: 1fr; }
+#quick-race-modal .quick-series-btn { min-height: 96px; height: 100%; }
+.quick-setup-intro { margin-bottom: 20px; max-width: none; }
+@media (min-width: 601px) and (max-width: 1200px) {
+ .quick-setup-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+ .quick-setup-section.quick-setup-drivers { grid-column: auto; border-top: 0; padding-top: 0; }
+ .quick-setup-cars { display: block; }
+ .quick-setup-settings, .quick-setup-drivers { border-top: 1px solid var(--line); padding-top: 24px; }
+}
+@media (max-width: 600px) {
+ .quick-setup-grid { grid-template-columns: 1fr; }
+ .quick-setup-section + .quick-setup-section { border-top: 1px solid var(--line); padding-top: 24px; }
+}
+
 </style>
 </head>
 <body>
@@ -1072,7 +1092,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 118</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 119</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -7251,7 +7271,7 @@ function renderQuickRaceModal() {
               <span class="quick-series-meta">${s.fieldSize}-car field · ${s.description}</span>
             </button>`).join('')}
         </div>
-        <section id="quick-race-rules">${renderRaceRuleControls(quickRaceDifficulty,quickRaceRules,'quick')}</section>
+        </section><section class="quick-setup-section quick-setup-settings" aria-labelledby="quick-settings-title"><h4 id="quick-settings-title">Settings</h4><section id="quick-race-rules">${renderRaceRuleControls(quickRaceDifficulty,quickRaceRules,'quick')}</section>
         </section><section class="quick-setup-section quick-setup-drivers" aria-labelledby="quick-players-title"><h4 id="quick-players-title">Players and Cars</h4>
         <div class="quick-player-mode" role="group" aria-label="Player mode">
           <button class="btn" data-players="1" aria-pressed="${quickRacePlayers === 1}" onclick="setQuickRacePlayers(1)">Single player</button>
