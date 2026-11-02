@@ -81,7 +81,8 @@
     const phase = r3dSmooth((car.z / (this.raceLength || R3D.TRACK_LEN) - calm) /
       Math.max(0.01, R3D.ENDGAME_FRAC - calm));
     const temperament = clamp(((car.raceNerve || 1) - 1) * 0.45, -0.08, 0.08);
-    return clamp(0.38 + phase * 0.44 + temperament, 0.3, 0.9);
+    const rivalry=car.isRival&&this.cars.some(p=>p.isPlayer&&!p.finished&&!p.dnf&&Math.abs(p.z-car.z)<90&&Math.abs(p.x-car.x)<5)?.04:0;
+    return clamp(0.38 + phase * 0.44 + temperament + rivalry, 0.3, 0.9);
   }
 
   _wantsTrain(car) {

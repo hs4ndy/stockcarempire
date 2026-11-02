@@ -338,8 +338,8 @@ function renderGarage() {
     return `
     <div class="car-card" id="car-${car.id}">
       <div class="car-card-header">
-        <span class="car-name"><span class="car-num">#${car.number || 1}</span> ${car.name}</span>
-        <button class="btn btn-sm btn-danger" onclick="handleSellCar('${car.id}')" ${game.cars.length === 1 ? 'disabled title="You must keep at least one car."' : ''}>Sell</button><button class="btn btn-sm btn-danger" onclick="handleRetireCar('${car.id}')">Retire Car</button>
+        <span class="car-name" title="${careerArchiveEscape(car.name)}"><span class="car-num">#${car.number || 1}</span> ${careerArchiveEscape(car.name)}</span>
+
       </div>
       <div class="team-stat"><span>Driver</span><span class="${noDriver ? 'red' : ''}">${driverName}</span></div>
       <div class="car-actions">
@@ -372,7 +372,7 @@ function renderGarage() {
       </div>
         </div>
       </details>
-
+        <div class="car-disposal-actions"><button class="btn btn-sm btn-danger" onclick="handleSellCar('${car.id}')" ${game.cars.length === 1 ? 'disabled title="You must keep at least one car."' : ''}>Sell</button><button class="btn btn-sm btn-danger" onclick="handleRetireCar('${car.id}')">Retire Car</button></div>
     </div>`;
   }).join('');
 
@@ -434,7 +434,8 @@ function renderUpgradeModal(carId) {
           <span class="upgrade-tier-count${full ? ' is-full' : ''}">${fitted}/${cap}</span>
         </div>
         ${rows}
-      </div>`;
+
+    </div>`;
   }).join('');
 
   const totalFitted = (car.appliedUpgrades || []).length;
@@ -829,7 +830,7 @@ function renderStandings() {
               : 'standings-row';
     return `<div class="${cls}">
       <span class="st-pos">${pos}</span>
-      <span class="st-name">${standingName(e)}</span>
+      <span class="st-name"><button class="standing-driver" onclick="showDriverSeasonStats('${e.id}')">${standingName(e)}${(game.rivalries||[]).includes(e.id)?' <span class="red">Rival</span>':''}</button></span>
       <span class="st-races">${e.races}</span>
       <span class="st-wins">${e.wins}</span>
       <span class="st-top5">${e.top5}</span>
@@ -1452,3 +1453,12 @@ function showHallOfFame(index=null) {
 
 function handleRetireCar(id){const car=game.cars.find(c=>c.id===id);if(!car||!confirm(`Permanently retire ${car.name}? No cash is paid. Its stats will remain in the Vehicle Graveyard.${game.cars.length===1?' You must buy a replacement before racing.':''}`))return;const r=retireOwnedCar(id);if(!r.ok){toast(r.msg,'error');return;}renderTab('garage');toast('Car retired to the Vehicle Graveyard.','success');}
 function renderArchivedVehicles(cars){return cars.map(c=>`<details class="ui-details"><summary>#${careerArchiveEscape(c.number)} ${careerArchiveEscape(c.name)}</summary><div class="ui-details-body"><p>${careerArchiveEscape(c.retirementReason||'Lifetime retirement')}</p>${['speed','handling','reliability','condition','lifetimeHealth','races','wins','totalPoints'].map(k=>`<div class="team-stat"><span>${{totalPoints:'Points',lifetimeHealth:'Lifetime health'}[k]||k}</span><span>${careerArchiveEscape(c[k]??'Not recorded')}</span></div>`).join('')}<p>Upgrades: ${(c.appliedUpgrades||[]).map(id=>careerArchiveEscape(CAR_CLASSES[c.classId]?.upgrades.find(u=>u.id===id)?.name||id)).join(', ')||'None'}</p></div></details>`).join('')||'<p>No vehicle records.</p>';}
+
+function showDriverSeasonStats(id){
+ const rows=getStandings(),entry=rows.find(e=>e.id===id);if(!entry)return;
+ document.getElementById('driver-season-modal')?.remove();
+ const rival=(game.rivalries||[]).includes(id),eligible=!entry.isPlayer&&!entry.isTeamCar&&game.season.aiTeams.some(t=>t.cars.some(c=>c.id===id));
+ document.body.insertAdjacentHTML('beforeend',`<div class="modal-overlay" id="driver-season-modal" role="dialog" aria-modal="true" aria-labelledby="driver-season-title"><div class="modal"><div class="modal-header"><h3 id="driver-season-title">${careerArchiveEscape(standingName(entry))}</h3><button class="modal-close" onclick="document.getElementById('driver-season-modal').remove()">Close</button></div><div class="modal-body"><p>Season ${game.season.year} · ${careerArchiveEscape(SERIES[game.currentSeries].name)}</p>${[['Position',rows.indexOf(entry)+1],['Points',entry.points],['Starts',entry.races],['Wins',entry.wins],['Top 5 Finishes',entry.top5],['Top 10 Finishes',entry.top10]].map(([k,v])=>`<div class="team-stat"><span>${k}</span><span>${v||0}</span></div>`).join('')}${eligible?'<p class="section-copy">Rivalries last for this season. Rivals race more assertively near you and display red names and banners. You can have multiple rivals.</p>':''}</div>${eligible?`<div class="modal-footer"><button class="btn ${rival?'btn-secondary':'btn-danger'}" onclick="handleRivalry('${id}')">${rival?'End Rivalry':'Declare Rivalry'}</button></div>`:''}</div></div>`);
+ document.querySelector('#driver-season-modal .modal-close').focus();
+}
+function handleRivalry(id){const r=toggleRivalry(id);if(!r.ok){toast(r.msg,'error');return;}renderTab('standings');showDriverSeasonStats(id);}

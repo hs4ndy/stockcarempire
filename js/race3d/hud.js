@@ -112,7 +112,7 @@
     const rows = ranked.slice(start, start + 7).map((c, k) => {
       const place = start + k + 1;
       const nm = (c.label || '').split(' / ').pop();
-      const cls = c.isPlayer ? ' is-player' : c.isTeammate ? ' is-teammate' : '';
+      const cls = c.isPlayer ? ' is-player' : c.isTeammate ? ' is-teammate' : c.isRival ? ' is-rival' : '';
       return `<div class="r3d-order-row${cls}">
         <span class="r3d-order-pos">${place}</span>
         <span class="r3d-order-chip" style="background:${r3dHex(c.hex)}"></span>
@@ -165,7 +165,7 @@
       const el=document.getElementById(`dual-order-${n}`);
       document.getElementById(`dual-progress-${n}`).style.background = r3dHex(p.hex);
       if (!el) return;
-      const html='<div class="r3d-order-head">Leaderboard</div>'+ranked.slice(start,start+5).map((c,k)=>`<div class="r3d-order-row${c===p ? ' is-player' : ''}"><span class="r3d-order-pos">${start+k+1}</span><span class="r3d-order-chip" style="background:${r3dHex(c.hex)}"></span><span class="r3d-order-num">#${c.number}</span><span class="r3d-order-name">${c.label}</span></div>`).join('');
+      const html='<div class="r3d-order-head">Leaderboard</div>'+ranked.slice(start,start+5).map((c,k)=>`<div class="r3d-order-row${c===p ? ' is-player' : c.isRival ? ' is-rival' : c.isTeammate ? ' is-teammate' : ''}"><span class="r3d-order-pos">${start+k+1}</span><span class="r3d-order-chip" style="background:${r3dHex(c.hex)}"></span><span class="r3d-order-num">#${c.number}</span><span class="r3d-order-name">${c.label}</span></div>`).join('');
       if(el.innerHTML!==html) el.innerHTML=html;
     });
   }

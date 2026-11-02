@@ -1064,3 +1064,11 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 @media(max-width:760px){.sponsor-workspace{grid-template-columns:1fr;}.sponsor-notice{align-items:start;flex-direction:column;}.sponsor-summary{gap:24px;}}
 
 .points-gap { display:inline-block; margin-left:6px; font-size:12px; white-space:nowrap; font-variant-numeric:tabular-nums; }
+
+/* Garage titles own their row; destructive actions form a compact footer. */
+.car-card-header { display:block; min-height:40px; margin-bottom:16px; }
+.car-card-header .car-name { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; line-height:40px; }
+.car-disposal-actions { display:flex; gap:6px; padding-top:16px; margin-top:16px; border-top:1px solid var(--line); }
+.car-disposal-actions .btn { flex:none; }
+.standing-driver { background:transparent; text-align:left; font:inherit; color:inherit; padding:8px 0; min-height:44px; text-decoration:underline; text-underline-offset:3px; }
+.r3d-order-row.is-rival .r3d-order-name { color:var(--danger-text); font-weight:700; }

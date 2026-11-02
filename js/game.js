@@ -337,6 +337,7 @@ function newGame(teamName, driverName, firstCarName) {
     loans: [],           // bank loans currently outstanding
     difficulty: DEFAULT_DIFFICULTY,
     winsByDifficulty: {},
+    rivalries: [],
 
     season: {
       year: 1,
@@ -658,6 +659,7 @@ function endSeason() {
   };
   rebuildStandings();
   rolloverSponsorship(series.level);
+  game.rivalries=[];
 
   // Reset car conditions (off-season maintenance)
   game.cars.forEach(c => {
@@ -1141,5 +1143,12 @@ function retireOwnedCar(carId) {
  game.retiredCars=game.retiredCars||[];game.retiredCars.push({...JSON.parse(JSON.stringify(car)),retiredYear:game.season.year,retiredRace:game.season.raceIndex+1,retirementReason:'Manually retired',lastDriver:car.assignedDriverId==='player'?game.driverName:HIREABLE_DRIVERS.find(d=>d.id===hire?.driverId)?.name||'Unassigned'});
  if(hire)hire.carId=null;game.cars=game.cars.filter(c=>c.id!==carId);
  if(currentSlot!==null&&!saveToSlot(currentSlot)){game=JSON.parse(before);return {ok:false,msg:'Retirement could not be saved.'};}
+ return {ok:true};
+}
+
+function toggleRivalry(id){
+ const opponent=game.season.aiTeams.some(t=>t.cars.some(c=>c.id===id));if(!opponent)return {ok:false,msg:'Choose an opposing AI driver.'};
+ const before=[...(game.rivalries||[])];game.rivalries=before.includes(id)?before.filter(x=>x!==id):[...before,id];
+ if(currentSlot!==null&&!saveToSlot(currentSlot)){game.rivalries=before;return {ok:false,msg:'Could not save this rivalry.'};}
  return {ok:true};
 }

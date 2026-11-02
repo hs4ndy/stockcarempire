@@ -102,6 +102,7 @@
         power:      clamp(entry.power, 0.25, 0.99),
         isPlayer:   !!entry.isSecondPlayer,
         isTeammate: !!entry.isTeammate,
+        isRival: !!entry.isRival,
         label:      entry.name,
         teamName:   entry.teamName || null,
         carId:      entry.carId || null,
@@ -125,7 +126,7 @@
     this._newsGrid = Object.fromEntries([...this.cars].sort((a,b)=>b.z-a.z).map((c,i)=>[c.entrantId,i+1]));
   }
 
-  _makeCar(x, z, { entrantId, color, number, power, isPlayer, isTeammate, label, teamName, carId, raceNerve, isContender }) {
+  _makeCar(x, z, { entrantId, color, number, power, isPlayer, isTeammate, label, teamName, carId, raceNerve, isContender, isRival }) {
     const hex = typeof color === 'string' ? parseInt(color.replace('#', ''), 16) : color;
     const G = this.G, M = this.M;
     const g = new THREE.Group();
@@ -137,7 +138,7 @@
     // on light liveries, and gold continues to identify teammates.
     const luminance = (((hex >> 16) & 255) * 0.2126 +
       ((hex >> 8) & 255) * 0.7152 + (hex & 255) * 0.0722) / 255;
-    const accent = isTeammate ? 0xe0a800 : (luminance > 0.65 ? 0x202630 : 0xe8ece2);
+    const accent = isRival && !isTeammate ? 0xe8001d : isTeammate ? 0xe0a800 : (luminance > 0.65 ? 0x202630 : 0xe8ece2);
     const accMat = new THREE.MeshLambertMaterial({ color: accent, side: THREE.DoubleSide });
     for (const [name, geometry] of Object.entries(G.parts)) {
       const mesh = new THREE.Mesh(geometry, name === 'paint' ? bodyMat : name === 'accent' ? accMat : M[name]);
@@ -177,7 +178,7 @@
       g.add(door);
     });
 
-    if (isTeammate) {
+    if (isTeammate || isRival) {
       const roofBand = new THREE.Mesh(G.teamBand, accMat);
       if (this.isGrassroots) roofBand.position.set(0, 1.33, .34);
       g.add(roofBand);
@@ -195,7 +196,7 @@
     return {
       wallHalfX, wallHalfZ, wallBounds,
       wallHull: typeof SC_WALL_HULLS==='undefined' ? null : SC_WALL_HULLS[this.isGrassroots?'grassroots':'gen7'],
-      mesh: g, wheels, isTeammate, carId, entrantId, teamName, isContender: !!isContender,
+      mesh: g, wheels, isRival: !!isRival && !isTeammate, isTeammate, carId, entrantId, teamName, isContender: !!isContender,
       isPlayer, power, label, hex, number, x, z,
       lv: 0,
       lvx: 0,          // AI lateral velocity (inertia)

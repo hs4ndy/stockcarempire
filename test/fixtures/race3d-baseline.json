@@ -79,7 +79,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "da3a5f66334d17d73a881289d38e6c7c0a4abe935d89b86cab8f0a521210fc92"
+      "hash": "b5faf7668363f440d5b6b286ca75cdb6e26e3655bff2cfed0e03e92740457abf"
     },
     {
       "name": "_withSecond",
@@ -95,7 +95,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "875caafeaa4aeb3c9f12708096252976fd13dbb6416f139faea12bdd26c6d61f"
+      "hash": "5564365decc0db6463f9340ff17fd147c6612ff45fae15e34e01ebd547cb2ba3"
     },
     {
       "name": "_buildMinimap",
@@ -183,7 +183,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "2cabd963b8e0ec418afd73b60f10920e53388962fda019032167143528b651a0"
+      "hash": "9bc7f625e7b71ad9d0291d3df2541ce86e596b5d5458606b2e2e1b4ad6a63d90"
     },
     {
       "name": "_wantsTrain",
@@ -463,7 +463,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "180b8f94f20d6d71e47405224d12e76b38fcc6b28874d0f2a4b38406d94ef27e"
+      "hash": "019ee43479dddd6ade22f904bdc45c9369538c554c837be8b37ea8ed1bfc0d79"
     },
     {
       "name": "_warn",
@@ -487,7 +487,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "45b0e3f54acc84b7b4c580a81891e2600b03dcaef85398374fcf22a8fe5eae7d"
+      "hash": "38b950d6e9eb6a9611d60167c00d7a3aa6b791da0128dfbfcb0723258ddcb804"
     },
     {
       "name": "_renderDual",
@@ -551,6 +551,7 @@
     "version111": "Only spark emitter/step, dual HUD and launch labels updated for requested condition visuals.",
     "version112": "Intentional player penalty/draft and AI-only contact tuning; opening/dual traces refreshed.",
     "version113": "Requested 80% less condition loss and softer human condition/wreck pace; trace baselines refreshed.",
-    "version122": "HUD-only 20Hz DOM refresh throttle. Physics, cameras, spark/contact methods unchanged."
+    "version122": "HUD-only 20Hz DOM refresh throttle. Physics, cameras, spark/contact methods unchanged.",
+    "version123": "Rival flag propagation, red banner/order styles and near-human +.04 aggression; no pace/recovery/contact changes."
   }
 }

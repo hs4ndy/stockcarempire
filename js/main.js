@@ -572,6 +572,7 @@ function handleStartRace() {
         power:     careerRivalPower(car, contenders.has(car.id)),
         raceNerve: contenders.has(car.id) ? 1.12 : undefined,
         isContender: contenders.has(car.id),
+        isRival: (game.rivalries||[]).includes(car.id),
       });
     });
   });
