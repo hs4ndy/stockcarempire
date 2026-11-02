@@ -1089,7 +1089,12 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .car-card-header .car-name { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; line-height:40px; }
 .car-disposal-actions { display:flex; gap:6px; padding-top:16px; margin-top:16px; border-top:1px solid var(--line); }
 .car-disposal-actions .btn { flex:none; }
-.standing-driver { background:transparent; text-align:left; font:inherit; color:inherit; padding:8px 0; min-height:44px; text-decoration:underline; text-underline-offset:3px; }
+button.standing-driver { width:100%; text-align:left; color:var(--text); background:var(--panel); border:0; border-bottom:1px solid var(--line); border-radius:0; cursor:pointer; text-decoration:none; transition:background-color var(--t); }
+button.standing-driver.player-standing { background:var(--panel-3); }
+button.standing-driver.team-standing { background:var(--panel-2); }
+button.standing-driver:hover { background:#40464b; }
+button.standing-driver:focus-visible { outline:3px solid var(--focus); outline-offset:-3px; }
+button.standing-driver .st-name { text-decoration:none; }
 .r3d-order-row.is-rival .r3d-order-name { color:var(--danger-text); font-weight:700; }
 
 </style>
@@ -1132,7 +1137,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 123</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 124</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -6700,21 +6705,15 @@ function toast(msg, type = 'info', duration = 4000) {
 // ─── Standings name ───────────────────────────────────────────
 // Championship tables are driver standings, so always lead with the driver's
 // name and keep the team as the secondary label.
+function standingIdentity(entry) {
+ if(entry.isPlayer)return {driver:game.driverName||'You',team:game.teamName};
+ if(entry.isTeamCar){const hire=hireForCar(entry.id),driver=HIREABLE_DRIVERS.find(d=>d.id===hire?.driverId);if(driver)return {driver:driver.name,team:game.teamName};const parts=String(entry.name||'').split(' / ');if(parts.length>1)return {driver:parts.at(-1),team:parts[0]};}
+ const match=/^(.*?)\s*\(([^)]+)\)\s*$/.exec(entry.name||'');
+ return match?{driver:match[2],team:match[1]}:{driver:entry.name||'',team:''};
+}
 function standingName(entry) {
-  if (entry.isPlayer) {
-    const drv = game.driverName || 'You';
-    return `<strong>${drv}</strong> <span class="st-team">${game.teamName}</span>`;
-  }
-  if (entry.isTeamCar) {
-    const hire = hireForCar(entry.id);
-    const driver = HIREABLE_DRIVERS.find(d => d.id === hire?.driverId);
-    if (driver) return `${driver.name} <span class="st-team">${game.teamName}</span>`;
-    return resultName({ displayName: entry.name });
-  }
-  // AI entries are stored as "Team Name (Driver Name)"
-  const m = /^(.*?)\s*\(([^)]+)\)\s*$/.exec(entry.name || '');
-  if (m) return `${m[2]} <span class="st-team">${m[1]}</span>`;
-  return entry.name || '';
+ const identity=standingIdentity(entry),name=careerArchiveEscape(identity.driver);
+ return `${entry.isPlayer?`<strong>${name}</strong>`:name}${identity.team?` <span class="st-team">${careerArchiveEscape(identity.team)}</span>`:''}`;
 }
 
 // Race results / leaderboards store "Team / Driver" - show the driver first.
@@ -7452,14 +7451,14 @@ function renderStandings() {
     const cls = e.isPlayer ? 'standings-row player-standing'
               : e.isTeamCar ? 'standings-row team-standing'
               : 'standings-row';
-    return `<div class="${cls}">
+    return `<button type="button" class="${cls} standing-driver" onclick="showDriverSeasonStats('${e.id}')" aria-label="View season stats for ${careerArchiveEscape(standingIdentity(e).driver)}">
       <span class="st-pos">${pos}</span>
-      <span class="st-name"><button class="standing-driver" onclick="showDriverSeasonStats('${e.id}')">${standingName(e)}${(game.rivalries||[]).includes(e.id)?' <span class="red">Rival</span>':''}</button></span>
+      <span class="st-name">${standingName(e)}${(game.rivalries||[]).includes(e.id)?' <span class="red">Rival</span>':''}</span>
       <span class="st-races">${e.races}</span>
       <span class="st-wins">${e.wins}</span>
       <span class="st-top5">${e.top5}</span>
       <span class="st-pts">${e.points} <span class="points-gap ${i===0?'green':'red'}" aria-label="${i===0?'Points ahead of second':'Points behind leader'}">${i===0?'+'+(e.points-(sorted[1]?.points??e.points)):'-'+(sorted[0].points-e.points)}</span></span>
-    </div>`;
+    </button>`;
   }).join('');
 
   return `
@@ -8081,8 +8080,9 @@ function renderArchivedVehicles(cars){return cars.map(c=>`<details class="ui-det
 function showDriverSeasonStats(id){
  const rows=getStandings(),entry=rows.find(e=>e.id===id);if(!entry)return;
  document.getElementById('driver-season-modal')?.remove();
+ const identity=standingIdentity(entry);
  const rival=(game.rivalries||[]).includes(id),eligible=!entry.isPlayer&&!entry.isTeamCar&&game.season.aiTeams.some(t=>t.cars.some(c=>c.id===id));
- document.body.insertAdjacentHTML('beforeend',`<div class="modal-overlay" id="driver-season-modal" role="dialog" aria-modal="true" aria-labelledby="driver-season-title"><div class="modal"><div class="modal-header"><h3 id="driver-season-title">${careerArchiveEscape(standingName(entry))}</h3><button class="modal-close" onclick="document.getElementById('driver-season-modal').remove()">Close</button></div><div class="modal-body"><p>Season ${game.season.year} · ${careerArchiveEscape(SERIES[game.currentSeries].name)}</p>${[['Position',rows.indexOf(entry)+1],['Points',entry.points],['Starts',entry.races],['Wins',entry.wins],['Top 5 Finishes',entry.top5],['Top 10 Finishes',entry.top10]].map(([k,v])=>`<div class="team-stat"><span>${k}</span><span>${v||0}</span></div>`).join('')}${eligible?'<p class="section-copy">Rivalries last for this season. Rivals race more assertively near you and display red names and banners. You can have multiple rivals.</p>':''}</div>${eligible?`<div class="modal-footer"><button class="btn ${rival?'btn-secondary':'btn-danger'}" onclick="handleRivalry('${id}')">${rival?'End Rivalry':'Declare Rivalry'}</button></div>`:''}</div></div>`);
+ document.body.insertAdjacentHTML('beforeend',`<div class="modal-overlay" id="driver-season-modal" role="dialog" aria-modal="true" aria-labelledby="driver-season-title"><div class="modal"><div class="modal-header"><h3 id="driver-season-title">${careerArchiveEscape(identity.driver)}</h3><button class="modal-close" onclick="document.getElementById('driver-season-modal').remove()">Close</button></div><div class="modal-body"><p>${careerArchiveEscape(identity.team)}</p><p>Season ${game.season.year} · ${careerArchiveEscape(SERIES[game.currentSeries].name)}</p>${[['Position',rows.indexOf(entry)+1],['Points',entry.points],['Starts',entry.races],['Wins',entry.wins],['Top 5 Finishes',entry.top5],['Top 10 Finishes',entry.top10]].map(([k,v])=>`<div class="team-stat"><span>${k}</span><span>${v||0}</span></div>`).join('')}${eligible?'<p class="section-copy">Rivalries last for this season. Rivals race more assertively near you and display red names and banners. You can have multiple rivals.</p>':''}</div>${eligible?`<div class="modal-footer"><button class="btn ${rival?'btn-secondary':'btn-danger'}" onclick="handleRivalry('${id}')">${rival?'End Rivalry':'Declare Rivalry'}</button></div>`:''}</div></div>`);
  document.querySelector('#driver-season-modal .modal-close').focus();
 }
 function handleRivalry(id){const r=toggleRivalry(id);if(!r.ok){toast(r.msg,'error');return;}renderTab('standings');showDriverSeasonStats(id);}

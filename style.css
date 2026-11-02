@@ -1070,5 +1070,10 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .car-card-header .car-name { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; line-height:40px; }
 .car-disposal-actions { display:flex; gap:6px; padding-top:16px; margin-top:16px; border-top:1px solid var(--line); }
 .car-disposal-actions .btn { flex:none; }
-.standing-driver { background:transparent; text-align:left; font:inherit; color:inherit; padding:8px 0; min-height:44px; text-decoration:underline; text-underline-offset:3px; }
+button.standing-driver { width:100%; text-align:left; color:var(--text); background:var(--panel); border:0; border-bottom:1px solid var(--line); border-radius:0; cursor:pointer; text-decoration:none; transition:background-color var(--t); }
+button.standing-driver.player-standing { background:var(--panel-3); }
+button.standing-driver.team-standing { background:var(--panel-2); }
+button.standing-driver:hover { background:#40464b; }
+button.standing-driver:focus-visible { outline:3px solid var(--focus); outline-offset:-3px; }
+button.standing-driver .st-name { text-decoration:none; }
 .r3d-order-row.is-rival .r3d-order-name { color:var(--danger-text); font-weight:700; }
