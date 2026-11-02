@@ -974,3 +974,6 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .staff-filter { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 16px 0; }
 .staff-filter label { color: var(--text-dim); font-size: 14px; }
 .staff-filter select { width: auto; max-width: 100%; min-height: 44px; }
+
+.modal-footer .hall-of-fame-button { width: 100%; background: transparent; border: 1px solid var(--line-2); color: var(--text); }
+.modal-footer .hall-of-fame-button:hover { background: var(--panel-2); border-color: var(--text-dim); }

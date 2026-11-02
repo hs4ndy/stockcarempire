@@ -1371,7 +1371,7 @@ function renderLoadModal() {
       <div class="modal-body save-slots">
         ${!hasAnySave ? '<p class="muted-text">No saved careers. Start a new career, then choose a save slot.</p>' : slots}
       </div>
-      <div class="modal-footer"><button class="btn btn-primary btn-lg" onclick="showHallOfFame()">Hall of Fame</button></div>
+      <div class="modal-footer"><button class="btn btn-ghost btn-lg hall-of-fame-button" onclick="showHallOfFame()">Hall of Fame</button></div>
     </div>
   </div>`;
 }

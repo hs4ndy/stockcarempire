@@ -994,6 +994,9 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .staff-filter label { color: var(--text-dim); font-size: 14px; }
 .staff-filter select { width: auto; max-width: 100%; min-height: 44px; }
 
+.modal-footer .hall-of-fame-button { width: 100%; background: transparent; border: 1px solid var(--line-2); color: var(--text); }
+.modal-footer .hall-of-fame-button:hover { background: var(--panel-2); border-color: var(--text-dim); }
+
 </style>
 </head>
 <body>
@@ -1034,7 +1037,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 116</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 117</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -7159,7 +7162,7 @@ function renderLoadModal() {
       <div class="modal-body save-slots">
         ${!hasAnySave ? '<p class="muted-text">No saved careers. Start a new career, then choose a save slot.</p>' : slots}
       </div>
-      <div class="modal-footer"><button class="btn btn-primary btn-lg" onclick="showHallOfFame()">Hall of Fame</button></div>
+      <div class="modal-footer"><button class="btn btn-ghost btn-lg hall-of-fame-button" onclick="showHallOfFame()">Hall of Fame</button></div>
     </div>
   </div>`;
 }
