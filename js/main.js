@@ -313,6 +313,7 @@ function handleRepair(carId, cost) {
 }
 
 function handleUpgrade(carId, upgradeId) {
+  const scrollTop=document.querySelector('#upgrade-modal .modal-body')?.scrollTop||0;
   const result = upgradeCar(carId, upgradeId);
   if (!result.ok) { toast(result.msg, 'error'); return; }
   const car = game.cars.find(c => c.id === carId);
@@ -322,6 +323,8 @@ function handleUpgrade(carId, upgradeId) {
   // Refresh the modal (tier counts move) and the garage behind it
   showUpgradeModal(carId);
   renderTab(activeTab());
+  const body=document.querySelector('#upgrade-modal .modal-body');
+  if(body)body.scrollTop=scrollTop;
 }
 
 async function handleRenameCar(carId) {
