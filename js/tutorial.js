@@ -19,7 +19,7 @@ const CAREER_TUTORIAL_STEPS = [
   },
   {
     tab: 'market', target: '.nav-btn[data-tab="market"]', title: 'Grow the operation',
-    copy: 'Market lets you buy more cars, sign sponsors, and manage financing. You can drive a new car yourself or assign a hired driver to put both cars in the field.',
+    copy: 'Market lets you buy more cars and manage financing. Sponsors approach after Career races; review offers in the Sponsors panel. You can drive a new car yourself or assign a hired driver to put both cars in the field.',
   },
   {
     tab: 'market', target: '#market-loans', title: 'Borrow with a repayment plan',

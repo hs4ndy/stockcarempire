@@ -446,22 +446,6 @@ function handleDonate(causeId) {
   renderTab('market');
 }
 
-function handleSignSponsor(sponsorId) {
-  const result = signSponsor(sponsorId);
-  if (!result.ok) { toast(result.msg, 'error'); return; }
-  const d = SPONSOR_DEALS.find(s => s.id === sponsorId);
-  toast(`Signed deal with ${d?.name}!`, 'success');
-  renderTab('market');
-}
-
-function handleDropSponsor(sponsorId) {
-  const d = SPONSOR_DEALS.find(s => s.id === sponsorId);
-  if (!confirm(`End your deal with ${d?.name}? You will stop receiving its race payouts.`)) return;
-  dropSponsor(sponsorId);
-  toast('Sponsor deal ended.', 'info');
-  renderTab('market');
-}
-
 // ─── Race Weekend ─────────────────────────────────────────────
 // Cars with nobody in them simply sit the race out - that is not an error.
 // Returns { error } if the team genuinely cannot enter, plus { idle } listing
@@ -845,6 +829,7 @@ function dismissSaveReminder() {
 
 // Surface what happened off-track during the race weekend
 function reportLoanNotes() {
+  reportSponsorOffers();
   const notes = [
     ...(game.lastDriverNotes || []).map(t => ({ t, type: 'success' })),
     ...(game.lastLoanNotes   || []).map(t => ({ t, type: t.includes('overdue') ? 'error' : 'info' })),

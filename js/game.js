@@ -34,6 +34,7 @@ function saveToSlot(slot) {
 }
 
 function loadFromSlot(slot) {
+  const previousGame=game,previousSlot=currentSlot;
   try {
     const raw = localStorage.getItem(SLOT_PREFIX + slot);
     if (!raw) return false;
@@ -73,8 +74,12 @@ function loadFromSlot(slot) {
     normalizeSupportStaff();
     retireExhaustedCars();
     currentSlot = slot;
+    if(migrateSponsorship()) {
+      const originalMeta=localStorage.getItem(META_KEY);
+      if(!saveToSlot(slot)){try{localStorage.setItem(SLOT_PREFIX+slot,raw);if(originalMeta!==null)localStorage.setItem(META_KEY,originalMeta);else localStorage.removeItem(META_KEY);}catch(_){}game=previousGame;currentSlot=previousSlot;return false;}
+    }
     return true;
-  } catch(e) { console.warn('Load failed:', e); return false; }
+  } catch(e) { game=previousGame;currentSlot=previousSlot;console.warn('Load failed:', e); return false; }
 }
 
 function deleteSlot(slot) {
@@ -325,7 +330,6 @@ function newGame(teamName, driverName, firstCarName) {
     raceRules: {crashes:true,damage:true},
     hiredDrivers: [],    // { driverId, carId }
     staff: [],           // { staffType, name, weeklyCost }
-    activeSponsors: [],  // sponsor deal ids
     loans: [],           // bank loans currently outstanding
     difficulty: DEFAULT_DIFFICULTY,
     winsByDifficulty: {},
@@ -344,6 +348,7 @@ function newGame(teamName, driverName, firstCarName) {
     tutorial: { status: 'offered' }, // per-career onboarding; older saves have no tutorial field
   };
 
+  game.sponsorship = freshSponsorship();
   // Init standings with player
   rebuildStandings();
   saveGame();
@@ -461,6 +466,8 @@ function applyRaceResults(results) {
 
 // ─── Post-race: update player & cars ─────────────────────────
 function postRaceUpdate(playerResult, earnings, allResults) {
+  if(playerResult._sponsorEvent && game.sponsorship.processed.includes(playerResult._sponsorEvent))return;
+  playerResult._sponsorEvent=game.season.year+':'+game.season.raceIndex;
   // Older saves have no reliable difficulty history. Track only newly
   // completed player wins, per career; teammate wins do not count here.
   if (playerResult.position === 1 && !playerResult.dnf) {
@@ -523,21 +530,7 @@ function postRaceUpdate(playerResult, earnings, allResults) {
   // Charge the same staff and hired-driver payroll shown in the budget.
   game.money -= weeklyExpenses();
 
-  // Sponsor payouts - base pay scales with how many cars you fielded
-  const sponsorMult = sponsorCarMultiplier();
-  let sponsorPay = 0;
-  game.activeSponsors.forEach(sid => {
-    const deal = SPONSOR_DEALS.find(d => d.id === sid);
-    if (!deal) return;
-    sponsorPay += deal.weekly * sponsorMult;
-    // Bonus
-    if (deal.cond === 'top10' && pos <= 10) sponsorPay += deal.bonus;
-    else if (deal.cond === 'top5' && pos <= 5) sponsorPay += deal.bonus;
-    else if (deal.cond === 'top3' && pos <= 3) sponsorPay += deal.bonus;
-    else if (deal.cond === 'win' && pos === 1)  sponsorPay += deal.bonus;
-  });
-  sponsorPay = Math.round(sponsorPay * (1 + staffTotal('sponsorBonus')));
-  game.money += sponsorPay;
+  processSponsorWeekend(pos);
 
   // Your hired drivers gain experience from the race they just ran
   game.lastDriverNotes = developHiredDrivers(allResults, field);
@@ -554,20 +547,12 @@ function postRaceUpdate(playerResult, earnings, allResults) {
 function skipRace() {
   const race = currentRace();
   if (!race) return;
+  processSponsorWeekend(null,true);
   race.status = 'skipped';
   game.lastLoanNotes = tickLoans();
   game.season.raceIndex += 1;
   // Weekly costs still apply
   game.money -= weeklyExpenses();
-  // Sponsor base pay still comes in
-  const skipMult = sponsorCarMultiplier();
-  let sponsorPay = 0;
-  game.activeSponsors.forEach(sid => {
-    const deal = SPONSOR_DEALS.find(d => d.id === sid);
-    if (deal) sponsorPay += deal.weekly * skipMult;
-  });
-  sponsorPay = Math.round(sponsorPay * (1 + staffTotal('sponsorBonus')));
-  game.money += sponsorPay;
   saveGame();
 }
 
@@ -668,6 +653,7 @@ function endSeason() {
     standings: [],
   };
   rebuildStandings();
+  rolloverSponsorship(series.level);
 
   // Reset car conditions (off-season maintenance)
   game.cars.forEach(c => {
@@ -1069,29 +1055,6 @@ function fireDriver(driverId) {
   saveGame();
 }
 
-// ─── Sponsor management ──────────────────────────────────────
-function signSponsor(sponsorId) {
-  if (game.activeSponsors.includes(sponsorId)) return { ok: false, msg: 'Already signed.' };
-  const slots = sponsorSlots();
-  if (game.activeSponsors.length >= slots) {
-    const more = slots < MAX_SPONSOR_SLOTS
-      ? ' Hire a Commercial Director to open more.' : '';
-    return { ok: false, msg: `You can run ${slots} sponsor deals at a time.${more}` };
-  }
-  const deal = SPONSOR_DEALS.find(d => d.id === sponsorId);
-  if (!deal) return { ok: false, msg: 'Deal not found.' };
-  if (deal.level > game.currentSeries) return { ok: false, msg: 'Not eligible yet.' };
-  game.activeSponsors.push(sponsorId);
-  saveGame();
-  return { ok: true };
-}
-
-function dropSponsor(sponsorId) {
-  const idx = game.activeSponsors.indexOf(sponsorId);
-  if (idx !== -1) game.activeSponsors.splice(idx, 1);
-  saveGame();
-}
-
 // ─── Computed helpers ────────────────────────────────────────
 function currentRace() {
   if (!game) return null;
@@ -1111,24 +1074,6 @@ function weeklyExpenses() {
   const staffCost = game.staff.reduce((s, st) => s + st.weeklyCost, 0);
   const driverCost = game.hiredDrivers.reduce((s, h) => s + h.weeklyCost, 0);
   return staffCost + driverCost;
-}
-
-// More cars on track means more branding for your sponsors, so base pay scales
-// with the size of the entry: each car you field doubles the money.
-function sponsorCarMultiplier() {
-  const entered = (game.cars || []).filter(c =>
-    c.assignedDriverId === 'player' || (game.hiredDrivers || []).some(h => h.carId === c.id)
-  ).length;
-  return Math.max(1, entered);
-}
-
-function weeklySponsorIncome() {
-  const mult = sponsorCarMultiplier();
-  const base = game.activeSponsors.reduce((s, sid) => {
-    const deal = SPONSOR_DEALS.find(d => d.id === sid);
-    return s + (deal ? deal.weekly * mult : 0);
-  }, 0);
-  return Math.round(base * (1 + staffTotal('sponsorBonus')));
 }
 
 function ordinal(n) {
@@ -1166,6 +1111,7 @@ function retireCareer() {
       retiredAt:Date.now(),series:SERIES[game.currentSeries].name,year:game.season.year,
       wins:history.reduce((n,h)=>n+(h.wins||0),0)+(me.wins||0),titles:game.titles||history.filter(h=>h.champion).length,
       seasons:history.length,reputation:game.reputation||0,money:game.money,
+      sponsors:{totalEarned:game.sponsorship?.totalEarned||0,partners:(game.sponsorship?.contracts||[]).map(c=>sponsorCompany(c.companyId).name)},
       season:{races:me.races||0,points:me.points||0,top5:me.top5||0,top10:me.top10||0},history});
     // Archive first: failed/quota-limited writes must never delete a playable career.
     localStorage.setItem(HALL_OF_FAME_KEY,JSON.stringify(records));

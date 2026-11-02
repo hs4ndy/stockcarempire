@@ -212,7 +212,7 @@ const STAFF_TYPES = [
     name: 'Commercial Director',
     description: 'Works the paddock and the boardroom, opening room on the car for more backers than you could land alone.',
     weeklyCost: [2200, 4400, 8800],
-    bonus: '+2 sponsor slots each (up to 7 deals in total)',
+    bonus: 'Better sponsorship approaches and contract income',
     max: 2
   }
 ];
@@ -240,20 +240,17 @@ const STAFF_CANDIDATES = [
   {id:'analyst03',typeId:'data_analyst',name:'Nina Patel',overall:79,pay:1,effects:{qualifying:7,upgradeSlots:1,simulation:2}},
   {id:'analyst04',typeId:'data_analyst',name:'Theo Lawson',overall:87,pay:1.35,effects:{qualifying:8,upgradeSlots:2,simulation:2.25}},
   {id:'analyst05',typeId:'data_analyst',name:'Avery Chen',overall:95,pay:1.9,effects:{qualifying:9,upgradeSlots:2,simulation:2.5}},
-  {id:'director01',typeId:'commercial_director',name:'Ben Wallace',overall:60,pay:.55,effects:{sponsorSlots:1,sponsorBonus:0.02}},
-  {id:'director02',typeId:'commercial_director',name:'Camila Ross',overall:70,pay:.75,effects:{sponsorSlots:1,sponsorBonus:0.04}},
-  {id:'director03',typeId:'commercial_director',name:'Miles Sutton',overall:79,pay:1,effects:{sponsorSlots:2,sponsorBonus:0.06}},
-  {id:'director04',typeId:'commercial_director',name:'Paige Ellis',overall:87,pay:1.35,effects:{sponsorSlots:2,sponsorBonus:0.08}},
-  {id:'director05',typeId:'commercial_director',name:'Dominic Blake',overall:95,pay:1.9,effects:{sponsorSlots:2,sponsorBonus:0.1}},
+  {id:'director01',typeId:'commercial_director',name:'Ben Wallace',overall:60,pay:.55,effects:{approachBonus:.05,sponsorBonus:.02}},
+  {id:'director02',typeId:'commercial_director',name:'Camila Ross',overall:70,pay:.75,effects:{approachBonus:.08,sponsorBonus:.04}},
+  {id:'director03',typeId:'commercial_director',name:'Miles Sutton',overall:79,pay:1,effects:{approachBonus:.11,sponsorBonus:.06}},
+  {id:'director04',typeId:'commercial_director',name:'Paige Ellis',overall:87,pay:1.35,effects:{approachBonus:.14,sponsorBonus:.08}},
+  {id:'director05',typeId:'commercial_director',name:'Dominic Blake',overall:95,pay:1.9,effects:{approachBonus:.18,sponsorBonus:.10}},
 ];
-const BASE_SPONSOR_SLOTS = 3;
-const SLOTS_PER_DIRECTOR = 2;
-const MAX_SPONSOR_SLOTS = 7;
 const ANALYST_QUALI_BONUS = 7;
 const ANALYST_TIER_SLOTS = 1;
 const LEGACY_STAFF_EFFECTS = {
   crew_chief:{simulation:2}, engineer:{simulation:2}, mechanic:{repairDiscount:.25},
-  data_analyst:{qualifying:7,upgradeSlots:1,simulation:2}, commercial_director:{sponsorSlots:2},
+  data_analyst:{qualifying:7,upgradeSlots:1,simulation:2}, commercial_director:{approachBonus:.11,sponsorBonus:.06},
 };
 function staffEffects(member) {
   return member.effects || LEGACY_STAFF_EFFECTS[member.typeId] || {};
@@ -269,9 +266,7 @@ function staffTotal(effect, typeId) {
   }
   return selected.reduce((sum,s) => sum + (staffEffects(s)[effect] || 0), 0);
 }
-function commercialDirectorCount() { return (typeof game !== 'undefined' && game?.staff || []).filter(s=>s.typeId==='commercial_director').length; }
 function analystCount() { return (typeof game !== 'undefined' && game?.staff || []).filter(s=>s.typeId==='data_analyst').length; }
-function sponsorSlots() { return Math.min(MAX_SPONSOR_SLOTS, BASE_SPONSOR_SLOTS + staffTotal('sponsorSlots')); }
 function tierCapacity() { return MAX_PER_TIER + staffTotal('upgradeSlots'); }
 function staffRepairDiscount() {
   return Math.max(0,...(game.staff || []).map(s=>staffEffects(s).repairDiscount || 0));
@@ -283,7 +278,7 @@ function staffBenefitText(member) {
   const e = staffEffects(member);
   if (member.typeId === 'mechanic') return `${Math.round(e.repairDiscount*100)}% repair discount (best mechanic applies)`;
   if (member.typeId === 'data_analyst') return `+${e.upgradeSlots} upgrade slot${e.upgradeSlots===1?'':'s'} per tier · +${e.qualifying} qualifying score · +${e.simulation} simulated setup`;
-  if (member.typeId === 'commercial_director') return `+${e.sponsorSlots} sponsor slot${e.sponsorSlots===1?'':'s'} (7 total maximum)${e.sponsorBonus ? ` · +${Math.round(e.sponsorBonus*100)}% sponsor income` : ''}`;
+  if (member.typeId === 'commercial_director') return `+${Math.round((e.approachBonus||0)*100)} points approach chance (best applies) · +${Math.round((e.sponsorBonus||0)*100)}% new contract income`;
   return `+${e.simulation} simulated ${member.typeId==='crew_chief'?'strategy':'setup'} score${member.typeId==='engineer'?' (best engineer applies)':''}`;
 }
 
@@ -429,18 +424,6 @@ const LOAN_OFFERS = [
 
 // Base borrowing power per series; reputation scales it up
 const LOAN_BASE = [40000, 180000, 700000];
-
-const SPONSOR_DEALS = [
-  { id: 'sp01', name: 'QuickLube Oil',        weekly: 800,   bonus: 500,  cond: 'top10', level: 0 },
-  { id: 'sp02', name: "Buster's Auto Parts",  weekly: 1600,  bonus: 1500, cond: 'top5',  level: 0 },
-  { id: 'sp03', name: 'Frontier Fuel Co.',    weekly: 1300,  bonus: 3000, cond: 'win',   level: 0 },
-  { id: 'sp04', name: 'National Tire Co.',    weekly: 2500,  bonus: 1800, cond: 'top5',  level: 1 },
-  { id: 'sp05', name: 'Velocity Motors',      weekly: 4000,  bonus: 2500, cond: 'top3',  level: 1 },
-  { id: 'sp06', name: 'Eagle Energy Drinks',  weekly: 3200,  bonus: 4500, cond: 'win',   level: 1 },
-  { id: 'sp07', name: 'Premier Auto Insure',  weekly: 14000, bonus: 9000, cond: 'top5',  level: 2 },
-  { id: 'sp08', name: 'National Bank Corp.',  weekly: 22000, bonus: 13000,cond: 'top3',  level: 2 },
-  { id: 'sp09', name: 'Apex Racing Parts',    weekly: 18000, bonus: 28000,cond: 'win',   level: 2 },
-];
 
 const RACE_EVENTS = {
   caution: [

@@ -1042,3 +1042,23 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
  .quick-setup-section:nth-child(even) { position: relative; }
  .quick-setup-section:nth-child(even)::before { content: ""; position: absolute; left: -14px; top: 0; bottom: 0; width: 1px; background: var(--line); }
 }
+
+/* Sponsorship management extends existing career materials. */
+.sponsor-notice { display:flex; align-items:center; justify-content:space-between; gap:24px; }
+.sponsor-notice h3 { font-size:20px; margin-bottom:8px; }
+.sponsor-notice p { color:var(--text-dim); }
+.sponsor-notice .btn { flex:none; }
+.sponsor-summary { display:flex; gap:48px; flex-wrap:wrap; padding:24px 0; border-block:1px solid var(--line); }
+.sponsor-summary span,.sponsor-summary strong { display:block; }
+.sponsor-summary strong { font:700 32px var(--font-display); margin-top:8px; }
+.sponsor-workspace { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.2fr); gap:24px; align-items:start; }
+.sponsor-tier-primary { background:var(--panel-2); }
+.sponsor-offer,.sponsor-partner { padding:20px 0; border-bottom:1px solid var(--line); }
+.sponsor-offer:first-of-type,.sponsor-partner:first-of-type { padding-top:0; }
+.sponsor-offer:last-child,.sponsor-partner:last-child { border-bottom:0; }
+.sponsor-offer h4,.sponsor-partner h4 { font:700 28px var(--font-display); margin-bottom:12px; overflow-wrap:anywhere; }
+.sponsor-pay { font-size:22px; font-weight:600; color:var(--good); }
+.sponsor-pay span { font-size:14px; font-weight:400; color:var(--text-dim); }
+.sponsor-role { color:var(--text-dim); font-size:14px; margin-bottom:8px; }
+.sponsor-offer .btn-row { margin-top:16px; }
+@media(max-width:760px){.sponsor-workspace{grid-template-columns:1fr;}.sponsor-notice{align-items:start;flex-direction:column;}.sponsor-summary{gap:24px;}}

@@ -2,7 +2,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs'), vm=require('node:vm');
 function newsScripts(){return [...fs.readFileSync('index.html','utf8').matchAll(/<script src="js\/(news-data(?:\/[^"]+)?\.js)"><\/script>/g)].map(m=>m[1].slice(0,-3));}
-function context(){const c=vm.createContext({console,window:{},document:{},Math});for(const f of ['data','game',...newsScripts(),'news'])vm.runInContext(fs.readFileSync(`js/${f}.js`,'utf8'),c);return c;}
+function context(){const c=vm.createContext({console,window:{},document:{},Math});for(const f of ['data','sponsor-data','sponsors','game',...newsScripts(),'news'])vm.runInContext(fs.readFileSync(`js/${f}.js`,'utf8'),c);return c;}
 function json(c,exp){return JSON.parse(vm.runInContext(`JSON.stringify(${exp})`,c));}
 
 test('270 authored articles cover every valid finish in all series',()=>{

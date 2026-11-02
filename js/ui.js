@@ -29,6 +29,7 @@ function renderTab(tabName) {
     case 'garage':     main.innerHTML = renderGarage();      break;
     case 'team':       main.innerHTML = renderTeam();        break;
     case 'schedule':   main.innerHTML = renderSchedule();    break;
+    case 'sponsors': main.innerHTML = renderSponsors(); break;
     case 'market':     main.innerHTML = renderMarket();      break;
     case 'standings':  main.innerHTML = renderStandings();   break;
     case 'carstats':   main.innerHTML = renderCareerStats(); break;
@@ -41,6 +42,7 @@ function renderTab(tabName) {
 // ─── Update header info ──────────────────────────────────────
 function updateHeader() {
   if (!game) return;
+  updateSponsorBadge();
   const cash = document.getElementById('header-cash');
   if (cash) cash.textContent = fmt$(game.money);
   // Flag an unsaved career - auto-save only runs once a slot is chosen.
@@ -139,13 +141,14 @@ function renderDashboard() {
   const playerEntry  = sorted.find(e => e.id === 'player');
   const seasonOver   = isSeasonOver();
   const expenses     = weeklyExpenses();
-  const income       = weeklySponsorIncome();
+  const income       = sponsorIncome();
 
   const topStandings = sorted.slice(0, 3).map((e, i) => {
     const cls = e.isPlayer ? 'standing-row player-row'
               : e.isTeamCar ? 'standing-row team-row'
               : 'standing-row';
-    return `<div class="${cls}">
+    return `
+  <div class="${cls}">
       <span class="pos-num">${i + 1}</span>
       <span class="entry-name">${standingName(e)}</span>
       <span class="pts-val">${e.points} pts</span>
@@ -170,6 +173,7 @@ function renderDashboard() {
     <h2>Dashboard</h2>
     <p>${series.name} <span>Season ${game.season.year}</span></p>
   </div>
+  ${renderSponsorNotice()}
   ${repairCars.length ? `<section class="card mb" id="dashboard-repair-reminder" role="status" aria-label="Repair reminder">
     <div class="card-header">Repair reminder</div>
     <div class="card-body"><p>${repairCars.length === 1 ? 'Your car needs repairs' : `${repairCars.length} cars need repairs`} before the next race. Restore vehicle condition in the Garage.</p>
@@ -261,7 +265,7 @@ function renderDashboard() {
       <details class="ui-details">
         <summary>Budget details</summary>
         <div class="ui-details-body">
-          <div class="team-stat"><span>Sponsors</span><span>${game.activeSponsors.length} / ${sponsorSlots()}</span></div>
+          <div class="team-stat"><span>Sponsors</span><span>${game.sponsorship.contracts.length} active</span></div>
           <div class="team-stat"><span>Staff</span><span>${game.staff.length + game.hiredDrivers.length} on payroll</span></div>
           <p class="section-copy">Entry fees and repairs are paid separately.</p>
         </div>
@@ -677,34 +681,6 @@ function renderMarket() {
   const series   = SERIES[game.currentSeries];
   const cls      = CAR_CLASSES[series.carClass];
   const canBuy   = game.money >= cls.buyCost;
-  const bonusConditions = { top10: 'finish in the top 10', top5: 'finish in the top 5', top3: 'finish in the top 3', win: 'win the race' };
-
-  const availableSponsors = SPONSOR_DEALS.filter(d =>
-    d.level <= game.currentSeries && !game.activeSponsors.includes(d.id)
-  );
-  const sponsorRows = availableSponsors.map(d => `
-    <div class="staff-row">
-      <div class="staff-info">
-        <span class="staff-name">${d.name}</span>
-        <div class="staff-meta">${fmt$(d.weekly)} per race · ${fmt$(d.bonus)} bonus if you ${bonusConditions[d.cond] || d.cond}</div>
-      </div>
-      ${game.activeSponsors.length < sponsorSlots()
-        ? `<button class="btn btn-sm btn-primary" onclick="handleSignSponsor('${d.id}')">Sign Deal</button>`
-        : `<button class="btn btn-sm" disabled>Sponsor Slots Full</button>`}
-    </div>`).join('') || '<p class="muted-text">No new sponsors available right now.</p>';
-
-  const activeSponsors = game.activeSponsors.map(sid => {
-    const d = SPONSOR_DEALS.find(s => s.id === sid);
-    if (!d) return '';
-    return `<div class="staff-row">
-      <div class="staff-info">
-        <span class="staff-name">${d.name}</span>
-        <div class="staff-meta">${fmt$(d.weekly)} per race · ${fmt$(d.bonus)} bonus if you ${bonusConditions[d.cond] || d.cond}</div>
-      </div>
-      <button class="btn btn-sm btn-danger" onclick="handleDropSponsor('${d.id}')">End Deal</button>
-    </div>`;
-  }).join('') || '<p class="muted-text">No active sponsors.</p>';
-
   // ── Bank ────────────────────────────────────────────────
   const loans = getLoans();
   const debt  = totalDebt();
@@ -835,15 +811,6 @@ function renderMarket() {
       ${bankCard}
     </div>
     <div>
-      <div class="card">
-        <div class="card-header">Active Sponsors</div>
-        ${activeSponsors}
-      </div>
-      <div class="card mt">
-        <div class="card-header">Available Sponsors</div>
-        <p class="section-copy">Sign a sponsor to earn money each race. ${game.activeSponsors.length} of ${sponsorSlots()} sponsor slots filled.</p>
-        ${sponsorRows}
-      </div>
       ${charityCard}
     </div>
   </div>`;
@@ -1477,7 +1444,7 @@ function showHallOfFame(index=null) {
   closeSaveModal();document.getElementById('hall-of-fame-modal')?.remove();
   const esc=careerArchiveEscape,r=index===null?null:records[index];
   const stat=(label,value)=>`<div class="team-stat"><span>${label}</span><span>${esc(value)}</span></div>`;
-  const body=r?`<h4>${esc(r.driverName)}</h4><p>${esc(r.teamName)} · ${esc(r.series)} · Year ${r.year}</p>${stat('Career Wins',r.wins)}${stat('Championships',r.titles)}${stat('Seasons Completed',r.seasons)}${stat('Final Reputation',r.reputation)}${stat('Cash at Retirement',fmt$(r.money))}<h4 class="mt">Final Season</h4>${stat('Starts',r.season.races)}${stat('Points',r.season.points)}${stat('Top 5 Finishes',r.season.top5)}${stat('Top 10 Finishes',r.season.top10)}<h4 class="mt">Season History</h4>${r.history.map(h=>stat(`${h.series} · Year ${h.year}`,`${ordinal(h.finalPos)} · ${h.wins||0} wins`)).join('')||'<p>No completed seasons.</p>'}`:records.map((r,i)=>`<div class="save-slot"><div class="save-slot-info"><strong>${esc(r.driverName)}</strong><p>${esc(r.teamName)} · ${r.wins} wins · ${r.titles} championships</p></div><button class="btn btn-primary" onclick="showHallOfFame(${i})">View Recap</button></div>`).join('')||'<p>No retired drivers yet. Retire a career to preserve its recap here.</p>';
+  const body=r?`<h4>${esc(r.driverName)}</h4><p>${esc(r.teamName)} · ${esc(r.series)} · Year ${r.year}</p>${r.sponsors?stat('Sponsorship Earnings',fmt$(r.sponsors.totalEarned))+stat('Final Partners',r.sponsors.partners.join(', ')||'None'):''}${stat('Career Wins',r.wins)}${stat('Championships',r.titles)}${stat('Seasons Completed',r.seasons)}${stat('Final Reputation',r.reputation)}${stat('Cash at Retirement',fmt$(r.money))}<h4 class="mt">Final Season</h4>${stat('Starts',r.season.races)}${stat('Points',r.season.points)}${stat('Top 5 Finishes',r.season.top5)}${stat('Top 10 Finishes',r.season.top10)}<h4 class="mt">Season History</h4>${r.history.map(h=>stat(`${h.series} · Year ${h.year}`,`${ordinal(h.finalPos)} · ${h.wins||0} wins`)).join('')||'<p>No completed seasons.</p>'}`:records.map((r,i)=>`<div class="save-slot"><div class="save-slot-info"><strong>${esc(r.driverName)}</strong><p>${esc(r.teamName)} · ${r.wins} wins · ${r.titles} championships</p></div><button class="btn btn-primary" onclick="showHallOfFame(${i})">View Recap</button></div>`).join('')||'<p>No retired drivers yet. Retire a career to preserve its recap here.</p>';
   document.body.insertAdjacentHTML('beforeend',`<div class="modal-overlay" id="hall-of-fame-modal" role="dialog" aria-modal="true" aria-labelledby="hof-title"><div class="modal"><div class="modal-header"><h3 id="hof-title">${r?'Career Recap':'Hall of Fame'}</h3><button class="modal-close" onclick="document.getElementById('hall-of-fame-modal').remove()">Close</button></div><div class="modal-body">${body}</div><div class="modal-footer"><button class="btn btn-secondary" onclick="${r?'showHallOfFame()':"document.getElementById('hall-of-fame-modal').remove();showLoadModal()"}">${r?'Back to Hall of Fame':'Back to Load Career'}</button></div></div></div>`);
   document.querySelector('#hall-of-fame-modal .modal-close')?.focus();
 }

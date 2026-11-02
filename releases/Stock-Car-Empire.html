@@ -1062,6 +1062,26 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
  .quick-setup-section:nth-child(even)::before { content: ""; position: absolute; left: -14px; top: 0; bottom: 0; width: 1px; background: var(--line); }
 }
 
+/* Sponsorship management extends existing career materials. */
+.sponsor-notice { display:flex; align-items:center; justify-content:space-between; gap:24px; }
+.sponsor-notice h3 { font-size:20px; margin-bottom:8px; }
+.sponsor-notice p { color:var(--text-dim); }
+.sponsor-notice .btn { flex:none; }
+.sponsor-summary { display:flex; gap:48px; flex-wrap:wrap; padding:24px 0; border-block:1px solid var(--line); }
+.sponsor-summary span,.sponsor-summary strong { display:block; }
+.sponsor-summary strong { font:700 32px var(--font-display); margin-top:8px; }
+.sponsor-workspace { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.2fr); gap:24px; align-items:start; }
+.sponsor-tier-primary { background:var(--panel-2); }
+.sponsor-offer,.sponsor-partner { padding:20px 0; border-bottom:1px solid var(--line); }
+.sponsor-offer:first-of-type,.sponsor-partner:first-of-type { padding-top:0; }
+.sponsor-offer:last-child,.sponsor-partner:last-child { border-bottom:0; }
+.sponsor-offer h4,.sponsor-partner h4 { font:700 28px var(--font-display); margin-bottom:12px; overflow-wrap:anywhere; }
+.sponsor-pay { font-size:22px; font-weight:600; color:var(--good); }
+.sponsor-pay span { font-size:14px; font-weight:400; color:var(--text-dim); }
+.sponsor-role { color:var(--text-dim); font-size:14px; margin-bottom:8px; }
+.sponsor-offer .btn-row { margin-top:16px; }
+@media(max-width:760px){.sponsor-workspace{grid-template-columns:1fr;}.sponsor-notice{align-items:start;flex-direction:column;}.sponsor-summary{gap:24px;}}
+
 </style>
 </head>
 <body>
@@ -1102,7 +1122,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 120</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 121</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -1208,6 +1228,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
     <button class="nav-btn" data-tab="schedule">
       <span class="nav-label">Schedule</span>
     </button>
+    <button class="nav-btn" data-tab="sponsors">Sponsors <span id="sponsor-nav-count"></span></button>
     <button class="nav-btn" data-tab="market">
       <span class="nav-label">Market</span>
     </button>
@@ -1481,7 +1502,7 @@ const STAFF_TYPES = [
     name: 'Commercial Director',
     description: 'Works the paddock and the boardroom, opening room on the car for more backers than you could land alone.',
     weeklyCost: [2200, 4400, 8800],
-    bonus: '+2 sponsor slots each (up to 7 deals in total)',
+    bonus: 'Better sponsorship approaches and contract income',
     max: 2
   }
 ];
@@ -1509,20 +1530,17 @@ const STAFF_CANDIDATES = [
   {id:'analyst03',typeId:'data_analyst',name:'Nina Patel',overall:79,pay:1,effects:{qualifying:7,upgradeSlots:1,simulation:2}},
   {id:'analyst04',typeId:'data_analyst',name:'Theo Lawson',overall:87,pay:1.35,effects:{qualifying:8,upgradeSlots:2,simulation:2.25}},
   {id:'analyst05',typeId:'data_analyst',name:'Avery Chen',overall:95,pay:1.9,effects:{qualifying:9,upgradeSlots:2,simulation:2.5}},
-  {id:'director01',typeId:'commercial_director',name:'Ben Wallace',overall:60,pay:.55,effects:{sponsorSlots:1,sponsorBonus:0.02}},
-  {id:'director02',typeId:'commercial_director',name:'Camila Ross',overall:70,pay:.75,effects:{sponsorSlots:1,sponsorBonus:0.04}},
-  {id:'director03',typeId:'commercial_director',name:'Miles Sutton',overall:79,pay:1,effects:{sponsorSlots:2,sponsorBonus:0.06}},
-  {id:'director04',typeId:'commercial_director',name:'Paige Ellis',overall:87,pay:1.35,effects:{sponsorSlots:2,sponsorBonus:0.08}},
-  {id:'director05',typeId:'commercial_director',name:'Dominic Blake',overall:95,pay:1.9,effects:{sponsorSlots:2,sponsorBonus:0.1}},
+  {id:'director01',typeId:'commercial_director',name:'Ben Wallace',overall:60,pay:.55,effects:{approachBonus:.05,sponsorBonus:.02}},
+  {id:'director02',typeId:'commercial_director',name:'Camila Ross',overall:70,pay:.75,effects:{approachBonus:.08,sponsorBonus:.04}},
+  {id:'director03',typeId:'commercial_director',name:'Miles Sutton',overall:79,pay:1,effects:{approachBonus:.11,sponsorBonus:.06}},
+  {id:'director04',typeId:'commercial_director',name:'Paige Ellis',overall:87,pay:1.35,effects:{approachBonus:.14,sponsorBonus:.08}},
+  {id:'director05',typeId:'commercial_director',name:'Dominic Blake',overall:95,pay:1.9,effects:{approachBonus:.18,sponsorBonus:.10}},
 ];
-const BASE_SPONSOR_SLOTS = 3;
-const SLOTS_PER_DIRECTOR = 2;
-const MAX_SPONSOR_SLOTS = 7;
 const ANALYST_QUALI_BONUS = 7;
 const ANALYST_TIER_SLOTS = 1;
 const LEGACY_STAFF_EFFECTS = {
   crew_chief:{simulation:2}, engineer:{simulation:2}, mechanic:{repairDiscount:.25},
-  data_analyst:{qualifying:7,upgradeSlots:1,simulation:2}, commercial_director:{sponsorSlots:2},
+  data_analyst:{qualifying:7,upgradeSlots:1,simulation:2}, commercial_director:{approachBonus:.11,sponsorBonus:.06},
 };
 function staffEffects(member) {
   return member.effects || LEGACY_STAFF_EFFECTS[member.typeId] || {};
@@ -1538,9 +1556,7 @@ function staffTotal(effect, typeId) {
   }
   return selected.reduce((sum,s) => sum + (staffEffects(s)[effect] || 0), 0);
 }
-function commercialDirectorCount() { return (typeof game !== 'undefined' && game?.staff || []).filter(s=>s.typeId==='commercial_director').length; }
 function analystCount() { return (typeof game !== 'undefined' && game?.staff || []).filter(s=>s.typeId==='data_analyst').length; }
-function sponsorSlots() { return Math.min(MAX_SPONSOR_SLOTS, BASE_SPONSOR_SLOTS + staffTotal('sponsorSlots')); }
 function tierCapacity() { return MAX_PER_TIER + staffTotal('upgradeSlots'); }
 function staffRepairDiscount() {
   return Math.max(0,...(game.staff || []).map(s=>staffEffects(s).repairDiscount || 0));
@@ -1552,7 +1568,7 @@ function staffBenefitText(member) {
   const e = staffEffects(member);
   if (member.typeId === 'mechanic') return `${Math.round(e.repairDiscount*100)}% repair discount (best mechanic applies)`;
   if (member.typeId === 'data_analyst') return `+${e.upgradeSlots} upgrade slot${e.upgradeSlots===1?'':'s'} per tier · +${e.qualifying} qualifying score · +${e.simulation} simulated setup`;
-  if (member.typeId === 'commercial_director') return `+${e.sponsorSlots} sponsor slot${e.sponsorSlots===1?'':'s'} (7 total maximum)${e.sponsorBonus ? ` · +${Math.round(e.sponsorBonus*100)}% sponsor income` : ''}`;
+  if (member.typeId === 'commercial_director') return `+${Math.round((e.approachBonus||0)*100)} points approach chance (best applies) · +${Math.round((e.sponsorBonus||0)*100)}% new contract income`;
   return `+${e.simulation} simulated ${member.typeId==='crew_chief'?'strategy':'setup'} score${member.typeId==='engineer'?' (best engineer applies)':''}`;
 }
 
@@ -1699,18 +1715,6 @@ const LOAN_OFFERS = [
 // Base borrowing power per series; reputation scales it up
 const LOAN_BASE = [40000, 180000, 700000];
 
-const SPONSOR_DEALS = [
-  { id: 'sp01', name: 'QuickLube Oil',        weekly: 800,   bonus: 500,  cond: 'top10', level: 0 },
-  { id: 'sp02', name: "Buster's Auto Parts",  weekly: 1600,  bonus: 1500, cond: 'top5',  level: 0 },
-  { id: 'sp03', name: 'Frontier Fuel Co.',    weekly: 1300,  bonus: 3000, cond: 'win',   level: 0 },
-  { id: 'sp04', name: 'National Tire Co.',    weekly: 2500,  bonus: 1800, cond: 'top5',  level: 1 },
-  { id: 'sp05', name: 'Velocity Motors',      weekly: 4000,  bonus: 2500, cond: 'top3',  level: 1 },
-  { id: 'sp06', name: 'Eagle Energy Drinks',  weekly: 3200,  bonus: 4500, cond: 'win',   level: 1 },
-  { id: 'sp07', name: 'Premier Auto Insure',  weekly: 14000, bonus: 9000, cond: 'top5',  level: 2 },
-  { id: 'sp08', name: 'National Bank Corp.',  weekly: 22000, bonus: 13000,cond: 'top3',  level: 2 },
-  { id: 'sp09', name: 'Apex Racing Parts',    weekly: 18000, bonus: 28000,cond: 'win',   level: 2 },
-];
-
 const RACE_EVENTS = {
   caution: [
     'Yellow flag! Debris on the backstretch.',
@@ -1753,6 +1757,768 @@ const QUICK_COLORS = ['#e8001d','#58a6ff','#3fb950','#e3b341','#f5f5f2','#a47ae8
 
 </script>
 <script>
+/* js/sponsor-data.js */
+// Fictional sponsorship catalog, approved VERSION121 values.
+const SPONSOR_CATALOG = [
+  {
+    "id": "partner01",
+    "name": "Creekside Auto Service",
+    "series": 0,
+    "tier": "primary",
+    "pay": 2000,
+    "seasons": 1,
+    "gate": "A",
+    "logoBrief": "Navy and cream wordmark with a simple wrench",
+    "winningDebut": false
+  },
+  {
+    "id": "partner02",
+    "name": "County Line Hardware",
+    "series": 0,
+    "tier": "primary",
+    "pay": 2500,
+    "seasons": 1,
+    "gate": "B",
+    "logoBrief": "Forest-green block lettering and a hexagonal bolt",
+    "winningDebut": false
+  },
+  {
+    "id": "partner03",
+    "name": "Millstone Farm Supply",
+    "series": 0,
+    "tier": "primary",
+    "pay": 3000,
+    "seasons": 2,
+    "gate": "C",
+    "logoBrief": "Rust-red lettering with a geometric grain stalk",
+    "winningDebut": false
+  },
+  {
+    "id": "partner04",
+    "name": "Ironwood Lumber",
+    "series": 0,
+    "tier": "primary",
+    "pay": 3500,
+    "seasons": 2,
+    "gate": "D",
+    "logoBrief": "Dark-green angular timber emblem",
+    "winningDebut": false
+  },
+  {
+    "id": "partner05",
+    "name": "Copperline Tools",
+    "series": 0,
+    "tier": "primary",
+    "pay": 5000,
+    "seasons": 2,
+    "gate": "E",
+    "logoBrief": "Copper and black lettering with a strong C-shaped tool mark",
+    "winningDebut": true
+  },
+  {
+    "id": "partner06",
+    "name": "Junction Freight",
+    "series": 0,
+    "tier": "primary",
+    "pay": 4000,
+    "seasons": 3,
+    "gate": "F",
+    "logoBrief": "Burgundy wordmark with parallel road lines",
+    "winningDebut": false
+  },
+  {
+    "id": "partner07",
+    "name": "Blue Hollow Equipment",
+    "series": 0,
+    "tier": "primary",
+    "pay": 4500,
+    "seasons": 3,
+    "gate": "G",
+    "logoBrief": "Cobalt industrial lettering and a compact gear",
+    "winningDebut": false
+  },
+  {
+    "id": "partner08",
+    "name": "Foundry Ridge Manufacturing",
+    "series": 0,
+    "tier": "primary",
+    "pay": 5500,
+    "seasons": 5,
+    "gate": "H",
+    "logoBrief": "Charcoal and orange foundry monogram",
+    "winningDebut": false
+  },
+  {
+    "id": "partner09",
+    "name": "Pitstop Diner",
+    "series": 0,
+    "tier": "secondary",
+    "pay": 400,
+    "seasons": 1,
+    "gate": "A",
+    "logoBrief": "Cream and cherry-red diner lettering",
+    "winningDebut": false
+  },
+  {
+    "id": "partner10",
+    "name": "Mason Street Tires",
+    "series": 0,
+    "tier": "secondary",
+    "pay": 500,
+    "seasons": 1,
+    "gate": "A",
+    "logoBrief": "Black and yellow lettering with a tread symbol",
+    "winningDebut": false
+  },
+  {
+    "id": "partner11",
+    "name": "Orchard Bend Market",
+    "series": 0,
+    "tier": "secondary",
+    "pay": 650,
+    "seasons": 1,
+    "gate": "B",
+    "logoBrief": "Green and cream wordmark with an apple silhouette",
+    "winningDebut": false
+  },
+  {
+    "id": "partner12",
+    "name": "Gravel Run Landscaping",
+    "series": 0,
+    "tier": "secondary",
+    "pay": 700,
+    "seasons": 2,
+    "gate": "B",
+    "logoBrief": "Olive lettering and three geometric hills",
+    "winningDebut": false
+  },
+  {
+    "id": "partner13",
+    "name": "Barnlight Workwear",
+    "series": 0,
+    "tier": "secondary",
+    "pay": 850,
+    "seasons": 2,
+    "gate": "C",
+    "logoBrief": "Tan and black lettering with a lantern mark",
+    "winningDebut": false
+  },
+  {
+    "id": "partner14",
+    "name": "Southbank Plumbing",
+    "series": 0,
+    "tier": "secondary",
+    "pay": 900,
+    "seasons": 2,
+    "gate": "C",
+    "logoBrief": "Blue pipe-shaped S emblem",
+    "winningDebut": false
+  },
+  {
+    "id": "partner15",
+    "name": "Oakline Roofing",
+    "series": 0,
+    "tier": "secondary",
+    "pay": 1000,
+    "seasons": 2,
+    "gate": "D",
+    "logoBrief": "Slate and red lettering beneath a simple roofline",
+    "winningDebut": false
+  },
+  {
+    "id": "partner16",
+    "name": "Creekwater Outdoors",
+    "series": 0,
+    "tier": "secondary",
+    "pay": 1100,
+    "seasons": 3,
+    "gate": "F",
+    "logoBrief": "Teal wordmark with a restrained river symbol",
+    "winningDebut": false
+  },
+  {
+    "id": "partner17",
+    "name": "Ridgeway Welding",
+    "series": 0,
+    "tier": "secondary",
+    "pay": 1250,
+    "seasons": 3,
+    "gate": "D",
+    "logoBrief": "Steel-grey lettering and an orange welding spark",
+    "winningDebut": false
+  },
+  {
+    "id": "partner18",
+    "name": "Turn Four Coffee",
+    "series": 0,
+    "tier": "secondary",
+    "pay": 1400,
+    "seasons": 3,
+    "gate": "E",
+    "logoBrief": "Espresso and cream lettering with a four-stripe cup",
+    "winningDebut": false
+  },
+  {
+    "id": "partner19",
+    "name": "Stonebridge Credit Union",
+    "series": 0,
+    "tier": "secondary",
+    "pay": 1600,
+    "seasons": 4,
+    "gate": "G",
+    "logoBrief": "Navy and gold bridge emblem",
+    "winningDebut": false
+  },
+  {
+    "id": "partner20",
+    "name": "Heritage County Insurance",
+    "series": 0,
+    "tier": "secondary",
+    "pay": 1800,
+    "seasons": 5,
+    "gate": "H",
+    "logoBrief": "Deep-red shield and readable heritage lettering",
+    "winningDebut": false
+  },
+  {
+    "id": "partner21",
+    "name": "Crossstate Logistics",
+    "series": 1,
+    "tier": "primary",
+    "pay": 8000,
+    "seasons": 1,
+    "gate": "A",
+    "logoBrief": "Blue and white wordmark with intersecting route lines",
+    "winningDebut": false
+  },
+  {
+    "id": "partner22",
+    "name": "TorqueWorks Components",
+    "series": 1,
+    "tier": "primary",
+    "pay": 10000,
+    "seasons": 2,
+    "gate": "B",
+    "logoBrief": "Graphite and orange industrial T emblem",
+    "winningDebut": false
+  },
+  {
+    "id": "partner23",
+    "name": "Meridian Broadband",
+    "series": 1,
+    "tier": "primary",
+    "pay": 12000,
+    "seasons": 2,
+    "gate": "C",
+    "logoBrief": "Cyan and navy lettering with three signal arcs",
+    "winningDebut": false
+  },
+  {
+    "id": "partner24",
+    "name": "SummitForge Tools",
+    "series": 1,
+    "tier": "primary",
+    "pay": 14000,
+    "seasons": 3,
+    "gate": "D",
+    "logoBrief": "Silver and red mountain-shaped anvil",
+    "winningDebut": false
+  },
+  {
+    "id": "partner25",
+    "name": "Redline Fabrication",
+    "series": 1,
+    "tier": "primary",
+    "pay": 18000,
+    "seasons": 2,
+    "gate": "E",
+    "logoBrief": "Red and black slanted lettering with a precision-cut R",
+    "winningDebut": true
+  },
+  {
+    "id": "partner26",
+    "name": "Northstar Fleet Systems",
+    "series": 1,
+    "tier": "primary",
+    "pay": 16000,
+    "seasons": 3,
+    "gate": "F",
+    "logoBrief": "Midnight-blue lettering and a four-point navigation star",
+    "winningDebut": false
+  },
+  {
+    "id": "partner27",
+    "name": "Atlas Circuit Electronics",
+    "series": 1,
+    "tier": "primary",
+    "pay": 20000,
+    "seasons": 5,
+    "gate": "H",
+    "logoBrief": "Electric-blue circuit-shaped A emblem",
+    "winningDebut": false
+  },
+  {
+    "id": "partner28",
+    "name": "Trailhead Workwear",
+    "series": 1,
+    "tier": "secondary",
+    "pay": 2000,
+    "seasons": 1,
+    "gate": "A",
+    "logoBrief": "Orange and charcoal trail-marker symbol",
+    "winningDebut": false
+  },
+  {
+    "id": "partner29",
+    "name": "Relay Mobile",
+    "series": 1,
+    "tier": "secondary",
+    "pay": 2500,
+    "seasons": 1,
+    "gate": "B",
+    "logoBrief": "Violet lettering with two linked signal blocks",
+    "winningDebut": false
+  },
+  {
+    "id": "partner30",
+    "name": "Hardpoint Fasteners",
+    "series": 1,
+    "tier": "secondary",
+    "pay": 3000,
+    "seasons": 2,
+    "gate": "C",
+    "logoBrief": "Black and yellow hex-bolt monogram",
+    "winningDebut": false
+  },
+  {
+    "id": "partner31",
+    "name": "Milemarker Hotels",
+    "series": 1,
+    "tier": "secondary",
+    "pay": 3500,
+    "seasons": 2,
+    "gate": "F",
+    "logoBrief": "Navy and cream roadway marker",
+    "winningDebut": false
+  },
+  {
+    "id": "partner32",
+    "name": "FlintEdge Batteries",
+    "series": 1,
+    "tier": "secondary",
+    "pay": 4000,
+    "seasons": 3,
+    "gate": "D",
+    "logoBrief": "Graphite and lime lightning-cut F",
+    "winningDebut": false
+  },
+  {
+    "id": "partner33",
+    "name": "BluePeak Hydration",
+    "series": 1,
+    "tier": "secondary",
+    "pay": 5000,
+    "seasons": 3,
+    "gate": "E",
+    "logoBrief": "Blue and silver angular water drop",
+    "winningDebut": false
+  },
+  {
+    "id": "partner34",
+    "name": "Westward Equipment Finance",
+    "series": 1,
+    "tier": "secondary",
+    "pay": 6000,
+    "seasons": 4,
+    "gate": "G",
+    "logoBrief": "Deep-green lettering with an arrow-shaped W",
+    "winningDebut": false
+  },
+  {
+    "id": "partner35",
+    "name": "SignalBox Software",
+    "series": 1,
+    "tier": "tertiary",
+    "pay": 600,
+    "seasons": 1,
+    "gate": "A",
+    "logoBrief": "Teal outlined square and compact S mark",
+    "winningDebut": false
+  },
+  {
+    "id": "partner36",
+    "name": "Apexline Safety",
+    "series": 1,
+    "tier": "tertiary",
+    "pay": 800,
+    "seasons": 2,
+    "gate": "B",
+    "logoBrief": "Red and white protective chevron",
+    "winningDebut": false
+  },
+  {
+    "id": "partner37",
+    "name": "Rivet Industrial Supply",
+    "series": 1,
+    "tier": "tertiary",
+    "pay": 1000,
+    "seasons": 2,
+    "gate": "C",
+    "logoBrief": "Gunmetal wordmark with a circular rivet",
+    "winningDebut": false
+  },
+  {
+    "id": "partner38",
+    "name": "Switchback Outdoor Gear",
+    "series": 1,
+    "tier": "tertiary",
+    "pay": 1250,
+    "seasons": 3,
+    "gate": "F",
+    "logoBrief": "Orange zigzag trail emblem",
+    "winningDebut": false
+  },
+  {
+    "id": "partner39",
+    "name": "Clearspan Packaging",
+    "series": 1,
+    "tier": "tertiary",
+    "pay": 1600,
+    "seasons": 3,
+    "gate": "G",
+    "logoBrief": "Blue interlocking package outlines",
+    "winningDebut": false
+  },
+  {
+    "id": "partner40",
+    "name": "Precision Harbor Machinery",
+    "series": 1,
+    "tier": "tertiary",
+    "pay": 2000,
+    "seasons": 5,
+    "gate": "H",
+    "logoBrief": "Navy and gold mechanical compass",
+    "winningDebut": false
+  },
+  {
+    "id": "partner41",
+    "name": "Horizon National Bank",
+    "series": 2,
+    "tier": "primary",
+    "pay": 50000,
+    "seasons": 1,
+    "gate": "A",
+    "logoBrief": "Navy and gold horizon-shaped H",
+    "winningDebut": false
+  },
+  {
+    "id": "partner42",
+    "name": "Stratos Communications",
+    "series": 2,
+    "tier": "primary",
+    "pay": 65000,
+    "seasons": 2,
+    "gate": "B",
+    "logoBrief": "Cobalt and silver orbital S",
+    "winningDebut": false
+  },
+  {
+    "id": "partner43",
+    "name": "TitanGrid Energy",
+    "series": 2,
+    "tier": "primary",
+    "pay": 80000,
+    "seasons": 3,
+    "gate": "C",
+    "logoBrief": "Black and electric-green grid monogram",
+    "winningDebut": false
+  },
+  {
+    "id": "partner44",
+    "name": "Crownline Insurance",
+    "series": 2,
+    "tier": "primary",
+    "pay": 90000,
+    "seasons": 3,
+    "gate": "D",
+    "logoBrief": "Burgundy and platinum abstract crown",
+    "winningDebut": false
+  },
+  {
+    "id": "partner45",
+    "name": "Vanguard Motors",
+    "series": 2,
+    "tier": "primary",
+    "pay": 110000,
+    "seasons": 2,
+    "gate": "E",
+    "logoBrief": "Red and graphite wing-shaped V",
+    "winningDebut": true
+  },
+  {
+    "id": "partner46",
+    "name": "Aether Computing",
+    "series": 2,
+    "tier": "primary",
+    "pay": 100000,
+    "seasons": 4,
+    "gate": "F",
+    "logoBrief": "Violet and white geometric A",
+    "winningDebut": false
+  },
+  {
+    "id": "partner47",
+    "name": "Sovereign Aerospace",
+    "series": 2,
+    "tier": "primary",
+    "pay": 125000,
+    "seasons": 5,
+    "gate": "H",
+    "logoBrief": "Midnight-blue and silver swept-wing emblem",
+    "winningDebut": false
+  },
+  {
+    "id": "partner48",
+    "name": "Vector Fuel Systems",
+    "series": 2,
+    "tier": "secondary",
+    "pay": 10000,
+    "seasons": 1,
+    "gate": "A",
+    "logoBrief": "Red and white directional V",
+    "winningDebut": false
+  },
+  {
+    "id": "partner49",
+    "name": "Monolith Infrastructure",
+    "series": 2,
+    "tier": "secondary",
+    "pay": 13000,
+    "seasons": 2,
+    "gate": "B",
+    "logoBrief": "Charcoal and orange architectural M",
+    "winningDebut": false
+  },
+  {
+    "id": "partner50",
+    "name": "Hyperion Networks",
+    "series": 2,
+    "tier": "secondary",
+    "pay": 16000,
+    "seasons": 2,
+    "gate": "C",
+    "logoBrief": "Blue linked-node H",
+    "winningDebut": false
+  },
+  {
+    "id": "partner51",
+    "name": "PulsePoint Performance",
+    "series": 2,
+    "tier": "secondary",
+    "pay": 19000,
+    "seasons": 3,
+    "gate": "D",
+    "logoBrief": "Crimson and black pulse-line P",
+    "winningDebut": false
+  },
+  {
+    "id": "partner52",
+    "name": "Crestfall Resorts",
+    "series": 2,
+    "tier": "secondary",
+    "pay": 22000,
+    "seasons": 3,
+    "gate": "F",
+    "logoBrief": "Teal and gold mountain crest",
+    "winningDebut": false
+  },
+  {
+    "id": "partner53",
+    "name": "Ironclad Security",
+    "series": 2,
+    "tier": "secondary",
+    "pay": 25000,
+    "seasons": 4,
+    "gate": "G",
+    "logoBrief": "Steel-grey shield and strong I monogram",
+    "winningDebut": false
+  },
+  {
+    "id": "partner54",
+    "name": "Novara Financial",
+    "series": 2,
+    "tier": "secondary",
+    "pay": 28000,
+    "seasons": 5,
+    "gate": "H",
+    "logoBrief": "Emerald and platinum interlocking N",
+    "winningDebut": false
+  },
+  {
+    "id": "partner55",
+    "name": "Lumina Displays",
+    "series": 2,
+    "tier": "tertiary",
+    "pay": 3000,
+    "seasons": 1,
+    "gate": "A",
+    "logoBrief": "Cyan and white rectangular light mark",
+    "winningDebut": false
+  },
+  {
+    "id": "partner56",
+    "name": "Jetstream Travel",
+    "series": 2,
+    "tier": "tertiary",
+    "pay": 3750,
+    "seasons": 2,
+    "gate": "B",
+    "logoBrief": "Sky-blue curved J and flight trail",
+    "winningDebut": false
+  },
+  {
+    "id": "partner57",
+    "name": "CarbonVale Materials",
+    "series": 2,
+    "tier": "tertiary",
+    "pay": 4500,
+    "seasons": 2,
+    "gate": "C",
+    "logoBrief": "Black and orange faceted C",
+    "winningDebut": false
+  },
+  {
+    "id": "partner58",
+    "name": "RapidArc Payments",
+    "series": 2,
+    "tier": "tertiary",
+    "pay": 5250,
+    "seasons": 3,
+    "gate": "D",
+    "logoBrief": "Purple and silver forward arc",
+    "winningDebut": false
+  },
+  {
+    "id": "partner59",
+    "name": "Evercrest Medical",
+    "series": 2,
+    "tier": "tertiary",
+    "pay": 6250,
+    "seasons": 3,
+    "gate": "F",
+    "logoBrief": "Teal and navy abstract rising crest",
+    "winningDebut": false
+  },
+  {
+    "id": "partner60",
+    "name": "Zenith Industrial Group",
+    "series": 2,
+    "tier": "tertiary",
+    "pay": 7500,
+    "seasons": 5,
+    "gate": "H",
+    "logoBrief": "Blue and gold angular Z",
+    "winningDebut": false
+  }
+];
+const SPONSOR_CAPACITY = [{primary:1,secondary:1,tertiary:0},{primary:1,secondary:2,tertiary:1},{primary:1,secondary:3,tertiary:3}];
+const SPONSOR_GATES = {A:"Complete a race",B:"Top 10 finish",C:"Top 5 finish",D:"Podium",E:"Race win",F:"Three top 10s in five races",G:"Championship top 5 after five starts",H:"Series champion"};
+
+</script>
+<script>
+/* js/sponsors.js */
+// Career-only partnerships. Private deterministic RNG never consumes racing randomness.
+function freshSponsorship() {
+  let seed=2166136261;for(const c of game.teamName+game.driverName)seed=Math.imul(seed^c.charCodeAt(0),16777619)>>>0;
+  return {version:1,series:game.currentSeries,contracts:[],offers:[],milestones:[],recent:[],processed:[],weekend:0,sequence:0,seed,totalEarned:0,completed:0,podiums:0,hasDebuted:false,notice:false};
+}
+function sponsorRandom() {const s=game.sponsorship;s.seed=(Math.imul(s.seed,1664525)+1013904223)>>>0;return s.seed/4294967296;}
+function sponsorCompany(id) {return SPONSOR_CATALOG.find(c=>c.id===id);}
+function sponsorshipCapacity() {return SPONSOR_CAPACITY[game.currentSeries];}
+function sponsorIncome() {return (game.sponsorship?.contracts||[]).reduce((n,c)=>n+c.pay,0);}
+function sponsorUnread() {return (game?.sponsorship?.offers||[]).filter(o=>!o.read).length;}
+function directorApproachBonus() {return Math.max(0,...(game.staff||[]).filter(s=>s.typeId==='commercial_director').map(s=>staffEffects(s).approachBonus||0));}
+function convertSponsorDirectors() {
+  for(const s of game.staff||[])if(s.typeId==='commercial_director') {
+    const c=STAFF_CANDIDATES.find(c=>c.id===s.candidateId)||STAFF_CANDIDATES.find(c=>c.typeId===s.typeId&&c.overall===79);
+    s.effects={...c.effects};
+  }
+}
+function addSponsorOffer(company,reason,guaranteed=false) {
+  const s=game.sponsorship;
+  if(!company||!sponsorshipCapacity()[company.tier]||s.contracts.some(c=>c.companyId===company.id)||s.offers.some(o=>o.companyId===company.id))return false;
+  const factor=1+staffTotal('sponsorBonus'),rate=company.tier==='primary'?.5:.25;
+  const pay=Math.round(company.pay*factor),bonus=Math.round(company.pay*rate*factor);
+  s.offers.push({id:'offer'+(++s.sequence),companyId:company.id,pay,bonus,endYear:game.season.year+company.seasons-1,expires:s.weekend+3,reason,guaranteed,read:false});
+  while(s.offers.length>8){const index=s.offers.findIndex(o=>!o.guaranteed);s.offers.splice(index<0?0:index,1);}
+  return true;
+}
+function sponsorStarters(reason,winning=false,allTiers=true) {
+  const companies=SPONSOR_CATALOG.filter(c=>c.series===game.currentSeries);
+  addSponsorOffer(companies.find(c=>c.tier==='primary'&&(winning?c.winningDebut:c.gate==='A')),reason,true);
+  if(allTiers)for(const tier of ['secondary','tertiary'])addSponsorOffer(companies.find(c=>c.tier===tier&&c.gate==='A'),reason);
+}
+function migrateSponsorship() {
+  if(game.sponsorship?.version===1)return false;
+  game.sponsorship=freshSponsorship();game.sponsorship.hasDebuted=!!game.history?.length||game.season.calendar.some(r=>r.status==='completed');game.sponsorship.podiums=game.season.calendar.filter(r=>r.status==='completed'&&r.playerResult?.position>=1&&r.playerResult.position<=3).length;convertSponsorDirectors();delete game.activeSponsors;
+  sponsorStarters('Welcome to the new sponsorship system');game.sponsorship.notice=true;
+  return true;
+}
+function sponsorEligibility(company) {
+  const s=game.sponsorship,me=(game.season.standings||[]).find(e=>e.id==='player')||{};
+  const calendar=game.season.calendar.filter(r=>r.status==='completed');
+  // Only observed player results and recorded standings/history count.
+  const recent=s.recent,has=n=>recent.some(p=>p<=n);
+  const sorted=getStandings(),rank=sorted.findIndex(e=>e.id==='player')+1;
+  const gates={A:calendar.length>0||s.completed>0,B:(me.top10||0)>0||has(10),C:(me.top5||0)>0||has(5),D:(s.podiums||0)>0||has(3),E:(me.wins||0)>0||has(1),F:recent.slice(-5).filter(p=>p<=10).length>=3,G:(me.races||0)>=5&&rank>0&&rank<=5,H:(game.history||[]).some(h=>h.series===SERIES[company.series].name&&h.champion)};
+  return company.series===game.currentSeries&&!!gates[company.gate];
+}
+function expireSponsorOffers() {const s=game.sponsorship;s.offers=s.offers.filter(o=>o.expires>s.weekend);}
+function processSponsorWeekend(position,skipped=false) {
+  const s=game.sponsorship,key=game.season.year+':'+game.season.raceIndex;
+  if(s.processed.includes(key))return 0;
+  s.processed.push(key);s.weekend++;expireSponsorOffers();
+  if(skipped)return 0;
+  const payment=s.contracts.reduce((n,c)=>{const tier=sponsorCompany(c.companyId).tier;return n+c.pay+(position<=(tier==='primary'?1:tier==='secondary'?5:10)?c.bonus:0);},0);
+  game.money+=payment;s.totalEarned+=payment;s.lastPayment=payment;
+  s.completed++;if(position<=3)s.podiums=(s.podiums||0)+1;s.recent.push(position);if(s.recent.length>5)s.recent.shift();
+  const milestoneKeys=[];
+  for(const [name,yes]of [['win',position===1],['podium',position<=3],['top5',position<=5],['consistent',s.recent.filter(p=>p<=10).length>=3],['championship',sponsorEligibility({series:game.currentSeries,gate:'G'})]]) {
+    if(yes&&(name==='win'||!s.milestones.includes(name))){milestoneKeys.push(name);if(!s.milestones.includes(name))s.milestones.push(name);}
+  }
+  if(!s.hasDebuted){s.hasDebuted=true;sponsorStarters(position===1?'Winning debut':'Your first completed race',position===1,false);return payment;}
+  const milestone=milestoneKeys.length>0;
+  if(!milestone&&sponsorRandom()>=.20+directorApproachBonus())return payment;
+  let candidates=SPONSOR_CATALOG.filter(c=>sponsorEligibility(c)&&sponsorshipCapacity()[c.tier]&&!s.contracts.some(a=>a.companyId===c.id)&&!s.offers.some(o=>o.companyId===c.id));
+  // Empty tiers and improvements receive priority, with independent seeded variation.
+  candidates=candidates.map(c=>({c,priority:s.contracts.filter(a=>sponsorCompany(a.companyId).tier===c.tier).length<sponsorshipCapacity()[c.tier]?2:c.pay>Math.min(...s.contracts.filter(a=>sponsorCompany(a.companyId).tier===c.tier).map(a=>sponsorCompany(a.companyId).pay))?1:0,r:sponsorRandom()})).sort((a,b)=>b.priority-a.priority||b.r-a.r);
+  for(const {c}of candidates.slice(0,milestone?2:1))addSponsorOffer(c,milestone?'Performance milestone: '+milestoneKeys.join(', '):'A company noticed your team');
+  return payment;
+}
+function rolloverSponsorship(oldSeries) {
+  const s=game.sponsorship;
+  s.contracts=s.contracts.filter(c=>c.endYear>=game.season.year);s.offers=[];s.milestones=[];s.recent=[];s.completed=0;s.podiums=0;
+  if(oldSeries!==game.currentSeries){s.contracts=[];s.series=game.currentSeries;sponsorStarters('New series partnership opportunities');}
+  else {
+    if(!s.contracts.some(c=>sponsorCompany(c.companyId).tier==='primary'))sponsorStarters('Primary partnership renewal',false,false);
+    if(game.history?.at(-1)?.champion)for(const c of SPONSOR_CATALOG.filter(c=>c.series===game.currentSeries&&c.gate==='H')){if(s.offers.length>=2)break;addSponsorOffer(c,'Championship partnership interest');}
+  }
+}
+function acceptSponsorOffer(id,replacementId=null) {
+  const s=game.sponsorship,o=s.offers.find(o=>o.id===id);if(!o||o.expires<=s.weekend)return {ok:false,msg:'This offer is no longer available.'};
+  const c=sponsorCompany(o.companyId),contracts=s.contracts.filter(a=>sponsorCompany(a.companyId).tier===c.tier);
+  if(s.contracts.some(a=>a.companyId===c.id))return {ok:false,msg:'Already partnered.'};
+  if(contracts.length>=sponsorshipCapacity()[c.tier]&&!contracts.some(a=>a.id===replacementId))return {ok:false,msg:'Choose the contract to replace.'};
+  const before=JSON.stringify(s);
+  if(contracts.length>=sponsorshipCapacity()[c.tier])s.contracts=s.contracts.filter(a=>a.id!==replacementId);
+  s.contracts.push({...o,id:'contract'+(++s.sequence)});s.offers=s.offers.filter(a=>a.id!==id);
+  if(currentSlot!==null&&!saveToSlot(currentSlot)){game.sponsorship=JSON.parse(before);return {ok:false,msg:'Could not save the contract. Please try again.'};}
+  return {ok:true};
+}
+function declineSponsorOffer(id) {const s=game.sponsorship,before=JSON.stringify(s);s.offers=s.offers.filter(o=>o.id!==id);if(currentSlot!==null&&!saveToSlot(currentSlot)){game.sponsorship=JSON.parse(before);return false;}return true;}
+
+</script>
+<script>
 /* js/game.js */
 // ============================================================
 // STOCK CAR EMPIRE - Core Game State & Logic
@@ -1790,6 +2556,7 @@ function saveToSlot(slot) {
 }
 
 function loadFromSlot(slot) {
+  const previousGame=game,previousSlot=currentSlot;
   try {
     const raw = localStorage.getItem(SLOT_PREFIX + slot);
     if (!raw) return false;
@@ -1829,8 +2596,12 @@ function loadFromSlot(slot) {
     normalizeSupportStaff();
     retireExhaustedCars();
     currentSlot = slot;
+    if(migrateSponsorship()) {
+      const originalMeta=localStorage.getItem(META_KEY);
+      if(!saveToSlot(slot)){try{localStorage.setItem(SLOT_PREFIX+slot,raw);if(originalMeta!==null)localStorage.setItem(META_KEY,originalMeta);else localStorage.removeItem(META_KEY);}catch(_){}game=previousGame;currentSlot=previousSlot;return false;}
+    }
     return true;
-  } catch(e) { console.warn('Load failed:', e); return false; }
+  } catch(e) { game=previousGame;currentSlot=previousSlot;console.warn('Load failed:', e); return false; }
 }
 
 function deleteSlot(slot) {
@@ -2081,7 +2852,6 @@ function newGame(teamName, driverName, firstCarName) {
     raceRules: {crashes:true,damage:true},
     hiredDrivers: [],    // { driverId, carId }
     staff: [],           // { staffType, name, weeklyCost }
-    activeSponsors: [],  // sponsor deal ids
     loans: [],           // bank loans currently outstanding
     difficulty: DEFAULT_DIFFICULTY,
     winsByDifficulty: {},
@@ -2100,6 +2870,7 @@ function newGame(teamName, driverName, firstCarName) {
     tutorial: { status: 'offered' }, // per-career onboarding; older saves have no tutorial field
   };
 
+  game.sponsorship = freshSponsorship();
   // Init standings with player
   rebuildStandings();
   saveGame();
@@ -2217,6 +2988,8 @@ function applyRaceResults(results) {
 
 // ─── Post-race: update player & cars ─────────────────────────
 function postRaceUpdate(playerResult, earnings, allResults) {
+  if(playerResult._sponsorEvent && game.sponsorship.processed.includes(playerResult._sponsorEvent))return;
+  playerResult._sponsorEvent=game.season.year+':'+game.season.raceIndex;
   // Older saves have no reliable difficulty history. Track only newly
   // completed player wins, per career; teammate wins do not count here.
   if (playerResult.position === 1 && !playerResult.dnf) {
@@ -2279,21 +3052,7 @@ function postRaceUpdate(playerResult, earnings, allResults) {
   // Charge the same staff and hired-driver payroll shown in the budget.
   game.money -= weeklyExpenses();
 
-  // Sponsor payouts - base pay scales with how many cars you fielded
-  const sponsorMult = sponsorCarMultiplier();
-  let sponsorPay = 0;
-  game.activeSponsors.forEach(sid => {
-    const deal = SPONSOR_DEALS.find(d => d.id === sid);
-    if (!deal) return;
-    sponsorPay += deal.weekly * sponsorMult;
-    // Bonus
-    if (deal.cond === 'top10' && pos <= 10) sponsorPay += deal.bonus;
-    else if (deal.cond === 'top5' && pos <= 5) sponsorPay += deal.bonus;
-    else if (deal.cond === 'top3' && pos <= 3) sponsorPay += deal.bonus;
-    else if (deal.cond === 'win' && pos === 1)  sponsorPay += deal.bonus;
-  });
-  sponsorPay = Math.round(sponsorPay * (1 + staffTotal('sponsorBonus')));
-  game.money += sponsorPay;
+  processSponsorWeekend(pos);
 
   // Your hired drivers gain experience from the race they just ran
   game.lastDriverNotes = developHiredDrivers(allResults, field);
@@ -2310,20 +3069,12 @@ function postRaceUpdate(playerResult, earnings, allResults) {
 function skipRace() {
   const race = currentRace();
   if (!race) return;
+  processSponsorWeekend(null,true);
   race.status = 'skipped';
   game.lastLoanNotes = tickLoans();
   game.season.raceIndex += 1;
   // Weekly costs still apply
   game.money -= weeklyExpenses();
-  // Sponsor base pay still comes in
-  const skipMult = sponsorCarMultiplier();
-  let sponsorPay = 0;
-  game.activeSponsors.forEach(sid => {
-    const deal = SPONSOR_DEALS.find(d => d.id === sid);
-    if (deal) sponsorPay += deal.weekly * skipMult;
-  });
-  sponsorPay = Math.round(sponsorPay * (1 + staffTotal('sponsorBonus')));
-  game.money += sponsorPay;
   saveGame();
 }
 
@@ -2424,6 +3175,7 @@ function endSeason() {
     standings: [],
   };
   rebuildStandings();
+  rolloverSponsorship(series.level);
 
   // Reset car conditions (off-season maintenance)
   game.cars.forEach(c => {
@@ -2825,29 +3577,6 @@ function fireDriver(driverId) {
   saveGame();
 }
 
-// ─── Sponsor management ──────────────────────────────────────
-function signSponsor(sponsorId) {
-  if (game.activeSponsors.includes(sponsorId)) return { ok: false, msg: 'Already signed.' };
-  const slots = sponsorSlots();
-  if (game.activeSponsors.length >= slots) {
-    const more = slots < MAX_SPONSOR_SLOTS
-      ? ' Hire a Commercial Director to open more.' : '';
-    return { ok: false, msg: `You can run ${slots} sponsor deals at a time.${more}` };
-  }
-  const deal = SPONSOR_DEALS.find(d => d.id === sponsorId);
-  if (!deal) return { ok: false, msg: 'Deal not found.' };
-  if (deal.level > game.currentSeries) return { ok: false, msg: 'Not eligible yet.' };
-  game.activeSponsors.push(sponsorId);
-  saveGame();
-  return { ok: true };
-}
-
-function dropSponsor(sponsorId) {
-  const idx = game.activeSponsors.indexOf(sponsorId);
-  if (idx !== -1) game.activeSponsors.splice(idx, 1);
-  saveGame();
-}
-
 // ─── Computed helpers ────────────────────────────────────────
 function currentRace() {
   if (!game) return null;
@@ -2867,24 +3596,6 @@ function weeklyExpenses() {
   const staffCost = game.staff.reduce((s, st) => s + st.weeklyCost, 0);
   const driverCost = game.hiredDrivers.reduce((s, h) => s + h.weeklyCost, 0);
   return staffCost + driverCost;
-}
-
-// More cars on track means more branding for your sponsors, so base pay scales
-// with the size of the entry: each car you field doubles the money.
-function sponsorCarMultiplier() {
-  const entered = (game.cars || []).filter(c =>
-    c.assignedDriverId === 'player' || (game.hiredDrivers || []).some(h => h.carId === c.id)
-  ).length;
-  return Math.max(1, entered);
-}
-
-function weeklySponsorIncome() {
-  const mult = sponsorCarMultiplier();
-  const base = game.activeSponsors.reduce((s, sid) => {
-    const deal = SPONSOR_DEALS.find(d => d.id === sid);
-    return s + (deal ? deal.weekly * mult : 0);
-  }, 0);
-  return Math.round(base * (1 + staffTotal('sponsorBonus')));
 }
 
 function ordinal(n) {
@@ -2922,6 +3633,7 @@ function retireCareer() {
       retiredAt:Date.now(),series:SERIES[game.currentSeries].name,year:game.season.year,
       wins:history.reduce((n,h)=>n+(h.wins||0),0)+(me.wins||0),titles:game.titles||history.filter(h=>h.champion).length,
       seasons:history.length,reputation:game.reputation||0,money:game.money,
+      sponsors:{totalEarned:game.sponsorship?.totalEarned||0,partners:(game.sponsorship?.contracts||[]).map(c=>sponsorCompany(c.companyId).name)},
       season:{races:me.races||0,points:me.points||0,top5:me.top5||0,top10:me.top10||0},history});
     // Archive first: failed/quota-limited writes must never delete a playable career.
     localStorage.setItem(HALL_OF_FAME_KEY,JSON.stringify(records));
@@ -5853,6 +6565,24 @@ class Race3DEngine {
 
 </script>
 <script>
+/* js/sponsor-ui.js */
+// Dedicated Sponsors panel; identity typography uses the existing career system.
+function sponsorEsc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function updateSponsorBadge(){const badge=document.getElementById('sponsor-nav-count');if(badge)badge.textContent=sponsorUnread()?`(${sponsorUnread()})`:'';}
+function renderSponsorNotice(){const s=game.sponsorship;if(!s)return '';const unread=sponsorUnread();return unread||s.notice?`<section class="card mb sponsor-notice" role="status"><div><h3>${s.notice?'Sponsorships have changed':`${unread} new sponsorship offer${unread===1?'':'s'}`}</h3><p>${s.notice?'Old deals have been replaced with starter offers. Commercial Directors now improve approaches and new contract income.':'Companies have reached out. Review their terms before the offers expire.'}</p></div><button class="btn btn-primary" onclick="showTab('sponsors')">Review Offers</button></section>`:'';}
+function reportSponsorOffers(){const pending=(game.sponsorship?.offers||[]).filter(o=>!o.read&&!o.announced);updateSponsorBadge();if(pending.length){const names=pending.map(o=>sponsorCompany(o.companyId).name);for(const o of pending)o.announced=true;toast(`${names[0]} has sent a sponsorship offer${names.length>1?` (${names.length} unread)`:''}.`,'success',6000);}}
+function sponsorTerms(o){const c=sponsorCompany(o.companyId);return `<div class="sponsor-pay">${fmt$(o.pay)}<span> per completed race</span></div><p class="small muted-text">+${fmt$(o.bonus)} for ${c.tier==='primary'?'a win':c.tier==='secondary'?'a top 5':'a top 10'} · Through Year ${o.endYear}</p>`;}
+function renderSponsors(){
+ const s=game.sponsorship;for(const o of s.offers)o.read=true;s.notice=false;if(currentSlot!==null)saveToSlot(currentSlot);updateSponsorBadge();
+ const active=tier=>{const contracts=s.contracts.filter(c=>sponsorCompany(c.companyId).tier===tier),cap=sponsorshipCapacity()[tier];return `<section class="card mb sponsor-tier sponsor-tier-${tier}"><h3 class="card-header">${tier[0].toUpperCase()+tier.slice(1)} Partners <span class="muted-text small">${contracts.length}/${cap}</span></h3>${contracts.map(o=>`<article class="sponsor-partner"><h4>${sponsorEsc(sponsorCompany(o.companyId).name)}</h4>${sponsorTerms(o)}</article>`).join('')}${contracts.length<cap?'<p class="muted-text">Open partnership space. Companies approach after Career races.</p>':''}</section>`;};
+ return `<div class="page-header"><h2>Sponsors</h2><p>${sponsorEsc(game.teamName)}</p></div><div class="sponsor-summary"><div><span class="muted-text">Guaranteed per completed race</span><strong>${fmt$(sponsorIncome())}</strong></div><div><span class="muted-text">Earned through sponsorships</span><strong>${fmt$(s.totalEarned)}</strong></div></div><p class="section-copy">Team-wide partnerships. Performance bonuses are extra. Skipped races do not pay.</p><div class="sponsor-workspace"><div><h3 class="mb">Current Partners</h3>${['primary','secondary','tertiary'].filter(t=>sponsorshipCapacity()[t]).map(active).join('')}</div><section class="card"><h3 class="card-header">Incoming Offers <span class="muted-text small">${s.offers.length}</span></h3>${s.offers.map(o=>{const c=sponsorCompany(o.companyId);return `<article class="sponsor-offer"><p class="sponsor-role">${c.tier[0].toUpperCase()+c.tier.slice(1)} partnership</p><h4>${sponsorEsc(c.name)}</h4>${sponsorTerms(o)}<p class="small muted-text">${sponsorEsc(o.reason)}<br>Expires in ${o.expires-s.weekend} race weekend${o.expires-s.weekend===1?'':'s'}.</p><div class="btn-row"><button class="btn btn-primary" onclick="showSponsorAcceptance('${o.id}')">Review and Accept</button><button class="btn btn-ghost" onclick="handleDeclineSponsor('${o.id}')">Decline</button></div></article>`;}).join('')||'<p class="muted-text">No pending offers. Complete races and build results to attract companies. No deals are signed automatically.</p>'}</section></div>`;
+}
+function showSponsorAcceptance(id){const o=game.sponsorship.offers.find(o=>o.id===id);if(!o)return;const c=sponsorCompany(o.companyId),contracts=game.sponsorship.contracts.filter(a=>sponsorCompany(a.companyId).tier===c.tier),full=contracts.length>=sponsorshipCapacity()[c.tier];document.getElementById('sponsor-accept-modal')?.remove();document.body.insertAdjacentHTML('beforeend',`<div class="modal-overlay" id="sponsor-accept-modal" role="dialog" aria-modal="true" aria-labelledby="sponsor-accept-title"><div class="modal"><div class="modal-header"><h3 id="sponsor-accept-title">Partner with ${sponsorEsc(c.name)}?</h3></div><div class="modal-body">${sponsorTerms(o)}<p>Payments begin with your next completed race. This team-wide agreement includes this season and ends after Year ${o.endYear}. Series changes end the agreement.</p>${full?`<label for="sponsor-replacement">Replace current ${c.tier} partner (no fee)</label><select class="form-select" id="sponsor-replacement">${contracts.map(a=>`<option value="${a.id}">${sponsorEsc(sponsorCompany(a.companyId).name)} — ${fmt$(a.pay)}/race through Year ${a.endYear}</option>`).join('')}</select>`:''}</div><div class="modal-footer"><button class="btn btn-ghost" onclick="document.getElementById('sponsor-accept-modal').remove()">Cancel</button><button class="btn btn-primary" onclick="handleAcceptSponsor('${o.id}')">Confirm Partnership</button></div></div></div>`);document.querySelector('#sponsor-accept-modal .btn-ghost').focus();}
+function handleAcceptSponsor(id){const result=acceptSponsorOffer(id,document.getElementById('sponsor-replacement')?.value||null);if(!result.ok){toast(result.msg,'error');return;}document.getElementById('sponsor-accept-modal')?.remove();updateHeader();renderTab('sponsors');toast('Partnership signed. Payments start with your next completed race.','success');}
+function handleDeclineSponsor(id){if(!declineSponsorOffer(id)){toast('Could not save this change.','error');return;}renderTab('sponsors');}
+
+</script>
+<script>
 /* js/ui.js */
 // ============================================================
 // STOCK CAR EMPIRE - UI Rendering
@@ -5885,6 +6615,7 @@ function renderTab(tabName) {
     case 'garage':     main.innerHTML = renderGarage();      break;
     case 'team':       main.innerHTML = renderTeam();        break;
     case 'schedule':   main.innerHTML = renderSchedule();    break;
+    case 'sponsors': main.innerHTML = renderSponsors(); break;
     case 'market':     main.innerHTML = renderMarket();      break;
     case 'standings':  main.innerHTML = renderStandings();   break;
     case 'carstats':   main.innerHTML = renderCareerStats(); break;
@@ -5897,6 +6628,7 @@ function renderTab(tabName) {
 // ─── Update header info ──────────────────────────────────────
 function updateHeader() {
   if (!game) return;
+  updateSponsorBadge();
   const cash = document.getElementById('header-cash');
   if (cash) cash.textContent = fmt$(game.money);
   // Flag an unsaved career - auto-save only runs once a slot is chosen.
@@ -5995,13 +6727,14 @@ function renderDashboard() {
   const playerEntry  = sorted.find(e => e.id === 'player');
   const seasonOver   = isSeasonOver();
   const expenses     = weeklyExpenses();
-  const income       = weeklySponsorIncome();
+  const income       = sponsorIncome();
 
   const topStandings = sorted.slice(0, 3).map((e, i) => {
     const cls = e.isPlayer ? 'standing-row player-row'
               : e.isTeamCar ? 'standing-row team-row'
               : 'standing-row';
-    return `<div class="${cls}">
+    return `
+  <div class="${cls}">
       <span class="pos-num">${i + 1}</span>
       <span class="entry-name">${standingName(e)}</span>
       <span class="pts-val">${e.points} pts</span>
@@ -6026,6 +6759,7 @@ function renderDashboard() {
     <h2>Dashboard</h2>
     <p>${series.name} <span>Season ${game.season.year}</span></p>
   </div>
+  ${renderSponsorNotice()}
   ${repairCars.length ? `<section class="card mb" id="dashboard-repair-reminder" role="status" aria-label="Repair reminder">
     <div class="card-header">Repair reminder</div>
     <div class="card-body"><p>${repairCars.length === 1 ? 'Your car needs repairs' : `${repairCars.length} cars need repairs`} before the next race. Restore vehicle condition in the Garage.</p>
@@ -6117,7 +6851,7 @@ function renderDashboard() {
       <details class="ui-details">
         <summary>Budget details</summary>
         <div class="ui-details-body">
-          <div class="team-stat"><span>Sponsors</span><span>${game.activeSponsors.length} / ${sponsorSlots()}</span></div>
+          <div class="team-stat"><span>Sponsors</span><span>${game.sponsorship.contracts.length} active</span></div>
           <div class="team-stat"><span>Staff</span><span>${game.staff.length + game.hiredDrivers.length} on payroll</span></div>
           <p class="section-copy">Entry fees and repairs are paid separately.</p>
         </div>
@@ -6533,34 +7267,6 @@ function renderMarket() {
   const series   = SERIES[game.currentSeries];
   const cls      = CAR_CLASSES[series.carClass];
   const canBuy   = game.money >= cls.buyCost;
-  const bonusConditions = { top10: 'finish in the top 10', top5: 'finish in the top 5', top3: 'finish in the top 3', win: 'win the race' };
-
-  const availableSponsors = SPONSOR_DEALS.filter(d =>
-    d.level <= game.currentSeries && !game.activeSponsors.includes(d.id)
-  );
-  const sponsorRows = availableSponsors.map(d => `
-    <div class="staff-row">
-      <div class="staff-info">
-        <span class="staff-name">${d.name}</span>
-        <div class="staff-meta">${fmt$(d.weekly)} per race · ${fmt$(d.bonus)} bonus if you ${bonusConditions[d.cond] || d.cond}</div>
-      </div>
-      ${game.activeSponsors.length < sponsorSlots()
-        ? `<button class="btn btn-sm btn-primary" onclick="handleSignSponsor('${d.id}')">Sign Deal</button>`
-        : `<button class="btn btn-sm" disabled>Sponsor Slots Full</button>`}
-    </div>`).join('') || '<p class="muted-text">No new sponsors available right now.</p>';
-
-  const activeSponsors = game.activeSponsors.map(sid => {
-    const d = SPONSOR_DEALS.find(s => s.id === sid);
-    if (!d) return '';
-    return `<div class="staff-row">
-      <div class="staff-info">
-        <span class="staff-name">${d.name}</span>
-        <div class="staff-meta">${fmt$(d.weekly)} per race · ${fmt$(d.bonus)} bonus if you ${bonusConditions[d.cond] || d.cond}</div>
-      </div>
-      <button class="btn btn-sm btn-danger" onclick="handleDropSponsor('${d.id}')">End Deal</button>
-    </div>`;
-  }).join('') || '<p class="muted-text">No active sponsors.</p>';
-
   // ── Bank ────────────────────────────────────────────────
   const loans = getLoans();
   const debt  = totalDebt();
@@ -6691,15 +7397,6 @@ function renderMarket() {
       ${bankCard}
     </div>
     <div>
-      <div class="card">
-        <div class="card-header">Active Sponsors</div>
-        ${activeSponsors}
-      </div>
-      <div class="card mt">
-        <div class="card-header">Available Sponsors</div>
-        <p class="section-copy">Sign a sponsor to earn money each race. ${game.activeSponsors.length} of ${sponsorSlots()} sponsor slots filled.</p>
-        ${sponsorRows}
-      </div>
       ${charityCard}
     </div>
   </div>`;
@@ -7333,7 +8030,7 @@ function showHallOfFame(index=null) {
   closeSaveModal();document.getElementById('hall-of-fame-modal')?.remove();
   const esc=careerArchiveEscape,r=index===null?null:records[index];
   const stat=(label,value)=>`<div class="team-stat"><span>${label}</span><span>${esc(value)}</span></div>`;
-  const body=r?`<h4>${esc(r.driverName)}</h4><p>${esc(r.teamName)} · ${esc(r.series)} · Year ${r.year}</p>${stat('Career Wins',r.wins)}${stat('Championships',r.titles)}${stat('Seasons Completed',r.seasons)}${stat('Final Reputation',r.reputation)}${stat('Cash at Retirement',fmt$(r.money))}<h4 class="mt">Final Season</h4>${stat('Starts',r.season.races)}${stat('Points',r.season.points)}${stat('Top 5 Finishes',r.season.top5)}${stat('Top 10 Finishes',r.season.top10)}<h4 class="mt">Season History</h4>${r.history.map(h=>stat(`${h.series} · Year ${h.year}`,`${ordinal(h.finalPos)} · ${h.wins||0} wins`)).join('')||'<p>No completed seasons.</p>'}`:records.map((r,i)=>`<div class="save-slot"><div class="save-slot-info"><strong>${esc(r.driverName)}</strong><p>${esc(r.teamName)} · ${r.wins} wins · ${r.titles} championships</p></div><button class="btn btn-primary" onclick="showHallOfFame(${i})">View Recap</button></div>`).join('')||'<p>No retired drivers yet. Retire a career to preserve its recap here.</p>';
+  const body=r?`<h4>${esc(r.driverName)}</h4><p>${esc(r.teamName)} · ${esc(r.series)} · Year ${r.year}</p>${r.sponsors?stat('Sponsorship Earnings',fmt$(r.sponsors.totalEarned))+stat('Final Partners',r.sponsors.partners.join(', ')||'None'):''}${stat('Career Wins',r.wins)}${stat('Championships',r.titles)}${stat('Seasons Completed',r.seasons)}${stat('Final Reputation',r.reputation)}${stat('Cash at Retirement',fmt$(r.money))}<h4 class="mt">Final Season</h4>${stat('Starts',r.season.races)}${stat('Points',r.season.points)}${stat('Top 5 Finishes',r.season.top5)}${stat('Top 10 Finishes',r.season.top10)}<h4 class="mt">Season History</h4>${r.history.map(h=>stat(`${h.series} · Year ${h.year}`,`${ordinal(h.finalPos)} · ${h.wins||0} wins`)).join('')||'<p>No completed seasons.</p>'}`:records.map((r,i)=>`<div class="save-slot"><div class="save-slot-info"><strong>${esc(r.driverName)}</strong><p>${esc(r.teamName)} · ${r.wins} wins · ${r.titles} championships</p></div><button class="btn btn-primary" onclick="showHallOfFame(${i})">View Recap</button></div>`).join('')||'<p>No retired drivers yet. Retire a career to preserve its recap here.</p>';
   document.body.insertAdjacentHTML('beforeend',`<div class="modal-overlay" id="hall-of-fame-modal" role="dialog" aria-modal="true" aria-labelledby="hof-title"><div class="modal"><div class="modal-header"><h3 id="hof-title">${r?'Career Recap':'Hall of Fame'}</h3><button class="modal-close" onclick="document.getElementById('hall-of-fame-modal').remove()">Close</button></div><div class="modal-body">${body}</div><div class="modal-footer"><button class="btn btn-secondary" onclick="${r?'showHallOfFame()':"document.getElementById('hall-of-fame-modal').remove();showLoadModal()"}">${r?'Back to Hall of Fame':'Back to Load Career'}</button></div></div></div>`);
   document.querySelector('#hall-of-fame-modal .modal-close')?.focus();
 }
@@ -10121,7 +10818,7 @@ const CAREER_TUTORIAL_STEPS = [
   },
   {
     tab: 'market', target: '.nav-btn[data-tab="market"]', title: 'Grow the operation',
-    copy: 'Market lets you buy more cars, sign sponsors, and manage financing. You can drive a new car yourself or assign a hired driver to put both cars in the field.',
+    copy: 'Market lets you buy more cars and manage financing. Sponsors approach after Career races; review offers in the Sponsors panel. You can drive a new car yourself or assign a hired driver to put both cars in the field.',
   },
   {
     tab: 'market', target: '#market-loans', title: 'Borrow with a repayment plan',
@@ -10816,22 +11513,6 @@ function handleDonate(causeId) {
   renderTab('market');
 }
 
-function handleSignSponsor(sponsorId) {
-  const result = signSponsor(sponsorId);
-  if (!result.ok) { toast(result.msg, 'error'); return; }
-  const d = SPONSOR_DEALS.find(s => s.id === sponsorId);
-  toast(`Signed deal with ${d?.name}!`, 'success');
-  renderTab('market');
-}
-
-function handleDropSponsor(sponsorId) {
-  const d = SPONSOR_DEALS.find(s => s.id === sponsorId);
-  if (!confirm(`End your deal with ${d?.name}? You will stop receiving its race payouts.`)) return;
-  dropSponsor(sponsorId);
-  toast('Sponsor deal ended.', 'info');
-  renderTab('market');
-}
-
 // ─── Race Weekend ─────────────────────────────────────────────
 // Cars with nobody in them simply sit the race out - that is not an error.
 // Returns { error } if the team genuinely cannot enter, plus { idle } listing
@@ -11215,6 +11896,7 @@ function dismissSaveReminder() {
 
 // Surface what happened off-track during the race weekend
 function reportLoanNotes() {
+  reportSponsorOffers();
   const notes = [
     ...(game.lastDriverNotes || []).map(t => ({ t, type: 'success' })),
     ...(game.lastLoanNotes   || []).map(t => ({ t, type: t.includes('overdue') ? 'error' : 'info' })),
