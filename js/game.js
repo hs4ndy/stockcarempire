@@ -71,6 +71,8 @@ function loadFromSlot(slot) {
     }
     game = loaded;
     normalizeVehicleState();
+    const rivals=game.season.aiTeams.flatMap(t=>t.cars);
+    if(!rivals.some(c=>c.driverName==='Joshua Enright')){const c=[...rivals].sort((a,b)=>b.power-a.power)[0];if(c){c.driverName='Joshua Enright';c.power=Math.max(c.power,[.94,.97,.99][game.currentSeries]);const standing=game.season.standings.find(e=>e.id===c.id),team=game.season.aiTeams.find(t=>t.id===c.teamId);if(standing)standing.name=`${team?.name||'Rival'} (Joshua Enright)`;}}
     normalizeSupportStaff();
     retireExhaustedCars();
     currentSlot = slot;
@@ -308,6 +310,8 @@ function generateAITeams(seriesLevel) {
     }
   }
 
+  const strongest=teams.flatMap(t=>t.cars).sort((a,b)=>b.power-a.power)[0];
+  if(strongest){for(const c of teams.flatMap(t=>t.cars))if(c.driverName==='Joshua Enright')c.driverName=AI_DRIVER_NAMES.find(n=>!teams.some(t=>t.cars.some(c=>c.driverName===n)))||c.driverName;strongest.driverName='Joshua Enright';strongest.power=Math.max(strongest.power,[.94,.97,.99][seriesLevel]);}
   return teams;
 }
 
@@ -923,6 +927,7 @@ function renameCar(carId, newName) {
 function normalizeSupportStaff() {
   game.staff = game.staff || [];
   for (const member of game.staff) {
+    if (member.candidateId === 'analyst05') member.name = 'Grayson Fortenberry';
     if (member.candidateId === 'mechanic03') member.overall = 99;
     if (member.candidateId || member.overall) continue;
     const candidates = STAFF_CANDIDATES.filter(c=>c.typeId===member.typeId);
@@ -1108,6 +1113,7 @@ function retireCareer() {
     const records=getHallOfFame(), history=JSON.parse(JSON.stringify(game.history||[]));
     const me=(game.season.standings||[]).find(e=>e.id==='player')||{};
     records.push({id:uid(),driverName:game.driverName||game.teamName,teamName:game.teamName,
+      vehicles:JSON.parse(JSON.stringify([...(game.retiredCars||[]),...game.cars.map(c=>({...c,retirementReason:'Career ended'}))])),
       retiredAt:Date.now(),series:SERIES[game.currentSeries].name,year:game.season.year,
       wins:history.reduce((n,h)=>n+(h.wins||0),0)+(me.wins||0),titles:game.titles||history.filter(h=>h.champion).length,
       seasons:history.length,reputation:game.reputation||0,money:game.money,
@@ -1127,4 +1133,13 @@ function retireCareer() {
   }
   game=null;currentSlot=null;
   return {ok:true};
+}
+
+function retireOwnedCar(carId) {
+ const car=game?.cars.find(c=>c.id===carId);if(!car)return {ok:false,msg:'Car not found.'};
+ const before=JSON.stringify(game),hire=(game.hiredDrivers||[]).find(h=>h.carId===carId);
+ game.retiredCars=game.retiredCars||[];game.retiredCars.push({...JSON.parse(JSON.stringify(car)),retiredYear:game.season.year,retiredRace:game.season.raceIndex+1,retirementReason:'Manually retired',lastDriver:car.assignedDriverId==='player'?game.driverName:HIREABLE_DRIVERS.find(d=>d.id===hire?.driverId)?.name||'Unassigned'});
+ if(hire)hire.carId=null;game.cars=game.cars.filter(c=>c.id!==carId);
+ if(currentSlot!==null&&!saveToSlot(currentSlot)){game=JSON.parse(before);return {ok:false,msg:'Retirement could not be saved.'};}
+ return {ok:true};
 }

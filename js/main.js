@@ -277,6 +277,7 @@ function handleSkipRace() {
 function handleEndSeason() {
   if (!isSeasonOver()) { toast('Season is not over yet!', 'warning'); return; }
   const info = endSeason();
+  game.pendingSeasonNews=info;saveGame();
   // Show result modal
   document.body.insertAdjacentHTML('beforeend', renderEndSeasonModal(info));
 }
@@ -285,6 +286,7 @@ function handleDismissEndSeason() {
   document.getElementById('end-season-modal')?.remove();
   updateHeader();
   renderTab('dashboard');
+  if(game.pendingSeasonNews)showCareerMilestoneNews('season',game.pendingSeasonNews);
 }
 
 // ─── Garage handlers ─────────────────────────────────────────

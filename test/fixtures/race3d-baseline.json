@@ -455,7 +455,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "e9c5c9d260476ece061d1f70751251ac9a43775e2832abd1a9732dffc0356e18"
+      "hash": "8a401e26c4215a5ec44406330d5857b2e07676b0099ebf4b98c54ce5e1aa5473"
     },
     {
       "name": "_updateOrder",
@@ -550,6 +550,7 @@
   "approvedUpdates": {
     "version111": "Only spark emitter/step, dual HUD and launch labels updated for requested condition visuals.",
     "version112": "Intentional player penalty/draft and AI-only contact tuning; opening/dual traces refreshed.",
-    "version113": "Requested 80% less condition loss and softer human condition/wreck pace; trace baselines refreshed."
+    "version113": "Requested 80% less condition loss and softer human condition/wreck pace; trace baselines refreshed.",
+    "version122": "HUD-only 20Hz DOM refresh throttle. Physics, cameras, spark/contact methods unchanged."
   }
 }

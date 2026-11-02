@@ -173,6 +173,7 @@ function renderDashboard() {
     <h2>Dashboard</h2>
     <p>${series.name} <span>Season ${game.season.year}</span></p>
   </div>
+  ${game.pendingSeasonNews?'<button class="btn btn-secondary mb" onclick="showCareerMilestoneNews(\'season\',game.pendingSeasonNews)">Read Season News</button>':''}
   ${renderSponsorNotice()}
   ${repairCars.length ? `<section class="card mb" id="dashboard-repair-reminder" role="status" aria-label="Repair reminder">
     <div class="card-header">Repair reminder</div>
@@ -338,7 +339,7 @@ function renderGarage() {
     <div class="car-card" id="car-${car.id}">
       <div class="car-card-header">
         <span class="car-name"><span class="car-num">#${car.number || 1}</span> ${car.name}</span>
-        <button class="btn btn-sm btn-danger" onclick="handleSellCar('${car.id}')" ${game.cars.length === 1 ? 'disabled title="You must keep at least one car."' : ''}>Sell</button>
+        <button class="btn btn-sm btn-danger" onclick="handleSellCar('${car.id}')" ${game.cars.length === 1 ? 'disabled title="You must keep at least one car."' : ''}>Sell</button><button class="btn btn-sm btn-danger" onclick="handleRetireCar('${car.id}')">Retire Car</button>
       </div>
       <div class="team-stat"><span>Driver</span><span class="${noDriver ? 'red' : ''}">${driverName}</span></div>
       <div class="car-actions">
@@ -832,7 +833,7 @@ function renderStandings() {
       <span class="st-races">${e.races}</span>
       <span class="st-wins">${e.wins}</span>
       <span class="st-top5">${e.top5}</span>
-      <span class="st-pts">${e.points}</span>
+      <span class="st-pts">${e.points} <span class="points-gap ${i===0?'green':'red'}" aria-label="${i===0?'Points ahead of second':'Points behind leader'}">${i===0?'+'+(e.points-(sorted[1]?.points??e.points)):'-'+(sorted[0].points-e.points)}</span></span>
     </div>`;
   }).join('');
 
@@ -1422,7 +1423,7 @@ function renderRaceRuleControls(difficulty,preferences={},scope='career') {
 }
 function renderVehicleGraveyard() {
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const cars=(game.retiredCars||[]).map(c=>`<article class="graveyard-car"><h4>#${esc(c.number)} ${esc(c.name)}</h4><p class="muted-text">${esc(CAR_CLASSES[c.classId]?.name || c.classId)} · Retired in Year ${esc(c.retiredYear)}, race ${esc(c.retiredRace)}</p><div class="team-stat"><span>Last driver</span><span>${esc(c.lastDriver||'Not recorded')}</span></div><div class="team-stat"><span>Lifetime health</span><span>0%</span></div>${['speed','handling','reliability','condition','races','wins','totalPoints'].map(k=>`<div class="team-stat"><span>${{totalPoints:'Career points',speed:'Speed',handling:'Handling',reliability:'Reliability',condition:'Final condition',races:'Races',wins:'Wins'}[k]}</span><span>${esc(Math.round(c[k]||0))}</span></div>`).join('')}<p>Upgrades: ${(c.appliedUpgrades||[]).map(id=>esc(CAR_CLASSES[c.classId]?.upgrades.find(u=>u.id===id)?.name || id)).join(', ') || 'None'}</p></article>`).join('');
+ const cars=(game.retiredCars||[]).map(c=>`<article class="graveyard-car"><h4>#${esc(c.number)} ${esc(c.name)}</h4><p class="muted-text">${esc(CAR_CLASSES[c.classId]?.name || c.classId)} · Retired in Year ${esc(c.retiredYear)}, race ${esc(c.retiredRace)}</p><div class="team-stat"><span>Last driver</span><span>${esc(c.lastDriver||'Not recorded')}</span></div><div class="team-stat"><span>Lifetime health</span><span>${esc(Math.round(c.lifetimeHealth??0))}%</span></div>${['speed','handling','reliability','condition','races','wins','totalPoints'].map(k=>`<div class="team-stat"><span>${{totalPoints:'Career points',speed:'Speed',handling:'Handling',reliability:'Reliability',condition:'Final condition',races:'Races',wins:'Wins'}[k]}</span><span>${esc(Math.round(c[k]||0))}</span></div>`).join('')}<p>Upgrades: ${(c.appliedUpgrades||[]).map(id=>esc(CAR_CLASSES[c.classId]?.upgrades.find(u=>u.id===id)?.name || id)).join(', ') || 'None'}</p></article>`).join('');
  return `<div class="modal-overlay" id="graveyard-modal" role="dialog" aria-modal="true" aria-labelledby="graveyard-title"><div class="modal modal-wide"><div class="modal-header"><h3 id="graveyard-title">Vehicle Graveyard</h3><button class="btn btn-ghost" onclick="closeVehicleModal('graveyard-modal')">Close</button></div><div class="modal-body">${cars || '<p>No retired vehicles. Cars that reach zero lifetime health will be remembered here.</p>'}</div></div></div>`;
 }
 
@@ -1437,14 +1438,17 @@ function confirmCareerRetirement() {
   const result=retireCareer();
   if(!result.ok){toast(result.msg,'error');return;}
   document.getElementById('career-retire-modal')?.remove();
-  showScreen('intro');showHallOfFame();
+  showScreen('intro');showCareerMilestoneNews('retirement',getHallOfFame().at(-1));
 }
 function showHallOfFame(index=null) {
   let records;try{records=getHallOfFame();}catch(e){toast('Hall of Fame could not be read. No records were changed.','error');return;}
   closeSaveModal();document.getElementById('hall-of-fame-modal')?.remove();
   const esc=careerArchiveEscape,r=index===null?null:records[index];
   const stat=(label,value)=>`<div class="team-stat"><span>${label}</span><span>${esc(value)}</span></div>`;
-  const body=r?`<h4>${esc(r.driverName)}</h4><p>${esc(r.teamName)} · ${esc(r.series)} · Year ${r.year}</p>${r.sponsors?stat('Sponsorship Earnings',fmt$(r.sponsors.totalEarned))+stat('Final Partners',r.sponsors.partners.join(', ')||'None'):''}${stat('Career Wins',r.wins)}${stat('Championships',r.titles)}${stat('Seasons Completed',r.seasons)}${stat('Final Reputation',r.reputation)}${stat('Cash at Retirement',fmt$(r.money))}<h4 class="mt">Final Season</h4>${stat('Starts',r.season.races)}${stat('Points',r.season.points)}${stat('Top 5 Finishes',r.season.top5)}${stat('Top 10 Finishes',r.season.top10)}<h4 class="mt">Season History</h4>${r.history.map(h=>stat(`${h.series} · Year ${h.year}`,`${ordinal(h.finalPos)} · ${h.wins||0} wins`)).join('')||'<p>No completed seasons.</p>'}`:records.map((r,i)=>`<div class="save-slot"><div class="save-slot-info"><strong>${esc(r.driverName)}</strong><p>${esc(r.teamName)} · ${r.wins} wins · ${r.titles} championships</p></div><button class="btn btn-primary" onclick="showHallOfFame(${i})">View Recap</button></div>`).join('')||'<p>No retired drivers yet. Retire a career to preserve its recap here.</p>';
+  const body=r?`<h4>${esc(r.driverName)}</h4><p>${esc(r.teamName)} · ${esc(r.series)} · Year ${r.year}</p>${r.sponsors?stat('Sponsorship Earnings',fmt$(r.sponsors.totalEarned))+stat('Final Partners',r.sponsors.partners.join(', ')||'None'):''}${stat('Career Wins',r.wins)}${stat('Championships',r.titles)}${stat('Seasons Completed',r.seasons)}${stat('Final Reputation',r.reputation)}${stat('Cash at Retirement',fmt$(r.money))}${r.vehicles?`<h4 class="mt">Vehicle Graveyard</h4>${renderArchivedVehicles(r.vehicles)}`:'<p class="muted-text">Vehicle records were not stored with this older recap.</p>'}<button class="btn btn-ghost" onclick="showCareerMilestoneNews('retirement',getHallOfFame()[${index}])">Retirement News</button><h4 class="mt">Final Season</h4>${stat('Starts',r.season.races)}${stat('Points',r.season.points)}${stat('Top 5 Finishes',r.season.top5)}${stat('Top 10 Finishes',r.season.top10)}<h4 class="mt">Season History</h4>${r.history.map(h=>stat(`${h.series} · Year ${h.year}`,`${ordinal(h.finalPos)} · ${h.wins||0} wins`)).join('')||'<p>No completed seasons.</p>'}`:records.map((r,i)=>`<div class="save-slot"><div class="save-slot-info"><strong>${esc(r.driverName)}</strong><p>${esc(r.teamName)} · ${r.wins} wins · ${r.titles} championships</p></div><button class="btn btn-primary" onclick="showHallOfFame(${i})">View Recap</button></div>`).join('')||'<p>No retired drivers yet. Retire a career to preserve its recap here.</p>';
   document.body.insertAdjacentHTML('beforeend',`<div class="modal-overlay" id="hall-of-fame-modal" role="dialog" aria-modal="true" aria-labelledby="hof-title"><div class="modal"><div class="modal-header"><h3 id="hof-title">${r?'Career Recap':'Hall of Fame'}</h3><button class="modal-close" onclick="document.getElementById('hall-of-fame-modal').remove()">Close</button></div><div class="modal-body">${body}</div><div class="modal-footer"><button class="btn btn-secondary" onclick="${r?'showHallOfFame()':"document.getElementById('hall-of-fame-modal').remove();showLoadModal()"}">${r?'Back to Hall of Fame':'Back to Load Career'}</button></div></div></div>`);
   document.querySelector('#hall-of-fame-modal .modal-close')?.focus();
 }
+
+function handleRetireCar(id){const car=game.cars.find(c=>c.id===id);if(!car||!confirm(`Permanently retire ${car.name}? No cash is paid. Its stats will remain in the Vehicle Graveyard.${game.cars.length===1?' You must buy a replacement before racing.':''}`))return;const r=retireOwnedCar(id);if(!r.ok){toast(r.msg,'error');return;}renderTab('garage');toast('Car retired to the Vehicle Graveyard.','success');}
+function renderArchivedVehicles(cars){return cars.map(c=>`<details class="ui-details"><summary>#${careerArchiveEscape(c.number)} ${careerArchiveEscape(c.name)}</summary><div class="ui-details-body"><p>${careerArchiveEscape(c.retirementReason||'Lifetime retirement')}</p>${['speed','handling','reliability','condition','lifetimeHealth','races','wins','totalPoints'].map(k=>`<div class="team-stat"><span>${{totalPoints:'Points',lifetimeHealth:'Lifetime health'}[k]||k}</span><span>${careerArchiveEscape(c[k]??'Not recorded')}</span></div>`).join('')}<p>Upgrades: ${(c.appliedUpgrades||[]).map(id=>careerArchiveEscape(CAR_CLASSES[c.classId]?.upgrades.find(u=>u.id===id)?.name||id)).join(', ')||'None'}</p></div></details>`).join('')||'<p>No vehicle records.</p>';}

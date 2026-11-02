@@ -105,3 +105,12 @@ function finishRaceNews() {
   reportLoanNotes(); if(!showRetirementNotice()) checkSaveReminder();
   document.getElementById('btn-hdr-menu')?.focus();
 }
+
+function showCareerMilestoneNews(kind,data){
+ document.getElementById('career-milestone-news')?.remove();const retirement=kind==='retirement',esc=newsEscape;
+ const name=retirement?data.driverName:data.driver,reporter=RACE_NEWS_REPORTERS[(retirement?data.seasons:data.year)%RACE_NEWS_REPORTERS.length];
+ const headline=retirement?`${name} closes a chapter in racing`:`${name} finishes ${data.playerPos}${ordinal(data.playerPos)} in the ${data.seriesName}`;
+ const paragraphs=retirement?[`${name} has retired from ${data.teamName}, ending a career with ${data.wins} wins and ${data.titles} championships.`,`${data.seasons} completed seasons are preserved in the Hall of Fame. The final campaign was Year ${data.year} in the ${data.series}.`,`${data.season.races} starts and ${data.season.points} points were recorded in the final season. Vehicle records and the career recap can be revisited in the Hall of Fame.`]:[`${name} completed Year ${data.year} in the ${data.seriesName}, finishing ${data.playerPos}${ordinal(data.playerPos)} in the championship with ${data.wins} wins.`,data.message,`The season is now part of the career record. Preparation begins for the next campaign, with sponsorship offers and vehicle condition among the team's decisions.`];
+ document.body.insertAdjacentHTML('beforeend',`<div class="modal-overlay" id="career-milestone-news" role="dialog" aria-modal="true" aria-labelledby="milestone-headline"><div class="modal modal-wide race-news-modal"><div class="modal-header"><h3>${retirement?'Retirement News':'Season News'}</h3></div><div class="modal-body"><article class="race-news-article"><h2 id="milestone-headline" tabindex="-1">${esc(headline)}</h2><p class="race-news-byline">By ${esc(reporter)}</p><div class="race-news-copy">${paragraphs.map(p=>`<p>${esc(p)}</p>`).join('')}</div></article></div><div class="modal-footer"><button class="btn btn-primary" onclick="closeCareerMilestoneNews('${kind}')">${retirement?'Continue to Hall of Fame':'Continue to Career'}</button></div></div></div>`);document.getElementById('milestone-headline').focus();
+}
+function closeCareerMilestoneNews(kind){document.getElementById('career-milestone-news')?.remove();if(kind==='retirement')showHallOfFame();else if(game){delete game.pendingSeasonNews;saveGame();showTab('dashboard');}}

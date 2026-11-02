@@ -15,6 +15,7 @@
   }
 
   _updateHUD(dt) {
+    if(dt>0){this._hudElapsed=(this._hudElapsed||0)+dt;if(this._hudElapsed<.05)return;dt=this._hudElapsed;this._hudElapsed=0;}
     const health=Math.ceil(this.player.raceHealth ?? 100), bar=document.getElementById('r3d-health');
     if(bar){bar.classList.toggle('low',health<=25);bar.setAttribute('aria-valuenow',health);document.getElementById('r3d-health-value').textContent=health+'%';document.getElementById('r3d-health-fill').style.transform=`scaleX(${health/100})`;}
     if (this.player2) { this._updateDualHUD(dt); return; }

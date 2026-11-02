@@ -239,7 +239,7 @@ const STAFF_CANDIDATES = [
   {id:'analyst02',typeId:'data_analyst',name:'Isaac Moore',overall:70,pay:.75,effects:{qualifying:5,upgradeSlots:1,simulation:1}},
   {id:'analyst03',typeId:'data_analyst',name:'Nina Patel',overall:79,pay:1,effects:{qualifying:7,upgradeSlots:1,simulation:2}},
   {id:'analyst04',typeId:'data_analyst',name:'Theo Lawson',overall:87,pay:1.35,effects:{qualifying:8,upgradeSlots:2,simulation:2.25}},
-  {id:'analyst05',typeId:'data_analyst',name:'Avery Chen',overall:95,pay:1.9,effects:{qualifying:9,upgradeSlots:2,simulation:2.5}},
+  {id:'analyst05',typeId:'data_analyst',name:'Grayson Fortenberry',overall:95,pay:1.9,effects:{qualifying:9,upgradeSlots:2,simulation:2.5}},
   {id:'director01',typeId:'commercial_director',name:'Ben Wallace',overall:60,pay:.55,effects:{approachBonus:.05,sponsorBonus:.02}},
   {id:'director02',typeId:'commercial_director',name:'Camila Ross',overall:70,pay:.75,effects:{approachBonus:.08,sponsorBonus:.04}},
   {id:'director03',typeId:'commercial_director',name:'Miles Sutton',overall:79,pay:1,effects:{approachBonus:.11,sponsorBonus:.06}},
@@ -339,6 +339,7 @@ const AI_TEAM_TEMPLATES = [
 ];
 
 const AI_DRIVER_NAMES = [
+  'Joshua Enright',
   'Alex Turner','Ryan Walsh','Chris Morales','Jordan Blake','Casey Quinn',
   'Taylor Frost','Morgan Hill','Drew Saunders','Quinn Barrett','Sam Kowalski',
   'Riley Cross','Austin Ward','Peyton Hayes','Cameron Knox','Jesse Briggs',
