@@ -997,6 +997,41 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .modal-footer .hall-of-fame-button { width: 100%; background: transparent; border: 1px solid var(--line-2); color: var(--text); }
 .modal-footer .hall-of-fame-button:hover { background: var(--panel-2); border-color: var(--text-dim); }
 
+/* Quick Race: horizontal setup desk, within the established sports-career system. */
+#quick-race-modal .quick-setup-modal { width: min(1280px, 96vw); max-width: 1280px; }
+.quick-setup-intro { color: var(--text-dim); margin-bottom: 28px; max-width: 75ch; }
+.quick-setup-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.1fr); gap: 28px; align-items: start; }
+.quick-setup-section { min-width: 0; }
+.quick-setup-section + .quick-setup-section { border-left: 1px solid var(--line); padding-left: 28px; }
+.quick-setup-section > h4 { font: 700 26px var(--font-display); margin: 0 0 20px; }
+#quick-race-modal .difficulty-grid { grid-template-columns: 1fr; margin-top: 0; gap: 8px; }
+#quick-race-modal .difficulty-card { padding: 12px 16px; min-height: 64px; }
+#quick-race-modal .difficulty-name { font-size: 17px; }
+#quick-race-modal .difficulty-blurb { font-size: 14px; line-height: 1.4; }
+#quick-race-modal .quick-series { margin-top: 0; gap: 10px; }
+#quick-race-modal .quick-series-btn { padding: 16px; min-height: 90px; }
+#quick-race-modal .quick-series-name { font-size: 17px; }
+#quick-race-modal .quick-car-editor { padding: 20px 0 0; margin-top: 20px; }
+#quick-race-modal .quick-car-editor h4 { font-size: 17px; }
+#quick-race-modal .quick-car-controls { gap: 16px; }
+#quick-race-modal .quick-car-preview { height: 88px; }
+#quick-race-modal .quick-player-mode { display: flex; gap: 8px; }
+#quick-race-modal .quick-player-mode .btn { flex: 1; padding-inline: 10px; min-height: 44px; }
+#quick-race-modal .quick-setup-drivers .section-copy { padding: 12px 0 0; }
+#quick-race-modal .quick-race-footer { padding-block: 16px; }
+@media (min-width: 601px) and (max-width: 960px) {
+ .quick-setup-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+ .quick-setup-drivers { grid-column: 1 / -1; }
+ .quick-setup-section.quick-setup-drivers { border-left: 0; border-top: 1px solid var(--line); padding: 24px 0 0; }
+ .quick-setup-cars { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px; }
+}
+@media (max-width: 600px) {
+ .quick-setup-grid { grid-template-columns: 1fr; gap: 28px; }
+ .quick-setup-section + .quick-setup-section { border-left: 0; border-top: 1px solid var(--line); padding: 24px 0 0; }
+ .quick-setup-intro { margin-bottom: 24px; }
+ #quick-race-modal .difficulty-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+
 </style>
 </head>
 <body>
@@ -1037,7 +1072,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 117</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 118</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -7191,14 +7226,15 @@ function renderCarCustomizer(car, i, career = false) {
 function renderQuickRaceModal() {
   return `
   <div class="modal-overlay" id="quick-race-modal">
-    <div class="modal">
+    <div class="modal quick-setup-modal">
       <div class="modal-header">
         <h3>Quick Race</h3>
         <button class="modal-close" onclick="document.getElementById('quick-race-modal')?.remove()">Close</button>
       </div>
-      <div class="modal-body">
-        <p>Jump straight into a superspeedway race - no career consequences.</p>
-        <div class="card-header">Difficulty</div>
+      <div class="modal-body quick-setup-body">
+        <p class="quick-setup-intro">Build your race. Pick your challenge, choose a series, and make the car yours. No career consequences.</p>
+        <div class="quick-setup-grid"><section class="quick-setup-section" aria-labelledby="quick-difficulty-title">
+        <h4 id="quick-difficulty-title">Difficulty</h4>
         <div class="difficulty-grid">
           ${DIFFICULTIES.map(d => `
             <button type="button" class="difficulty-card${d.id === quickRaceDifficulty ? ' selected' : ''}"
@@ -7207,7 +7243,7 @@ function renderQuickRaceModal() {
               <span class="difficulty-blurb">${d.blurb}</span>
             </button>`).join('')}
         </div>
-        <div class="card-header mt">Series</div>
+        </section><section class="quick-setup-section" aria-labelledby="quick-series-title"><h4 id="quick-series-title">Series</h4>
         <div class="quick-series">
           ${SERIES.map(s => `
             <button type="button" class="quick-series-btn" data-field-size="${s.fieldSize}" aria-pressed="false" onclick="selectQuickRaceSeries(${s.fieldSize})">
@@ -7216,14 +7252,14 @@ function renderQuickRaceModal() {
             </button>`).join('')}
         </div>
         <section id="quick-race-rules">${renderRaceRuleControls(quickRaceDifficulty,quickRaceRules,'quick')}</section>
-        <div class="card-header mt">Players</div>
+        </section><section class="quick-setup-section quick-setup-drivers" aria-labelledby="quick-players-title"><h4 id="quick-players-title">Players and Cars</h4>
         <div class="quick-player-mode" role="group" aria-label="Player mode">
           <button class="btn" data-players="1" aria-pressed="${quickRacePlayers === 1}" onclick="setQuickRacePlayers(1)">Single player</button>
           <button class="btn" data-players="2" aria-pressed="${quickRacePlayers === 2}" onclick="setQuickRacePlayers(2)">Dual player</button>
         </div>
-        <p class="section-copy">One keyboard. Player 1: A / S / D. Player 2: J / K / L. Middle key brakes; the car accelerates automatically.</p>
-        ${quickRaceCars.map((car, i) => renderCarCustomizer(car, i)).join('')}
-        <p class="form-warning" id="quick-number-warning" hidden>Choose a different number for each player.</p>
+        <p class="section-copy">Player 1: A / S / D. Player 2: J / K / L.<br>Middle key brakes. Auto acceleration.</p>
+        <div class="quick-setup-cars">${quickRaceCars.map((car, i) => renderCarCustomizer(car, i)).join('')}</div>
+        <p class="form-warning" id="quick-number-warning" hidden>Choose a different number for each player.</p></section></div>
       </div>
       <div class="modal-footer quick-race-footer">
         <button type="button" class="btn btn-primary btn-lg" id="btn-quick-race-confirm" onclick="confirmQuickRace()" disabled>Confirm Race</button>

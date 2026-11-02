@@ -977,3 +977,38 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 
 .modal-footer .hall-of-fame-button { width: 100%; background: transparent; border: 1px solid var(--line-2); color: var(--text); }
 .modal-footer .hall-of-fame-button:hover { background: var(--panel-2); border-color: var(--text-dim); }
+
+/* Quick Race: horizontal setup desk, within the established sports-career system. */
+#quick-race-modal .quick-setup-modal { width: min(1280px, 96vw); max-width: 1280px; }
+.quick-setup-intro { color: var(--text-dim); margin-bottom: 28px; max-width: 75ch; }
+.quick-setup-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.1fr); gap: 28px; align-items: start; }
+.quick-setup-section { min-width: 0; }
+.quick-setup-section + .quick-setup-section { border-left: 1px solid var(--line); padding-left: 28px; }
+.quick-setup-section > h4 { font: 700 26px var(--font-display); margin: 0 0 20px; }
+#quick-race-modal .difficulty-grid { grid-template-columns: 1fr; margin-top: 0; gap: 8px; }
+#quick-race-modal .difficulty-card { padding: 12px 16px; min-height: 64px; }
+#quick-race-modal .difficulty-name { font-size: 17px; }
+#quick-race-modal .difficulty-blurb { font-size: 14px; line-height: 1.4; }
+#quick-race-modal .quick-series { margin-top: 0; gap: 10px; }
+#quick-race-modal .quick-series-btn { padding: 16px; min-height: 90px; }
+#quick-race-modal .quick-series-name { font-size: 17px; }
+#quick-race-modal .quick-car-editor { padding: 20px 0 0; margin-top: 20px; }
+#quick-race-modal .quick-car-editor h4 { font-size: 17px; }
+#quick-race-modal .quick-car-controls { gap: 16px; }
+#quick-race-modal .quick-car-preview { height: 88px; }
+#quick-race-modal .quick-player-mode { display: flex; gap: 8px; }
+#quick-race-modal .quick-player-mode .btn { flex: 1; padding-inline: 10px; min-height: 44px; }
+#quick-race-modal .quick-setup-drivers .section-copy { padding: 12px 0 0; }
+#quick-race-modal .quick-race-footer { padding-block: 16px; }
+@media (min-width: 601px) and (max-width: 960px) {
+ .quick-setup-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+ .quick-setup-drivers { grid-column: 1 / -1; }
+ .quick-setup-section.quick-setup-drivers { border-left: 0; border-top: 1px solid var(--line); padding: 24px 0 0; }
+ .quick-setup-cars { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px; }
+}
+@media (max-width: 600px) {
+ .quick-setup-grid { grid-template-columns: 1fr; gap: 28px; }
+ .quick-setup-section + .quick-setup-section { border-left: 0; border-top: 1px solid var(--line); padding: 24px 0 0; }
+ .quick-setup-intro { margin-bottom: 24px; }
+ #quick-race-modal .difficulty-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}

@@ -1,0 +1,6 @@
+const {test,expect}=require('playwright/test');const path=require('path'),{pathToFileURL}=require('url');
+for(const width of [1440,1024,768,390])test(`horizontal quick setup ${width}`,async({page})=>{
+ await page.setViewportSize({width,height:900});await page.route('**/three.min.js',r=>r.fulfill({path:path.resolve('node_modules/three/build/three.min.js'),contentType:'application/javascript'}));await page.goto(pathToFileURL(path.resolve(width===390?'releases/Stock-Car-Empire.html':'index.html')).href);await page.locator('#btn-quick-race').click();
+ if(width>=1024){const sections=await page.locator('.quick-setup-section').evaluateAll(es=>es.map(e=>({x:e.getBoundingClientRect().x,y:e.getBoundingClientRect().y})));expect(Math.abs(sections[0].y-sections[2].y)).toBeLessThan(2);expect(sections[2].x).toBeGreaterThan(sections[1].x);}
+ await page.locator('[data-diff="allout"]').click();await page.locator('.quick-series-btn').last().click();await page.locator('[data-players="2"]').click();await expect(page.locator('.quick-car-editor:visible')).toHaveCount(2);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.mouse.move(0,0);await page.waitForTimeout(250);await page.screenshot({path:`.impeccable/review/quick-horizontal-${width}.png`});await expect(page.locator('#btn-quick-race-confirm')).toBeVisible();
+});

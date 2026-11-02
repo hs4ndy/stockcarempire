@@ -1400,14 +1400,15 @@ function renderCarCustomizer(car, i, career = false) {
 function renderQuickRaceModal() {
   return `
   <div class="modal-overlay" id="quick-race-modal">
-    <div class="modal">
+    <div class="modal quick-setup-modal">
       <div class="modal-header">
         <h3>Quick Race</h3>
         <button class="modal-close" onclick="document.getElementById('quick-race-modal')?.remove()">Close</button>
       </div>
-      <div class="modal-body">
-        <p>Jump straight into a superspeedway race - no career consequences.</p>
-        <div class="card-header">Difficulty</div>
+      <div class="modal-body quick-setup-body">
+        <p class="quick-setup-intro">Build your race. Pick your challenge, choose a series, and make the car yours. No career consequences.</p>
+        <div class="quick-setup-grid"><section class="quick-setup-section" aria-labelledby="quick-difficulty-title">
+        <h4 id="quick-difficulty-title">Difficulty</h4>
         <div class="difficulty-grid">
           ${DIFFICULTIES.map(d => `
             <button type="button" class="difficulty-card${d.id === quickRaceDifficulty ? ' selected' : ''}"
@@ -1416,7 +1417,7 @@ function renderQuickRaceModal() {
               <span class="difficulty-blurb">${d.blurb}</span>
             </button>`).join('')}
         </div>
-        <div class="card-header mt">Series</div>
+        </section><section class="quick-setup-section" aria-labelledby="quick-series-title"><h4 id="quick-series-title">Series</h4>
         <div class="quick-series">
           ${SERIES.map(s => `
             <button type="button" class="quick-series-btn" data-field-size="${s.fieldSize}" aria-pressed="false" onclick="selectQuickRaceSeries(${s.fieldSize})">
@@ -1425,14 +1426,14 @@ function renderQuickRaceModal() {
             </button>`).join('')}
         </div>
         <section id="quick-race-rules">${renderRaceRuleControls(quickRaceDifficulty,quickRaceRules,'quick')}</section>
-        <div class="card-header mt">Players</div>
+        </section><section class="quick-setup-section quick-setup-drivers" aria-labelledby="quick-players-title"><h4 id="quick-players-title">Players and Cars</h4>
         <div class="quick-player-mode" role="group" aria-label="Player mode">
           <button class="btn" data-players="1" aria-pressed="${quickRacePlayers === 1}" onclick="setQuickRacePlayers(1)">Single player</button>
           <button class="btn" data-players="2" aria-pressed="${quickRacePlayers === 2}" onclick="setQuickRacePlayers(2)">Dual player</button>
         </div>
-        <p class="section-copy">One keyboard. Player 1: A / S / D. Player 2: J / K / L. Middle key brakes; the car accelerates automatically.</p>
-        ${quickRaceCars.map((car, i) => renderCarCustomizer(car, i)).join('')}
-        <p class="form-warning" id="quick-number-warning" hidden>Choose a different number for each player.</p>
+        <p class="section-copy">Player 1: A / S / D. Player 2: J / K / L.<br>Middle key brakes. Auto acceleration.</p>
+        <div class="quick-setup-cars">${quickRaceCars.map((car, i) => renderCarCustomizer(car, i)).join('')}</div>
+        <p class="form-warning" id="quick-number-warning" hidden>Choose a different number for each player.</p></section></div>
       </div>
       <div class="modal-footer quick-race-footer">
         <button type="button" class="btn btn-primary btn-lg" id="btn-quick-race-confirm" onclick="confirmQuickRace()" disabled>Confirm Race</button>

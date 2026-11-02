@@ -75,7 +75,7 @@ for (const [name, viewport] of [
     await confirm.press('Enter');
     await expect(page.locator('#quick-race-modal')).toHaveCount(0);
     expect(await page.evaluate(() => window.quickRaceLaunches.map(c => ({ difficulty: c.difficulty, seriesId: c.seriesId, fieldSize: c.fieldSize })))).toEqual([
-      { difficulty: 'pro', seriesId: 'premier', fieldSize: 36 },
+      { difficulty: 'pro', seriesId: 'premier', fieldSize: 40 },
     ]);
     await page.evaluate(() => { showScreen('intro'); showQuickRaceScreen(); });
     await expect(page.locator('#btn-quick-race-confirm')).toBeDisabled();
