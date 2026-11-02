@@ -1143,3 +1143,42 @@ function careerRacePower(car, skill) {
   const rawPower = score * 0.80 + skill / 100 * 0.20;
   return clamp(0.58 + (rawPower - 0.51) * (0.41 / 0.48), 0.3, 0.99);
 }
+
+// Retired careers live outside the five playable save slots, on this browser/origin.
+const HALL_OF_FAME_KEY = 'sce_hall_of_fame';
+function getHallOfFame() {
+  const raw = localStorage.getItem(HALL_OF_FAME_KEY);
+  const records = raw ? JSON.parse(raw) : [];
+  if (!Array.isArray(records)) throw new Error('Hall of Fame data is unreadable.');
+  return records;
+}
+function retireCareer() {
+  if (!game) return {ok:false,msg:'No active career.'};
+  let archiveRaw,metaRaw,slotRaw;
+  const slot=currentSlot;
+  try {
+    archiveRaw=localStorage.getItem(HALL_OF_FAME_KEY);
+    metaRaw=localStorage.getItem(META_KEY);
+    slotRaw=slot===null?null:localStorage.getItem(SLOT_PREFIX+slot);
+    const records=getHallOfFame(), history=JSON.parse(JSON.stringify(game.history||[]));
+    const me=(game.season.standings||[]).find(e=>e.id==='player')||{};
+    records.push({id:uid(),driverName:game.driverName||game.teamName,teamName:game.teamName,
+      retiredAt:Date.now(),series:SERIES[game.currentSeries].name,year:game.season.year,
+      wins:history.reduce((n,h)=>n+(h.wins||0),0)+(me.wins||0),titles:game.titles||history.filter(h=>h.champion).length,
+      seasons:history.length,reputation:game.reputation||0,money:game.money,
+      season:{races:me.races||0,points:me.points||0,top5:me.top5||0,top10:me.top10||0},history});
+    // Archive first: failed/quota-limited writes must never delete a playable career.
+    localStorage.setItem(HALL_OF_FAME_KEY,JSON.stringify(records));
+    if(slot!==null && slot!==undefined) {
+      const meta=getSaveMeta();meta[slot]=null;
+      localStorage.setItem(META_KEY,JSON.stringify(meta));
+      localStorage.removeItem(SLOT_PREFIX+slot);
+    }
+  } catch(e) {
+    // Best-effort rollback; live state remains available even when storage is unavailable.
+    try {if(archiveRaw!==undefined){archiveRaw===null?localStorage.removeItem(HALL_OF_FAME_KEY):localStorage.setItem(HALL_OF_FAME_KEY,archiveRaw);}if(metaRaw!==undefined){metaRaw===null?localStorage.removeItem(META_KEY):localStorage.setItem(META_KEY,metaRaw);}if(slotRaw!==null&&slotRaw!==undefined)localStorage.setItem(SLOT_PREFIX+slot,slotRaw);}catch(_){}
+    return {ok:false,msg:'Could not archive this career. Your active career has been kept. Check browser storage and try again.'};
+  }
+  game=null;currentSlot=null;
+  return {ok:true};
+}
