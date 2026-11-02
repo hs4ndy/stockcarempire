@@ -246,10 +246,10 @@ function handleSetCarColor(carId, color) {
   });
 }
 
-function handleSetCarNumber(carId) {
+async function handleSetCarNumber(carId) {
   const car = game.cars.find(c => c.id === carId);
   if (!car) return;
-  const val = prompt(`Car number for "${car.name}" (1–99):`, car.number || 1);
+  const val = await gamePrompt(`Car number for "${car.name}" (1–99):`, car.number || 1);
   if (val === null) return;                       // cancelled
   const res = setCarNumber(carId, val);
   if (!res.ok) { toast(res.msg, 'error'); return; }
@@ -324,21 +324,21 @@ function handleUpgrade(carId, upgradeId) {
   renderTab(activeTab());
 }
 
-function handleRenameCar(carId) {
+async function handleRenameCar(carId) {
   const car = game.cars.find(c => c.id === carId);
   if (!car) return;
-  const name = prompt('Enter new car name:', car.name);
+  const name = await gamePrompt('Enter new car name:', car.name);
   if (!name || !name.trim()) return;
   renameCar(carId, name);
   renderTab('garage');
 }
 
-function handleSellCar(carId) {
+async function handleSellCar(carId) {
   const car = game.cars.find(c => c.id === carId);
   if (!car) return;
   const cls = CAR_CLASSES[car.classId];
   const val = Math.round(cls.sellValue * (car.condition / 100));
-  if (!confirm(`Sell ${car.name} for ${fmt$(val)}?`)) return;
+  if (!await gameConfirm(`Sell ${car.name} for ${fmt$(val)}?`)) return;
   const result = sellCar(carId);
   if (!result.ok) { toast(result.msg, 'error'); return; }
   toast(`${car.name} sold for ${fmt$(result.value)}.`, 'success');
@@ -355,9 +355,9 @@ function handleHireStaff(typeId) {
   renderTab('team');
 }
 
-function handleFireStaff(staffId) {
+async function handleFireStaff(staffId) {
   const s = game.staff.find(st => st.id === staffId);
-  if (!confirm(`Release ${s?.name} from your staff? Their salary payments will stop.`)) return;
+  if (!await gameConfirm(`Release ${s?.name} from your staff? Their salary payments will stop.`)) return;
   fireStaff(staffId);
   toast('Staff member released.', 'info');
   renderTab('team');
@@ -403,18 +403,18 @@ function confirmHireDriver(driverId) {
   renderTab('team');
 }
 
-function handleFireDriver(driverId) {
+async function handleFireDriver(driverId) {
   const entry = game.hiredDrivers.find(h => h.driverId === driverId);
   const d     = HIREABLE_DRIVERS.find(dr => dr.id === driverId);
-  if (!confirm(`Release ${d?.name}?`)) return;
+  if (!await gameConfirm(`Release ${d?.name}?`)) return;
   fireDriver(driverId);
   toast(`${d?.name} released.`, 'info');
   renderTab('team');
 }
 
 // ─── Market handlers ──────────────────────────────────────────
-function handleBuyCar() {
-  const name = prompt('Name your new car:');
+async function handleBuyCar() {
+  const name = await gamePrompt('Name your new car:');
   if (!name || !name.trim()) return;
   const result = buyCar(name.trim());
   if (!result.ok) { toast(result.msg, 'error'); return; }
@@ -832,6 +832,7 @@ function dismissSaveReminder() {
 
 // Surface what happened off-track during the race weekend
 function reportLoanNotes() {
+  if(game.lastCrashReputationPenalty){toast(`Repeated crashes cost ${game.lastCrashReputationPenalty} reputation.`, 'warning',6000);game.lastCrashReputationPenalty=0;}
   reportSponsorOffers();
   const notes = [
     ...(game.lastDriverNotes || []).map(t => ({ t, type: 'success' })),
@@ -889,8 +890,8 @@ function handleLoadFromSlot(slot) {
   }
 }
 
-function handleDeleteSlot(slot) {
-  if (!confirm(`Delete the career in Slot ${slot + 1}? This cannot be undone.`)) return;
+async function handleDeleteSlot(slot) {
+  if (!await gameConfirm(`Delete the career in Slot ${slot + 1}? This cannot be undone.`)) return;
   deleteSlot(slot);
   document.getElementById('save-slot-modal')?.remove();
   showLoadModal();
@@ -900,11 +901,11 @@ function closeSaveModal() {
   document.getElementById('save-slot-modal')?.remove();
 }
 
-function handleNewGamePrompt() {
+async function handleNewGamePrompt() {
   const warning = currentSlot === null
     ? 'Start a new career? Your unsaved career will be lost.'
     : `Start a new career? This deletes your current career from Slot ${currentSlot + 1}. Other save slots are kept.`;
-  if (!confirm(warning)) return;
+  if (!await gameConfirm(warning)) return;
   deleteSave();
   location.reload();
 }
@@ -912,6 +913,7 @@ function handleNewGamePrompt() {
 // Keyboard shortcut: S to save
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    if(activeGameDialog){e.preventDefault();return;}
     e.preventDefault();
     handleSaveGame();
   }

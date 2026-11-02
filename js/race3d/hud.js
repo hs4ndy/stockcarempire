@@ -137,8 +137,10 @@
     if (!el) return;
     const msg = this.config.practiceTips ? 'Practice Complete'
       : pos === 1 ? 'Victory Lane' : pos <= 3 ? 'Podium Finish' : `P${pos} Finish`;
+    const victory=pos===1&&!this.config.practiceTips;
     el.innerHTML = `
-      <div class="r3d-finish-box">
+      <div class="r3d-finish-box${victory?' is-victory':''}">
+        ${victory?'<div class="victory-checker" aria-hidden="true"><svg width="160" height="24" viewBox="0 0 160 24"><path fill="#f5f5f2" d="M0 0h20v12H0zM40 0h20v12H40zM80 0h20v12H80zM120 0h20v12H120zM20 12h20v12H20zM60 12h20v12H60zM100 12h20v12H100zM140 12h20v12H140z"/></svg></div><div class="victory-title">RACE WINNER</div>':''}
         <div class="r3d-finish-pos">${pos}${ordinal(pos)} Place</div>
         <div class="r3d-finish-msg">${msg}</div>
         <button class="btn btn-primary btn-lg" onclick="window._r3dFinish(${pos})">${this.config.qualifyAI ? 'Next' : 'Continue'}</button>

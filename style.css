@@ -1077,3 +1077,13 @@ button.standing-driver:hover { background:#40464b; }
 button.standing-driver:focus-visible { outline:3px solid var(--focus); outline-offset:-3px; }
 button.standing-driver .st-name { text-decoration:none; }
 .r3d-order-row.is-rival .r3d-order-name { color:var(--danger-text); font-weight:700; }
+
+#game-dialog { z-index:10000; }
+#game-dialog label { display:block; margin-bottom:16px; }
+.r3d-finish-box.is-victory { width:min(520px,calc(100% - 32px)); background:var(--bg); border-top:6px solid var(--accent-solid); animation:victory-arrival .45s ease-out both; }
+.is-victory .victory-title { font:800 clamp(32px,5vw,56px)/1 var(--font-display); margin:24px 0 16px; }
+.is-victory .r3d-finish-pos { color:var(--warn); font-size:clamp(48px,7vw,80px); }
+.is-victory .r3d-finish-msg { margin-block:16px 24px; }
+.victory-checker { display:flex; justify-content:center; }
+@keyframes victory-arrival { from { transform:translateY(24px); opacity:.3; } to { transform:translateY(0); opacity:1; } }
+@media(prefers-reduced-motion:reduce){.r3d-finish-box.is-victory{animation:none;}}

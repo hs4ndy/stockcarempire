@@ -1445,7 +1445,7 @@ function showHallOfFame(index=null) {
   document.querySelector('#hall-of-fame-modal .modal-close')?.focus();
 }
 
-function handleRetireCar(id){const car=game.cars.find(c=>c.id===id);if(!car||!confirm(`Permanently retire ${car.name}? No cash is paid. Its stats will remain in the Vehicle Graveyard.${game.cars.length===1?' You must buy a replacement before racing.':''}`))return;const r=retireOwnedCar(id);if(!r.ok){toast(r.msg,'error');return;}renderTab('garage');toast('Car retired to the Vehicle Graveyard.','success');}
+async function handleRetireCar(id){const car=game.cars.find(c=>c.id===id);if(!car||!await gameConfirm(`Permanently retire ${car.name}? No cash is paid. Its stats will remain in the Vehicle Graveyard.${game.cars.length===1?' You must buy a replacement before racing.':''}`))return;const r=retireOwnedCar(id);if(!r.ok){toast(r.msg,'error');return;}renderTab('garage');toast('Car retired to the Vehicle Graveyard.','success');}
 function renderArchivedVehicles(cars){return cars.map(c=>`<details class="ui-details"><summary>#${careerArchiveEscape(c.number)} ${careerArchiveEscape(c.name)}</summary><div class="ui-details-body"><p>${careerArchiveEscape(c.retirementReason||'Lifetime retirement')}</p>${['speed','handling','reliability','condition','lifetimeHealth','races','wins','totalPoints'].map(k=>`<div class="team-stat"><span>${{totalPoints:'Points',lifetimeHealth:'Lifetime health'}[k]||k}</span><span>${careerArchiveEscape(c[k]??'Not recorded')}</span></div>`).join('')}<p>Upgrades: ${(c.appliedUpgrades||[]).map(id=>careerArchiveEscape(CAR_CLASSES[c.classId]?.upgrades.find(u=>u.id===id)?.name||id)).join(', ')||'None'}</p></div></details>`).join('')||'<p>No vehicle records.</p>';}
 
 function showDriverSeasonStats(id){

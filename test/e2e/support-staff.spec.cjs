@@ -17,12 +17,12 @@ for(const [width,file]of [[1440,'index.html'],[390,'releases/Stock-Car-Empire.ht
  await page.screenshot({path:`.impeccable/review/support-staff-114-${width}.png`,fullPage:true});
  await page.evaluate(()=>{saveToSlot(0);game=null;loadFromSlot(0);enterGame();showTab('team');showTeamView('staff');});
  await expect(page.locator('.team-roster')).toContainText('Grayson Fortenberry');expect(await page.evaluate(()=>tierCapacity()-MAX_PER_TIER)).toBe(2);
- page.once('dialog',d=>d.accept());await page.locator('.team-roster .staff-row').filter({hasText:'Grayson Fortenberry'}).getByRole('button',{name:'Release Staff'}).click();expect(await page.evaluate(()=>tierCapacity()-MAX_PER_TIER)).toBe(0);
+ await page.locator('.team-roster .staff-row').filter({hasText:'Grayson Fortenberry'}).getByRole('button',{name:'Release Staff'}).click();await page.locator('#game-dialog').getByRole('button',{name:'Confirm',exact:true}).click();expect(await page.evaluate(()=>tierCapacity()-MAX_PER_TIER)).toBe(0);
  await page.locator('#staff-role-filter').selectOption('crew_chief');await page.getByRole('button',{name:'Hire Marcus Reed',exact:true}).click();await expect(page.locator('[data-staff-candidate="chief05"] button')).toBeDisabled();
  await page.evaluate(()=>{game.money=0;renderTab('team');});await page.locator('#staff-role-filter').selectOption('engineer');await expect(page.locator('[data-staff-candidate="engineer05"] button')).toHaveText('Not Enough Cash');
  expect(errors).toEqual([]);
 });
 test('legacy staff contract remains unchanged after named migration',async({page})=>{
- await page.goto('/');await page.evaluate(()=>{newGame('Legacy Team','Driver','Car');game.tutorial.status='skipped';game.staff=[{id:'old-hire',typeId:'mechanic',name:'Senior Mechanic',weeklyCost:777}];saveToSlot(0);game=null;loadFromSlot(0);enterGame();showTab('team');showTeamView('staff');});
+ await page.goto(pathToFileURL(path.resolve('index.html')).href);await page.evaluate(()=>{newGame('Legacy Team','Driver','Car');game.tutorial.status='skipped';game.staff=[{id:'old-hire',typeId:'mechanic',name:'Senior Mechanic',weeklyCost:777}];saveToSlot(0);game=null;loadFromSlot(0);enterGame();showTab('team');showTeamView('staff');});
  await expect(page.locator('.team-roster')).toContainText('Byron Hill');await expect(page.locator('.team-roster')).toContainText('$777 per race');await expect(page.locator('.team-roster')).toContainText('25% repair discount');
 });

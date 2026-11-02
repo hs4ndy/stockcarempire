@@ -263,7 +263,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "823edd27e35c3b29c84c240f3a1f563d26ed2625dd77ae0b5496478a1804a110"
+      "hash": "298e82537be42ab8b12bc19723400e517cd68495369a3042bc0e535113954a37"
     },
     {
       "name": "_crashThreshold",
@@ -391,7 +391,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "515341e66eee1065240dfaee978303b12474532db71a26c3dea9828b862c8b82"
+      "hash": "86b76c991f56071da26b1508c05b494e8aac0b1bfe9d80e5875dbcd42b20605c"
     },
     {
       "name": "_captureFinishPhoto",
@@ -479,7 +479,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "19b345eb0d79c193eef326a9cac0c91508852d5587b89a44a28a7e56bfacf787"
+      "hash": "43d973f1c55f76087f57336197a857fe2d22e61a4e749c6435dea934cad8b0ba"
     },
     {
       "name": "_updateDualHUD",
@@ -552,6 +552,7 @@
     "version112": "Intentional player penalty/draft and AI-only contact tuning; opening/dual traces refreshed.",
     "version113": "Requested 80% less condition loss and softer human condition/wreck pace; trace baselines refreshed.",
     "version122": "HUD-only 20Hz DOM refresh throttle. Physics, cameras, spark/contact methods unchanged.",
-    "version123": "Rival flag propagation, red banner/order styles and near-human +.04 aggression; no pace/recovery/contact changes."
+    "version123": "Rival flag propagation, red banner/order styles and near-human +.04 aggression; no pace/recovery/contact changes.",
+    "version125": "Pro/All-Out human-pair AI strain -.10 relative; single/dual victory presentation. No other driving or spark changes."
   }
 }

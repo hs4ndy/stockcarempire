@@ -60,7 +60,7 @@ for (const [name, viewport] of [
     await page.getByRole('button', { name: 'Buy another car', exact: true }).click();
     await expect(page.getByRole('button', { name: /^Buy Car \(/ })).toBeVisible();
     await page.locator('.nav-btn[data-tab="team"]').click();
-    page.once('dialog', d => d.accept());
+
     await page.locator('.team-roster .staff-row').filter({ hasText: target }).getByRole('button', { name: 'Release', exact: true }).click();
     expect(await page.evaluate(() => game.hiredDrivers.length)).toBe(1);
 
@@ -68,7 +68,7 @@ for (const [name, viewport] of [
     await page.getByRole('button', { name: 'Hire Adrian Cole', exact: true }).click();
     await expect(page.locator('.team-roster')).toContainText('Race Engineer');
     expect(await page.evaluate(() => game.staff.length)).toBe(2);
-    page.once('dialog', d => d.accept());
+
     await page.locator('.team-roster .staff-row').filter({ hasText: 'Race Engineer' }).getByRole('button', { name: 'Release Staff', exact: true }).click();
     expect(await page.evaluate(() => game.staff.length)).toBe(1);
 

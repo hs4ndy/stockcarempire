@@ -30,7 +30,7 @@
         this._updateDualHUD(1);
         const p1 = this.finishOrder.indexOf(this.player)+1, p2 = this.finishOrder.indexOf(this.player2)+1;
         const el = document.getElementById('r3d-finish');
-        el.innerHTML = `<div class="r3d-finish-box"><h2>Race Results</h2><p>Player 1 · #${this.player.number} · ${p1}${ordinal(p1)}</p><p>Player 2 · #${this.player2.number} · ${p2}${ordinal(p2)}</p><button class="btn btn-primary btn-lg" onclick="window._r3dFinish(${p1})">Continue</button></div>`;
+        el.innerHTML = `<div class="r3d-finish-box${p1===1||p2===1?' is-victory':''}">${p1===1||p2===1?`<h2 class="victory-title">PLAYER ${p1===1?1:2} WINS</h2>`:'<h2>Race Results</h2>'}<p>Player 1 · #${this.player.number} · ${p1}${ordinal(p1)}</p><p>Player 2 · #${this.player2.number} · ${p2}${ordinal(p2)}</p><button class="btn btn-primary btn-lg" onclick="window._r3dFinish(${p1})">Continue</button></div>`;
         el.style.display = 'flex';
       }
       return;

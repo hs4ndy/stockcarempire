@@ -1097,6 +1097,16 @@ button.standing-driver:focus-visible { outline:3px solid var(--focus); outline-o
 button.standing-driver .st-name { text-decoration:none; }
 .r3d-order-row.is-rival .r3d-order-name { color:var(--danger-text); font-weight:700; }
 
+#game-dialog { z-index:10000; }
+#game-dialog label { display:block; margin-bottom:16px; }
+.r3d-finish-box.is-victory { width:min(520px,calc(100% - 32px)); background:var(--bg); border-top:6px solid var(--accent-solid); animation:victory-arrival .45s ease-out both; }
+.is-victory .victory-title { font:800 clamp(32px,5vw,56px)/1 var(--font-display); margin:24px 0 16px; }
+.is-victory .r3d-finish-pos { color:var(--warn); font-size:clamp(48px,7vw,80px); }
+.is-victory .r3d-finish-msg { margin-block:16px 24px; }
+.victory-checker { display:flex; justify-content:center; }
+@keyframes victory-arrival { from { transform:translateY(24px); opacity:.3; } to { transform:translateY(0); opacity:1; } }
+@media(prefers-reduced-motion:reduce){.r3d-finish-box.is-victory{animation:none;}}
+
 </style>
 </head>
 <body>
@@ -1137,7 +1147,7 @@ button.standing-driver .st-name { text-decoration:none; }
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 124</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 125</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -3031,7 +3041,7 @@ function postRaceUpdate(playerResult, earnings, allResults) {
   // Reputation: improves with good finishes, degrades slightly on bad ones
   // Winning is a big deal - it moves reputation far more than anything else.
   // Gains taper as reputation climbs so it still takes a career to reach Legend.
-  if (!game.reputation) game.reputation = 50;
+  if (!Number.isFinite(game.reputation)) game.reputation = 50;
   const headroom = (100 - game.reputation) / 100;   // 1.0 unknown → 0.0 maxed
   let repDelta;
   if      (pos === 1)  repDelta =  6 + 14 * headroom;   // +20 early, +6 at the top
@@ -3040,6 +3050,13 @@ function postRaceUpdate(playerResult, earnings, allResults) {
   else if (pos <= 10)  repDelta =  0.5 + 1 * headroom;
   else if (pos <= 20)  repDelta = -0.5;
   else                 repDelta = -1.5;
+  // Only actual played crash reports affect reputation, never inferred simulation incidents.
+  game.lastCrashReputationPenalty=0;
+  if(Number.isFinite(playerResult.crashes)&&raceFeatureRules(game.difficulty,game.raceRules).crashes){
+    game.recentPlayedCrashes=[...(game.recentPlayedCrashes||[]),Math.max(0,Math.floor(playerResult.crashes))].slice(-3);
+    const crashes=game.recentPlayedCrashes.at(-1),repeated=crashes>=2||game.recentPlayedCrashes.filter(n=>n>0).length>=2;
+    if(crashes&&repeated){game.lastCrashReputationPenalty=Math.min(2,crashes*.5);repDelta-=game.lastCrashReputationPenalty;}
+  }
   game.reputation = clamp(Math.round((game.reputation + repDelta) * 10) / 10, 0, 100);
 
   // Car condition degrades. Cars run by hired drivers race too, so they take
@@ -3471,7 +3488,7 @@ function normalizeSupportStaff() {
     if (member.candidateId === 'mechanic03') member.overall = 99;
     if (member.candidateId || member.overall) continue;
     const candidates = STAFF_CANDIDATES.filter(c=>c.typeId===member.typeId);
-    const candidate = candidates.find(c=>c.overall===79 && !game.staff.some(s=>s.candidateId===c.id))
+    const candidate = candidates.find(c=>c.pay===1 && !game.staff.some(s=>s.candidateId===c.id))
       || candidates.find(c=>!game.staff.some(s=>s.candidateId===c.id));
     if (!candidate) continue;
     Object.assign(member,{candidateId:candidate.id,name:candidate.name,overall:candidate.overall,
@@ -3481,7 +3498,7 @@ function normalizeSupportStaff() {
 function hireStaff(candidateId) {
   // Keep role-ID calls working for older integrations; choose the standard specialist.
   const candidate = STAFF_CANDIDATES.find(c=>c.id===candidateId)
-    || STAFF_CANDIDATES.find(c=>c.typeId===candidateId && c.overall===79);
+    || STAFF_CANDIDATES.find(c=>c.typeId===candidateId && c.pay===1);
   if (!candidate) return {ok:false,msg:'Unknown staff member.'};
   const type = STAFF_TYPES.find(t=>t.id===candidate.typeId);
   if (game.staff.some(s=>s.candidateId===candidate.id)) return {ok:false,msg:'Already hired.'};
@@ -5888,7 +5905,7 @@ class Race3DEngine {
       this._damageCar(car,(Math.max(0,closing-1)*5+pressure*.8)*dt);
       // AI door contact needs sustained force; human-caused AI strain is
       // reduced modestly, AI-only strain substantially. Player tolerance stays.
-      const strainScale = car.isPlayer ? 1 : (a.isPlayer || b.isPlayer ? .80 : .28);
+      const strainScale = car.isPlayer ? 1 : (a.isPlayer || b.isPlayer ? (['pro','allout'].includes(this.config?.difficulty||this.diff?.id) ? .72 : .80) : .28);
       car.sideStrain=(car.sideStrain||0)+strain*strainScale;car._recentSide=.5;
       const threshold=this._crashThreshold(car);
       if(rules.crashes && car.sideStrain>=threshold) this._beginCrash(car,side,'side contact');
@@ -6446,8 +6463,10 @@ class Race3DEngine {
     if (!el) return;
     const msg = this.config.practiceTips ? 'Practice Complete'
       : pos === 1 ? 'Victory Lane' : pos <= 3 ? 'Podium Finish' : `P${pos} Finish`;
+    const victory=pos===1&&!this.config.practiceTips;
     el.innerHTML = `
-      <div class="r3d-finish-box">
+      <div class="r3d-finish-box${victory?' is-victory':''}">
+        ${victory?'<div class="victory-checker" aria-hidden="true"><svg width="160" height="24" viewBox="0 0 160 24"><path fill="#f5f5f2" d="M0 0h20v12H0zM40 0h20v12H40zM80 0h20v12H80zM120 0h20v12H120zM20 12h20v12H20zM60 12h20v12H60zM100 12h20v12H100zM140 12h20v12H140z"/></svg></div><div class="victory-title">RACE WINNER</div>':''}
         <div class="r3d-finish-pos">${pos}${ordinal(pos)} Place</div>
         <div class="r3d-finish-msg">${msg}</div>
         <button class="btn btn-primary btn-lg" onclick="window._r3dFinish(${pos})">${this.config.qualifyAI ? 'Next' : 'Continue'}</button>
@@ -6520,7 +6539,7 @@ class Race3DEngine {
         this._updateDualHUD(1);
         const p1 = this.finishOrder.indexOf(this.player)+1, p2 = this.finishOrder.indexOf(this.player2)+1;
         const el = document.getElementById('r3d-finish');
-        el.innerHTML = `<div class="r3d-finish-box"><h2>Race Results</h2><p>Player 1 · #${this.player.number} · ${p1}${ordinal(p1)}</p><p>Player 2 · #${this.player2.number} · ${p2}${ordinal(p2)}</p><button class="btn btn-primary btn-lg" onclick="window._r3dFinish(${p1})">Continue</button></div>`;
+        el.innerHTML = `<div class="r3d-finish-box${p1===1||p2===1?' is-victory':''}">${p1===1||p2===1?`<h2 class="victory-title">PLAYER ${p1===1?1:2} WINS</h2>`:'<h2>Race Results</h2>'}<p>Player 1 · #${this.player.number} · ${p1}${ordinal(p1)}</p><p>Player 2 · #${this.player2.number} · ${p2}${ordinal(p2)}</p><button class="btn btn-primary btn-lg" onclick="window._r3dFinish(${p1})">Continue</button></div>`;
         el.style.display = 'flex';
       }
       return;
@@ -6623,6 +6642,27 @@ function renderSponsors(){
 function showSponsorAcceptance(id){const o=game.sponsorship.offers.find(o=>o.id===id);if(!o)return;const c=sponsorCompany(o.companyId),contracts=game.sponsorship.contracts.filter(a=>sponsorCompany(a.companyId).tier===c.tier),full=contracts.length>=sponsorshipCapacity()[c.tier];document.getElementById('sponsor-accept-modal')?.remove();document.body.insertAdjacentHTML('beforeend',`<div class="modal-overlay" id="sponsor-accept-modal" role="dialog" aria-modal="true" aria-labelledby="sponsor-accept-title"><div class="modal"><div class="modal-header"><h3 id="sponsor-accept-title">Partner with ${sponsorEsc(c.name)}?</h3></div><div class="modal-body">${sponsorTerms(o)}<p>Payments begin with your next completed race. This team-wide agreement includes this season and ends after Year ${o.endYear}. Series changes end the agreement.</p>${full?`<label for="sponsor-replacement">Replace current ${c.tier} partner (no fee)</label><select class="form-select" id="sponsor-replacement">${contracts.map(a=>`<option value="${a.id}">${sponsorEsc(sponsorCompany(a.companyId).name)} — ${fmt$(a.pay)}/race through Year ${a.endYear}</option>`).join('')}</select>`:''}</div><div class="modal-footer"><button class="btn btn-ghost" onclick="document.getElementById('sponsor-accept-modal').remove()">Cancel</button><button class="btn btn-primary" onclick="handleAcceptSponsor('${o.id}')">Confirm Partnership</button></div></div></div>`);document.querySelector('#sponsor-accept-modal .btn-ghost').focus();}
 function handleAcceptSponsor(id){const result=acceptSponsorOffer(id,document.getElementById('sponsor-replacement')?.value||null);if(!result.ok){toast(result.msg,'error');return;}document.getElementById('sponsor-accept-modal')?.remove();updateHeader();renderTab('sponsors');toast('Partnership signed. Payments start with your next completed race.','success');}
 function handleDeclineSponsor(id){if(!declineSponsorOffer(id)){toast('Could not save this change.','error');return;}renderTab('sponsors');}
+
+</script>
+<script>
+/* js/dialogs.js */
+// In-game replacements for browser prompt/confirm. No native dialog overrides.
+let activeGameDialog=false;
+function gameDialog(message,initial,entry=false){
+ if(activeGameDialog)return Promise.resolve(entry?null:false);
+ activeGameDialog=true;
+ return new Promise(resolve=>{
+ const previous=document.activeElement,esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const shield=[...document.body.children].filter(e=>e.tagName!=='SCRIPT').map(e=>[e,e.inert]);shield.forEach(([e])=>e.inert=true);
+ const overlay=document.createElement('div');overlay.id='game-dialog';overlay.className='modal-overlay';overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-labelledby','game-dialog-title');overlay.innerHTML=`<form class="modal"><div class="modal-header"><h3 id="game-dialog-title">${entry?'Enter Details':'Confirm Action'}</h3></div><div class="modal-body"><${entry?'label for="game-dialog-input"':'p'}>${esc(message)}</${entry?'label':'p'}>${entry?`<input type="text" id="game-dialog-input" value="${esc(initial)}" autocomplete="off">`:''}</div><div class="modal-footer"><button class="btn btn-secondary" type="button" id="game-dialog-cancel">Cancel</button><button class="btn btn-primary" type="submit">${entry?'Save':'Confirm'}</button></div></form>`;
+ const close=ok=>{const value=entry?(ok?overlay.querySelector('input').value:null):ok;overlay.remove();shield.forEach(([e,was])=>e.inert=was);activeGameDialog=false;if(previous?.isConnected)previous.focus({preventScroll:true});resolve(value);};
+ overlay.querySelector('form').onsubmit=e=>{e.preventDefault();close(true);};overlay.querySelector('#game-dialog-cancel').onclick=()=>close(false);
+ overlay.onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();close(false);}if(e.key==='Tab'){const nodes=[...overlay.querySelectorAll('input,button')],first=nodes[0],last=nodes.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}};
+ document.body.append(overlay);const target=entry?overlay.querySelector('input'):overlay.querySelector('#game-dialog-cancel');target.focus();if(entry)target.select();
+ });
+}
+function gameConfirm(message){return gameDialog(message,'',false);}
+function gamePrompt(message,initial=''){return gameDialog(message,initial,true);}
 
 </script>
 <script>
@@ -8074,7 +8114,7 @@ function showHallOfFame(index=null) {
   document.querySelector('#hall-of-fame-modal .modal-close')?.focus();
 }
 
-function handleRetireCar(id){const car=game.cars.find(c=>c.id===id);if(!car||!confirm(`Permanently retire ${car.name}? No cash is paid. Its stats will remain in the Vehicle Graveyard.${game.cars.length===1?' You must buy a replacement before racing.':''}`))return;const r=retireOwnedCar(id);if(!r.ok){toast(r.msg,'error');return;}renderTab('garage');toast('Car retired to the Vehicle Graveyard.','success');}
+async function handleRetireCar(id){const car=game.cars.find(c=>c.id===id);if(!car||!await gameConfirm(`Permanently retire ${car.name}? No cash is paid. Its stats will remain in the Vehicle Graveyard.${game.cars.length===1?' You must buy a replacement before racing.':''}`))return;const r=retireOwnedCar(id);if(!r.ok){toast(r.msg,'error');return;}renderTab('garage');toast('Car retired to the Vehicle Graveyard.','success');}
 function renderArchivedVehicles(cars){return cars.map(c=>`<details class="ui-details"><summary>#${careerArchiveEscape(c.number)} ${careerArchiveEscape(c.name)}</summary><div class="ui-details-body"><p>${careerArchiveEscape(c.retirementReason||'Lifetime retirement')}</p>${['speed','handling','reliability','condition','lifetimeHealth','races','wins','totalPoints'].map(k=>`<div class="team-stat"><span>${{totalPoints:'Points',lifetimeHealth:'Lifetime health'}[k]||k}</span><span>${careerArchiveEscape(c[k]??'Not recorded')}</span></div>`).join('')}<p>Upgrades: ${(c.appliedUpgrades||[]).map(id=>careerArchiveEscape(CAR_CLASSES[c.classId]?.upgrades.find(u=>u.id===id)?.name||id)).join(', ')||'None'}</p></div></details>`).join('')||'<p>No vehicle records.</p>';}
 
 function showDriverSeasonStats(id){
@@ -11374,10 +11414,10 @@ function handleSetCarColor(carId, color) {
   });
 }
 
-function handleSetCarNumber(carId) {
+async function handleSetCarNumber(carId) {
   const car = game.cars.find(c => c.id === carId);
   if (!car) return;
-  const val = prompt(`Car number for "${car.name}" (1–99):`, car.number || 1);
+  const val = await gamePrompt(`Car number for "${car.name}" (1–99):`, car.number || 1);
   if (val === null) return;                       // cancelled
   const res = setCarNumber(carId, val);
   if (!res.ok) { toast(res.msg, 'error'); return; }
@@ -11452,21 +11492,21 @@ function handleUpgrade(carId, upgradeId) {
   renderTab(activeTab());
 }
 
-function handleRenameCar(carId) {
+async function handleRenameCar(carId) {
   const car = game.cars.find(c => c.id === carId);
   if (!car) return;
-  const name = prompt('Enter new car name:', car.name);
+  const name = await gamePrompt('Enter new car name:', car.name);
   if (!name || !name.trim()) return;
   renameCar(carId, name);
   renderTab('garage');
 }
 
-function handleSellCar(carId) {
+async function handleSellCar(carId) {
   const car = game.cars.find(c => c.id === carId);
   if (!car) return;
   const cls = CAR_CLASSES[car.classId];
   const val = Math.round(cls.sellValue * (car.condition / 100));
-  if (!confirm(`Sell ${car.name} for ${fmt$(val)}?`)) return;
+  if (!await gameConfirm(`Sell ${car.name} for ${fmt$(val)}?`)) return;
   const result = sellCar(carId);
   if (!result.ok) { toast(result.msg, 'error'); return; }
   toast(`${car.name} sold for ${fmt$(result.value)}.`, 'success');
@@ -11483,9 +11523,9 @@ function handleHireStaff(typeId) {
   renderTab('team');
 }
 
-function handleFireStaff(staffId) {
+async function handleFireStaff(staffId) {
   const s = game.staff.find(st => st.id === staffId);
-  if (!confirm(`Release ${s?.name} from your staff? Their salary payments will stop.`)) return;
+  if (!await gameConfirm(`Release ${s?.name} from your staff? Their salary payments will stop.`)) return;
   fireStaff(staffId);
   toast('Staff member released.', 'info');
   renderTab('team');
@@ -11531,18 +11571,18 @@ function confirmHireDriver(driverId) {
   renderTab('team');
 }
 
-function handleFireDriver(driverId) {
+async function handleFireDriver(driverId) {
   const entry = game.hiredDrivers.find(h => h.driverId === driverId);
   const d     = HIREABLE_DRIVERS.find(dr => dr.id === driverId);
-  if (!confirm(`Release ${d?.name}?`)) return;
+  if (!await gameConfirm(`Release ${d?.name}?`)) return;
   fireDriver(driverId);
   toast(`${d?.name} released.`, 'info');
   renderTab('team');
 }
 
 // ─── Market handlers ──────────────────────────────────────────
-function handleBuyCar() {
-  const name = prompt('Name your new car:');
+async function handleBuyCar() {
+  const name = await gamePrompt('Name your new car:');
   if (!name || !name.trim()) return;
   const result = buyCar(name.trim());
   if (!result.ok) { toast(result.msg, 'error'); return; }
@@ -11960,6 +12000,7 @@ function dismissSaveReminder() {
 
 // Surface what happened off-track during the race weekend
 function reportLoanNotes() {
+  if(game.lastCrashReputationPenalty){toast(`Repeated crashes cost ${game.lastCrashReputationPenalty} reputation.`, 'warning',6000);game.lastCrashReputationPenalty=0;}
   reportSponsorOffers();
   const notes = [
     ...(game.lastDriverNotes || []).map(t => ({ t, type: 'success' })),
@@ -12017,8 +12058,8 @@ function handleLoadFromSlot(slot) {
   }
 }
 
-function handleDeleteSlot(slot) {
-  if (!confirm(`Delete the career in Slot ${slot + 1}? This cannot be undone.`)) return;
+async function handleDeleteSlot(slot) {
+  if (!await gameConfirm(`Delete the career in Slot ${slot + 1}? This cannot be undone.`)) return;
   deleteSlot(slot);
   document.getElementById('save-slot-modal')?.remove();
   showLoadModal();
@@ -12028,11 +12069,11 @@ function closeSaveModal() {
   document.getElementById('save-slot-modal')?.remove();
 }
 
-function handleNewGamePrompt() {
+async function handleNewGamePrompt() {
   const warning = currentSlot === null
     ? 'Start a new career? Your unsaved career will be lost.'
     : `Start a new career? This deletes your current career from Slot ${currentSlot + 1}. Other save slots are kept.`;
-  if (!confirm(warning)) return;
+  if (!await gameConfirm(warning)) return;
   deleteSave();
   location.reload();
 }
@@ -12040,6 +12081,7 @@ function handleNewGamePrompt() {
 // Keyboard shortcut: S to save
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    if(activeGameDialog){e.preventDefault();return;}
     e.preventDefault();
     handleSaveGame();
   }

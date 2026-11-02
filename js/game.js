@@ -493,7 +493,7 @@ function postRaceUpdate(playerResult, earnings, allResults) {
   // Reputation: improves with good finishes, degrades slightly on bad ones
   // Winning is a big deal - it moves reputation far more than anything else.
   // Gains taper as reputation climbs so it still takes a career to reach Legend.
-  if (!game.reputation) game.reputation = 50;
+  if (!Number.isFinite(game.reputation)) game.reputation = 50;
   const headroom = (100 - game.reputation) / 100;   // 1.0 unknown → 0.0 maxed
   let repDelta;
   if      (pos === 1)  repDelta =  6 + 14 * headroom;   // +20 early, +6 at the top
@@ -502,6 +502,13 @@ function postRaceUpdate(playerResult, earnings, allResults) {
   else if (pos <= 10)  repDelta =  0.5 + 1 * headroom;
   else if (pos <= 20)  repDelta = -0.5;
   else                 repDelta = -1.5;
+  // Only actual played crash reports affect reputation, never inferred simulation incidents.
+  game.lastCrashReputationPenalty=0;
+  if(Number.isFinite(playerResult.crashes)&&raceFeatureRules(game.difficulty,game.raceRules).crashes){
+    game.recentPlayedCrashes=[...(game.recentPlayedCrashes||[]),Math.max(0,Math.floor(playerResult.crashes))].slice(-3);
+    const crashes=game.recentPlayedCrashes.at(-1),repeated=crashes>=2||game.recentPlayedCrashes.filter(n=>n>0).length>=2;
+    if(crashes&&repeated){game.lastCrashReputationPenalty=Math.min(2,crashes*.5);repDelta-=game.lastCrashReputationPenalty;}
+  }
   game.reputation = clamp(Math.round((game.reputation + repDelta) * 10) / 10, 0, 100);
 
   // Car condition degrades. Cars run by hired drivers race too, so they take
@@ -933,7 +940,7 @@ function normalizeSupportStaff() {
     if (member.candidateId === 'mechanic03') member.overall = 99;
     if (member.candidateId || member.overall) continue;
     const candidates = STAFF_CANDIDATES.filter(c=>c.typeId===member.typeId);
-    const candidate = candidates.find(c=>c.overall===79 && !game.staff.some(s=>s.candidateId===c.id))
+    const candidate = candidates.find(c=>c.pay===1 && !game.staff.some(s=>s.candidateId===c.id))
       || candidates.find(c=>!game.staff.some(s=>s.candidateId===c.id));
     if (!candidate) continue;
     Object.assign(member,{candidateId:candidate.id,name:candidate.name,overall:candidate.overall,
@@ -943,7 +950,7 @@ function normalizeSupportStaff() {
 function hireStaff(candidateId) {
   // Keep role-ID calls working for older integrations; choose the standard specialist.
   const candidate = STAFF_CANDIDATES.find(c=>c.id===candidateId)
-    || STAFF_CANDIDATES.find(c=>c.typeId===candidateId && c.overall===79);
+    || STAFF_CANDIDATES.find(c=>c.typeId===candidateId && c.pay===1);
   if (!candidate) return {ok:false,msg:'Unknown staff member.'};
   const type = STAFF_TYPES.find(t=>t.id===candidate.typeId);
   if (game.staff.some(s=>s.candidateId===candidate.id)) return {ok:false,msg:'Already hired.'};

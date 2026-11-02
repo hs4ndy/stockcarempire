@@ -87,12 +87,9 @@ for (const [name, viewport] of [
     await page.evaluate(() => document.getElementById('toast-container').replaceChildren());
     await page.screenshot({ path: testInfo.outputPath(`save-${name}.png`), fullPage: true, animations: 'disabled' });
     await page.locator('#save-slot-modal .modal-close').click();
-    let newCareerWarning;
-    page.once('dialog', async dialog => {
-      newCareerWarning = dialog.message();
-      await dialog.dismiss();
-    });
     await page.locator('[onclick="handleNewGamePrompt()"]:visible').first().click();
+    const newCareerWarning=await page.locator('#game-dialog .modal-body').innerText();
+    await page.locator('#game-dialog-cancel').click();
     expect(newCareerWarning).toContain('deletes your current career from Slot 1');
     expect(await page.evaluate(() => localStorage.getItem('sce_slot_0'))).not.toBeNull();
     await page.evaluate(() => document.body.insertAdjacentHTML('beforeend', renderPremierChoiceModal()));
