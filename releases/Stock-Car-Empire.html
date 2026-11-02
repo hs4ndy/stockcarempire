@@ -1033,7 +1033,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 }
 
 /* Equal choice tiles and a wider, shallower four-column setup. */
-#quick-race-modal .quick-setup-modal { width: min(1680px, 96vw); max-width: 1680px; max-height: min(820px, calc(100svh - 32px)); }
+#quick-race-modal .quick-setup-modal { width: min(1540px, 96vw); max-width: 1540px; max-height: min(820px, calc(100svh - 32px)); }
 .quick-setup-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px; }
 .quick-setup-section + .quick-setup-section { border-left: 0; padding-left: 0; }
 #quick-race-modal .difficulty-grid { grid-auto-rows: 1fr; }
@@ -1050,6 +1050,16 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 @media (max-width: 600px) {
  .quick-setup-grid { grid-template-columns: 1fr; }
  .quick-setup-section + .quick-setup-section { border-top: 1px solid var(--line); padding-top: 24px; }
+}
+
+/* Dividers sit in the column gaps, preserving equal content widths. */
+@media (min-width: 1201px) {
+ .quick-setup-section { position: relative; }
+ .quick-setup-section + .quick-setup-section::before { content: ""; position: absolute; left: -14px; top: 0; bottom: 0; width: 1px; background: var(--line); }
+}
+@media (min-width: 601px) and (max-width: 1200px) {
+ .quick-setup-section:nth-child(even) { position: relative; }
+ .quick-setup-section:nth-child(even)::before { content: ""; position: absolute; left: -14px; top: 0; bottom: 0; width: 1px; background: var(--line); }
 }
 
 </style>
@@ -1092,7 +1102,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 119</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 120</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
