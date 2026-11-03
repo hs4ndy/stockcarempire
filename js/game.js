@@ -1169,3 +1169,14 @@ function retainPremierRoster(sorted){
  for(const team of generateAITeams(2)){if(!needed)break;const cars=[];for(const car of team.cars){if(!needed)break;const name=AI_DRIVER_NAMES.find(n=>!oldNames.has(n));if(!name)break;oldNames.add(name);car.driverName=name;while(usedNumbers.has(car.number))car.number=car.number%98+2;usedNumbers.add(car.number);car.condition=100;cars.push(car);needed--;}if(cars.length)teams.push({...team,cars});}
  return teams;
 }
+
+function carRepairCost(car){return Math.round(Math.max(0,100-car.condition)*CAR_CLASSES[car.classId].repairCostPerPoint*(1-staffRepairDiscount()));}
+function repairAllCars(){
+ const cars=game.cars.filter(c=>c.condition<100),cost=cars.reduce((n,c)=>n+carRepairCost(c),0);
+ if(!cars.length)return {ok:false,msg:'All cars are already in full condition.'};
+ if(game.money<cost)return {ok:false,msg:`Need ${fmt$(cost)} to repair all cars. Take out a loan in Market > Loans and Financing.`};
+ const before=game.money,conditions=cars.map(c=>c.condition);game.money-=cost;cars.forEach(c=>c.condition=100);
+ if(currentSlot!==null&&!saveToSlot(currentSlot)){game.money=before;cars.forEach((c,i)=>c.condition=conditions[i]);return {ok:false,msg:'Repairs could not be saved. Please try again.'};}
+ return {ok:true,cost,count:cars.length};
+}
+function carFullyUpgraded(car){const cls=CAR_CLASSES[car.classId];return !cls.upgrades.some(u=>!car.appliedUpgrades.includes(u.id)&&tierUnlocked(car,u.tier,cls)&&tierInstalled(car,u.tier,cls)<tierCapacity());}

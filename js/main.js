@@ -979,3 +979,5 @@ function closeVehicleModal(id) {
   document.querySelectorAll('.screen').forEach(s=>s.inert=false);
   if(focus?.isConnected)focus.focus();
 }
+
+async function handleRepairAll(){const cost=game.cars.reduce((n,c)=>n+carRepairCost(c),0);if(!await gameConfirm(`Repair all damaged cars for ${fmt$(cost)}? Lifetime health will not change.`))return;const r=repairAllCars();if(!r.ok){toast(r.msg,'error');return;}updateHeader();renderTab('garage');toast(`${r.count} cars repaired for ${fmt$(r.cost)}.`,'success');}

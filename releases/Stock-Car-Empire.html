@@ -1126,6 +1126,10 @@ button.standing-driver .st-name { text-decoration:none; }
 .car-studio-open {width:100%;margin:20px 0;min-height:48px;}
 @media(max-width:700px){.studio-header{padding:16px 20px;}.studio-layout{grid-template-columns:1fr;grid-template-rows: minmax(240px,42svh) minmax(0,1fr);}.studio-stage{grid-row:1;}.studio-controls{grid-row:2;border-right:0;border-top:1px solid var(--line);}.studio-fields{padding:20px;}.studio-controls>.btn{width:calc(100% - 40px);margin:12px 20px 20px;}.studio-controls>#studio-error{padding:0 20px;}.studio-help{bottom:8px;}}
 
+.btn.btn-complete, .btn.btn-complete:hover {background:transparent;color:var(--good);border-color:var(--good);cursor:default;}
+
+.btn.btn-repair-all:disabled {background:transparent;border-color:var(--warn);color:var(--warn);opacity:.55;}
+
 </style>
 </head>
 <body>
@@ -1166,7 +1170,7 @@ button.standing-driver .st-name { text-decoration:none; }
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 131</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 132</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -3746,6 +3750,17 @@ function retainPremierRoster(sorted){
  return teams;
 }
 
+function carRepairCost(car){return Math.round(Math.max(0,100-car.condition)*CAR_CLASSES[car.classId].repairCostPerPoint*(1-staffRepairDiscount()));}
+function repairAllCars(){
+ const cars=game.cars.filter(c=>c.condition<100),cost=cars.reduce((n,c)=>n+carRepairCost(c),0);
+ if(!cars.length)return {ok:false,msg:'All cars are already in full condition.'};
+ if(game.money<cost)return {ok:false,msg:`Need ${fmt$(cost)} to repair all cars. Take out a loan in Market > Loans and Financing.`};
+ const before=game.money,conditions=cars.map(c=>c.condition);game.money-=cost;cars.forEach(c=>c.condition=100);
+ if(currentSlot!==null&&!saveToSlot(currentSlot)){game.money=before;cars.forEach((c,i)=>c.condition=conditions[i]);return {ok:false,msg:'Repairs could not be saved. Please try again.'};}
+ return {ok:true,cost,count:cars.length};
+}
+function carFullyUpgraded(car){const cls=CAR_CLASSES[car.classId];return !cls.upgrades.some(u=>!car.appliedUpgrades.includes(u.id)&&tierUnlocked(car,u.tier,cls)&&tierInstalled(car,u.tier,cls)<tierCapacity());}
+
 </script>
 <script>
 /* js/race.js */
@@ -5975,7 +5990,7 @@ class Race3DEngine {
       // AI door contact needs sustained force; human-caused AI strain is
       // reduced modestly, AI-only strain substantially. Player tolerance stays.
       const allOut=(this.config?.difficulty||this.diff?.id)==='allout';
-      const strainScale = car.isPlayer ? 1 : (a.isPlayer || b.isPlayer ? (allOut ? .04 : (this.config?.difficulty||this.diff?.id)==='pro' ? .72 : .80) : allOut ? .24 : .28);
+      const strainScale = car.isPlayer ? 1 : (a.isPlayer || b.isPlayer ? (allOut ? .05 : (this.config?.difficulty||this.diff?.id)==='pro' ? .72 : .80) : allOut ? .24 : .28);
       car.sideStrain=(car.sideStrain||0)+strain*strainScale;car._recentSide=.5;
       const threshold=this._crashThreshold(car);
       if(rules.crashes && car.sideStrain>=threshold) this._beginCrash(car,side,'side contact');
@@ -5983,7 +5998,7 @@ class Race3DEngine {
   }
 
   _crashThreshold(car) {
-    if(car.isPlayer) return 80;
+    if(car.isPlayer) return (this.config?.difficulty||this.diff?.id)==='allout'?88:80;
     return this.config?.seriesId==='grassroots' ? 10 : this.config?.seriesId==='challenger' ? 4 : 7;
   }
 
@@ -7134,7 +7149,7 @@ function renderGarage() {
   const maxUpgrades = UPGRADE_TIERS.length * MAX_PER_TIER;
 
   const carCards = game.cars.map(car => {
-    const repairCost = Math.round((100 - car.condition) * cls.repairCostPerPoint * (1 - staffRepairDiscount()));
+    const repairCost = carRepairCost(car);
     // Who is actually in this car: you, a hired driver, or nobody.
     const seat = hireForCar(car.id);
     const seatDrv = seat ? HIREABLE_DRIVERS.find(d => d.id === seat.driverId) : null;
@@ -7154,7 +7169,7 @@ function renderGarage() {
       <div class="team-stat"><span>Driver</span><span class="${noDriver ? 'red' : ''}">${driverName}</span></div>
       <div class="car-actions">
         ${car.condition < 100 ? `<button class="btn btn-sm btn-warning" onclick="handleRepair('${car.id}', ${repairCost})">Repair (${fmt$(repairCost)})</button>` : `<span class="badge badge-green">Full Condition</span>`}
-        <button class="btn btn-sm btn-primary" onclick="showUpgradeModal('${car.id}')">Upgrade Car</button>
+        ${carFullyUpgraded(car)?'<span class="btn btn-sm btn-complete" role="status">Fully Upgraded</span>':`<button class="btn btn-sm btn-primary" onclick="showUpgradeModal('${car.id}')">Upgrade Car</button>`}
       </div>
       <button class="btn btn-primary car-studio-open" onclick="openCarStudio('career','${car.id}')">Customize Car</button>
       <div class="car-stats">
@@ -7180,7 +7195,7 @@ function renderGarage() {
 
   return `
   <div class="page-header">
-    <h2>Garage</h2>
+    <div class="btn-row" style="margin:0"><h2>Garage</h2><button class="btn btn-warning btn-repair-all" onclick="handleRepairAll()" ${game.cars.some(c=>c.condition<100)?'':'disabled'}>Repair All</button></div>
     <button class="btn btn-secondary" onclick="showVehicleGraveyard()">Vehicle Graveyard (${(game.retiredCars||[]).length})</button>
     <button class="btn btn-primary" onclick="showTab('market')">Browse Cars</button>
   </div>
@@ -12288,6 +12303,8 @@ function closeVehicleModal(id) {
   document.querySelectorAll('.screen').forEach(s=>s.inert=false);
   if(focus?.isConnected)focus.focus();
 }
+
+async function handleRepairAll(){const cost=game.cars.reduce((n,c)=>n+carRepairCost(c),0);if(!await gameConfirm(`Repair all damaged cars for ${fmt$(cost)}? Lifetime health will not change.`))return;const r=repairAllCars();if(!r.ok){toast(r.msg,'error');return;}updateHeader();renderTab('garage');toast(`${r.count} cars repaired for ${fmt$(r.cost)}.`,'success');}
 
 </script>
 

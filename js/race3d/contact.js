@@ -39,7 +39,7 @@
       // AI door contact needs sustained force; human-caused AI strain is
       // reduced modestly, AI-only strain substantially. Player tolerance stays.
       const allOut=(this.config?.difficulty||this.diff?.id)==='allout';
-      const strainScale = car.isPlayer ? 1 : (a.isPlayer || b.isPlayer ? (allOut ? .04 : (this.config?.difficulty||this.diff?.id)==='pro' ? .72 : .80) : allOut ? .24 : .28);
+      const strainScale = car.isPlayer ? 1 : (a.isPlayer || b.isPlayer ? (allOut ? .05 : (this.config?.difficulty||this.diff?.id)==='pro' ? .72 : .80) : allOut ? .24 : .28);
       car.sideStrain=(car.sideStrain||0)+strain*strainScale;car._recentSide=.5;
       const threshold=this._crashThreshold(car);
       if(rules.crashes && car.sideStrain>=threshold) this._beginCrash(car,side,'side contact');
@@ -47,7 +47,7 @@
   }
 
   _crashThreshold(car) {
-    if(car.isPlayer) return 80;
+    if(car.isPlayer) return (this.config?.difficulty||this.diff?.id)==='allout'?88:80;
     return this.config?.seriesId==='grassroots' ? 10 : this.config?.seriesId==='challenger' ? 4 : 7;
   }
 

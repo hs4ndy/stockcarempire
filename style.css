@@ -1106,3 +1106,7 @@ button.standing-driver .st-name { text-decoration:none; }
 .studio-help{position:absolute;bottom:20px;left:24px;right:24px;text-align:center;color:var(--text);background:rgba(11,13,16,.8);border:1px solid var(--line);border-radius:6px;padding:8px 12px;font-size:14px;}
 .car-studio-open {width:100%;margin:20px 0;min-height:48px;}
 @media(max-width:700px){.studio-header{padding:16px 20px;}.studio-layout{grid-template-columns:1fr;grid-template-rows: minmax(240px,42svh) minmax(0,1fr);}.studio-stage{grid-row:1;}.studio-controls{grid-row:2;border-right:0;border-top:1px solid var(--line);}.studio-fields{padding:20px;}.studio-controls>.btn{width:calc(100% - 40px);margin:12px 20px 20px;}.studio-controls>#studio-error{padding:0 20px;}.studio-help{bottom:8px;}}
+
+.btn.btn-complete, .btn.btn-complete:hover {background:transparent;color:var(--good);border-color:var(--good);cursor:default;}
+
+.btn.btn-repair-all:disabled {background:transparent;border-color:var(--warn);color:var(--warn);opacity:.55;}

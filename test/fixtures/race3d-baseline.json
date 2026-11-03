@@ -263,7 +263,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "71c095e1722a8259790ec849ff0d66ca96a9042f52d3000d17022966887111fd"
+      "hash": "f803a1cc8bc2c4817c77cd069f6af013b5d517a5deac08c07c0486a372993d94"
     },
     {
       "name": "_crashThreshold",
@@ -271,7 +271,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "e8532db7ad9216589e2b3cc4f2309565287691b45652ac6f6d1c0e35487bd494"
+      "hash": "81effa3a9cffa6a73ea788b7a7b86a77046b5e0985749f8a81afef1c1ed5d545"
     },
     {
       "name": "_beginCrash",
@@ -557,6 +557,7 @@
     "version127": "Cosmetic stripe buffers, appearance propagation, number-color textures and preview-only RNG bypass. Driving, contact, cameras and seeded race state unchanged.",
     "version129": "Cosmetic hood decal buffers/materials and shared logo texture lifetime only; no racing changes.",
     "version130": "AI-only deterministic appearance defaults, no physics method changes.",
-    "version131": "Requested All-Out contact resistance and difficulty racecraft/aggression tuning; intentional All-Out trace refresh."
+    "version131": "Requested All-Out contact resistance and difficulty racecraft/aggression tuning; intentional All-Out trace refresh.",
+    "version132": "Requested small All-Out contact easing: human-caused AI strain .04->.05; human threshold80->88. Other modes unchanged."
   }
 }

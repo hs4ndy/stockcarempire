@@ -318,7 +318,7 @@ function renderGarage() {
   const maxUpgrades = UPGRADE_TIERS.length * MAX_PER_TIER;
 
   const carCards = game.cars.map(car => {
-    const repairCost = Math.round((100 - car.condition) * cls.repairCostPerPoint * (1 - staffRepairDiscount()));
+    const repairCost = carRepairCost(car);
     // Who is actually in this car: you, a hired driver, or nobody.
     const seat = hireForCar(car.id);
     const seatDrv = seat ? HIREABLE_DRIVERS.find(d => d.id === seat.driverId) : null;
@@ -338,7 +338,7 @@ function renderGarage() {
       <div class="team-stat"><span>Driver</span><span class="${noDriver ? 'red' : ''}">${driverName}</span></div>
       <div class="car-actions">
         ${car.condition < 100 ? `<button class="btn btn-sm btn-warning" onclick="handleRepair('${car.id}', ${repairCost})">Repair (${fmt$(repairCost)})</button>` : `<span class="badge badge-green">Full Condition</span>`}
-        <button class="btn btn-sm btn-primary" onclick="showUpgradeModal('${car.id}')">Upgrade Car</button>
+        ${carFullyUpgraded(car)?'<span class="btn btn-sm btn-complete" role="status">Fully Upgraded</span>':`<button class="btn btn-sm btn-primary" onclick="showUpgradeModal('${car.id}')">Upgrade Car</button>`}
       </div>
       <button class="btn btn-primary car-studio-open" onclick="openCarStudio('career','${car.id}')">Customize Car</button>
       <div class="car-stats">
@@ -364,7 +364,7 @@ function renderGarage() {
 
   return `
   <div class="page-header">
-    <h2>Garage</h2>
+    <div class="btn-row" style="margin:0"><h2>Garage</h2><button class="btn btn-warning btn-repair-all" onclick="handleRepairAll()" ${game.cars.some(c=>c.condition<100)?'':'disabled'}>Repair All</button></div>
     <button class="btn btn-secondary" onclick="showVehicleGraveyard()">Vehicle Graveyard (${(game.retiredCars||[]).length})</button>
     <button class="btn btn-primary" onclick="showTab('market')">Browse Cars</button>
   </div>
