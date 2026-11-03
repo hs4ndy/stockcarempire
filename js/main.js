@@ -184,7 +184,7 @@ function handleStartQuickRace(fieldSize) {
   const AI_COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#c0392b','#16a085','#8e44ad','#2980b9','#27ae60'];
   const aiEntries = [];
   const usedNumbers = new Set(quickRaceCars.slice(0, quickRacePlayers).map(c => c.number));
-  if (quickRacePlayers === 2) aiEntries.push({entrantId: 'player2', name: 'PLAYER 2', number: quickRaceCars[1].number, color: quickRaceCars[1].color, power: 0.75, isSecondPlayer: true});
+  if (quickRacePlayers === 2) aiEntries.push({entrantId: 'player2', name: 'PLAYER 2', number: quickRaceCars[1].number, appearance:carAppearance(quickRaceCars[1]), color: quickRaceCars[1].color, power: 0.75, isSecondPlayer: true});
   // Unique human driver names for the field
   const namePool = [...AI_DRIVER_NAMES].sort(() => Math.random() - 0.5);
   for (let i = 0; i < fieldSize - quickRacePlayers; i++) {
@@ -194,7 +194,7 @@ function handleStartQuickRace(fieldSize) {
   }
   showScreen('game-race');
   launch3DRace(
-    { playerColor: quickRaceCars[0].color, playerNumber: quickRaceCars[0].number, playerName: quickRacePlayers === 2 ? 'PLAYER 1' : 'YOU', dualPlayer: quickRacePlayers === 2, playerPower: 0.75, fieldSize,
+    { playerAppearance:carAppearance(quickRaceCars[0]), playerColor: quickRaceCars[0].color, playerNumber: quickRaceCars[0].number, playerName: quickRacePlayers === 2 ? 'PLAYER 1' : 'YOU', dualPlayer: quickRacePlayers === 2, playerPower: 0.75, fieldSize,
       seriesId: SERIES.find(s => s.fieldSize === fieldSize)?.id || 'grassroots',
       difficulty: quickRaceDifficulty, raceRules:{...quickRaceRules}, aiEntries },
     (pos) => {
@@ -557,6 +557,7 @@ function handleStartRace() {
       color:      car.color || pCar?.color || '#e8001d',
       number:     nextNum(car.number),
       power:      careerRacePower(car, hiredDriverSkill(hired)),
+      appearance:carAppearance(car),
       isTeammate: true,
       health: car.condition,
       carId:      car.id,          // lets the 3D result map back to this car
@@ -600,6 +601,7 @@ function handleStartRace() {
 
   launch3DRace(
     {
+      playerAppearance:carAppearance(pCar),
       playerColor:  pCar?.color  || '#e8001d',
       playerNumber: pCar?.number || 1,
       playerPower,
@@ -916,7 +918,7 @@ async function handleNewGamePrompt() {
 // Keyboard shortcut: S to save
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-    if(activeGameDialog){e.preventDefault();return;}
+    if(activeGameDialog||carStudio){e.preventDefault();return;}
     e.preventDefault();
     handleSaveGame();
   }

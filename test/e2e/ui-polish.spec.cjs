@@ -37,6 +37,7 @@ for (const [name, viewport] of [
     await page.evaluate(() => document.getElementById('toast-container').replaceChildren());
 
     for (const tab of ['dashboard', 'garage', 'team', 'market', 'settings']) {
+      if(await page.locator('#car-studio').count())await page.getByRole('button',{name:'Cancel',exact:true}).click();
       await page.locator(`.nav-btn[data-tab="${tab}"]`).click();
       if (tab === 'garage') await page.getByText('Customize Car', { exact: true }).click();
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
@@ -50,6 +51,7 @@ for (const [name, viewport] of [
         await page.screenshot({ path: testInfo.outputPath(`${tab}-${name}.png`), fullPage: true, animations: 'disabled' });
       }
     }
+    if(await page.locator('#car-studio').count())await page.getByRole('button',{name:'Cancel',exact:true}).click();
     const settingsChoice = page.locator('#main-content .difficulty-card').nth(2);
     await settingsChoice.focus();
     await page.keyboard.press('Space');

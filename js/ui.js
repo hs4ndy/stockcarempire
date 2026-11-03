@@ -340,15 +340,7 @@ function renderGarage() {
         ${car.condition < 100 ? `<button class="btn btn-sm btn-warning" onclick="handleRepair('${car.id}', ${repairCost})">Repair (${fmt$(repairCost)})</button>` : `<span class="badge badge-green">Full Condition</span>`}
         <button class="btn btn-sm btn-primary" onclick="showUpgradeModal('${car.id}')">Upgrade Car</button>
       </div>
-      <details class="ui-details car-customization">
-        <summary>Customize Car</summary>
-        <div class="ui-details-body">
-      <div class="btn-row">
-        <button class="btn btn-sm btn-ghost" onclick="handleRenameCar('${car.id}')">Rename</button>
-      </div>
-      ${renderCarCustomizer(car, 0, true)}
-        </div>
-      </details>
+      <button class="btn btn-primary car-studio-open" onclick="openCarStudio('career','${car.id}')">Customize Car</button>
       <div class="car-stats">
         ${condBar(car.condition)}
         ${raceFeatureRules(game.difficulty,game.raceRules).damage ? statBar("Lifetime health (permanent)", Math.ceil((car.lifetimeHealth ?? 100)*10)/10,100,'','%') : ""}
@@ -1347,6 +1339,7 @@ function renderCarCustomizer(car, i, career = false) {
   const color = car.color || '#e8001d', number = car.number || 1;
   return `<section class="quick-car-editor" id="${id}" ${!career && i === 1 && quickRacePlayers === 1 ? 'hidden' : ''}>
     <h4>${career ? 'Car appearance' : `Player ${i+1}`}</h4>
+    ${!career?`<button class="btn btn-primary" onclick="openCarStudio('quick',${i})">Customize Car</button>`:''}
     <div class="quick-car-controls">
       <div class="quick-car-preview" style="--car-color:${color}" aria-hidden="true"><strong>${String(number).padStart(2,'0')}</strong></div>
       <div><label for="${career ? id+'-number' : 'quick-number-'+i}">Car number</label>

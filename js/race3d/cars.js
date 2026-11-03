@@ -22,6 +22,7 @@
       decalRoof: this.isGrassroots ? new THREE.PlaneGeometry(1.04, 1.04) : decode(this.carModel.roofDecal),
       teamBand: this.isGrassroots ? new THREE.BoxGeometry(1.48, .012, .12) : decode(this.carModel.teamBand),
     };
+    if(typeof SC_RACING_STRIPES!=='undefined'){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(SC_RACING_STRIPES.position,3));g.setIndex(SC_RACING_STRIPES.index);g.computeVertexNormals();this.G.racingStripes=g;}
     // The track uses intentionally bright arcade lighting. A paint-only
     // reflectance layer keeps saturated liveries from clipping into flat neon,
     // so the new hood and fender normals remain readable without relighting
@@ -76,6 +77,7 @@
       color:      config.playerColor || '#e8001d',
       number:     config.playerNumber || 1,
       power:      config.playerPower,
+      appearance:config.playerAppearance,
       isPlayer:   true,
       isTeammate: false,
       label:      config.playerName || 'YOU',
@@ -103,6 +105,7 @@
         isPlayer:   !!entry.isSecondPlayer,
         isTeammate: !!entry.isTeammate,
         isRival: !!entry.isRival,
+        appearance:entry.appearance,
         label:      entry.name,
         teamName:   entry.teamName || null,
         carId:      entry.carId || null,
@@ -126,7 +129,8 @@
     this._newsGrid = Object.fromEntries([...this.cars].sort((a,b)=>b.z-a.z).map((c,i)=>[c.entrantId,i+1]));
   }
 
-  _makeCar(x, z, { entrantId, color, number, power, isPlayer, isTeammate, label, teamName, carId, raceNerve, isContender, isRival }) {
+  _makeCar(x, z, { entrantId, color, number, power, isPlayer, isTeammate, label, teamName, carId, raceNerve, isContender, isRival, appearance }) {
+    const look=typeof carAppearance==='function'?carAppearance(appearance):{stripes:true,stripeColor:'#f2f3e9',numberColor:'#f2f3e9'};
     const hex = typeof color === 'string' ? parseInt(color.replace('#', ''), 16) : color;
     const G = this.G, M = this.M;
     const g = new THREE.Group();
@@ -143,11 +147,13 @@
     for (const [name, geometry] of Object.entries(G.parts)) {
       const mesh = new THREE.Mesh(geometry, name === 'paint' ? bodyMat : name === 'accent' ? accMat : M[name]);
       mesh.name = name;
+      if(name==='accent'&&this.isGrassroots&&appearance){mesh.material=new THREE.MeshLambertMaterial({color:look.stripeColor,side:THREE.DoubleSide});mesh.visible=look.stripes;}
       mesh.castShadow = name === 'paint' || name === 'trim';
       mesh.receiveShadow = true;
       g.add(mesh);
     }
 
+    if(!this.isGrassroots&&G.racingStripes){const stripes=new THREE.Mesh(G.racingStripes,new THREE.MeshLambertMaterial({color:look.stripeColor,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1}));stripes.name='Racing stripes';stripes.visible=look.stripes;g.add(stripes);}
     const wheels = this.carModel.wheelPositions.map(([wx, wy, wz]) => {
       const wheel = new THREE.Mesh(G.wheel, M.wheel);
       wheel.name = 'Rolling stock-car wheel';
@@ -158,7 +164,7 @@
     });
 
     const decalMat = new THREE.MeshBasicMaterial({
-      map: r3dRoundelTex(number), transparent: true, depthWrite: false,
+      map: r3dRoundelTex(number,look.numberColor), transparent: true, depthWrite: false,
       polygonOffset: true, polygonOffsetFactor: -1,
     });
     const roofDecal = new THREE.Mesh(G.decalRoof, decalMat);
@@ -206,8 +212,8 @@
       finished: false, dnf: false,
       draftBoost: 0, draftMomentum: 0, towStrength: 0, pushStrength: 0,
       receivedPush: 0, chainLen: 1,
-      raceNerve: raceNerve === undefined ? 0.85 + Math.random() * 0.3 : clamp(raceNerve,.85,1.15),
-      laneTimer: Math.random() * 4,
+      raceNerve: raceNerve === undefined ? (this.preview?1:0.85 + Math.random() * 0.3) : clamp(raceNerve,.85,1.15),
+      laneTimer: this.preview?0:Math.random() * 4,
       contactCooldown: 0,
       tilt: 0,
     };

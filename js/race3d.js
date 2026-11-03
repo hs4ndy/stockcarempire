@@ -128,18 +128,20 @@ const r3dHex = v => '#' + (v & 0xffffff).toString(16).padStart(6, '0');
 // Bold painted racing numbers with an outline that reads on any livery.
 // Cached per number so a 30-car field doesn't allocate 30 identical canvases.
 const _r3dRoundelCache = new Map();
-function r3dRoundelTex(num) {
-  if (_r3dRoundelCache.has(num)) return _r3dRoundelCache.get(num);
+function r3dRoundelTex(num,numberColor='#f2f3e9') {
+  const key=String(num)+numberColor;
+  if (_r3dRoundelCache.has(key)) return _r3dRoundelCache.get(key);
   const tex = r3dTex(256, 256, (ctx) => {
     ctx.clearRect(0, 0, 256, 256);
-    ctx.fillStyle = '#f2f3e9';
+    ctx.fillStyle = numberColor;
     ctx.lineWidth = 14; ctx.strokeStyle = '#161b24'; ctx.lineJoin = 'round';
     ctx.font = 'italic 900 166px Arial, sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.strokeText(String(num), 120, 139, 222);
     ctx.fillText(String(num), 120, 139, 222);
   });
-  _r3dRoundelCache.set(num, tex);
+  _r3dRoundelCache.set(key, tex);
+  while(_r3dRoundelCache.size>128){const first=_r3dRoundelCache.keys().next().value;_r3dRoundelCache.get(first).dispose();_r3dRoundelCache.delete(first);}
   return tex;
 }
 

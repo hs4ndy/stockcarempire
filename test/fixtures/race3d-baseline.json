@@ -23,7 +23,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "428b7a60d8f6b4735f21540f0c81fff4dc6fc3a3bfd5ddd5454278e56222e100"
+      "hash": "db5c6c5b473cb66cfaffafa4681f688d62866ca64dab9662cb364ba8d9e46d16"
     },
     {
       "name": "_loadSurfaceTexture",
@@ -79,7 +79,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "b5faf7668363f440d5b6b286ca75cdb6e26e3655bff2cfed0e03e92740457abf"
+      "hash": "98146c07064e87f6dfe741f930e5084077c5a15d6a6f200c3ef12194bd857c56"
     },
     {
       "name": "_withSecond",
@@ -95,7 +95,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "5564365decc0db6463f9340ff17fd147c6612ff45fae15e34e01ebd547cb2ba3"
+      "hash": "c1278dbcbf28ac5bdd0c0620db8c8af191e8ec23fbae8c29ca99c8b61d29c5e3"
     },
     {
       "name": "_buildMinimap",
@@ -538,7 +538,7 @@
     {
       "name": "r3dRoundelTex",
       "length": 1,
-      "hash": "c53ed3391389bdc2dcd5c349c54567e1c97ebf26db01966768a67250882095cd"
+      "hash": "74ee670712a07b1a9244572c8a7fcbdf581601a16b7ac50c725aa87d069313a7"
     },
     {
       "name": "launch3DRace",
@@ -553,6 +553,7 @@
     "version113": "Requested 80% less condition loss and softer human condition/wreck pace; trace baselines refreshed.",
     "version122": "HUD-only 20Hz DOM refresh throttle. Physics, cameras, spark/contact methods unchanged.",
     "version123": "Rival flag propagation, red banner/order styles and near-human +.04 aggression; no pace/recovery/contact changes.",
-    "version125": "Pro/All-Out human-pair AI strain -.10 relative; single/dual victory presentation. No other driving or spark changes."
+    "version125": "Pro/All-Out human-pair AI strain -.10 relative; single/dual victory presentation. No other driving or spark changes.",
+    "version127": "Cosmetic stripe buffers, appearance propagation, number-color textures and preview-only RNG bypass. Driving, contact, cameras and seeded race state unchanged."
   }
 }

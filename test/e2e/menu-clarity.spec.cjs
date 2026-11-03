@@ -63,13 +63,12 @@ for (const [name, viewport] of [
     await page.getByText('Performance and race record', { exact: true }).click();
     await expect(page.getByText('Reliability', { exact: true })).toBeVisible();
     await page.getByText('Customize Car', { exact: true }).click();
-    await expect(page.getByRole('button', { name: 'Change Number', exact: true })).toBeVisible();
+    await expect(page.locator('#studio-number')).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath(`garage-${name}.png`), fullPage: true, animations: 'disabled' });
     expect(await page.evaluate(() => JSON.stringify(game))).toBe(initialGame);
-    await page.getByRole('button', { name: 'Paint #3498db', exact: true }).click();
-    await expect(page.getByRole('button', { name: 'Paint #3498db', exact: true })).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.getByRole('button', { name: 'Paint #3498db', exact: true })).toBeFocused();
-    await expect(page.getByRole('button', { name: 'Rename', exact: true })).toBeVisible();
+    await page.locator('#studio-paint').evaluate(el=>{el.value='#3498db';el.dispatchEvent(new Event('input'));});
+    await expect(page.locator('#studio-name')).toBeVisible();
+    await page.getByRole('button',{name:'Save Appearance'}).click();
 
     await page.locator('.nav-btn[data-tab="dashboard"]').click();
     await page.getByRole('button', { name: 'Enter Race Weekend', exact: true }).click();
