@@ -5,12 +5,7 @@ for(const [width,height] of [[1366,768],[375,850]]) test(`customized dual quick 
  await page.goto(pathToFileURL(path.resolve('releases/Stock-Car-Empire.html')).href);
  await page.locator('#btn-quick-race').click();await page.locator('.quick-series-btn').last().click();
  await page.locator('[data-players="2"]').click();
- await page.locator('#quick-number-0').fill('27');await page.locator('#quick-number-0').press('Tab');
- await page.locator('#quick-player-1 [aria-label="Orange"]').click();
- await page.locator('#quick-number-1').fill('27');await page.locator('#quick-number-1').press('Tab');
- await page.locator('#btn-quick-race-confirm').click();await expect(page.locator('#quick-number-warning')).toBeVisible();
- await page.locator('#quick-number-1').fill('88');await page.locator('#quick-number-1').press('Tab');
- await page.locator('#quick-player-2 [aria-label="Purple"]').click();
+ for(const [i,num,color]of [[1,27,'#ff7e35'],[2,88,'#a47ae8']]){await page.locator(`#quick-player-${i}`).getByRole('button',{name:'Customize Car'}).click();await page.locator('#studio-number').fill(i===2?'27':String(num));if(i===2){await page.getByRole('button',{name:'Save Appearance'}).click();await expect(page.locator('#studio-error')).toContainText('not assigned');await page.locator('#studio-number').fill(String(num));}await page.locator('#studio-paint').evaluate((el,c)=>{el.value=c;el.dispatchEvent(new Event('input'));},color);await page.getByRole('button',{name:'Save Appearance'}).click();}
  await page.screenshot({path:`.impeccable/review/quick-custom-${width}.png`});
  await page.locator('#btn-quick-race-confirm').click();await page.waitForFunction(()=>window._r3d?.player2 && window._r3d?.mirrorRT);
  expect(await page.evaluate(()=>{const e=window._r3d;return [e.cars.length,e.player.number,e.player2.number,e.player.hex,e.player2.hex,new Set(e.cars.map(c=>c.number)).size,e.renderer.shadowMap.enabled];})).toEqual([40,27,88,0xff7e35,0xa47ae8,40,false]);

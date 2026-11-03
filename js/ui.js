@@ -1337,6 +1337,7 @@ function renderCarCustomizer(car, i, career = false) {
   const id = career ? `career-custom-${car.id}` : `quick-player-${i+1}`;
   const prefix = career ? `setCareerCarAppearance('${car.id}',` : `setQuickRaceCar(${i},`;
   const color = car.color || '#e8001d', number = car.number || 1;
+  if(!career)return `<section class="quick-car-editor" id="${id}" ${i===1&&quickRacePlayers===1?'hidden':''}><h4>Player ${i+1}</h4><div class="quick-car-preview" style="--car-color:${color}" aria-hidden="true"><strong style="color:${carAppearance(car).numberColor}">${String(number).padStart(2,'0')}</strong></div><p class="muted-text small">Choose your number, paint, stripes and number color in Car Studio.</p><button class="btn btn-primary car-studio-open" onclick="openCarStudio('quick',${i})">Customize Car</button></section>`;
   return `<section class="quick-car-editor" id="${id}" ${!career && i === 1 && quickRacePlayers === 1 ? 'hidden' : ''}>
     <h4>${career ? 'Car appearance' : `Player ${i+1}`}</h4>
     ${!career?`<button class="btn btn-primary" onclick="openCarStudio('quick',${i})">Customize Car</button>`:''}

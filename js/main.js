@@ -142,9 +142,10 @@ function setQuickRaceCar(index, key, value) {
   const root = document.getElementById(`quick-player-${index + 1}`);
   root.querySelector('.quick-car-preview').style.setProperty('--car-color', car.color);
   root.querySelector('.quick-car-preview strong').textContent = String(car.number).padStart(2, '0');
-  root.querySelector('input[type="number"]').value = car.number;
-  root.querySelector('input[type="color"]').value = car.color;
-  root.querySelectorAll('[data-color]').forEach(el => el.setAttribute('aria-pressed',String(el.dataset.color === car.color)));
+  root.outerHTML = renderCarCustomizer(car,index);
+  refreshQuickRaceNumberWarning();
+}
+function refreshQuickRaceNumberWarning(){
   document.getElementById('quick-number-warning').hidden = quickRacePlayers !== 2 || quickRaceCars[0].number !== quickRaceCars[1].number;
 }
 

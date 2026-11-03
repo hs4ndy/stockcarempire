@@ -1166,7 +1166,7 @@ button.standing-driver .st-name { text-decoration:none; }
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 127</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 128</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -6713,7 +6713,7 @@ function openCarStudio(scope,id){
  const modelId=scope==='career'?car.classId:(SERIES.find(s=>s.fieldSize===quickRaceSeries)?.carClass||'stock');
  const shield=[...document.body.children].filter(e=>e.tagName!=='SCRIPT').map(e=>[e,e.inert]);shield.forEach(([e])=>e.inert=true);
  const overlay=document.createElement('div');overlay.id='car-studio';overlay.className='car-studio';overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-labelledby','studio-title');
- overlay.innerHTML=`<header class="studio-header"><div><h2 id="studio-title">Car Studio</h2><p>${careerArchiveEscape(scope==='career'?car.name:`Player ${id+1}`)}</p></div><button class="btn btn-secondary" onclick="closeCarStudio(false)">Cancel</button></header><div class="studio-layout"><form class="studio-controls"><div class="studio-fields"><h3>Appearance</h3>${scope==='career'?`<label for="studio-name">Car name</label><input id="studio-name" type="text" value="${careerArchiveEscape(car.name)}">`:''}<label for="studio-number">Car number</label><input id="studio-number" type="number" min="1" max="99" step="1" value="${car.number||1}"><label for="studio-paint">Body color</label><input id="studio-paint" type="color" value="${car.color||'#e8001d'}"><label for="studio-stripes" class="studio-toggle"><input id="studio-stripes" type="checkbox" ${look.stripes?'checked':''}> Racing stripes</label><label for="studio-stripe-color">Stripe color</label><input id="studio-stripe-color" type="color" value="${look.stripeColor}"><label for="studio-number-color">Number color</label><input id="studio-number-color" type="color" value="${look.numberColor}"><div class="studio-brand"><h3>Hood sponsor</h3><p>${primary?careerArchiveEscape(sponsorCompany(primary.companyId).name):'No primary sponsor'}</p><p class="muted-text small">Logo space reserved. The hood stays unbranded until a logo is installed.</p></div></div><p id="studio-error" class="red" role="status"></p><button class="btn btn-primary btn-lg" type="submit">Save Appearance</button></form><section class="studio-stage" aria-label="3D car preview"><div class="studio-viewport"></div><p class="studio-help">Drag to rotate · Scroll to zoom · <button class="link" type="button" id="studio-reset">Reset view</button></p></section></div>`;
+ overlay.innerHTML=`<header class="studio-header"><div><h2 id="studio-title">Car Studio</h2><p>${careerArchiveEscape(scope==='career'?car.name:`Player ${id+1}`)}</p></div><button class="btn btn-secondary" onclick="closeCarStudio(false)">Cancel</button></header><div class="studio-layout"><form class="studio-controls"><div class="studio-fields"><h3>Appearance</h3>${scope==='career'?`<label for="studio-name">Car name</label><input id="studio-name" type="text" value="${careerArchiveEscape(car.name)}">`:''}<label for="studio-number">Car number</label><input id="studio-number" type="number" min="1" max="99" step="1" value="${car.number||1}"><label for="studio-paint">Body color</label><input id="studio-paint" type="color" value="${car.color||'#e8001d'}"><label for="studio-stripes" class="studio-toggle"><input id="studio-stripes" type="checkbox" ${look.stripes?'checked':''}> Racing stripes</label><label for="studio-stripe-color">Stripe color</label><input id="studio-stripe-color" type="color" value="${look.stripeColor}"><label for="studio-number-color">Number color</label><input id="studio-number-color" type="color" value="${look.numberColor}">${scope==='career'?`<button type="button" class="btn btn-secondary car-studio-open" onclick="copyStudioDesignToFleet()" ${game.cars.length<2?'disabled':''}>Copy to all other cars</button>`:''}<div class="studio-brand"><h3>Hood sponsor</h3><p>${primary?careerArchiveEscape(sponsorCompany(primary.companyId).name):'No primary sponsor'}</p><p class="muted-text small">Logo space reserved. The hood stays unbranded until a logo is installed.</p></div></div><p id="studio-error" class="red" role="status"></p><button class="btn btn-primary btn-lg" type="submit">Save Appearance</button></form><section class="studio-stage" aria-label="3D car preview"><div class="studio-viewport"></div><p class="studio-help">Drag to rotate · Scroll to zoom · <button class="link" type="button" id="studio-reset">Reset view</button></p></section></div>`;
  document.body.append(overlay);
  const draft={...look,color:car.color||'#e8001d',number:car.number||1,...(scope==='career'?{name:car.name}:{})};carStudio={scope,id,car,draft,overlay,previous,shield,yaw:.65,elevation:.40,distance:7,frame:0};
  const error=overlay.querySelector('#studio-error');
@@ -6740,12 +6740,22 @@ function openCarStudio(scope,id){
 }
 function closeCarStudio(save){
  const s=carStudio;if(!s)return;
- if(save){const n=s.draft.number;const peers=s.scope==='career'?game.cars:quickRaceCars.slice(0,quickRacePlayers);if(!Number.isInteger(n)||n<1||n>99||peers.some(c=>c!==s.car&&c.number===n)){s.overlay.querySelector('#studio-error').textContent='Use a whole number from 1 to 99 that is not assigned to another car.';return;}const before={...s.car};Object.assign(s.car,s.draft);if(s.scope==='career'&&currentSlot!==null&&!saveToSlot(currentSlot)){for(const key of Object.keys(s.draft))if(!Object.hasOwn(before,key))delete s.car[key];Object.assign(s.car,before);s.overlay.querySelector('#studio-error').textContent='Appearance could not be saved. Please try again.';return;}}
+ if(save){const n=s.draft.number;const peers=s.scope==='career'?game.cars:quickRaceCars.slice(0,quickRacePlayers);if(!Number.isInteger(n)||n<1||n>99||peers.some(c=>c!==s.car&&c.number===n)){s.overlay.querySelector('#studio-error').textContent='Use a whole number from 1 to 99 that is not assigned to another car.';return;}const targets=s.copyDesign&&s.scope==='career'?game.cars:[s.car],before=targets.map(car=>[car,{...car}]);
+ const design={color:s.draft.color,stripes:s.draft.stripes,stripeColor:s.draft.stripeColor,numberColor:s.draft.numberColor};
+ for(const car of targets)Object.assign(car,car===s.car?s.draft:design);
+ if(s.scope==='career'&&currentSlot!==null&&!saveToSlot(currentSlot)){for(const [car,original]of before){for(const key of Object.keys(s.draft))if(!Object.hasOwn(original,key))delete car[key];Object.assign(car,original);}s.overlay.querySelector('#studio-error').textContent='Appearance could not be saved. Please try again.';return;}}
+
  carStudio=null;if(s.frame)cancelAnimationFrame(s.frame);s.resize?.disconnect();
  if(s.scene){const geometries=new Set(),materials=new Set();s.scene.traverse(o=>{if(o.geometry)geometries.add(o.geometry);for(const m of o.material?Array.isArray(o.material)?o.material:[o.material]:[])materials.add(m);if(o.shadow?.map)o.shadow.map.dispose();});for(const g of Object.values(s.engine?.G||{}))if(g&&typeof g.dispose==='function')geometries.add(g);for(const g of Object.values(s.engine?.G?.parts||{}))geometries.add(g);for(const m of Object.values(s.engine?.M||{}))materials.add(m);geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());}
  s.renderer?.dispose();s.renderer?.forceContextLoss();s.overlay.remove();s.shield.forEach(([e,was])=>e.inert=was);
  if(save){if(s.scope==='career')renderTab('garage');else setQuickRaceCar(s.id,'number',s.draft.number);}
  const focus=s.previous?.isConnected?s.previous:s.scope==='career'?document.getElementById('car-'+s.id)?.querySelector('.car-studio-open'):null;focus?.focus({preventScroll:true});
+}
+
+function copyStudioDesignToFleet(){
+ const s=carStudio;if(!s||s.scope!=='career'||game.cars.length<2)return;
+ s.copyDesign=true;
+ s.overlay.querySelector('#studio-error').textContent='Design will be copied to all other cars when you save. Their numbers and names will stay the same.';
 }
 
 </script>
@@ -8090,6 +8100,7 @@ function renderCarCustomizer(car, i, career = false) {
   const id = career ? `career-custom-${car.id}` : `quick-player-${i+1}`;
   const prefix = career ? `setCareerCarAppearance('${car.id}',` : `setQuickRaceCar(${i},`;
   const color = car.color || '#e8001d', number = car.number || 1;
+  if(!career)return `<section class="quick-car-editor" id="${id}" ${i===1&&quickRacePlayers===1?'hidden':''}><h4>Player ${i+1}</h4><div class="quick-car-preview" style="--car-color:${color}" aria-hidden="true"><strong style="color:${carAppearance(car).numberColor}">${String(number).padStart(2,'0')}</strong></div><p class="muted-text small">Choose your number, paint, stripes and number color in Car Studio.</p><button class="btn btn-primary car-studio-open" onclick="openCarStudio('quick',${i})">Customize Car</button></section>`;
   return `<section class="quick-car-editor" id="${id}" ${!career && i === 1 && quickRacePlayers === 1 ? 'hidden' : ''}>
     <h4>${career ? 'Car appearance' : `Player ${i+1}`}</h4>
     ${!career?`<button class="btn btn-primary" onclick="openCarStudio('quick',${i})">Customize Car</button>`:''}
@@ -11387,9 +11398,10 @@ function setQuickRaceCar(index, key, value) {
   const root = document.getElementById(`quick-player-${index + 1}`);
   root.querySelector('.quick-car-preview').style.setProperty('--car-color', car.color);
   root.querySelector('.quick-car-preview strong').textContent = String(car.number).padStart(2, '0');
-  root.querySelector('input[type="number"]').value = car.number;
-  root.querySelector('input[type="color"]').value = car.color;
-  root.querySelectorAll('[data-color]').forEach(el => el.setAttribute('aria-pressed',String(el.dataset.color === car.color)));
+  root.outerHTML = renderCarCustomizer(car,index);
+  refreshQuickRaceNumberWarning();
+}
+function refreshQuickRaceNumberWarning(){
   document.getElementById('quick-number-warning').hidden = quickRacePlayers !== 2 || quickRaceCars[0].number !== quickRaceCars[1].number;
 }
 

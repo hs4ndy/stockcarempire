@@ -76,3 +76,13 @@ review scored framing, FORM route, self-shadow ripples and adaptive fog fixes
 resolved; disposition ship at that fix-list scope. System comparison found no
 material documentation gap and preserved incumbent DESIGN.md/sidecar. Existing
 sidecar drift remains outside this feature. Offline HTML and ZIP bytes match.
+
+VERSION128: Career-only Copy to all other cars stages a fleet copy of paint,
+stripe toggle/color and number color. Save Appearance commits the current design
+to owned cars only; numbers, names and all equipment/record fields of other cars
+remain unchanged. Cancel discards the operation. A failed slot write rolls back
+every affected car. The button is disabled when no other owned car exists.
+
+Quick Race VERSION128 replaces compact inline fields with car previews and
+Customize Car entry buttons; both players edit in the shared studio.10 studio
+browser checks and3 scoped Node tests pass; source/offline copy rollback tested.
