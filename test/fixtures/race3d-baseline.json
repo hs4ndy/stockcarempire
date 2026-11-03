@@ -95,7 +95,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "2da992493c8c87a417448b1c2597af1b72d4d8bc3b9c02c147cf3e4a6f7e6898"
+      "hash": "cadd8a6530107df81dae0f50c070d5a5280b1feb3a8f644956f41141c955e2ee"
     },
     {
       "name": "_buildMinimap",
@@ -555,6 +555,7 @@
     "version123": "Rival flag propagation, red banner/order styles and near-human +.04 aggression; no pace/recovery/contact changes.",
     "version125": "Pro/All-Out human-pair AI strain -.10 relative; single/dual victory presentation. No other driving or spark changes.",
     "version127": "Cosmetic stripe buffers, appearance propagation, number-color textures and preview-only RNG bypass. Driving, contact, cameras and seeded race state unchanged.",
-    "version129": "Cosmetic hood decal buffers/materials and shared logo texture lifetime only; no racing changes."
+    "version129": "Cosmetic hood decal buffers/materials and shared logo texture lifetime only; no racing changes.",
+    "version130": "AI-only deterministic appearance defaults, no physics method changes."
   }
 }

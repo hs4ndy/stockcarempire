@@ -2,7 +2,15 @@
 function sponsorEsc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function updateSponsorBadge(){const badge=document.getElementById('sponsor-nav-count');if(badge)badge.textContent=sponsorUnread()?`(${sponsorUnread()})`:'';}
 function renderSponsorNotice(){const s=game.sponsorship;if(!s)return '';const unread=sponsorUnread();return unread||s.notice?`<section class="card mb sponsor-notice" role="status"><div><h3>${s.notice?'Sponsorships have changed':`${unread} new sponsorship offer${unread===1?'':'s'}`}</h3><p>${s.notice?'Old deals have been replaced with starter offers. Commercial Directors now improve approaches and new contract income.':'Companies have reached out. Review their terms before the offers expire.'}</p></div><button class="btn btn-primary" onclick="showTab('sponsors')">Review Offers</button></section>`:'';}
-function reportSponsorOffers(){const pending=(game.sponsorship?.offers||[]).filter(o=>!o.read&&!o.announced);updateSponsorBadge();if(pending.length){const names=pending.map(o=>sponsorCompany(o.companyId).name);for(const o of pending)o.announced=true;toast(`${names[0]} has sent a sponsorship offer${names.length>1?` (${names.length} unread)`:''}.`,'success',6000);}}
+async function reportSponsorOffers(){
+ const pending=(game.sponsorship?.offers||[]).filter(o=>!o.read&&!o.announced);updateSponsorBadge();
+ for(const o of pending){const company=sponsorCompany(o.companyId);if(company.tier!=='primary'){o.announced=true;toast(`${company.name} has sent a sponsorship offer.`,'success',6000);continue;}if(activeGameDialog)return;
+ const response=gameDialog('','',false),overlay=document.getElementById('game-dialog');
+ overlay.querySelector('h3').textContent='You have been given a primary sponsor offer';
+ overlay.querySelector('.modal-body').innerHTML=`<img src="${SC_HOOD_LOGOS[company.id]}" alt="${sponsorEsc(company.name)} logo" style="display:block;width:100%;height:140px;object-fit:contain;background:#777;margin-bottom:24px"><h3>${sponsorEsc(company.name)}</h3><p>${sponsorEsc(o.reason)}. This company wants to become your team’s primary sponsor.</p>${sponsorTerms(o)}<p class="muted-text small">Review the offer to accept it. No contract has been signed yet.</p>`;
+ overlay.querySelector('#game-dialog-cancel').textContent='Later';overlay.querySelector('[type=submit]').textContent='Review Offer';o.announced=true;saveGame();if(await response){showTab('sponsors');break;}}
+}
+
 function sponsorTerms(o){const c=sponsorCompany(o.companyId);return `<div class="sponsor-pay">${fmt$(o.pay)}<span> per completed race</span></div><p class="small muted-text">+${fmt$(o.bonus)} for ${c.tier==='primary'?'a win':c.tier==='secondary'?'a top 5':'a top 10'} · Through Year ${o.endYear}</p>`;}
 function renderSponsors(){
  const s=game.sponsorship;for(const o of s.offers)o.read=true;s.notice=false;if(currentSlot!==null)saveToSlot(currentSlot);updateSponsorBadge();

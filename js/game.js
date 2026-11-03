@@ -72,7 +72,7 @@ function loadFromSlot(slot) {
     game = loaded;
     normalizeVehicleState();
     const rivals=game.season.aiTeams.flatMap(t=>t.cars);
-    if(!rivals.some(c=>c.driverName==='Joshua Enright')){const c=[...rivals].sort((a,b)=>b.power-a.power)[0];if(c){c.driverName='Joshua Enright';c.power=Math.max(c.power,[.94,.97,.99][game.currentSeries]);const standing=game.season.standings.find(e=>e.id===c.id),team=game.season.aiTeams.find(t=>t.id===c.teamId);if(standing)standing.name=`${team?.name||'Rival'} (Joshua Enright)`;}}
+
     normalizeSupportStaff();
     retireExhaustedCars();
     currentSlot = slot;
@@ -656,12 +656,13 @@ function endSeason() {
   }
 
   // Start new season
+  const nextAI=series.level===2&&game.currentSeries===2?retainPremierRoster(sorted):generateAITeams(game.currentSeries);
   const newYear = game.season.year + 1;
   game.season = {
     year: newYear,
     raceIndex: 0,
     calendar: generateCalendar(game.currentSeries),
-    aiTeams: generateAITeams(game.currentSeries),
+    aiTeams: nextAI,
     standings: [],
   };
   rebuildStandings();
@@ -1158,4 +1159,13 @@ function toggleRivalry(id){
  const before=[...(game.rivalries||[])];game.rivalries=before.includes(id)?before.filter(x=>x!==id):[...before,id];
  if(currentSlot!==null&&!saveToSlot(currentSlot)){game.rivalries=before;return {ok:false,msg:'Could not save this rivalry.'};}
  return {ok:true};
+}
+
+function retainPremierRoster(sorted){
+ const relegated=new Set(sorted.slice(-3).map(e=>e.id)),old=game.season.aiTeams,oldNames=new Set(old.flatMap(t=>t.cars).map(c=>c.driverName));
+ const teams=old.map(t=>({...t,cars:t.cars.filter(c=>!relegated.has(c.id)).map(c=>({...c,condition:100}))})).filter(t=>t.cars.length);
+ let needed=old.flatMap(t=>t.cars).length-teams.flatMap(t=>t.cars).length;
+ const usedNumbers=new Set(teams.flatMap(t=>t.cars).map(c=>c.number));
+ for(const team of generateAITeams(2)){if(!needed)break;const cars=[];for(const car of team.cars){if(!needed)break;const name=AI_DRIVER_NAMES.find(n=>!oldNames.has(n));if(!name)break;oldNames.add(name);car.driverName=name;while(usedNumbers.has(car.number))car.number=car.number%98+2;usedNumbers.add(car.number);car.condition=100;cars.push(car);needed--;}if(cars.length)teams.push({...team,cars});}
+ return teams;
 }

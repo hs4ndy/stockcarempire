@@ -131,6 +131,7 @@
   }
 
   _makeCar(x, z, { entrantId, color, number, power, isPlayer, isTeammate, label, teamName, carId, raceNerve, isContender, isRival, appearance }) {
+    if(!appearance&&!isPlayer&&!isTeammate&&typeof aiCarAppearance==='function')appearance=aiCarAppearance(entrantId||label||number);
     const look=typeof carAppearance==='function'?carAppearance(appearance):{stripes:true,stripeColor:'#f2f3e9',numberColor:'#f2f3e9'};
     const hex = typeof color === 'string' ? parseInt(color.replace('#', ''), 16) : color;
     const G = this.G, M = this.M;

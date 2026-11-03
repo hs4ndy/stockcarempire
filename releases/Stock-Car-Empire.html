@@ -1166,7 +1166,7 @@ button.standing-driver .st-name { text-decoration:none; }
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 129</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 130</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -2569,6 +2569,8 @@ function carAppearance(car={}) {car=car||{};return {stripes:car.stripes!==false,
 
 function careerPrimaryLogoId(){return (game?.sponsorship?.contracts||[]).find(c=>sponsorCompany(c.companyId)?.tier==='primary')?.companyId||null;}
 
+function aiCarAppearance(identity){let hash=2166136261;for(const c of String(identity))hash=Math.imul(hash^c.charCodeAt(0),16777619)>>>0;return {stripes:hash%4!==0,stripeColor:['#f2f3e9','#202630','#d4233c','#e0a800','#3498db','#7d5ac7'][hash%6],numberColor:'#f2f3e9'};}
+
 </script>
 <script>
 /* js/game.js */
@@ -2646,7 +2648,7 @@ function loadFromSlot(slot) {
     game = loaded;
     normalizeVehicleState();
     const rivals=game.season.aiTeams.flatMap(t=>t.cars);
-    if(!rivals.some(c=>c.driverName==='Joshua Enright')){const c=[...rivals].sort((a,b)=>b.power-a.power)[0];if(c){c.driverName='Joshua Enright';c.power=Math.max(c.power,[.94,.97,.99][game.currentSeries]);const standing=game.season.standings.find(e=>e.id===c.id),team=game.season.aiTeams.find(t=>t.id===c.teamId);if(standing)standing.name=`${team?.name||'Rival'} (Joshua Enright)`;}}
+
     normalizeSupportStaff();
     retireExhaustedCars();
     currentSlot = slot;
@@ -3230,12 +3232,13 @@ function endSeason() {
   }
 
   // Start new season
+  const nextAI=series.level===2&&game.currentSeries===2?retainPremierRoster(sorted):generateAITeams(game.currentSeries);
   const newYear = game.season.year + 1;
   game.season = {
     year: newYear,
     raceIndex: 0,
     calendar: generateCalendar(game.currentSeries),
-    aiTeams: generateAITeams(game.currentSeries),
+    aiTeams: nextAI,
     standings: [],
   };
   rebuildStandings();
@@ -3732,6 +3735,15 @@ function toggleRivalry(id){
  const before=[...(game.rivalries||[])];game.rivalries=before.includes(id)?before.filter(x=>x!==id):[...before,id];
  if(currentSlot!==null&&!saveToSlot(currentSlot)){game.rivalries=before;return {ok:false,msg:'Could not save this rivalry.'};}
  return {ok:true};
+}
+
+function retainPremierRoster(sorted){
+ const relegated=new Set(sorted.slice(-3).map(e=>e.id)),old=game.season.aiTeams,oldNames=new Set(old.flatMap(t=>t.cars).map(c=>c.driverName));
+ const teams=old.map(t=>({...t,cars:t.cars.filter(c=>!relegated.has(c.id)).map(c=>({...c,condition:100}))})).filter(t=>t.cars.length);
+ let needed=old.flatMap(t=>t.cars).length-teams.flatMap(t=>t.cars).length;
+ const usedNumbers=new Set(teams.flatMap(t=>t.cars).map(c=>c.number));
+ for(const team of generateAITeams(2)){if(!needed)break;const cars=[];for(const car of team.cars){if(!needed)break;const name=AI_DRIVER_NAMES.find(n=>!oldNames.has(n));if(!name)break;oldNames.add(name);car.driverName=name;while(usedNumbers.has(car.number))car.number=car.number%98+2;usedNumbers.add(car.number);car.condition=100;cars.push(car);needed--;}if(cars.length)teams.push({...team,cars});}
+ return teams;
 }
 
 </script>
@@ -5218,6 +5230,7 @@ class Race3DEngine {
   }
 
   _makeCar(x, z, { entrantId, color, number, power, isPlayer, isTeammate, label, teamName, carId, raceNerve, isContender, isRival, appearance }) {
+    if(!appearance&&!isPlayer&&!isTeammate&&typeof aiCarAppearance==='function')appearance=aiCarAppearance(entrantId||label||number);
     const look=typeof carAppearance==='function'?carAppearance(appearance):{stripes:true,stripeColor:'#f2f3e9',numberColor:'#f2f3e9'};
     const hex = typeof color === 'string' ? parseInt(color.replace('#', ''), 16) : color;
     const G = this.G, M = this.M;
@@ -6683,7 +6696,15 @@ class Race3DEngine {
 function sponsorEsc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function updateSponsorBadge(){const badge=document.getElementById('sponsor-nav-count');if(badge)badge.textContent=sponsorUnread()?`(${sponsorUnread()})`:'';}
 function renderSponsorNotice(){const s=game.sponsorship;if(!s)return '';const unread=sponsorUnread();return unread||s.notice?`<section class="card mb sponsor-notice" role="status"><div><h3>${s.notice?'Sponsorships have changed':`${unread} new sponsorship offer${unread===1?'':'s'}`}</h3><p>${s.notice?'Old deals have been replaced with starter offers. Commercial Directors now improve approaches and new contract income.':'Companies have reached out. Review their terms before the offers expire.'}</p></div><button class="btn btn-primary" onclick="showTab('sponsors')">Review Offers</button></section>`:'';}
-function reportSponsorOffers(){const pending=(game.sponsorship?.offers||[]).filter(o=>!o.read&&!o.announced);updateSponsorBadge();if(pending.length){const names=pending.map(o=>sponsorCompany(o.companyId).name);for(const o of pending)o.announced=true;toast(`${names[0]} has sent a sponsorship offer${names.length>1?` (${names.length} unread)`:''}.`,'success',6000);}}
+async function reportSponsorOffers(){
+ const pending=(game.sponsorship?.offers||[]).filter(o=>!o.read&&!o.announced);updateSponsorBadge();
+ for(const o of pending){const company=sponsorCompany(o.companyId);if(company.tier!=='primary'){o.announced=true;toast(`${company.name} has sent a sponsorship offer.`,'success',6000);continue;}if(activeGameDialog)return;
+ const response=gameDialog('','',false),overlay=document.getElementById('game-dialog');
+ overlay.querySelector('h3').textContent='You have been given a primary sponsor offer';
+ overlay.querySelector('.modal-body').innerHTML=`<img src="${SC_HOOD_LOGOS[company.id]}" alt="${sponsorEsc(company.name)} logo" style="display:block;width:100%;height:140px;object-fit:contain;background:#777;margin-bottom:24px"><h3>${sponsorEsc(company.name)}</h3><p>${sponsorEsc(o.reason)}. This company wants to become your team’s primary sponsor.</p>${sponsorTerms(o)}<p class="muted-text small">Review the offer to accept it. No contract has been signed yet.</p>`;
+ overlay.querySelector('#game-dialog-cancel').textContent='Later';overlay.querySelector('[type=submit]').textContent='Review Offer';o.announced=true;saveGame();if(await response){showTab('sponsors');break;}}
+}
+
 function sponsorTerms(o){const c=sponsorCompany(o.companyId);return `<div class="sponsor-pay">${fmt$(o.pay)}<span> per completed race</span></div><p class="small muted-text">+${fmt$(o.bonus)} for ${c.tier==='primary'?'a win':c.tier==='secondary'?'a top 5':'a top 10'} · Through Year ${o.endYear}</p>`;}
 function renderSponsors(){
  const s=game.sponsorship;for(const o of s.offers)o.read=true;s.notice=false;if(currentSlot!==null)saveToSlot(currentSlot);updateSponsorBadge();
@@ -11890,7 +11911,7 @@ function handleStartRace() {
       playerPower,
       playerName:   game.driverName || game.teamName,
       playerCarId,
-      fieldSize:    series.fieldSize,
+      fieldSize:    aiEntries.length + 1,
       seriesId:     series.id,
       difficulty:   game.difficulty || DEFAULT_DIFFICULTY,
       raceRules: {...game.raceRules},
@@ -11898,7 +11919,7 @@ function handleStartRace() {
       onQuit: () => { game = JSON.parse(preRaceState); saveGame(); showScreen('game'); updateHeader(); showTab('dashboard'); toast('Race cancelled. Entry fees refunded; career unchanged.'); },
       qualifyBoost: Math.round(staffTotal('qualifying') / ANALYST_QUALI_BONUS),   // Data Analysts sharpen the grid draw
       qualifyAI:    true,
-      aiEntries:    aiEntries.slice(0, series.fieldSize - 1),
+      aiEntries:    aiEntries,
     },
     (playerPosition, trackOrder, finishPhoto) => {
       // 3D race complete - playerPosition is 1-indexed finish position

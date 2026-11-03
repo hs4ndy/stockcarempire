@@ -608,7 +608,7 @@ function handleStartRace() {
       playerPower,
       playerName:   game.driverName || game.teamName,
       playerCarId,
-      fieldSize:    series.fieldSize,
+      fieldSize:    aiEntries.length + 1,
       seriesId:     series.id,
       difficulty:   game.difficulty || DEFAULT_DIFFICULTY,
       raceRules: {...game.raceRules},
@@ -616,7 +616,7 @@ function handleStartRace() {
       onQuit: () => { game = JSON.parse(preRaceState); saveGame(); showScreen('game'); updateHeader(); showTab('dashboard'); toast('Race cancelled. Entry fees refunded; career unchanged.'); },
       qualifyBoost: Math.round(staffTotal('qualifying') / ANALYST_QUALI_BONUS),   // Data Analysts sharpen the grid draw
       qualifyAI:    true,
-      aiEntries:    aiEntries.slice(0, series.fieldSize - 1),
+      aiEntries:    aiEntries,
     },
     (playerPosition, trackOrder, finishPhoto) => {
       // 3D race complete - playerPosition is 1-indexed finish position
