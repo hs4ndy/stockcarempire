@@ -558,7 +558,7 @@ function handleStartRace() {
       color:      car.color || pCar?.color || '#e8001d',
       number:     nextNum(car.number),
       power:      careerRacePower(car, hiredDriverSkill(hired)),
-      appearance:carAppearance(car),
+      appearance:{...carAppearance(car),hoodSponsorId:careerPrimaryLogoId()},
       isTeammate: true,
       health: car.condition,
       carId:      car.id,          // lets the 3D result map back to this car
@@ -602,7 +602,7 @@ function handleStartRace() {
 
   launch3DRace(
     {
-      playerAppearance:carAppearance(pCar),
+      playerAppearance:{...carAppearance(pCar),hoodSponsorId:careerPrimaryLogoId()},
       playerColor:  pCar?.color  || '#e8001d',
       playerNumber: pCar?.number || 1,
       playerPower,

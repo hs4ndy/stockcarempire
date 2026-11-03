@@ -23,6 +23,7 @@
       teamBand: this.isGrassroots ? new THREE.BoxGeometry(1.48, .012, .12) : decode(this.carModel.teamBand),
     };
     if(typeof SC_RACING_STRIPES!=='undefined'){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(SC_RACING_STRIPES.position,3));g.setIndex(SC_RACING_STRIPES.index);g.computeVertexNormals();this.G.racingStripes=g;}
+    if(typeof SC_HOOD_LOGO_MESHES!=='undefined'){const data=SC_HOOD_LOGO_MESHES[this.isGrassroots?'grassroots':'gen7'],g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(data.position,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(data.uv,2));g.setIndex(data.index);g.computeVertexNormals();this.G.hoodLogo=g;}
     // The track uses intentionally bright arcade lighting. A paint-only
     // reflectance layer keeps saturated liveries from clipping into flat neon,
     // so the new hood and fender normals remain readable without relighting
@@ -154,6 +155,7 @@
     }
 
     if(!this.isGrassroots&&G.racingStripes){const stripes=new THREE.Mesh(G.racingStripes,new THREE.MeshLambertMaterial({color:look.stripeColor,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1}));stripes.name='Racing stripes';stripes.visible=look.stripes;g.add(stripes);}
+    if(G.hoodLogo&&appearance?.hoodSponsorId&&typeof hoodLogoTexture==='function'){const map=hoodLogoTexture(appearance.hoodSponsorId,this.previewOnAssetReady);if(map){const logo=new THREE.Mesh(G.hoodLogo,new THREE.MeshBasicMaterial({map,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,side:THREE.DoubleSide}));logo.name='Primary hood sponsor';logo.renderOrder=2;g.add(logo);}}
     const wheels = this.carModel.wheelPositions.map(([wx, wy, wz]) => {
       const wheel = new THREE.Mesh(G.wheel, M.wheel);
       wheel.name = 'Rolling stock-car wheel';

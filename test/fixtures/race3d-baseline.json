@@ -23,7 +23,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "db5c6c5b473cb66cfaffafa4681f688d62866ca64dab9662cb364ba8d9e46d16"
+      "hash": "5a858467d57376196736126bfc4a523fcb97bb03937c2f01a8260ced835061e1"
     },
     {
       "name": "_loadSurfaceTexture",
@@ -95,7 +95,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "c1278dbcbf28ac5bdd0c0620db8c8af191e8ec23fbae8c29ca99c8b61d29c5e3"
+      "hash": "2da992493c8c87a417448b1c2597af1b72d4d8bc3b9c02c147cf3e4a6f7e6898"
     },
     {
       "name": "_buildMinimap",
@@ -511,7 +511,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "ddb7e41f0ca490ad5c925ab6101a69ebe44e628fbb6d07972af7fbbc627c3a0b"
+      "hash": "385bab696b715891b435c1826dda27385dd1fecb0a6830a395992b62bb323280"
     }
   ],
   "helpers": [
@@ -554,6 +554,7 @@
     "version122": "HUD-only 20Hz DOM refresh throttle. Physics, cameras, spark/contact methods unchanged.",
     "version123": "Rival flag propagation, red banner/order styles and near-human +.04 aggression; no pace/recovery/contact changes.",
     "version125": "Pro/All-Out human-pair AI strain -.10 relative; single/dual victory presentation. No other driving or spark changes.",
-    "version127": "Cosmetic stripe buffers, appearance propagation, number-color textures and preview-only RNG bypass. Driving, contact, cameras and seeded race state unchanged."
+    "version127": "Cosmetic stripe buffers, appearance propagation, number-color textures and preview-only RNG bypass. Driving, contact, cameras and seeded race state unchanged.",
+    "version129": "Cosmetic hood decal buffers/materials and shared logo texture lifetime only; no racing changes."
   }
 }

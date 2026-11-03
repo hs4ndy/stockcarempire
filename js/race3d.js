@@ -566,7 +566,7 @@ class Race3DEngine {
     // Release GPU resources - without this, every race leaks its track,
     // car geometry and canvas textures for the life of the page.
     if (this.scene && this.scene.traverse) {
-      const shared = new Set(_r3dRoundelCache.values()); // reused across races - keep
+      const shared = new Set([..._r3dRoundelCache.values(),...(typeof _hoodLogoTextures==='undefined'?[]:_hoodLogoTextures.values())]); // reused across races - keep
       const seen = new Set();
       this.scene.traverse(obj => {
         if (obj.geometry && !seen.has(obj.geometry)) {

@@ -86,3 +86,8 @@ every affected car. The button is disabled when no other owned car exists.
 Quick Race VERSION128 replaces compact inline fields with car previews and
 Customize Car entry buttons; both players edit in the shared studio.10 studio
 browser checks and3 scoped Node tests pass; source/offline copy rollback tested.
+
+VERSION129 installs all22 supplied primary logos. They now replace the blank
+hood placeholder in Career preview and racing, derived from active contract.
+Quick Race remains unbranded. Asset ownership, budgets and build instructions:
+assets/sponsors/README.md. Textures embedded/preloaded, no separate PNG requests.

@@ -1,0 +1,156 @@
+[
+  {
+    "id": "partner01",
+    "name": "Creekside Auto Service",
+    "series": "grassroots",
+    "file": "assets/sponsors/grassroots/creekside-auto-service.png",
+    "originalFilename": "Creekside Auto Service Badge.png"
+  },
+  {
+    "id": "partner02",
+    "name": "County Line Hardware",
+    "series": "grassroots",
+    "file": "assets/sponsors/grassroots/county-line-hardware.png",
+    "originalFilename": "County Line Hardware Emblem.png"
+  },
+  {
+    "id": "partner03",
+    "name": "Millstone Farm Supply",
+    "series": "grassroots",
+    "file": "assets/sponsors/grassroots/millstone-farm-supply.png",
+    "originalFilename": "Millstone Farm Supply Logo.png"
+  },
+  {
+    "id": "partner04",
+    "name": "Ironwood Lumber",
+    "series": "grassroots",
+    "file": "assets/sponsors/grassroots/ironwood-lumber.png",
+    "originalFilename": "Ironwood Lumber Logo with Stacked Beams.png"
+  },
+  {
+    "id": "partner05",
+    "name": "Copperline Tools",
+    "series": "grassroots",
+    "file": "assets/sponsors/grassroots/copperline-tools.png",
+    "originalFilename": "Copperline Tools Wrench Logo.png"
+  },
+  {
+    "id": "partner06",
+    "name": "Junction Freight",
+    "series": "grassroots",
+    "file": "assets/sponsors/grassroots/junction-freight.png",
+    "originalFilename": "Burgundy Junction Freight Logo.png"
+  },
+  {
+    "id": "partner07",
+    "name": "Blue Hollow Equipment",
+    "series": "grassroots",
+    "file": "assets/sponsors/grassroots/blue-hollow-equipment.png",
+    "originalFilename": "Blue Hollow Equipment Gear Logo.png"
+  },
+  {
+    "id": "partner08",
+    "name": "Foundry Ridge Manufacturing",
+    "series": "grassroots",
+    "file": "assets/sponsors/grassroots/foundry-ridge-manufacturing.png",
+    "originalFilename": "Foundry Ridge Racing Logo.png"
+  },
+  {
+    "id": "partner21",
+    "name": "Crossstate Logistics",
+    "series": "challenger",
+    "file": "assets/sponsors/challenger/crossstate-logistics.png",
+    "originalFilename": "Crossstate Logistics Route Logo.png"
+  },
+  {
+    "id": "partner22",
+    "name": "TorqueWorks Components",
+    "series": "challenger",
+    "file": "assets/sponsors/challenger/torqueworks-components.png",
+    "originalFilename": "TorqueWorks Gear Emblem Logo.png"
+  },
+  {
+    "id": "partner23",
+    "name": "Meridian Broadband",
+    "series": "challenger",
+    "file": "assets/sponsors/challenger/meridian-broadband.png",
+    "originalFilename": "Meridian Broadband Wireless Logo.png"
+  },
+  {
+    "id": "partner24",
+    "name": "SummitForge Tools",
+    "series": "challenger",
+    "file": "assets/sponsors/challenger/summitforge-tools.png",
+    "originalFilename": "SummitForge Tools Mountain Anvil Logo.png"
+  },
+  {
+    "id": "partner25",
+    "name": "Redline Fabrication",
+    "series": "challenger",
+    "file": "assets/sponsors/challenger/redline-fabrication.png",
+    "originalFilename": "Redline Fabrication Racing Logo.png"
+  },
+  {
+    "id": "partner26",
+    "name": "Northstar Fleet Systems",
+    "series": "challenger",
+    "file": "assets/sponsors/challenger/northstar-fleet-systems.png",
+    "originalFilename": "Northstar Fleet Systems Logo.png"
+  },
+  {
+    "id": "partner27",
+    "name": "Atlas Circuit Electronics",
+    "series": "challenger",
+    "file": "assets/sponsors/challenger/atlas-circuit-electronics.png",
+    "originalFilename": "Atlas Circuit Electronics Logo.png"
+  },
+  {
+    "id": "partner41",
+    "name": "Horizon National Bank",
+    "series": "premier",
+    "file": "assets/sponsors/premier/horizon-national-bank.png",
+    "originalFilename": "Horizon National Bank Logo.png"
+  },
+  {
+    "id": "partner42",
+    "name": "Stratos Communications",
+    "series": "premier",
+    "file": "assets/sponsors/premier/stratos-communications.png",
+    "originalFilename": "Stratos Communications Logo.png"
+  },
+  {
+    "id": "partner43",
+    "name": "TitanGrid Energy",
+    "series": "premier",
+    "file": "assets/sponsors/premier/titangrid-energy.png",
+    "originalFilename": "TitanGrid Energy Logo Vector.png"
+  },
+  {
+    "id": "partner44",
+    "name": "Crownline Insurance",
+    "series": "premier",
+    "file": "assets/sponsors/premier/crownline-insurance.png",
+    "originalFilename": "Crownline Insurance Logo.png"
+  },
+  {
+    "id": "partner45",
+    "name": "Vanguard Motors",
+    "series": "premier",
+    "file": "assets/sponsors/premier/vanguard-motors.png",
+    "originalFilename": "Vanguard Motors Winged V Logo.png"
+  },
+  {
+    "id": "partner46",
+    "name": "Aether Computing",
+    "series": "premier",
+    "file": "assets/sponsors/premier/aether-computing.png",
+    "originalFilename": "Aether Computing Tech Logo.png"
+  },
+  {
+    "id": "partner47",
+    "name": "Sovereign Aerospace",
+    "series": "premier",
+    "file": "assets/sponsors/premier/sovereign-aerospace.png",
+    "originalFilename": "Sovereign Aerospace Wing Logo.png"
+  }
+]
