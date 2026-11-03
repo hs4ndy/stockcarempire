@@ -368,7 +368,7 @@ const DIFFICULTIES = [
     aiSpeed: 1.05, aiPower: 1.22, aiAggro: 1.386, aiDraft: 1.05, rideLimit: 3, packPressure: 1.00, inPackHelp: 0.65, recoveryStart: 88, recoveryFull: 340, pursuitMargin: 6, playerDraft: 1.00, playerCatchup: 0.70, lastPlaceBoost: 1.26, racecraft: 1.00 },
   { id: 'allout', name: 'All-Out',
     blurb: 'Relentless pace, ruthless drafting and almost no help. Expect to lose.',
-    aiSpeed: 1.065, aiPower: 1.38, aiAggro: 1.65, aiDraft: 1.08, rideLimit: 1.5, packPressure: 1.00, inPackHelp: 0.50, recoveryStart: 80, recoveryFull: 320, pursuitMargin: 8, packRecovery: 1.15, playerDraft: 1.06, playerCatchup: 0.68, racecraft: 1.25 },
+    aiSpeed: 1.065, aiPower: 1.38, aiAggro: 1.85, aiDraft: 1.08, rideLimit: 1.5, packPressure: 1.00, inPackHelp: 0.50, recoveryStart: 80, recoveryFull: 320, pursuitMargin: 8, packRecovery: 1.15, playerDraft: 1.06, playerCatchup: 0.68, racecraft: 1.65 },
 ];
 
 const DEFAULT_DIFFICULTY = 'beginner';

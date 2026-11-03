@@ -1,0 +1,9 @@
+{"series":0,"difficulty":"semipro","before":{"mean":19.29,"last":56,"wins":0},"after":{"mean":11.22,"last":0,"wins":0}}
+{"series":0,"difficulty":"pro","before":{"mean":19.59,"last":69,"wins":0},"after":{"mean":10.92,"last":0,"wins":0}}
+{"series":0,"difficulty":"allout","before":{"mean":19.8,"last":86,"wins":0},"after":{"mean":11.62,"last":0,"wins":0}}
+{"series":1,"difficulty":"semipro","before":{"mean":25.8,"last":85,"wins":0},"after":{"mean":15.81,"last":2,"wins":0}}
+{"series":1,"difficulty":"pro","before":{"mean":25.8,"last":88,"wins":0},"after":{"mean":15.8,"last":1,"wins":0}}
+{"series":1,"difficulty":"allout","before":{"mean":25.79,"last":86,"wins":0},"after":{"mean":16.53,"last":0,"wins":0}}
+{"series":2,"difficulty":"semipro","before":{"mean":39.78,"last":86,"wins":0},"after":{"mean":23.18,"last":1,"wins":0}}
+{"series":2,"difficulty":"pro","before":{"mean":39.84,"last":89,"wins":0},"after":{"mean":22.7,"last":0,"wins":0}}
+{"series":2,"difficulty":"allout","before":{"mean":39.87,"last":92,"wins":0},"after":{"mean":22.51,"last":0,"wins":0}}

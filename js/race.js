@@ -22,6 +22,11 @@ function simulateRace({ playerCarId, trackId }) {
     e.perfScore = calcPerf(e, track) * (e.isPlayer || e.isTeammate ? 0.78 : 1);
   });
 
+  // Keep managed simulation competitive around the midfield without assigning finishes.
+  const rivalScores=entries.filter(e=>!e.isPlayer&&!e.isTeammate).map(e=>e.perfScore).sort((a,b)=>a-b);
+  const midpoint=rivalScores[Math.floor(rivalScores.length/2)];
+  if(Number.isFinite(midpoint))for(const e of entries)if(e.isPlayer||e.isTeammate)e.perfScore=midpoint+clamp((e.perfScore-50)*.15,-5,5);
+
   // --- Run the simulation in 5 phases ---
   const phases = ['start', 'early', 'mid', 'late', 'finish'];
   const featureRules=raceFeatureRules(game.difficulty,game.raceRules);

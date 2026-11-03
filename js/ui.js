@@ -1134,7 +1134,7 @@ function renderCareerStats() {
 
   const histRows = hist.slice().reverse().map(h => `
     <div class="result-row ${h.champion ? 'player-result' : ''}">
-      <span class="res-pos ${h.finalPos <= 3 ? 'podium' : ''}">${h.finalPos}</span>
+      <span class="res-pos ${h.finalPos === 1 ? 'podium' : ''}" style="color:${h.finalPos === 1 ? 'var(--warn)' : 'var(--text)'}">${h.finalPos}</span>
       <span class="res-name">Year ${h.year} <span class="st-team">${h.series}</span></span>
       <span class="res-pts">${h.wins || 0}W</span>
       <span class="res-prize green">${fmt$(h.payout || 0)}</span>

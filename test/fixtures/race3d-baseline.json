@@ -263,7 +263,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "298e82537be42ab8b12bc19723400e517cd68495369a3042bc0e535113954a37"
+      "hash": "71c095e1722a8259790ec849ff0d66ca96a9042f52d3000d17022966887111fd"
     },
     {
       "name": "_crashThreshold",
@@ -556,6 +556,7 @@
     "version125": "Pro/All-Out human-pair AI strain -.10 relative; single/dual victory presentation. No other driving or spark changes.",
     "version127": "Cosmetic stripe buffers, appearance propagation, number-color textures and preview-only RNG bypass. Driving, contact, cameras and seeded race state unchanged.",
     "version129": "Cosmetic hood decal buffers/materials and shared logo texture lifetime only; no racing changes.",
-    "version130": "AI-only deterministic appearance defaults, no physics method changes."
+    "version130": "AI-only deterministic appearance defaults, no physics method changes.",
+    "version131": "Requested All-Out contact resistance and difficulty racecraft/aggression tuning; intentional All-Out trace refresh."
   }
 }

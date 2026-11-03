@@ -1166,7 +1166,7 @@ button.standing-driver .st-name { text-decoration:none; }
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 130</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 131</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -1702,7 +1702,7 @@ const DIFFICULTIES = [
     aiSpeed: 1.05, aiPower: 1.22, aiAggro: 1.386, aiDraft: 1.05, rideLimit: 3, packPressure: 1.00, inPackHelp: 0.65, recoveryStart: 88, recoveryFull: 340, pursuitMargin: 6, playerDraft: 1.00, playerCatchup: 0.70, lastPlaceBoost: 1.26, racecraft: 1.00 },
   { id: 'allout', name: 'All-Out',
     blurb: 'Relentless pace, ruthless drafting and almost no help. Expect to lose.',
-    aiSpeed: 1.065, aiPower: 1.38, aiAggro: 1.65, aiDraft: 1.08, rideLimit: 1.5, packPressure: 1.00, inPackHelp: 0.50, recoveryStart: 80, recoveryFull: 320, pursuitMargin: 8, packRecovery: 1.15, playerDraft: 1.06, playerCatchup: 0.68, racecraft: 1.25 },
+    aiSpeed: 1.065, aiPower: 1.38, aiAggro: 1.85, aiDraft: 1.08, rideLimit: 1.5, packPressure: 1.00, inPackHelp: 0.50, recoveryStart: 80, recoveryFull: 320, pursuitMargin: 8, packRecovery: 1.15, playerDraft: 1.06, playerCatchup: 0.68, racecraft: 1.65 },
 ];
 
 const DEFAULT_DIFFICULTY = 'beginner';
@@ -3772,6 +3772,11 @@ function simulateRace({ playerCarId, trackId }) {
   entries.forEach(e => {
     e.perfScore = calcPerf(e, track) * (e.isPlayer || e.isTeammate ? 0.78 : 1);
   });
+
+  // Keep managed simulation competitive around the midfield without assigning finishes.
+  const rivalScores=entries.filter(e=>!e.isPlayer&&!e.isTeammate).map(e=>e.perfScore).sort((a,b)=>a-b);
+  const midpoint=rivalScores[Math.floor(rivalScores.length/2)];
+  if(Number.isFinite(midpoint))for(const e of entries)if(e.isPlayer||e.isTeammate)e.perfScore=midpoint+clamp((e.perfScore-50)*.15,-5,5);
 
   // --- Run the simulation in 5 phases ---
   const phases = ['start', 'early', 'mid', 'late', 'finish'];
@@ -5969,7 +5974,8 @@ class Race3DEngine {
       this._damageCar(car,(Math.max(0,closing-1)*5+pressure*.8)*dt);
       // AI door contact needs sustained force; human-caused AI strain is
       // reduced modestly, AI-only strain substantially. Player tolerance stays.
-      const strainScale = car.isPlayer ? 1 : (a.isPlayer || b.isPlayer ? (['pro','allout'].includes(this.config?.difficulty||this.diff?.id) ? .72 : .80) : .28);
+      const allOut=(this.config?.difficulty||this.diff?.id)==='allout';
+      const strainScale = car.isPlayer ? 1 : (a.isPlayer || b.isPlayer ? (allOut ? .04 : (this.config?.difficulty||this.diff?.id)==='pro' ? .72 : .80) : allOut ? .24 : .28);
       car.sideStrain=(car.sideStrain||0)+strain*strainScale;car._recentSide=.5;
       const threshold=this._crashThreshold(car);
       if(rules.crashes && car.sideStrain>=threshold) this._beginCrash(car,side,'side contact');
@@ -7944,7 +7950,7 @@ function renderCareerStats() {
 
   const histRows = hist.slice().reverse().map(h => `
     <div class="result-row ${h.champion ? 'player-result' : ''}">
-      <span class="res-pos ${h.finalPos <= 3 ? 'podium' : ''}">${h.finalPos}</span>
+      <span class="res-pos ${h.finalPos === 1 ? 'podium' : ''}" style="color:${h.finalPos === 1 ? 'var(--warn)' : 'var(--text)'}">${h.finalPos}</span>
       <span class="res-name">Year ${h.year} <span class="st-team">${h.series}</span></span>
       <span class="res-pts">${h.wins || 0}W</span>
       <span class="res-prize green">${fmt$(h.payout || 0)}</span>
