@@ -247,7 +247,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .team-recruitment .staff-row, .recruitment-columns { display: grid; grid-template-columns: minmax(0, 1fr) 128px 144px; gap: 20px; }
 .recruitment-columns { color: var(--text-mute); font-size: 12px; padding-top: 12px; }
 .team-recruitment .staff-row { align-items: center; }
-.recruit-cost { display: flex; flex-direction: column; gap: 4px; font-size: 15px; }
+.recruit-cost { position:relative; display: flex; flex-direction: column; gap: 4px; font-size: 15px; }
 .recruit-cost strong { font-weight: 600; }
 .recruit-cost .recruit-cost-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .recruit-cost span { color: var(--text-dim); font-size: 14px; }
@@ -997,71 +997,6 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .modal-footer .hall-of-fame-button { width: 100%; background: transparent; border: 1px solid var(--line-2); color: var(--text); }
 .modal-footer .hall-of-fame-button:hover { background: var(--panel-2); border-color: var(--text-dim); }
 
-/* Quick Race: horizontal setup desk, within the established sports-career system. */
-#quick-race-modal .quick-setup-modal { width: min(1280px, 96vw); max-width: 1280px; }
-.quick-setup-intro { color: var(--text-dim); margin-bottom: 28px; max-width: 75ch; }
-.quick-setup-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.1fr); gap: 28px; align-items: start; }
-.quick-setup-section { min-width: 0; }
-.quick-setup-section + .quick-setup-section { border-left: 1px solid var(--line); padding-left: 28px; }
-.quick-setup-section > h4 { font: 700 26px var(--font-display); margin: 0 0 20px; }
-#quick-race-modal .difficulty-grid { grid-template-columns: 1fr; margin-top: 0; gap: 8px; }
-#quick-race-modal .difficulty-card { padding: 12px 16px; min-height: 64px; }
-#quick-race-modal .difficulty-name { font-size: 17px; }
-#quick-race-modal .difficulty-blurb { font-size: 14px; line-height: 1.4; }
-#quick-race-modal .quick-series { margin-top: 0; gap: 10px; }
-#quick-race-modal .quick-series-btn { padding: 16px; min-height: 90px; }
-#quick-race-modal .quick-series-name { font-size: 17px; }
-#quick-race-modal .quick-car-editor { padding: 20px 0 0; margin-top: 20px; }
-#quick-race-modal .quick-car-editor h4 { font-size: 17px; }
-#quick-race-modal .quick-car-controls { gap: 16px; }
-#quick-race-modal .quick-car-preview { height: 88px; }
-#quick-race-modal .quick-player-mode { display: flex; gap: 8px; }
-#quick-race-modal .quick-player-mode .btn { flex: 1; padding-inline: 10px; min-height: 44px; }
-#quick-race-modal .quick-setup-drivers .section-copy { padding: 12px 0 0; }
-#quick-race-modal .quick-race-footer { padding-block: 16px; }
-@media (min-width: 601px) and (max-width: 960px) {
- .quick-setup-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
- .quick-setup-drivers { grid-column: 1 / -1; }
- .quick-setup-section.quick-setup-drivers { border-left: 0; border-top: 1px solid var(--line); padding: 24px 0 0; }
- .quick-setup-cars { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px; }
-}
-@media (max-width: 600px) {
- .quick-setup-grid { grid-template-columns: 1fr; gap: 28px; }
- .quick-setup-section + .quick-setup-section { border-left: 0; border-top: 1px solid var(--line); padding: 24px 0 0; }
- .quick-setup-intro { margin-bottom: 24px; }
- #quick-race-modal .difficulty-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
-}
-
-/* Equal choice tiles and a wider, shallower four-column setup. */
-#quick-race-modal .quick-setup-modal { width: min(1540px, 96vw); max-width: 1540px; max-height: min(820px, calc(100svh - 32px)); }
-.quick-setup-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px; }
-.quick-setup-section + .quick-setup-section { border-left: 0; padding-left: 0; }
-#quick-race-modal .difficulty-grid { grid-auto-rows: 1fr; }
-#quick-race-modal .difficulty-card { min-height: 96px; height: 100%; }
-#quick-race-modal .quick-series { display: grid; grid-auto-rows: 1fr; }
-#quick-race-modal .quick-series-btn { min-height: 96px; height: 100%; }
-.quick-setup-intro { margin-bottom: 20px; max-width: none; }
-@media (min-width: 601px) and (max-width: 1200px) {
- .quick-setup-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
- .quick-setup-section.quick-setup-drivers { grid-column: auto; border-top: 0; padding-top: 0; }
- .quick-setup-cars { display: block; }
- .quick-setup-settings, .quick-setup-drivers { border-top: 1px solid var(--line); padding-top: 24px; }
-}
-@media (max-width: 600px) {
- .quick-setup-grid { grid-template-columns: 1fr; }
- .quick-setup-section + .quick-setup-section { border-top: 1px solid var(--line); padding-top: 24px; }
-}
-
-/* Dividers sit in the column gaps, preserving equal content widths. */
-@media (min-width: 1201px) {
- .quick-setup-section { position: relative; }
- .quick-setup-section + .quick-setup-section::before { content: ""; position: absolute; left: -14px; top: 0; bottom: 0; width: 1px; background: var(--line); }
-}
-@media (min-width: 601px) and (max-width: 1200px) {
- .quick-setup-section:nth-child(even) { position: relative; }
- .quick-setup-section:nth-child(even)::before { content: ""; position: absolute; left: -14px; top: 0; bottom: 0; width: 1px; background: var(--line); }
-}
-
 /* Sponsorship management extends existing career materials. */
 .sponsor-notice { display:flex; align-items:center; justify-content:space-between; gap:24px; }
 .sponsor-notice h3 { font-size:20px; margin-bottom:8px; }
@@ -1129,6 +1064,108 @@ button.standing-driver .st-name { text-decoration:none; }
 .btn.btn-complete, .btn.btn-complete:hover {background:transparent;color:var(--good);border-color:var(--good);cursor:default;}
 
 .btn.btn-repair-all:disabled {background:transparent;border-color:var(--warn);color:var(--warn);opacity:.55;}
+/* Focused management menus: shared sports identity, quieter task hierarchy. */
+[hidden] {display:none !important;}
+#quick-race-modal .quick-wizard {width:min(1180px,calc(100vw - 32px));max-width:1180px;max-height:calc(100svh - 24px);}
+.quick-wizard .modal-header {padding:20px 28px;}
+.quick-wizard .quick-setup-body {padding:24px 28px;overflow:hidden;flex:none;}
+.quick-race-stage {display:grid;grid-template-columns:1fr 1fr .95fr;gap:32px;align-items:start;}
+.quick-race-stage>section+section {border-left:1px solid var(--line);padding-left:28px;}
+.quick-wizard h4 {font:700 24px var(--font-display);margin-bottom:16px;}
+.quick-wizard .difficulty-grid {display:grid;grid-template-columns:1fr;gap:8px;margin:0;}
+.quick-wizard .difficulty-card {min-height:44px;padding:10px 16px;display:block;text-align:left;}
+.quick-wizard #quick-difficulty-hint {margin-top:12px;}
+.quick-wizard .quick-series {display:grid;gap:8px;}
+.quick-wizard .quick-series-btn {min-height:72px;padding:14px 16px;}
+.quick-wizard .quick-series-name {font-size:16px;}
+.quick-wizard .quick-series-meta {font-size:14px;margin-top:2px;}
+.quick-wizard .compact-rules .radio-row {min-height:60px;padding:14px 0;gap:12px;}
+.quick-wizard .compact-rules>p {margin-bottom:16px;}
+.quick-wizard .quick-race-footer {display:flex;gap:12px;padding:16px 28px;}
+.quick-wizard .quick-race-footer .btn {width:auto;flex:1;}
+.quick-wizard #quick-back {flex:0 0 120px;}
+.quick-player-toolbar {display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:24px;}
+.quick-player-toolbar h4 {margin:0;}
+.quick-wizard .quick-player-mode {margin:0;min-width:320px;}
+.quick-wizard .quick-setup-cars {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px;}
+.quick-wizard .quick-car-editor {margin:0;padding:0;border:0;min-width:0;}
+.quick-wizard .quick-car-editor+ .quick-car-editor {border-left:1px solid var(--line);padding-left:28px;}
+.quick-wizard .quick-car-preview {height:108px;min-height:80px;}
+.quick-wizard .quick-car-editor h4 {font-size:18px;margin-bottom:12px;}
+.quick-wizard .quick-car-editor p {margin-top:12px;}
+.quick-wizard .car-studio-open {margin:16px 0 0;}
+.quick-key-help {margin-top:20px;}
+.driver-browse {display:grid;grid-template-columns:1fr 200px;gap:16px;margin:20px 0 12px;}
+.driver-browse label {display:flex;flex-direction:column;gap:8px;font-size:14px;color:var(--text-dim);}
+.driver-browse input {width:100%;height:44px;padding:10px 12px;border:1px solid var(--line-2);background:var(--panel-2);color:var(--text);border-radius:6px;}
+#main-content[data-tab=team] .team-workspace {grid-template-columns:minmax(240px,.7fr) minmax(0,1.7fr);gap:28px;}
+#main-content[data-tab=team] .team-toolbar {margin-bottom:28px;}
+#main-content[data-tab=team] .team-budget {display:none;}
+#main-content[data-tab=team] .card {padding:24px;}
+#main-content[data-tab=team] .staff-row {padding:20px 0;align-items:center;gap:16px;}
+#main-content[data-tab=team] .team-recruitment .recruitment-list {max-height:clamp(260px,calc(100svh - 580px),500px);padding-right:12px;}
+#main-content[data-tab=team] .staff-name {line-height:1.5;}
+#main-content[data-tab=team] .staff-ovr {color:var(--text);font-weight:700;white-space:nowrap;margin-left:8px;}
+#main-content[data-tab=team] .staff-meta {line-height:1.6;}
+.market-tabs {margin-bottom:28px;display:flex;gap:8px;}
+.market-cars {display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:40px;align-items:start;}
+.market-finance-summary {padding:24px 0;}
+.market-finance-summary h3 {margin-bottom:16px;}
+.market-finance-summary .btn {margin-top:24px;}
+.market-workspace>.card {margin-top:0;}
+.market-workspace .card-header {font:700 24px var(--font-display);margin-bottom:20px;}
+.market-workspace .staff-row {padding:20px 0;}
+@media(max-width:800px){
+ #main-content[data-tab=team] .team-workspace,.market-cars {grid-template-columns:1fr;gap:24px;}
+ .driver-browse {grid-template-columns:1fr 150px;}
+ .quick-race-stage {gap:20px;}.quick-race-stage>section+section{padding-left:20px;}
+}
+@media(max-height:620px) and (min-width:601px){
+ .quick-wizard .modal-header{padding:12px 20px;}.quick-wizard .quick-setup-body{padding:16px 20px;}.quick-wizard .quick-race-footer{padding:12px 20px;}
+ .quick-wizard .difficulty-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;}.quick-wizard .quick-series-btn{min-height:48px;padding:8px 12px;}
+ .quick-wizard h4{font-size:20px;margin-bottom:10px;}.quick-wizard .quick-car-preview{height:64px;min-height:64px;}
+ .quick-player-toolbar{margin-bottom:12px;}.quick-wizard .car-studio-open{margin-top:8px;}.quick-wizard .quick-key-help{margin-top:12px;}
+}
+@media(max-width:600px){
+ #quick-race-modal .quick-wizard{width:calc(100vw - 20px);max-height:calc(100svh - 20px);}
+ .quick-wizard .modal-header{padding:12px 16px;}.quick-wizard .quick-setup-body{padding:16px;}.quick-wizard .quick-race-footer{padding:12px 16px;}
+ .quick-race-stage{grid-template-columns:1fr 1fr;gap:16px;}.quick-race-stage>section+section{border:0;padding:0;}.quick-race-stage>section:last-child{grid-column:1/-1;border-top:1px solid var(--line);padding-top:12px;}
+ .quick-wizard h4{font-size:20px;margin-bottom:10px;}.quick-wizard .difficulty-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;}
+ .quick-wizard .difficulty-card{padding:8px;font-size:14px;}.quick-wizard .difficulty-name{font-size:14px;}.quick-wizard .quick-series-btn{min-height:56px;padding:8px 10px;}
+ .quick-wizard .quick-series-name{font-size:14px;}.quick-wizard .quick-series-meta{font-size:12px;}.quick-wizard #quick-difficulty-hint{font-size:12px;margin-top:8px;}
+ .quick-wizard .compact-rules{display:grid;grid-template-columns:1fr 1fr;gap:8px;}.quick-wizard .compact-rules>p{grid-column:1/-1;margin:0;}.quick-wizard .compact-rules .radio-row{min-height:44px;padding:6px 0;font-size:14px;}
+ .quick-player-toolbar{display:block;margin-bottom:16px;}.quick-wizard .quick-player-mode{min-width:0;margin-top:12px;}
+ .quick-wizard .quick-setup-cars{gap:16px;}.quick-wizard .quick-car-editor+.quick-car-editor{padding-left:16px;}.quick-wizard .quick-car-preview{height:80px;}
+ .quick-wizard .quick-car-editor p{font-size:12px;}.quick-wizard .car-studio-open{font-size:14px;padding:10px 8px;}.quick-key-help{font-size:12px;line-height:1.5;}
+ .driver-browse{grid-template-columns:1fr;}.market-tabs .btn{flex:1;padding-inline:12px;}
+}
+@media(max-height:620px) and (min-width:601px){
+ .quick-wizard .modal-header{padding:8px 20px;}.quick-wizard .modal-header h3{font-size:26px;}.quick-wizard .quick-race-footer{padding:8px 20px;}.quick-wizard .quick-race-footer .btn{min-height:44px;padding-block:10px;}
+ .quick-wizard .quick-setup-body{padding:12px 20px;}.quick-player-toolbar{margin-bottom:8px;}.quick-wizard .quick-car-preview{height:44px;min-height:44px;}
+ .quick-wizard .quick-car-editor p{display:none;}.quick-wizard .quick-car-editor h4{margin-bottom:6px;}.quick-wizard .car-studio-open{margin-top:6px;min-height:44px;padding-block:10px;}.quick-wizard .quick-key-help{font-size:12px;margin-top:8px;}
+}
+
+@media(max-height:620px) and (min-width:601px){
+ .quick-wizard .quick-series-btn{flex-direction:row;align-items:center;justify-content:space-between;gap:8px;min-height:44px;}
+ .quick-wizard .quick-series-meta{margin:0;white-space:nowrap;}
+ .quick-wizard .compact-rules>p{margin-bottom:8px;}
+ .quick-wizard .compact-rules .radio-row{min-height:48px;padding:8px 0;}
+}
+
+@media(max-height:620px) and (min-width:601px){
+ .quick-wizard .difficulty-name{font-size:15px;line-height:22px;}
+ .quick-wizard .difficulty-card{height:44px;padding:10px 12px;}
+ .quick-wizard #quick-difficulty-hint{font-size:12px;line-height:18px;margin:6px 0 0;}
+ .quick-wizard .quick-series-name{font-size:14px;line-height:20px;}
+ .quick-wizard .quick-series-meta{font-size:12px;}
+ .quick-wizard .quick-series{margin-top:0;}
+}
+
+@media(max-width:600px){.quick-wizard .difficulty-name{font-size:13px;white-space:nowrap;}.quick-wizard .difficulty-card{height:44px;padding:8px 6px;}}
+@media(max-height:620px) and (min-width:601px){.quick-wizard .quick-car-preview strong{font-size:36px;line-height:1;}}
+
+.quick-wizard #quick-number-warning{font-size:12px;line-height:1.5;margin:20px 0 0;padding:0;border:0;}
+@media(max-height:620px) and (min-width:601px){.quick-wizard #quick-number-warning{margin-top:8px;}}
 
 </style>
 </head>
@@ -1170,7 +1207,7 @@ button.standing-driver .st-name { text-decoration:none; }
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 132</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 133</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -1636,6 +1673,36 @@ const HIREABLE_DRIVERS = [
   { id: 'drv13', name: 'Anita Ramos',              skill: 78, aggression: 55, morale: 82, weeklyCost: 4800 },
   { id: 'drv14', name: 'Derek "Ice" Simmons',      skill: 83, aggression: 44, morale: 80, weeklyCost: 6000 },
   { id: 'drv15', name: 'Pat O\'Brien',             skill: 63, aggression: 70, morale: 75, weeklyCost: 2400 },
+  { id: 'drv16', name: 'Eli Mercer', skill: 48, aggression: 40, morale: 70, weeklyCost: 900, minReputation: 0 },
+  { id: 'drv17', name: 'Naomi Brooks', skill: 55, aggression: 51, morale: 73, weeklyCost: 1400, minReputation: 0 },
+  { id: 'drv18', name: 'Lucas Vega', skill: 62, aggression: 62, morale: 76, weeklyCost: 2400, minReputation: 0 },
+  { id: 'drv19', name: 'Amara Reid', skill: 69, aggression: 73, morale: 79, weeklyCost: 3900, minReputation: 0 },
+  { id: 'drv20', name: 'Owen Fletcher', skill: 76, aggression: 84, morale: 82, weeklyCost: 5900, minReputation: 0 },
+  { id: 'drv21', name: 'Sofia Navarro', skill: 83, aggression: 49, morale: 85, weeklyCost: 8400, minReputation: 60 },
+  { id: 'drv22', name: 'Miles Benton', skill: 90, aggression: 60, morale: 88, weeklyCost: 11400, minReputation: 81 },
+  { id: 'drv23', name: 'Jade Collins', skill: 54, aggression: 71, morale: 91, weeklyCost: 1300, minReputation: 0 },
+  { id: 'drv24', name: 'Theo Bishop', skill: 61, aggression: 82, morale: 94, weeklyCost: 2200, minReputation: 0 },
+  { id: 'drv25', name: 'Isabel Cruz', skill: 68, aggression: 47, morale: 71, weeklyCost: 3600, minReputation: 0 },
+  { id: 'drv26', name: 'Nolan Avery', skill: 75, aggression: 58, morale: 74, weeklyCost: 5600, minReputation: 0 },
+  { id: 'drv27', name: 'Maya Sterling', skill: 82, aggression: 69, morale: 77, weeklyCost: 8000, minReputation: 57 },
+  { id: 'drv28', name: 'Felix Duarte', skill: 89, aggression: 80, morale: 80, weeklyCost: 10900, minReputation: 78 },
+  { id: 'drv29', name: 'Erin West', skill: 53, aggression: 45, morale: 83, weeklyCost: 1200, minReputation: 0 },
+  { id: 'drv30', name: 'Adrian Vale', skill: 60, aggression: 56, morale: 86, weeklyCost: 2100, minReputation: 0 },
+  { id: 'drv31', name: 'Nia Coleman', skill: 67, aggression: 67, morale: 89, weeklyCost: 3400, minReputation: 0 },
+  { id: 'drv32', name: 'Callum Price', skill: 74, aggression: 78, morale: 92, weeklyCost: 5300, minReputation: 0 },
+  { id: 'drv33', name: 'Lucia Bennett', skill: 81, aggression: 43, morale: 95, weeklyCost: 7600, minReputation: 54 },
+  { id: 'drv34', name: 'Marcus Hale', skill: 88, aggression: 54, morale: 72, weeklyCost: 10500, minReputation: 75 },
+  { id: 'drv35', name: 'Keira Sullivan', skill: 52, aggression: 65, morale: 75, weeklyCost: 1200, minReputation: 0 },
+  { id: 'drv36', name: 'Ethan Ross', skill: 59, aggression: 76, morale: 78, weeklyCost: 1900, minReputation: 0 },
+  { id: 'drv37', name: 'Zara Quinn', skill: 66, aggression: 41, morale: 81, weeklyCost: 3200, minReputation: 0 },
+  { id: 'drv38', name: 'Julian Hayes', skill: 73, aggression: 52, morale: 84, weeklyCost: 5000, minReputation: 0 },
+  { id: 'drv39', name: 'Leah Morgan', skill: 80, aggression: 63, morale: 87, weeklyCost: 7300, minReputation: 51 },
+  { id: 'drv40', name: 'Connor Ellis', skill: 87, aggression: 74, morale: 90, weeklyCost: 10000, minReputation: 72 },
+  { id: 'drv41', name: 'Priya Shah', skill: 51, aggression: 85, morale: 93, weeklyCost: 1100, minReputation: 0 },
+  { id: 'drv42', name: 'Dante Flores', skill: 58, aggression: 50, morale: 70, weeklyCost: 1800, minReputation: 0 },
+  { id: 'drv43', name: 'Freya Lawson', skill: 65, aggression: 61, morale: 73, weeklyCost: 3000, minReputation: 0 },
+  { id: 'drv44', name: 'Gabriel Reed', skill: 72, aggression: 72, morale: 76, weeklyCost: 4700, minReputation: 0 },
+  { id: 'drv45', name: 'Vivian Scott', skill: 79, aggression: 83, morale: 79, weeklyCost: 6900, minReputation: 48 },
 ];
 
 const AI_TEAM_TEMPLATES = [
@@ -7156,7 +7223,7 @@ function renderGarage() {
     const driverName = seatDrv
       ? `${seatDrv.name} (Skill ${Math.floor(hiredDriverSkill(seat))})`
       : car.assignedDriverId === 'player'
-        ? `${game.driverName || 'You'} (Skill ${Math.round(game.playerSkill)})`
+        ? `${game.driverName || 'You'} (${Math.round(game.playerSkill)} OVR)`
         : 'No driver assigned';
     const noDriver = !seatDrv && car.assignedDriverId !== 'player';
 
@@ -7296,13 +7363,16 @@ function showTeamView(view) {
   document.querySelector(`[data-team-view="${teamView}"]`)?.focus({ preventScroll: true });
 }
 
+let driverRecruitSort='rating';
+function sortDriverRecruitment(value){driverRecruitSort=value;renderTab('team');document.getElementById('driver-sort')?.focus();}
+function filterDriverRecruitment(value){const query=value.trim().toLowerCase();let count=0;document.querySelectorAll('[data-driver-candidate]').forEach(el=>{el.hidden=!el.dataset.driverName.includes(query);if(!el.hidden)count++;});document.getElementById('driver-results').textContent=`${count} drivers available`;}
 function renderTeam() {
   const hiredIds = new Set(game.hiredDrivers.map(h => h.driverId));
   const playerCar = game.cars.find(c => c.assignedDriverId === 'player');
   const playerRow = playerCar ? `<div class="staff-row">
     <div class="staff-info"><span class="staff-name">${game.driverName} <span class="muted-text small">(You)</span></span>
       <span class="staff-meta">#${playerCar.number || 1} ${playerCar.name}</span>
-      <span class="staff-meta">Skill ${Math.round(game.playerSkill)}</span>
+      <span class="staff-meta">${Math.round(game.playerSkill)} OVR</span>
     </div>
   </div>` : '';
 
@@ -7318,8 +7388,8 @@ function renderTeam() {
       <div class="staff-info">
         <span class="staff-name">${d.name}</span>
         <div class="staff-meta">
-          Skill ${Math.floor(skill)}${gained > 0 ? ` <span class="green">+${gained}</span>` : ''}
-          · ${fmt$(h.weeklyCost)}/week
+          ${Math.floor(skill)} OVR${gained > 0 ? ` <span class="green">+${gained}</span>` : ''}
+          · ${fmt$(h.weeklyCost)} per race
         </div>
         <div class="staff-meta muted-text">
           ${car ? `#${car.number || 1} ${car.name}` : 'Unassigned'}
@@ -7347,7 +7417,7 @@ function renderTeam() {
     </div>`;
   }).join('') || '<p class="team-empty">No support staff yet. Recruit a specialist to improve your team.</p>';
 
-  const availableDrivers = HIREABLE_DRIVERS.filter(d => !hiredIds.has(d.id));
+  const availableDrivers = HIREABLE_DRIVERS.filter(d => !hiredIds.has(d.id)).sort((a,b)=>driverRecruitSort==='price'?a.weeklyCost-b.weeklyCost:b.skill-a.skill);
   const openSeats = freeCarsForHire().length;
   const seatWarning = game.cars.length === 0
     ? `<p class="form-warning">No car - buy a car before hiring a driver.</p>`
@@ -7361,12 +7431,12 @@ function renderTeam() {
     const disabledReason = game.hiredDrivers.length >= MAX_HIRED_DRIVERS ? 'Driver Limit Reached'
       : openSeats === 0 ? 'No Free Car' : (game.reputation || 0) < (d.minReputation || 0) ? `Requires ${d.minReputation} Reputation` : !canAfford ? 'Not Enough Cash' : '';
 
-    return `<div class="staff-row">
+    return `<div class="staff-row" data-driver-candidate="${d.id}" data-driver-name="${careerArchiveEscape(d.name.toLowerCase())}">
       <div class="staff-info">
-        <span class="staff-name">${d.name}</span>
-        <div class="staff-meta">Skill ${d.skill} • Aggression ${d.aggression}</div>
+        <span class="staff-name">${d.name} <span class="staff-ovr">${d.skill} OVR</span></span>
+        <div class="staff-meta">${d.aggression>=75?'Aggressive racer':d.aggression<=50?'Measured racer':'Balanced racer'}</div>
       </div>
-      <div class="recruit-cost"><strong><span class="recruit-cost-label">Signing fee </span>${fmt$(signingFee)}</strong><span>${fmt$(d.weeklyCost)}/week</span></div>
+      <div class="recruit-cost"><strong><span class="recruit-cost-label">Signing fee </span>${fmt$(signingFee)}</strong><span>${fmt$(d.weeklyCost)} per race</span></div>
       ${!disabledReason ? `<button class="btn btn-sm btn-primary" aria-label="Hire ${d.name}" onclick="openHireDriverModal('${d.id}')">Hire</button>`
                   : `<button class="btn btn-sm" disabled>${disabledReason}</button>`}
     </div>`;
@@ -7392,7 +7462,7 @@ function renderTeam() {
   }).join('') || '<p class="team-empty">No available specialists in this role.</p>';
 
   return `
-  <div class="page-header"><h2>Team Management</h2><p>${game.teamName}</p></div>
+  <div class="page-header"><h2>Team</h2><p>${openSeats} open seat${openSeats===1?'':'s'} · ${fmt$(game.money)} available</p></div>
   <div class="team-toolbar">
     <div class="team-views" role="group" aria-label="Manage team members">
       <button class="btn ${teamView === 'drivers' ? 'team-view-active' : 'btn-ghost'}" data-team-view="drivers" aria-pressed="${teamView === 'drivers'}" onclick="showTeamView('drivers')">Drivers</button>
@@ -7407,10 +7477,11 @@ function renderTeam() {
     </section>
     <section class="card team-recruitment" aria-labelledby="team-recruitment-title">
       <h3 class="card-header" id="team-recruitment-title">${teamView === 'drivers' ? 'Recruit Drivers' : 'Recruit Support Staff'}</h3>
-      <p class="section-copy">Signing fees are paid upfront. Salaries are paid each race.</p>
+      <p class="section-copy">One signing fee upfront. Salary each race.</p>
       ${teamView === 'drivers' ? seatWarning : ''}
-      <p class="recruitment-caption"><span>${teamView === 'drivers' ? `${availableDrivers.length} available · ${game.hiredDrivers.length}/${MAX_HIRED_DRIVERS} hired` : `${filteredStaff.length} specialists available`}</span><span>Scroll to browse</span></p>
+      <p class="recruitment-caption"><span>${teamView === 'drivers' ? `${availableDrivers.length} available · ${game.hiredDrivers.length}/${MAX_HIRED_DRIVERS} hired` : `${filteredStaff.length} specialists available`}</span><span>${teamView==='drivers'?'OVR reflects driving skill':'Specialists improve your team'}</span></p>
       ${teamView === 'staff' ? `<div class="staff-filter"><label for="staff-role-filter">Staff role</label><select class="form-select" id="staff-role-filter" onchange="showStaffRole(this.value)"><option value="all">All roles</option>${STAFF_TYPES.map(t=>`<option value="${t.id}" ${staffRoleFilter===t.id?'selected':''}>${t.name}</option>`).join('')}</select></div>` : ''}
+      ${teamView==='drivers'?`<div class="driver-browse"><label>Find a driver<input type="search" placeholder="Search by name" oninput="filterDriverRecruitment(this.value)"></label><label>Sort by<select id="driver-sort" class="form-select" onchange="sortDriverRecruitment(this.value)"><option value="rating" ${driverRecruitSort==='rating'?'selected':''}>Highest OVR</option><option value="price" ${driverRecruitSort==='price'?'selected':''}>Lowest signing fee</option></select></label></div><p id="driver-results" class="small muted-text">${availableDrivers.length} drivers available</p>`:''}
       <div class="recruitment-columns" aria-hidden="true"><span>${teamView === 'drivers' ? 'Driver' : 'Specialist'}</span><span>Signing fee / salary</span><span></span></div>
       <div class="recruitment-list" tabindex="0" aria-label="${teamView === 'drivers' ? 'Available drivers' : 'Available support staff'}">${teamView === 'drivers' ? driverRows : staffHireRows}</div>
     </section>
@@ -7434,9 +7505,9 @@ function renderHireDriverModal(driverId) {
     <div class="modal" onclick="event.stopPropagation()">
       <div class="modal-header"><h3>Hire ${d.name}</h3><button class="modal-close" onclick="closeHireModal()">Close</button></div>
       <div class="modal-body">
-        <p>Skill: ${d.skill} | Aggression: ${d.aggression}</p>
-        <p>${fmt$(d.weeklyCost)}/week | Signing fee: ${fmt$(d.weeklyCost*4)}</p>
-        <label class="form-label">Assign to car:</label>
+        <p>${d.skill} OVR · Aggression ${d.aggression}</p>
+        <p>${fmt$(d.weeklyCost)} per race | Signing fee: ${fmt$(d.weeklyCost*4)}</p>
+        <label class="form-label" for="hire-car-select">Assign to car</label>
         <select id="hire-car-select" class="form-select">${carOpts}</select>
         <div class="btn-row mt">
           <button class="btn btn-primary" onclick="confirmHireDriver('${driverId}')">Hire Driver</button>
@@ -7496,6 +7567,8 @@ function renderSchedule() {
 }
 
 // ─── Market ──────────────────────────────────────────────────
+let marketView='cars';
+function showMarketView(view){marketView=['cars','loans','charity'].includes(view)?view:'cars';renderTab('market');document.querySelector(`[data-market-view="${marketView}"]`)?.focus({preventScroll:true});}
 function renderMarket() {
   const series   = SERIES[game.currentSeries];
   const cls      = CAR_CLASSES[series.carClass];
@@ -7603,11 +7676,7 @@ function renderMarket() {
       </details>
     </div>`;
 
-  return `
-  <div class="page-header"><h2>Market</h2><button class="btn btn-primary" onclick="document.getElementById('market-loans').scrollIntoView({block: 'start'})">Loans and Financing</button></div>
-  <div class="two-col-grid">
-    <div>
-      <div class="card">
+  const buyCard=`<div class="card">
         <div class="card-header">Buy a Car</div>
         <p class="section-copy">${cls.description}</p>
         <div class="team-stat"><span>Cost</span><span class="highlight">${fmt$(cls.buyCost)}</span></div>
@@ -7626,13 +7695,9 @@ function renderMarket() {
           : canBuy
             ? `<button class="btn btn-primary mt" onclick="handleBuyCar()">Buy Car (${fmt$(cls.buyCost)})</button>`
             : `<button class="btn mt" disabled>Not enough money (need ${fmt$(cls.buyCost)})</button>`}
-      </div>
-      ${bankCard}
-    </div>
-    <div>
-      ${charityCard}
-    </div>
-  </div>`;
+      </div>`;
+  return `<div class="page-header"><h2>Market</h2><p>${series.name}</p></div><nav class="market-tabs team-views" aria-label="Market sections">${[['cars','Cars'],['loans','Financing'],['charity','Charity']].map(([id,label])=>`<button class="btn ${marketView===id?'team-view-active':'btn-ghost'}" data-market-view="${id}" aria-pressed="${marketView===id}" onclick="showMarketView('${id}')">${label}</button>`).join('')}</nav><div class="market-workspace">${marketView==='cars'?`<div class="market-cars">${buyCard}<aside class="market-finance-summary"><h3>Room for your next car</h3><p class="section-copy">${game.cars.length} of ${MAX_TEAM_CARS} garage spaces used.</p><div class="team-stat"><span>Available credit</span><strong class="green">${fmt$(avail)}</strong></div><div class="team-stat"><span>Outstanding debt</span><strong>${fmt$(debt)}</strong></div><button class="btn btn-secondary" onclick="showMarketView('loans')">View loan options</button></aside></div>`:marketView==='loans'?bankCard:charityCard}</div>`;
+
 }
 
 // ─── Standings ───────────────────────────────────────────────
@@ -8168,7 +8233,7 @@ function renderCarCustomizer(car, i, career = false) {
   const id = career ? `career-custom-${car.id}` : `quick-player-${i+1}`;
   const prefix = career ? `setCareerCarAppearance('${car.id}',` : `setQuickRaceCar(${i},`;
   const color = car.color || '#e8001d', number = car.number || 1;
-  if(!career)return `<section class="quick-car-editor" id="${id}" ${i===1&&quickRacePlayers===1?'hidden':''}><h4>Player ${i+1}</h4><div class="quick-car-preview" style="--car-color:${color}" aria-hidden="true"><strong style="color:${carAppearance(car).numberColor}">${String(number).padStart(2,'0')}</strong></div><p class="muted-text small">Choose your number, paint, stripes and number color in Car Studio.</p><button class="btn btn-primary car-studio-open" onclick="openCarStudio('quick',${i})">Customize Car</button></section>`;
+  if(!career)return `<section class="quick-car-editor" id="${id}" ${i===1&&quickRacePlayers===1?'hidden':''}><h4>Player ${i+1}</h4><div class="quick-car-preview" style="--car-color:${color}" aria-hidden="true"><strong style="color:${carAppearance(car).numberColor}">${String(number).padStart(2,'0')}</strong></div><p class="muted-text small">Number, paint and stripes.</p><button class="btn btn-primary car-studio-open" onclick="openCarStudio('quick',${i})">Customize Car</button></section>`;
   return `<section class="quick-car-editor" id="${id}" ${!career && i === 1 && quickRacePlayers === 1 ? 'hidden' : ''}>
     <h4>${career ? 'Car appearance' : `Player ${i+1}`}</h4>
     ${!career?`<button class="btn btn-primary" onclick="openCarStudio('quick',${i})">Customize Car</button>`:''}
@@ -8186,48 +8251,16 @@ function renderCarCustomizer(car, i, career = false) {
 }
 
 function renderQuickRaceModal() {
-  return `
-  <div class="modal-overlay" id="quick-race-modal">
-    <div class="modal quick-setup-modal">
-      <div class="modal-header">
-        <h3>Quick Race</h3>
-        <button class="modal-close" onclick="document.getElementById('quick-race-modal')?.remove()">Close</button>
-      </div>
-      <div class="modal-body quick-setup-body">
-        <p class="quick-setup-intro">Build your race. Pick your challenge, choose a series, and make the car yours. No career consequences.</p>
-        <div class="quick-setup-grid"><section class="quick-setup-section" aria-labelledby="quick-difficulty-title">
-        <h4 id="quick-difficulty-title">Difficulty</h4>
-        <div class="difficulty-grid">
-          ${DIFFICULTIES.map(d => `
-            <button type="button" class="difficulty-card${d.id === quickRaceDifficulty ? ' selected' : ''}"
-                 data-diff="${d.id}" aria-pressed="${d.id === quickRaceDifficulty}" onclick="setQuickRaceDifficulty('${d.id}')">
-              <span class="difficulty-name">${d.name}</span>
-              <span class="difficulty-blurb">${d.blurb}</span>
-            </button>`).join('')}
-        </div>
-        </section><section class="quick-setup-section" aria-labelledby="quick-series-title"><h4 id="quick-series-title">Series</h4>
-        <div class="quick-series">
-          ${SERIES.map(s => `
-            <button type="button" class="quick-series-btn" data-field-size="${s.fieldSize}" aria-pressed="false" onclick="selectQuickRaceSeries(${s.fieldSize})">
-              <span class="quick-series-name" style="--series-color:${s.color}">${s.name}</span>
-              <span class="quick-series-meta">${s.fieldSize}-car field · ${s.description}</span>
-            </button>`).join('')}
-        </div>
-        </section><section class="quick-setup-section quick-setup-settings" aria-labelledby="quick-settings-title"><h4 id="quick-settings-title">Settings</h4><section id="quick-race-rules">${renderRaceRuleControls(quickRaceDifficulty,quickRaceRules,'quick')}</section>
-        </section><section class="quick-setup-section quick-setup-drivers" aria-labelledby="quick-players-title"><h4 id="quick-players-title">Players and Cars</h4>
-        <div class="quick-player-mode" role="group" aria-label="Player mode">
-          <button class="btn" data-players="1" aria-pressed="${quickRacePlayers === 1}" onclick="setQuickRacePlayers(1)">Single player</button>
-          <button class="btn" data-players="2" aria-pressed="${quickRacePlayers === 2}" onclick="setQuickRacePlayers(2)">Dual player</button>
-        </div>
-        <p class="section-copy">Player 1: A / S / D. Player 2: J / K / L.<br>Middle key brakes. Auto acceleration.</p>
-        <div class="quick-setup-cars">${quickRaceCars.map((car, i) => renderCarCustomizer(car, i)).join('')}</div>
-        <p class="form-warning" id="quick-number-warning" hidden>Choose a different number for each player.</p></section></div>
-      </div>
-      <div class="modal-footer quick-race-footer">
-        <button type="button" class="btn btn-primary btn-lg" id="btn-quick-race-confirm" onclick="confirmQuickRace()" disabled>Confirm Race</button>
-      </div>
-    </div>
-  </div>`;
+ const summaries={beginner:'Learn the draft.',amateur:'Find your rhythm.',semipro:'Keep the tow.',pro:'Earn every position.',allout:'Maximum competition.'};
+ return `<div class="modal-overlay" id="quick-race-modal"><div class="modal quick-setup-modal quick-wizard" role="dialog" aria-modal="true" aria-labelledby="quick-title">
+ <div class="modal-header"><div><h3 id="quick-title">Quick Race</h3><p class="small muted-text" id="quick-step-label">Race setup · Step 1 of 2</p></div><button class="modal-close" onclick="document.getElementById('quick-race-modal')?.remove()">Close</button></div>
+ <div class="modal-body quick-setup-body"><div id="quick-stage-race" class="quick-race-stage">
+ <section><h4>Difficulty</h4><div class="difficulty-grid">${DIFFICULTIES.map(d=>`<button type="button" class="difficulty-card${d.id===quickRaceDifficulty?' selected':''}" data-diff="${d.id}" aria-pressed="${d.id===quickRaceDifficulty}" onclick="setQuickRaceDifficulty('${d.id}')"><span class="difficulty-name">${d.name}</span></button>`).join('')}</div><p id="quick-difficulty-hint" class="small muted-text">${summaries[quickRaceDifficulty]}</p></section>
+ <section><h4>Series</h4><div class="quick-series">${SERIES.map(s=>`<button type="button" class="quick-series-btn" data-field-size="${s.fieldSize}" aria-pressed="false" onclick="selectQuickRaceSeries(${s.fieldSize})"><span class="quick-series-name" style="--series-color:${s.color}">${s.name}</span><span class="quick-series-meta">${s.fieldSize} cars</span></button>`).join('')}</div></section>
+ <section><h4>Race settings</h4><div id="quick-race-rules">${renderRaceRuleControls(quickRaceDifficulty,quickRaceRules,'quick')}</div></section></div>
+ <div id="quick-stage-cars" hidden><div class="quick-player-toolbar"><h4>Players and cars</h4><div class="quick-player-mode" role="group" aria-label="Player mode"><button class="btn" data-players="1" aria-pressed="${quickRacePlayers===1}" onclick="setQuickRacePlayers(1)">Single player</button><button class="btn" data-players="2" aria-pressed="${quickRacePlayers===2}" onclick="setQuickRacePlayers(2)">Dual player</button></div></div>
+ <div class="quick-setup-cars">${quickRaceCars.map((car,i)=>renderCarCustomizer(car,i)).join('')}</div><p class="small muted-text quick-key-help">Player 1: A / S / D · Player 2: J / K / L · Middle key brakes</p><p class="form-warning" id="quick-number-warning" hidden>Choose a different number for each player.</p></div></div>
+ <div class="modal-footer quick-race-footer"><button type="button" class="btn btn-secondary" id="quick-back" onclick="setQuickRaceStep(1)" hidden>Back</button><button type="button" class="btn btn-primary btn-lg" id="quick-next" onclick="setQuickRaceStep(2)" disabled>Next: Players and cars</button><button type="button" class="btn btn-primary btn-lg" id="btn-quick-race-confirm" onclick="confirmQuickRace()" hidden disabled>Confirm Race</button></div></div></div>`;
 }
 
 // ─── Listeners wired after each tab render ───────────────────
@@ -8237,6 +8270,8 @@ function attachTabListeners(tabName) {
 
 function renderRaceRuleControls(difficulty,preferences={},scope='career') {
   const eligible=['semipro','pro','allout'].includes(difficulty);
+  if(scope==='quick')return `<div class="race-rule-controls compact-rules"><p class="small muted-text">${eligible?'Recoverable contact and damage.':'Available on Semi-Pro and above.'}</p>${[['crashes','Contact crashes'],['damage','Vehicle damage']].map(([key,label])=>`<label class="radio-row"><input type="checkbox" data-race-rule="${key}" ${eligible&&preferences[key]!==false?'checked':''} ${eligible?'':'disabled'} onchange="handleRaceRule('${key}',this.checked,'quick')"><span>${label}</span></label>`).join('')}</div>`;
+
   return `<div class="race-rule-controls"><p class="section-copy">${eligible ? 'Crashes recover at reduced performance. Normal front/rear drafting does not trigger side-contact crashes.' : 'Crashes and vehicle health are unavailable on Beginner and Amateur. Your preferences return on higher difficulties.'}</p>
     <label class="radio-row"><input type="checkbox" data-race-rule="crashes" ${eligible&&preferences?.crashes!==false?'checked':''} ${eligible?'':'disabled'} onchange="handleRaceRule('crashes',this.checked,'${scope}')"><span>Contact crashes<span class="form-hint">Repeated aggressive side contact can cause recoverable wrecks. Off also prevents zero-health spinouts.</span></span></label>
     <label class="radio-row"><input type="checkbox" data-race-rule="damage" ${eligible&&preferences?.damage!==false?'checked':''} ${eligible?'':'disabled'} onchange="handleRaceRule('damage',this.checked,'${scope}')"><span>Vehicle damage${scope==='career'?' and lifetime wear':''}<span class="form-hint">Hits lower race health and performance.${scope==='career'?' Repairs restore condition, not lifetime health. A typical car is intended to last about 40 races; rough treatment shortens its life.':''}</span></span></label></div>`;
@@ -11078,11 +11113,11 @@ const CAREER_TUTORIAL_STEPS = [
     copy: 'Market lets you buy more cars and manage financing. Sponsors approach after Career races; review offers in the Sponsors panel. You can drive a new car yourself or assign a hired driver to put both cars in the field.',
   },
   {
-    tab: 'market', target: '#market-loans', title: 'Borrow with a repayment plan',
-    copy: 'Loans and Financing is available from the large button at the top of Market. Each offer shows the cash received, total repayment and term in races. Borrowing is optional; check that future earnings can cover repayment.',
+    tab: 'market', marketView: 'loans', target: '#market-loans', title: 'Borrow with a repayment plan',
+    copy: 'Choose Financing at the top of Market to review loans. Each offer shows the cash received, total repayment and term in races. Borrowing is optional; check that future earnings can cover repayment.',
   },
   {
-    tab: 'market', target: '#market-loans', title: 'Understand debt and credit',
+    tab: 'market', marketView: 'loans', target: '#market-loans', title: 'Understand debt and credit',
     copy: 'You can carry up to three loans within your available credit. Reputation affects the limit and existing debt reduces it. Repay early or in parts when you have spare cash. At the deadline, the bank collects what it can; unpaid debt earns interest each race. Loans also advance when you simulate.',
   },
   {
@@ -11178,6 +11213,7 @@ function renderCareerTutorialStep() {
     handleOpenRaceWeekend();
   } else {
     showScreen('game');
+    if (step.tab === 'market') marketView = step.marketView || 'cars';
     showTab(step.tab);
   }
 
@@ -11444,6 +11480,7 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
 // ─── Quick Race ───────────────────────────────────────────────
 function showQuickRaceScreen() {
   quickRaceSeries = null;
+  quickRaceStep=1;
   document.body.insertAdjacentHTML('beforeend', renderQuickRaceModal());
 }
 
@@ -11451,13 +11488,14 @@ function showQuickRaceScreen() {
 let quickRaceDifficulty = DEFAULT_DIFFICULTY;
 const quickRaceRules={crashes:true,damage:true};
 let quickRaceSeries = null;
+let quickRaceStep=1;
 let quickRacePlayers = 1;
 const quickRaceCars = [{number: 1, color: '#e8001d'}, {number: 2, color: '#58a6ff'}];
 function setQuickRacePlayers(count) {
   quickRacePlayers = count === 2 ? 2 : 1;
   document.querySelectorAll('[data-players]').forEach(el => el.setAttribute('aria-pressed', String(Number(el.dataset.players) === quickRacePlayers)));
   document.getElementById('quick-player-2').hidden = quickRacePlayers !== 2;
-  document.getElementById('quick-number-warning').hidden = quickRacePlayers !== 2 || quickRaceCars[0].number !== quickRaceCars[1].number;
+  refreshQuickRaceNumberWarning();
 }
 function setQuickRaceCar(index, key, value) {
   const car = quickRaceCars[index];
@@ -11469,13 +11507,16 @@ function setQuickRaceCar(index, key, value) {
   root.outerHTML = renderCarCustomizer(car,index);
   refreshQuickRaceNumberWarning();
 }
-function refreshQuickRaceNumberWarning(){
-  document.getElementById('quick-number-warning').hidden = quickRacePlayers !== 2 || quickRaceCars[0].number !== quickRaceCars[1].number;
+function refreshQuickRaceNumberWarning() {
+  const duplicate = quickRacePlayers === 2 && quickRaceCars[0].number === quickRaceCars[1].number;
+  document.getElementById('quick-number-warning').hidden = !duplicate;
+  document.querySelector('.quick-key-help').hidden = duplicate;
 }
 
 
 function setQuickRaceDifficulty(id) {
   quickRaceDifficulty = id;
+  const hint=document.getElementById('quick-difficulty-hint');if(hint)hint.textContent={beginner:'Learn the draft.',amateur:'Find your rhythm.',semipro:'Keep the tow.',pro:'Earn every position.',allout:'Maximum competition.'}[id];
   const ruleRoot=document.getElementById("quick-race-rules");if(ruleRoot) ruleRoot.innerHTML=renderRaceRuleControls(id,quickRaceRules,"quick");
   document.querySelectorAll('#quick-race-modal .difficulty-card').forEach(el => {
     el.classList.toggle('selected', el.dataset.diff === id);
@@ -11490,15 +11531,16 @@ function selectQuickRaceSeries(fieldSize) {
     el.classList.toggle('selected', selected);
     el.setAttribute('aria-pressed', String(selected));
   });
+  const next=document.getElementById('quick-next');if(next)next.disabled=false;
   const confirmButton = document.getElementById('btn-quick-race-confirm');
   if (confirmButton) confirmButton.disabled = false;
 }
 
 function confirmQuickRace() {
-  if (quickRaceSeries === null) return;
+  if (quickRaceSeries === null || quickRaceStep!==2) return;
   if (quickRacePlayers === 2 && quickRaceCars[0].number === quickRaceCars[1].number) {
-    document.getElementById('quick-number-warning').hidden = false;
-    document.querySelector('#quick-player-2 input').focus();
+    refreshQuickRaceNumberWarning();
+    document.querySelector('#quick-player-2 button').focus();
     return;
   }
   handleStartQuickRace(quickRaceSeries);
@@ -12305,6 +12347,19 @@ function closeVehicleModal(id) {
 }
 
 async function handleRepairAll(){const cost=game.cars.reduce((n,c)=>n+carRepairCost(c),0);if(!await gameConfirm(`Repair all damaged cars for ${fmt$(cost)}? Lifetime health will not change.`))return;const r=repairAllCars();if(!r.ok){toast(r.msg,'error');return;}updateHeader();renderTab('garage');toast(`${r.count} cars repaired for ${fmt$(r.cost)}.`,'success');}
+
+function setQuickRaceStep(step) {
+  if (step === 2 && quickRaceSeries === null) return;
+  quickRaceStep = step === 2 ? 2 : 1;
+  document.getElementById('quick-stage-race').hidden = quickRaceStep !== 1;
+  document.getElementById('quick-stage-cars').hidden = quickRaceStep !== 2;
+  document.getElementById('quick-next').hidden = quickRaceStep !== 1;
+  document.getElementById('quick-back').hidden = quickRaceStep !== 2;
+  document.getElementById('btn-quick-race-confirm').hidden = quickRaceStep !== 2;
+  document.getElementById('quick-step-label').textContent = quickRaceStep === 1
+    ? 'Race setup · Step 1 of 2' : 'Players and cars · Step 2 of 2';
+  document.getElementById(quickRaceStep === 2 ? 'btn-quick-race-confirm' : 'quick-next').focus();
+}
 
 </script>
 

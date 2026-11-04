@@ -22,11 +22,11 @@ const CAREER_TUTORIAL_STEPS = [
     copy: 'Market lets you buy more cars and manage financing. Sponsors approach after Career races; review offers in the Sponsors panel. You can drive a new car yourself or assign a hired driver to put both cars in the field.',
   },
   {
-    tab: 'market', target: '#market-loans', title: 'Borrow with a repayment plan',
-    copy: 'Loans and Financing is available from the large button at the top of Market. Each offer shows the cash received, total repayment and term in races. Borrowing is optional; check that future earnings can cover repayment.',
+    tab: 'market', marketView: 'loans', target: '#market-loans', title: 'Borrow with a repayment plan',
+    copy: 'Choose Financing at the top of Market to review loans. Each offer shows the cash received, total repayment and term in races. Borrowing is optional; check that future earnings can cover repayment.',
   },
   {
-    tab: 'market', target: '#market-loans', title: 'Understand debt and credit',
+    tab: 'market', marketView: 'loans', target: '#market-loans', title: 'Understand debt and credit',
     copy: 'You can carry up to three loans within your available credit. Reputation affects the limit and existing debt reduces it. Repay early or in parts when you have spare cash. At the deadline, the bank collects what it can; unpaid debt earns interest each race. Loans also advance when you simulate.',
   },
   {
@@ -122,6 +122,7 @@ function renderCareerTutorialStep() {
     handleOpenRaceWeekend();
   } else {
     showScreen('game');
+    if (step.tab === 'market') marketView = step.marketView || 'cars';
     showTab(step.tab);
   }
 

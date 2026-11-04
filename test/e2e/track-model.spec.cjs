@@ -26,7 +26,7 @@ for (const [label, viewport, dpr] of [
       ? pathToFileURL(path.resolve(__dirname, '../../index.html')).href : '/');
     await page.locator('#btn-quick-race').click();
     await page.locator('.quick-series-btn').last().click();
-    await page.locator("#btn-quick-race-confirm").click();
+    if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator("#btn-quick-race-confirm").click();
     await page.waitForFunction(() => {
       const group = window._r3d?.trackGroup;
       return group && window._r3d.mirrorRT && window._r3d.racing && !window._r3d.paceMode && group.children.every(m =>

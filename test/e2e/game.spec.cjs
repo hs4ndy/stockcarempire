@@ -209,7 +209,7 @@ test('rear-view mirror stays readable and renders correctly across five real 3D 
     await page.goto('/');
     await page.locator('#btn-quick-race').click();
     await page.locator('.quick-series-btn').first().click();
-    await page.locator("#btn-quick-race-confirm").click();
+    if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator("#btn-quick-race-confirm").click();
 
     await expect(page.locator('#r3d-canvas')).toBeVisible();
     await expect(page.locator('#r3d-mirror-wrap')).toBeVisible();

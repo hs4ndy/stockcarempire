@@ -10,7 +10,7 @@ for (const [series, name] of [[0, 'Grassroots'], [1, 'Challenger'], [2, 'Premier
     await page.goto(process.env.STOCKCAR_TEST_FILE ? pathToFileURL(path.resolve(process.env.STOCKCAR_TEST_FILE)).href : '/');
     await page.locator('#btn-quick-race').click();
     await page.locator('.quick-series-btn').nth(series).click();
-    await page.locator('#btn-quick-race-confirm').click();
+    if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator('#btn-quick-race-confirm').click();
     await page.waitForFunction(() => window._r3d?.mirrorRT);
     // Freeze physics while leaving the real camera and WebGL render loop active.
     const lateral = await page.evaluate(() => {

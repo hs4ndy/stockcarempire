@@ -325,7 +325,7 @@ function renderGarage() {
     const driverName = seatDrv
       ? `${seatDrv.name} (Skill ${Math.floor(hiredDriverSkill(seat))})`
       : car.assignedDriverId === 'player'
-        ? `${game.driverName || 'You'} (Skill ${Math.round(game.playerSkill)})`
+        ? `${game.driverName || 'You'} (${Math.round(game.playerSkill)} OVR)`
         : 'No driver assigned';
     const noDriver = !seatDrv && car.assignedDriverId !== 'player';
 
@@ -465,13 +465,16 @@ function showTeamView(view) {
   document.querySelector(`[data-team-view="${teamView}"]`)?.focus({ preventScroll: true });
 }
 
+let driverRecruitSort='rating';
+function sortDriverRecruitment(value){driverRecruitSort=value;renderTab('team');document.getElementById('driver-sort')?.focus();}
+function filterDriverRecruitment(value){const query=value.trim().toLowerCase();let count=0;document.querySelectorAll('[data-driver-candidate]').forEach(el=>{el.hidden=!el.dataset.driverName.includes(query);if(!el.hidden)count++;});document.getElementById('driver-results').textContent=`${count} drivers available`;}
 function renderTeam() {
   const hiredIds = new Set(game.hiredDrivers.map(h => h.driverId));
   const playerCar = game.cars.find(c => c.assignedDriverId === 'player');
   const playerRow = playerCar ? `<div class="staff-row">
     <div class="staff-info"><span class="staff-name">${game.driverName} <span class="muted-text small">(You)</span></span>
       <span class="staff-meta">#${playerCar.number || 1} ${playerCar.name}</span>
-      <span class="staff-meta">Skill ${Math.round(game.playerSkill)}</span>
+      <span class="staff-meta">${Math.round(game.playerSkill)} OVR</span>
     </div>
   </div>` : '';
 
@@ -487,8 +490,8 @@ function renderTeam() {
       <div class="staff-info">
         <span class="staff-name">${d.name}</span>
         <div class="staff-meta">
-          Skill ${Math.floor(skill)}${gained > 0 ? ` <span class="green">+${gained}</span>` : ''}
-          · ${fmt$(h.weeklyCost)}/week
+          ${Math.floor(skill)} OVR${gained > 0 ? ` <span class="green">+${gained}</span>` : ''}
+          · ${fmt$(h.weeklyCost)} per race
         </div>
         <div class="staff-meta muted-text">
           ${car ? `#${car.number || 1} ${car.name}` : 'Unassigned'}
@@ -516,7 +519,7 @@ function renderTeam() {
     </div>`;
   }).join('') || '<p class="team-empty">No support staff yet. Recruit a specialist to improve your team.</p>';
 
-  const availableDrivers = HIREABLE_DRIVERS.filter(d => !hiredIds.has(d.id));
+  const availableDrivers = HIREABLE_DRIVERS.filter(d => !hiredIds.has(d.id)).sort((a,b)=>driverRecruitSort==='price'?a.weeklyCost-b.weeklyCost:b.skill-a.skill);
   const openSeats = freeCarsForHire().length;
   const seatWarning = game.cars.length === 0
     ? `<p class="form-warning">No car - buy a car before hiring a driver.</p>`
@@ -530,12 +533,12 @@ function renderTeam() {
     const disabledReason = game.hiredDrivers.length >= MAX_HIRED_DRIVERS ? 'Driver Limit Reached'
       : openSeats === 0 ? 'No Free Car' : (game.reputation || 0) < (d.minReputation || 0) ? `Requires ${d.minReputation} Reputation` : !canAfford ? 'Not Enough Cash' : '';
 
-    return `<div class="staff-row">
+    return `<div class="staff-row" data-driver-candidate="${d.id}" data-driver-name="${careerArchiveEscape(d.name.toLowerCase())}">
       <div class="staff-info">
-        <span class="staff-name">${d.name}</span>
-        <div class="staff-meta">Skill ${d.skill} • Aggression ${d.aggression}</div>
+        <span class="staff-name">${d.name} <span class="staff-ovr">${d.skill} OVR</span></span>
+        <div class="staff-meta">${d.aggression>=75?'Aggressive racer':d.aggression<=50?'Measured racer':'Balanced racer'}</div>
       </div>
-      <div class="recruit-cost"><strong><span class="recruit-cost-label">Signing fee </span>${fmt$(signingFee)}</strong><span>${fmt$(d.weeklyCost)}/week</span></div>
+      <div class="recruit-cost"><strong><span class="recruit-cost-label">Signing fee </span>${fmt$(signingFee)}</strong><span>${fmt$(d.weeklyCost)} per race</span></div>
       ${!disabledReason ? `<button class="btn btn-sm btn-primary" aria-label="Hire ${d.name}" onclick="openHireDriverModal('${d.id}')">Hire</button>`
                   : `<button class="btn btn-sm" disabled>${disabledReason}</button>`}
     </div>`;
@@ -561,7 +564,7 @@ function renderTeam() {
   }).join('') || '<p class="team-empty">No available specialists in this role.</p>';
 
   return `
-  <div class="page-header"><h2>Team Management</h2><p>${game.teamName}</p></div>
+  <div class="page-header"><h2>Team</h2><p>${openSeats} open seat${openSeats===1?'':'s'} · ${fmt$(game.money)} available</p></div>
   <div class="team-toolbar">
     <div class="team-views" role="group" aria-label="Manage team members">
       <button class="btn ${teamView === 'drivers' ? 'team-view-active' : 'btn-ghost'}" data-team-view="drivers" aria-pressed="${teamView === 'drivers'}" onclick="showTeamView('drivers')">Drivers</button>
@@ -576,10 +579,11 @@ function renderTeam() {
     </section>
     <section class="card team-recruitment" aria-labelledby="team-recruitment-title">
       <h3 class="card-header" id="team-recruitment-title">${teamView === 'drivers' ? 'Recruit Drivers' : 'Recruit Support Staff'}</h3>
-      <p class="section-copy">Signing fees are paid upfront. Salaries are paid each race.</p>
+      <p class="section-copy">One signing fee upfront. Salary each race.</p>
       ${teamView === 'drivers' ? seatWarning : ''}
-      <p class="recruitment-caption"><span>${teamView === 'drivers' ? `${availableDrivers.length} available · ${game.hiredDrivers.length}/${MAX_HIRED_DRIVERS} hired` : `${filteredStaff.length} specialists available`}</span><span>Scroll to browse</span></p>
+      <p class="recruitment-caption"><span>${teamView === 'drivers' ? `${availableDrivers.length} available · ${game.hiredDrivers.length}/${MAX_HIRED_DRIVERS} hired` : `${filteredStaff.length} specialists available`}</span><span>${teamView==='drivers'?'OVR reflects driving skill':'Specialists improve your team'}</span></p>
       ${teamView === 'staff' ? `<div class="staff-filter"><label for="staff-role-filter">Staff role</label><select class="form-select" id="staff-role-filter" onchange="showStaffRole(this.value)"><option value="all">All roles</option>${STAFF_TYPES.map(t=>`<option value="${t.id}" ${staffRoleFilter===t.id?'selected':''}>${t.name}</option>`).join('')}</select></div>` : ''}
+      ${teamView==='drivers'?`<div class="driver-browse"><label>Find a driver<input type="search" placeholder="Search by name" oninput="filterDriverRecruitment(this.value)"></label><label>Sort by<select id="driver-sort" class="form-select" onchange="sortDriverRecruitment(this.value)"><option value="rating" ${driverRecruitSort==='rating'?'selected':''}>Highest OVR</option><option value="price" ${driverRecruitSort==='price'?'selected':''}>Lowest signing fee</option></select></label></div><p id="driver-results" class="small muted-text">${availableDrivers.length} drivers available</p>`:''}
       <div class="recruitment-columns" aria-hidden="true"><span>${teamView === 'drivers' ? 'Driver' : 'Specialist'}</span><span>Signing fee / salary</span><span></span></div>
       <div class="recruitment-list" tabindex="0" aria-label="${teamView === 'drivers' ? 'Available drivers' : 'Available support staff'}">${teamView === 'drivers' ? driverRows : staffHireRows}</div>
     </section>
@@ -603,9 +607,9 @@ function renderHireDriverModal(driverId) {
     <div class="modal" onclick="event.stopPropagation()">
       <div class="modal-header"><h3>Hire ${d.name}</h3><button class="modal-close" onclick="closeHireModal()">Close</button></div>
       <div class="modal-body">
-        <p>Skill: ${d.skill} | Aggression: ${d.aggression}</p>
-        <p>${fmt$(d.weeklyCost)}/week | Signing fee: ${fmt$(d.weeklyCost*4)}</p>
-        <label class="form-label">Assign to car:</label>
+        <p>${d.skill} OVR · Aggression ${d.aggression}</p>
+        <p>${fmt$(d.weeklyCost)} per race | Signing fee: ${fmt$(d.weeklyCost*4)}</p>
+        <label class="form-label" for="hire-car-select">Assign to car</label>
         <select id="hire-car-select" class="form-select">${carOpts}</select>
         <div class="btn-row mt">
           <button class="btn btn-primary" onclick="confirmHireDriver('${driverId}')">Hire Driver</button>
@@ -665,6 +669,8 @@ function renderSchedule() {
 }
 
 // ─── Market ──────────────────────────────────────────────────
+let marketView='cars';
+function showMarketView(view){marketView=['cars','loans','charity'].includes(view)?view:'cars';renderTab('market');document.querySelector(`[data-market-view="${marketView}"]`)?.focus({preventScroll:true});}
 function renderMarket() {
   const series   = SERIES[game.currentSeries];
   const cls      = CAR_CLASSES[series.carClass];
@@ -772,11 +778,7 @@ function renderMarket() {
       </details>
     </div>`;
 
-  return `
-  <div class="page-header"><h2>Market</h2><button class="btn btn-primary" onclick="document.getElementById('market-loans').scrollIntoView({block: 'start'})">Loans and Financing</button></div>
-  <div class="two-col-grid">
-    <div>
-      <div class="card">
+  const buyCard=`<div class="card">
         <div class="card-header">Buy a Car</div>
         <p class="section-copy">${cls.description}</p>
         <div class="team-stat"><span>Cost</span><span class="highlight">${fmt$(cls.buyCost)}</span></div>
@@ -795,13 +797,9 @@ function renderMarket() {
           : canBuy
             ? `<button class="btn btn-primary mt" onclick="handleBuyCar()">Buy Car (${fmt$(cls.buyCost)})</button>`
             : `<button class="btn mt" disabled>Not enough money (need ${fmt$(cls.buyCost)})</button>`}
-      </div>
-      ${bankCard}
-    </div>
-    <div>
-      ${charityCard}
-    </div>
-  </div>`;
+      </div>`;
+  return `<div class="page-header"><h2>Market</h2><p>${series.name}</p></div><nav class="market-tabs team-views" aria-label="Market sections">${[['cars','Cars'],['loans','Financing'],['charity','Charity']].map(([id,label])=>`<button class="btn ${marketView===id?'team-view-active':'btn-ghost'}" data-market-view="${id}" aria-pressed="${marketView===id}" onclick="showMarketView('${id}')">${label}</button>`).join('')}</nav><div class="market-workspace">${marketView==='cars'?`<div class="market-cars">${buyCard}<aside class="market-finance-summary"><h3>Room for your next car</h3><p class="section-copy">${game.cars.length} of ${MAX_TEAM_CARS} garage spaces used.</p><div class="team-stat"><span>Available credit</span><strong class="green">${fmt$(avail)}</strong></div><div class="team-stat"><span>Outstanding debt</span><strong>${fmt$(debt)}</strong></div><button class="btn btn-secondary" onclick="showMarketView('loans')">View loan options</button></aside></div>`:marketView==='loans'?bankCard:charityCard}</div>`;
+
 }
 
 // ─── Standings ───────────────────────────────────────────────
@@ -1337,7 +1335,7 @@ function renderCarCustomizer(car, i, career = false) {
   const id = career ? `career-custom-${car.id}` : `quick-player-${i+1}`;
   const prefix = career ? `setCareerCarAppearance('${car.id}',` : `setQuickRaceCar(${i},`;
   const color = car.color || '#e8001d', number = car.number || 1;
-  if(!career)return `<section class="quick-car-editor" id="${id}" ${i===1&&quickRacePlayers===1?'hidden':''}><h4>Player ${i+1}</h4><div class="quick-car-preview" style="--car-color:${color}" aria-hidden="true"><strong style="color:${carAppearance(car).numberColor}">${String(number).padStart(2,'0')}</strong></div><p class="muted-text small">Choose your number, paint, stripes and number color in Car Studio.</p><button class="btn btn-primary car-studio-open" onclick="openCarStudio('quick',${i})">Customize Car</button></section>`;
+  if(!career)return `<section class="quick-car-editor" id="${id}" ${i===1&&quickRacePlayers===1?'hidden':''}><h4>Player ${i+1}</h4><div class="quick-car-preview" style="--car-color:${color}" aria-hidden="true"><strong style="color:${carAppearance(car).numberColor}">${String(number).padStart(2,'0')}</strong></div><p class="muted-text small">Number, paint and stripes.</p><button class="btn btn-primary car-studio-open" onclick="openCarStudio('quick',${i})">Customize Car</button></section>`;
   return `<section class="quick-car-editor" id="${id}" ${!career && i === 1 && quickRacePlayers === 1 ? 'hidden' : ''}>
     <h4>${career ? 'Car appearance' : `Player ${i+1}`}</h4>
     ${!career?`<button class="btn btn-primary" onclick="openCarStudio('quick',${i})">Customize Car</button>`:''}
@@ -1355,48 +1353,16 @@ function renderCarCustomizer(car, i, career = false) {
 }
 
 function renderQuickRaceModal() {
-  return `
-  <div class="modal-overlay" id="quick-race-modal">
-    <div class="modal quick-setup-modal">
-      <div class="modal-header">
-        <h3>Quick Race</h3>
-        <button class="modal-close" onclick="document.getElementById('quick-race-modal')?.remove()">Close</button>
-      </div>
-      <div class="modal-body quick-setup-body">
-        <p class="quick-setup-intro">Build your race. Pick your challenge, choose a series, and make the car yours. No career consequences.</p>
-        <div class="quick-setup-grid"><section class="quick-setup-section" aria-labelledby="quick-difficulty-title">
-        <h4 id="quick-difficulty-title">Difficulty</h4>
-        <div class="difficulty-grid">
-          ${DIFFICULTIES.map(d => `
-            <button type="button" class="difficulty-card${d.id === quickRaceDifficulty ? ' selected' : ''}"
-                 data-diff="${d.id}" aria-pressed="${d.id === quickRaceDifficulty}" onclick="setQuickRaceDifficulty('${d.id}')">
-              <span class="difficulty-name">${d.name}</span>
-              <span class="difficulty-blurb">${d.blurb}</span>
-            </button>`).join('')}
-        </div>
-        </section><section class="quick-setup-section" aria-labelledby="quick-series-title"><h4 id="quick-series-title">Series</h4>
-        <div class="quick-series">
-          ${SERIES.map(s => `
-            <button type="button" class="quick-series-btn" data-field-size="${s.fieldSize}" aria-pressed="false" onclick="selectQuickRaceSeries(${s.fieldSize})">
-              <span class="quick-series-name" style="--series-color:${s.color}">${s.name}</span>
-              <span class="quick-series-meta">${s.fieldSize}-car field · ${s.description}</span>
-            </button>`).join('')}
-        </div>
-        </section><section class="quick-setup-section quick-setup-settings" aria-labelledby="quick-settings-title"><h4 id="quick-settings-title">Settings</h4><section id="quick-race-rules">${renderRaceRuleControls(quickRaceDifficulty,quickRaceRules,'quick')}</section>
-        </section><section class="quick-setup-section quick-setup-drivers" aria-labelledby="quick-players-title"><h4 id="quick-players-title">Players and Cars</h4>
-        <div class="quick-player-mode" role="group" aria-label="Player mode">
-          <button class="btn" data-players="1" aria-pressed="${quickRacePlayers === 1}" onclick="setQuickRacePlayers(1)">Single player</button>
-          <button class="btn" data-players="2" aria-pressed="${quickRacePlayers === 2}" onclick="setQuickRacePlayers(2)">Dual player</button>
-        </div>
-        <p class="section-copy">Player 1: A / S / D. Player 2: J / K / L.<br>Middle key brakes. Auto acceleration.</p>
-        <div class="quick-setup-cars">${quickRaceCars.map((car, i) => renderCarCustomizer(car, i)).join('')}</div>
-        <p class="form-warning" id="quick-number-warning" hidden>Choose a different number for each player.</p></section></div>
-      </div>
-      <div class="modal-footer quick-race-footer">
-        <button type="button" class="btn btn-primary btn-lg" id="btn-quick-race-confirm" onclick="confirmQuickRace()" disabled>Confirm Race</button>
-      </div>
-    </div>
-  </div>`;
+ const summaries={beginner:'Learn the draft.',amateur:'Find your rhythm.',semipro:'Keep the tow.',pro:'Earn every position.',allout:'Maximum competition.'};
+ return `<div class="modal-overlay" id="quick-race-modal"><div class="modal quick-setup-modal quick-wizard" role="dialog" aria-modal="true" aria-labelledby="quick-title">
+ <div class="modal-header"><div><h3 id="quick-title">Quick Race</h3><p class="small muted-text" id="quick-step-label">Race setup · Step 1 of 2</p></div><button class="modal-close" onclick="document.getElementById('quick-race-modal')?.remove()">Close</button></div>
+ <div class="modal-body quick-setup-body"><div id="quick-stage-race" class="quick-race-stage">
+ <section><h4>Difficulty</h4><div class="difficulty-grid">${DIFFICULTIES.map(d=>`<button type="button" class="difficulty-card${d.id===quickRaceDifficulty?' selected':''}" data-diff="${d.id}" aria-pressed="${d.id===quickRaceDifficulty}" onclick="setQuickRaceDifficulty('${d.id}')"><span class="difficulty-name">${d.name}</span></button>`).join('')}</div><p id="quick-difficulty-hint" class="small muted-text">${summaries[quickRaceDifficulty]}</p></section>
+ <section><h4>Series</h4><div class="quick-series">${SERIES.map(s=>`<button type="button" class="quick-series-btn" data-field-size="${s.fieldSize}" aria-pressed="false" onclick="selectQuickRaceSeries(${s.fieldSize})"><span class="quick-series-name" style="--series-color:${s.color}">${s.name}</span><span class="quick-series-meta">${s.fieldSize} cars</span></button>`).join('')}</div></section>
+ <section><h4>Race settings</h4><div id="quick-race-rules">${renderRaceRuleControls(quickRaceDifficulty,quickRaceRules,'quick')}</div></section></div>
+ <div id="quick-stage-cars" hidden><div class="quick-player-toolbar"><h4>Players and cars</h4><div class="quick-player-mode" role="group" aria-label="Player mode"><button class="btn" data-players="1" aria-pressed="${quickRacePlayers===1}" onclick="setQuickRacePlayers(1)">Single player</button><button class="btn" data-players="2" aria-pressed="${quickRacePlayers===2}" onclick="setQuickRacePlayers(2)">Dual player</button></div></div>
+ <div class="quick-setup-cars">${quickRaceCars.map((car,i)=>renderCarCustomizer(car,i)).join('')}</div><p class="small muted-text quick-key-help">Player 1: A / S / D · Player 2: J / K / L · Middle key brakes</p><p class="form-warning" id="quick-number-warning" hidden>Choose a different number for each player.</p></div></div>
+ <div class="modal-footer quick-race-footer"><button type="button" class="btn btn-secondary" id="quick-back" onclick="setQuickRaceStep(1)" hidden>Back</button><button type="button" class="btn btn-primary btn-lg" id="quick-next" onclick="setQuickRaceStep(2)" disabled>Next: Players and cars</button><button type="button" class="btn btn-primary btn-lg" id="btn-quick-race-confirm" onclick="confirmQuickRace()" hidden disabled>Confirm Race</button></div></div></div>`;
 }
 
 // ─── Listeners wired after each tab render ───────────────────
@@ -1406,6 +1372,8 @@ function attachTabListeners(tabName) {
 
 function renderRaceRuleControls(difficulty,preferences={},scope='career') {
   const eligible=['semipro','pro','allout'].includes(difficulty);
+  if(scope==='quick')return `<div class="race-rule-controls compact-rules"><p class="small muted-text">${eligible?'Recoverable contact and damage.':'Available on Semi-Pro and above.'}</p>${[['crashes','Contact crashes'],['damage','Vehicle damage']].map(([key,label])=>`<label class="radio-row"><input type="checkbox" data-race-rule="${key}" ${eligible&&preferences[key]!==false?'checked':''} ${eligible?'':'disabled'} onchange="handleRaceRule('${key}',this.checked,'quick')"><span>${label}</span></label>`).join('')}</div>`;
+
   return `<div class="race-rule-controls"><p class="section-copy">${eligible ? 'Crashes recover at reduced performance. Normal front/rear drafting does not trigger side-contact crashes.' : 'Crashes and vehicle health are unavailable on Beginner and Amateur. Your preferences return on higher difficulties.'}</p>
     <label class="radio-row"><input type="checkbox" data-race-rule="crashes" ${eligible&&preferences?.crashes!==false?'checked':''} ${eligible?'':'disabled'} onchange="handleRaceRule('crashes',this.checked,'${scope}')"><span>Contact crashes<span class="form-hint">Repeated aggressive side contact can cause recoverable wrecks. Off also prevents zero-health spinouts.</span></span></label>
     <label class="radio-row"><input type="checkbox" data-race-rule="damage" ${eligible&&preferences?.damage!==false?'checked':''} ${eligible?'':'disabled'} onchange="handleRaceRule('damage',this.checked,'${scope}')"><span>Vehicle damage${scope==='career'?' and lifetime wear':''}<span class="form-hint">Hits lower race health and performance.${scope==='career'?' Repairs restore condition, not lifetime health. A typical car is intended to last about 40 races; rough treatment shortens its life.':''}</span></span></label></div>`;

@@ -10,7 +10,7 @@ for(const series of [0,1,2]) for(const broken of [false,true]) {
       const body=fs.readFileSync(path.resolve(__dirname,'../..',file),'utf8').replace(/("speedway-asphalt"\s*:\s*")[^"]+/, '$1data:image/png;base64,broken');
       await page.route('**/'+file,r=>r.fulfill({body,contentType:'application/javascript'}));
     }
-    await page.goto('/');await page.locator('#btn-quick-race').click();await page.locator('.quick-series-btn').nth(series).click();await page.locator('#btn-quick-race-confirm').click();
+    await page.goto('/');await page.locator('#btn-quick-race').click();await page.locator('.quick-series-btn').nth(series).click();if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator('#btn-quick-race-confirm').click();
     await page.waitForFunction(()=>window._r3d?.trackGroup.getObjectByName('track:asphalt').material.map.userData.loadState!=='loading' && window._r3d?.mirrorRT);
     const report=await page.evaluate(()=>{
       const e=window._r3d,r=e.renderer;cancelAnimationFrame(e._raf);e.done=true;

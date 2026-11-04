@@ -84,7 +84,7 @@ for (const [name, viewport] of [
     await page.goto('/');
     await page.locator('#btn-quick-race').click();
     await page.locator('.quick-series-btn').last().click();
-    await page.locator("#btn-quick-race-confirm").click();
+    if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator("#btn-quick-race-confirm").click();
     await page.waitForFunction(() => window._r3d?.racing);
     await page.evaluate(() => {
       cancelAnimationFrame(window._r3d._raf);

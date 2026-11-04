@@ -14,7 +14,7 @@ test('standalone game launches directly from a local file without network assets
   await page.goto(standalone);
   await page.locator('#btn-quick-race').click();
   await page.locator('.quick-series-btn').first().click();
-  await page.locator("#btn-quick-race-confirm").click();
+  if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator("#btn-quick-race-confirm").click();
   await page.waitForFunction(() => window._r3d?.racing && window._r3d?.mirrorRT);
 
   const report = await page.evaluate(() => {

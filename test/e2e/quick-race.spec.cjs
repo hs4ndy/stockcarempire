@@ -9,7 +9,7 @@ test('quick race confirmation starts the playable race', async ({ page }) => {
   await page.locator('[data-diff="beginner"]').click();
   await page.locator('.quick-series-btn').first().click();
   expect(await page.evaluate(() => Boolean(window._r3d?.racing))).toBe(false);
-  await page.locator('#btn-quick-race-confirm').click();
+  if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator('#btn-quick-race-confirm').click();
   await page.waitForFunction(() => window._r3d?.racing);
   await expect(page.locator('#quick-race-modal')).toHaveCount(0);
   await expect(page.locator('#race-3d-container canvas').first()).toBeVisible();
@@ -40,6 +40,7 @@ for (const [name, viewport] of [
     await expect(page.locator('.quick-series-btn[aria-pressed="true"]')).toHaveCount(1);
     await expect(page.locator('.quick-series-btn').last()).toHaveAttribute('aria-pressed', 'true');
     expect(await page.evaluate(() => window.quickRaceLaunches.length)).toBe(0);
+    await page.locator('#quick-next').click();
     await expect(confirm).toBeEnabled();
     await expect(confirm).toBeVisible();
     await expect(confirm).toHaveClass(/\bbtn-primary\b/);
@@ -64,8 +65,8 @@ for (const [name, viewport] of [
         overflow: document.documentElement.scrollWidth > innerWidth,
       };
     });
-    expect(layout.width).toBeCloseTo(layout.available, 0);
-    expect(layout.height).toBeGreaterThanOrEqual(52);
+    expect(layout.width).toBeCloseTo(layout.available - 132, 0);
+    expect(layout.height).toBeGreaterThanOrEqual(44);
     expect(layout.visible).toBe(true);
     expect(layout.background).toBe('rgb(201, 31, 57)');
     expect(layout.selectionBackground).toBe('rgb(245, 245, 242)');

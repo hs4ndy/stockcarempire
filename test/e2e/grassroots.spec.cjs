@@ -13,7 +13,7 @@ test('Grassroots has its own track, legacy cars and 90-percent player and AI pac
     await page.goto('/');
     await page.locator('#btn-quick-race').click();
     await page.locator('.quick-series-btn').nth(series).click();
-    await page.locator("#btn-quick-race-confirm").click();
+    if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator("#btn-quick-race-confirm").click();
     await page.waitForFunction(() => window._r3d?.mirrorRT && window._r3d.trackGroup.children.every(m =>
       !m.material.map || m.material.map.image?.complete && m.material.map.image.naturalWidth > 0));
     const report = await page.evaluate(() => {
@@ -80,7 +80,7 @@ test('Grassroots has its own track, legacy cars and 90-percent player and AI pac
   await page.goto(pathToFileURL(path.resolve(__dirname, '../../index.html')).href);
   await page.locator('#btn-quick-race').click();
   await page.locator('.quick-series-btn').first().click();
-  await page.locator("#btn-quick-race-confirm").click();
+  if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator("#btn-quick-race-confirm").click();
   await page.waitForFunction(() => window._r3d?.trackGroup.children.every(m =>
     !m.material.map || m.material.map.image?.complete && m.material.map.image.naturalWidth > 0));
   await page.evaluate(() => window._r3d.destroy());

@@ -228,7 +228,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .team-recruitment .staff-row, .recruitment-columns { display: grid; grid-template-columns: minmax(0, 1fr) 128px 144px; gap: 20px; }
 .recruitment-columns { color: var(--text-mute); font-size: 12px; padding-top: 12px; }
 .team-recruitment .staff-row { align-items: center; }
-.recruit-cost { display: flex; flex-direction: column; gap: 4px; font-size: 15px; }
+.recruit-cost { position:relative; display: flex; flex-direction: column; gap: 4px; font-size: 15px; }
 .recruit-cost strong { font-weight: 600; }
 .recruit-cost .recruit-cost-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .recruit-cost span { color: var(--text-dim); font-size: 14px; }
@@ -978,71 +978,6 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .modal-footer .hall-of-fame-button { width: 100%; background: transparent; border: 1px solid var(--line-2); color: var(--text); }
 .modal-footer .hall-of-fame-button:hover { background: var(--panel-2); border-color: var(--text-dim); }
 
-/* Quick Race: horizontal setup desk, within the established sports-career system. */
-#quick-race-modal .quick-setup-modal { width: min(1280px, 96vw); max-width: 1280px; }
-.quick-setup-intro { color: var(--text-dim); margin-bottom: 28px; max-width: 75ch; }
-.quick-setup-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.1fr); gap: 28px; align-items: start; }
-.quick-setup-section { min-width: 0; }
-.quick-setup-section + .quick-setup-section { border-left: 1px solid var(--line); padding-left: 28px; }
-.quick-setup-section > h4 { font: 700 26px var(--font-display); margin: 0 0 20px; }
-#quick-race-modal .difficulty-grid { grid-template-columns: 1fr; margin-top: 0; gap: 8px; }
-#quick-race-modal .difficulty-card { padding: 12px 16px; min-height: 64px; }
-#quick-race-modal .difficulty-name { font-size: 17px; }
-#quick-race-modal .difficulty-blurb { font-size: 14px; line-height: 1.4; }
-#quick-race-modal .quick-series { margin-top: 0; gap: 10px; }
-#quick-race-modal .quick-series-btn { padding: 16px; min-height: 90px; }
-#quick-race-modal .quick-series-name { font-size: 17px; }
-#quick-race-modal .quick-car-editor { padding: 20px 0 0; margin-top: 20px; }
-#quick-race-modal .quick-car-editor h4 { font-size: 17px; }
-#quick-race-modal .quick-car-controls { gap: 16px; }
-#quick-race-modal .quick-car-preview { height: 88px; }
-#quick-race-modal .quick-player-mode { display: flex; gap: 8px; }
-#quick-race-modal .quick-player-mode .btn { flex: 1; padding-inline: 10px; min-height: 44px; }
-#quick-race-modal .quick-setup-drivers .section-copy { padding: 12px 0 0; }
-#quick-race-modal .quick-race-footer { padding-block: 16px; }
-@media (min-width: 601px) and (max-width: 960px) {
- .quick-setup-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
- .quick-setup-drivers { grid-column: 1 / -1; }
- .quick-setup-section.quick-setup-drivers { border-left: 0; border-top: 1px solid var(--line); padding: 24px 0 0; }
- .quick-setup-cars { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px; }
-}
-@media (max-width: 600px) {
- .quick-setup-grid { grid-template-columns: 1fr; gap: 28px; }
- .quick-setup-section + .quick-setup-section { border-left: 0; border-top: 1px solid var(--line); padding: 24px 0 0; }
- .quick-setup-intro { margin-bottom: 24px; }
- #quick-race-modal .difficulty-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
-}
-
-/* Equal choice tiles and a wider, shallower four-column setup. */
-#quick-race-modal .quick-setup-modal { width: min(1540px, 96vw); max-width: 1540px; max-height: min(820px, calc(100svh - 32px)); }
-.quick-setup-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px; }
-.quick-setup-section + .quick-setup-section { border-left: 0; padding-left: 0; }
-#quick-race-modal .difficulty-grid { grid-auto-rows: 1fr; }
-#quick-race-modal .difficulty-card { min-height: 96px; height: 100%; }
-#quick-race-modal .quick-series { display: grid; grid-auto-rows: 1fr; }
-#quick-race-modal .quick-series-btn { min-height: 96px; height: 100%; }
-.quick-setup-intro { margin-bottom: 20px; max-width: none; }
-@media (min-width: 601px) and (max-width: 1200px) {
- .quick-setup-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
- .quick-setup-section.quick-setup-drivers { grid-column: auto; border-top: 0; padding-top: 0; }
- .quick-setup-cars { display: block; }
- .quick-setup-settings, .quick-setup-drivers { border-top: 1px solid var(--line); padding-top: 24px; }
-}
-@media (max-width: 600px) {
- .quick-setup-grid { grid-template-columns: 1fr; }
- .quick-setup-section + .quick-setup-section { border-top: 1px solid var(--line); padding-top: 24px; }
-}
-
-/* Dividers sit in the column gaps, preserving equal content widths. */
-@media (min-width: 1201px) {
- .quick-setup-section { position: relative; }
- .quick-setup-section + .quick-setup-section::before { content: ""; position: absolute; left: -14px; top: 0; bottom: 0; width: 1px; background: var(--line); }
-}
-@media (min-width: 601px) and (max-width: 1200px) {
- .quick-setup-section:nth-child(even) { position: relative; }
- .quick-setup-section:nth-child(even)::before { content: ""; position: absolute; left: -14px; top: 0; bottom: 0; width: 1px; background: var(--line); }
-}
-
 /* Sponsorship management extends existing career materials. */
 .sponsor-notice { display:flex; align-items:center; justify-content:space-between; gap:24px; }
 .sponsor-notice h3 { font-size:20px; margin-bottom:8px; }
@@ -1110,3 +1045,105 @@ button.standing-driver .st-name { text-decoration:none; }
 .btn.btn-complete, .btn.btn-complete:hover {background:transparent;color:var(--good);border-color:var(--good);cursor:default;}
 
 .btn.btn-repair-all:disabled {background:transparent;border-color:var(--warn);color:var(--warn);opacity:.55;}
+/* Focused management menus: shared sports identity, quieter task hierarchy. */
+[hidden] {display:none !important;}
+#quick-race-modal .quick-wizard {width:min(1180px,calc(100vw - 32px));max-width:1180px;max-height:calc(100svh - 24px);}
+.quick-wizard .modal-header {padding:20px 28px;}
+.quick-wizard .quick-setup-body {padding:24px 28px;overflow:hidden;flex:none;}
+.quick-race-stage {display:grid;grid-template-columns:1fr 1fr .95fr;gap:32px;align-items:start;}
+.quick-race-stage>section+section {border-left:1px solid var(--line);padding-left:28px;}
+.quick-wizard h4 {font:700 24px var(--font-display);margin-bottom:16px;}
+.quick-wizard .difficulty-grid {display:grid;grid-template-columns:1fr;gap:8px;margin:0;}
+.quick-wizard .difficulty-card {min-height:44px;padding:10px 16px;display:block;text-align:left;}
+.quick-wizard #quick-difficulty-hint {margin-top:12px;}
+.quick-wizard .quick-series {display:grid;gap:8px;}
+.quick-wizard .quick-series-btn {min-height:72px;padding:14px 16px;}
+.quick-wizard .quick-series-name {font-size:16px;}
+.quick-wizard .quick-series-meta {font-size:14px;margin-top:2px;}
+.quick-wizard .compact-rules .radio-row {min-height:60px;padding:14px 0;gap:12px;}
+.quick-wizard .compact-rules>p {margin-bottom:16px;}
+.quick-wizard .quick-race-footer {display:flex;gap:12px;padding:16px 28px;}
+.quick-wizard .quick-race-footer .btn {width:auto;flex:1;}
+.quick-wizard #quick-back {flex:0 0 120px;}
+.quick-player-toolbar {display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:24px;}
+.quick-player-toolbar h4 {margin:0;}
+.quick-wizard .quick-player-mode {margin:0;min-width:320px;}
+.quick-wizard .quick-setup-cars {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px;}
+.quick-wizard .quick-car-editor {margin:0;padding:0;border:0;min-width:0;}
+.quick-wizard .quick-car-editor+ .quick-car-editor {border-left:1px solid var(--line);padding-left:28px;}
+.quick-wizard .quick-car-preview {height:108px;min-height:80px;}
+.quick-wizard .quick-car-editor h4 {font-size:18px;margin-bottom:12px;}
+.quick-wizard .quick-car-editor p {margin-top:12px;}
+.quick-wizard .car-studio-open {margin:16px 0 0;}
+.quick-key-help {margin-top:20px;}
+.driver-browse {display:grid;grid-template-columns:1fr 200px;gap:16px;margin:20px 0 12px;}
+.driver-browse label {display:flex;flex-direction:column;gap:8px;font-size:14px;color:var(--text-dim);}
+.driver-browse input {width:100%;height:44px;padding:10px 12px;border:1px solid var(--line-2);background:var(--panel-2);color:var(--text);border-radius:6px;}
+#main-content[data-tab=team] .team-workspace {grid-template-columns:minmax(240px,.7fr) minmax(0,1.7fr);gap:28px;}
+#main-content[data-tab=team] .team-toolbar {margin-bottom:28px;}
+#main-content[data-tab=team] .team-budget {display:none;}
+#main-content[data-tab=team] .card {padding:24px;}
+#main-content[data-tab=team] .staff-row {padding:20px 0;align-items:center;gap:16px;}
+#main-content[data-tab=team] .team-recruitment .recruitment-list {max-height:clamp(260px,calc(100svh - 580px),500px);padding-right:12px;}
+#main-content[data-tab=team] .staff-name {line-height:1.5;}
+#main-content[data-tab=team] .staff-ovr {color:var(--text);font-weight:700;white-space:nowrap;margin-left:8px;}
+#main-content[data-tab=team] .staff-meta {line-height:1.6;}
+.market-tabs {margin-bottom:28px;display:flex;gap:8px;}
+.market-cars {display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:40px;align-items:start;}
+.market-finance-summary {padding:24px 0;}
+.market-finance-summary h3 {margin-bottom:16px;}
+.market-finance-summary .btn {margin-top:24px;}
+.market-workspace>.card {margin-top:0;}
+.market-workspace .card-header {font:700 24px var(--font-display);margin-bottom:20px;}
+.market-workspace .staff-row {padding:20px 0;}
+@media(max-width:800px){
+ #main-content[data-tab=team] .team-workspace,.market-cars {grid-template-columns:1fr;gap:24px;}
+ .driver-browse {grid-template-columns:1fr 150px;}
+ .quick-race-stage {gap:20px;}.quick-race-stage>section+section{padding-left:20px;}
+}
+@media(max-height:620px) and (min-width:601px){
+ .quick-wizard .modal-header{padding:12px 20px;}.quick-wizard .quick-setup-body{padding:16px 20px;}.quick-wizard .quick-race-footer{padding:12px 20px;}
+ .quick-wizard .difficulty-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;}.quick-wizard .quick-series-btn{min-height:48px;padding:8px 12px;}
+ .quick-wizard h4{font-size:20px;margin-bottom:10px;}.quick-wizard .quick-car-preview{height:64px;min-height:64px;}
+ .quick-player-toolbar{margin-bottom:12px;}.quick-wizard .car-studio-open{margin-top:8px;}.quick-wizard .quick-key-help{margin-top:12px;}
+}
+@media(max-width:600px){
+ #quick-race-modal .quick-wizard{width:calc(100vw - 20px);max-height:calc(100svh - 20px);}
+ .quick-wizard .modal-header{padding:12px 16px;}.quick-wizard .quick-setup-body{padding:16px;}.quick-wizard .quick-race-footer{padding:12px 16px;}
+ .quick-race-stage{grid-template-columns:1fr 1fr;gap:16px;}.quick-race-stage>section+section{border:0;padding:0;}.quick-race-stage>section:last-child{grid-column:1/-1;border-top:1px solid var(--line);padding-top:12px;}
+ .quick-wizard h4{font-size:20px;margin-bottom:10px;}.quick-wizard .difficulty-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;}
+ .quick-wizard .difficulty-card{padding:8px;font-size:14px;}.quick-wizard .difficulty-name{font-size:14px;}.quick-wizard .quick-series-btn{min-height:56px;padding:8px 10px;}
+ .quick-wizard .quick-series-name{font-size:14px;}.quick-wizard .quick-series-meta{font-size:12px;}.quick-wizard #quick-difficulty-hint{font-size:12px;margin-top:8px;}
+ .quick-wizard .compact-rules{display:grid;grid-template-columns:1fr 1fr;gap:8px;}.quick-wizard .compact-rules>p{grid-column:1/-1;margin:0;}.quick-wizard .compact-rules .radio-row{min-height:44px;padding:6px 0;font-size:14px;}
+ .quick-player-toolbar{display:block;margin-bottom:16px;}.quick-wizard .quick-player-mode{min-width:0;margin-top:12px;}
+ .quick-wizard .quick-setup-cars{gap:16px;}.quick-wizard .quick-car-editor+.quick-car-editor{padding-left:16px;}.quick-wizard .quick-car-preview{height:80px;}
+ .quick-wizard .quick-car-editor p{font-size:12px;}.quick-wizard .car-studio-open{font-size:14px;padding:10px 8px;}.quick-key-help{font-size:12px;line-height:1.5;}
+ .driver-browse{grid-template-columns:1fr;}.market-tabs .btn{flex:1;padding-inline:12px;}
+}
+@media(max-height:620px) and (min-width:601px){
+ .quick-wizard .modal-header{padding:8px 20px;}.quick-wizard .modal-header h3{font-size:26px;}.quick-wizard .quick-race-footer{padding:8px 20px;}.quick-wizard .quick-race-footer .btn{min-height:44px;padding-block:10px;}
+ .quick-wizard .quick-setup-body{padding:12px 20px;}.quick-player-toolbar{margin-bottom:8px;}.quick-wizard .quick-car-preview{height:44px;min-height:44px;}
+ .quick-wizard .quick-car-editor p{display:none;}.quick-wizard .quick-car-editor h4{margin-bottom:6px;}.quick-wizard .car-studio-open{margin-top:6px;min-height:44px;padding-block:10px;}.quick-wizard .quick-key-help{font-size:12px;margin-top:8px;}
+}
+
+@media(max-height:620px) and (min-width:601px){
+ .quick-wizard .quick-series-btn{flex-direction:row;align-items:center;justify-content:space-between;gap:8px;min-height:44px;}
+ .quick-wizard .quick-series-meta{margin:0;white-space:nowrap;}
+ .quick-wizard .compact-rules>p{margin-bottom:8px;}
+ .quick-wizard .compact-rules .radio-row{min-height:48px;padding:8px 0;}
+}
+
+@media(max-height:620px) and (min-width:601px){
+ .quick-wizard .difficulty-name{font-size:15px;line-height:22px;}
+ .quick-wizard .difficulty-card{height:44px;padding:10px 12px;}
+ .quick-wizard #quick-difficulty-hint{font-size:12px;line-height:18px;margin:6px 0 0;}
+ .quick-wizard .quick-series-name{font-size:14px;line-height:20px;}
+ .quick-wizard .quick-series-meta{font-size:12px;}
+ .quick-wizard .quick-series{margin-top:0;}
+}
+
+@media(max-width:600px){.quick-wizard .difficulty-name{font-size:13px;white-space:nowrap;}.quick-wizard .difficulty-card{height:44px;padding:8px 6px;}}
+@media(max-height:620px) and (min-width:601px){.quick-wizard .quick-car-preview strong{font-size:36px;line-height:1;}}
+
+.quick-wizard #quick-number-warning{font-size:12px;line-height:1.5;margin:20px 0 0;padding:0;border:0;}
+@media(max-height:620px) and (min-width:601px){.quick-wizard #quick-number-warning{margin-top:8px;}}

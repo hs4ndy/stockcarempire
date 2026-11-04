@@ -31,12 +31,12 @@ for(const [name,file,width] of [['source','index.html',1440],['offline','release
     await page.screenshot({path:`.impeccable/review/all-out-settings-${name}.png`,animations:'disabled'});
     await page.evaluate(()=>showScreen('intro'));await page.locator('#btn-quick-race').click();
     await page.locator('#quick-race-modal [data-diff="allout"]').click();await page.locator('.quick-series-btn').last().click();
-    await expect(page.locator('#btn-quick-race-confirm')).toBeVisible();
+    await expect(page.locator('#quick-next')).toBeVisible();
     await page.mouse.move(0,0);await page.waitForTimeout(240);
     await expect(page.locator('#quick-race-modal [data-diff="allout"]')).toHaveAttribute('aria-pressed','true');
     expect(await fillsRow('#quick-race-modal [data-diff="allout"]')).toBe(true);
     await page.screenshot({path:`.impeccable/review/all-out-quick-${name}.png`,animations:'disabled'});
-    await page.locator('#btn-quick-race-confirm').click();await page.waitForFunction(()=>window._r3d?.mirrorRT);
+    if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator('#btn-quick-race-confirm').click();await page.waitForFunction(()=>window._r3d?.mirrorRT);
     expect(await page.evaluate(()=>window._r3d.diff.id)).toBe('allout');
     expect(await page.evaluate(()=>window._r3d.cars.length)).toBe(40);
     await page.evaluate(()=>window._r3d.destroy());expect(errors).toEqual([]);

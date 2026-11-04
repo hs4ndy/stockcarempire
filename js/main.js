@@ -120,6 +120,7 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
 // ─── Quick Race ───────────────────────────────────────────────
 function showQuickRaceScreen() {
   quickRaceSeries = null;
+  quickRaceStep=1;
   document.body.insertAdjacentHTML('beforeend', renderQuickRaceModal());
 }
 
@@ -127,13 +128,14 @@ function showQuickRaceScreen() {
 let quickRaceDifficulty = DEFAULT_DIFFICULTY;
 const quickRaceRules={crashes:true,damage:true};
 let quickRaceSeries = null;
+let quickRaceStep=1;
 let quickRacePlayers = 1;
 const quickRaceCars = [{number: 1, color: '#e8001d'}, {number: 2, color: '#58a6ff'}];
 function setQuickRacePlayers(count) {
   quickRacePlayers = count === 2 ? 2 : 1;
   document.querySelectorAll('[data-players]').forEach(el => el.setAttribute('aria-pressed', String(Number(el.dataset.players) === quickRacePlayers)));
   document.getElementById('quick-player-2').hidden = quickRacePlayers !== 2;
-  document.getElementById('quick-number-warning').hidden = quickRacePlayers !== 2 || quickRaceCars[0].number !== quickRaceCars[1].number;
+  refreshQuickRaceNumberWarning();
 }
 function setQuickRaceCar(index, key, value) {
   const car = quickRaceCars[index];
@@ -145,13 +147,16 @@ function setQuickRaceCar(index, key, value) {
   root.outerHTML = renderCarCustomizer(car,index);
   refreshQuickRaceNumberWarning();
 }
-function refreshQuickRaceNumberWarning(){
-  document.getElementById('quick-number-warning').hidden = quickRacePlayers !== 2 || quickRaceCars[0].number !== quickRaceCars[1].number;
+function refreshQuickRaceNumberWarning() {
+  const duplicate = quickRacePlayers === 2 && quickRaceCars[0].number === quickRaceCars[1].number;
+  document.getElementById('quick-number-warning').hidden = !duplicate;
+  document.querySelector('.quick-key-help').hidden = duplicate;
 }
 
 
 function setQuickRaceDifficulty(id) {
   quickRaceDifficulty = id;
+  const hint=document.getElementById('quick-difficulty-hint');if(hint)hint.textContent={beginner:'Learn the draft.',amateur:'Find your rhythm.',semipro:'Keep the tow.',pro:'Earn every position.',allout:'Maximum competition.'}[id];
   const ruleRoot=document.getElementById("quick-race-rules");if(ruleRoot) ruleRoot.innerHTML=renderRaceRuleControls(id,quickRaceRules,"quick");
   document.querySelectorAll('#quick-race-modal .difficulty-card').forEach(el => {
     el.classList.toggle('selected', el.dataset.diff === id);
@@ -166,15 +171,16 @@ function selectQuickRaceSeries(fieldSize) {
     el.classList.toggle('selected', selected);
     el.setAttribute('aria-pressed', String(selected));
   });
+  const next=document.getElementById('quick-next');if(next)next.disabled=false;
   const confirmButton = document.getElementById('btn-quick-race-confirm');
   if (confirmButton) confirmButton.disabled = false;
 }
 
 function confirmQuickRace() {
-  if (quickRaceSeries === null) return;
+  if (quickRaceSeries === null || quickRaceStep!==2) return;
   if (quickRacePlayers === 2 && quickRaceCars[0].number === quickRaceCars[1].number) {
-    document.getElementById('quick-number-warning').hidden = false;
-    document.querySelector('#quick-player-2 input').focus();
+    refreshQuickRaceNumberWarning();
+    document.querySelector('#quick-player-2 button').focus();
     return;
   }
   handleStartQuickRace(quickRaceSeries);
@@ -981,3 +987,16 @@ function closeVehicleModal(id) {
 }
 
 async function handleRepairAll(){const cost=game.cars.reduce((n,c)=>n+carRepairCost(c),0);if(!await gameConfirm(`Repair all damaged cars for ${fmt$(cost)}? Lifetime health will not change.`))return;const r=repairAllCars();if(!r.ok){toast(r.msg,'error');return;}updateHeader();renderTab('garage');toast(`${r.count} cars repaired for ${fmt$(r.cost)}.`,'success');}
+
+function setQuickRaceStep(step) {
+  if (step === 2 && quickRaceSeries === null) return;
+  quickRaceStep = step === 2 ? 2 : 1;
+  document.getElementById('quick-stage-race').hidden = quickRaceStep !== 1;
+  document.getElementById('quick-stage-cars').hidden = quickRaceStep !== 2;
+  document.getElementById('quick-next').hidden = quickRaceStep !== 1;
+  document.getElementById('quick-back').hidden = quickRaceStep !== 2;
+  document.getElementById('btn-quick-race-confirm').hidden = quickRaceStep !== 2;
+  document.getElementById('quick-step-label').textContent = quickRaceStep === 1
+    ? 'Race setup · Step 1 of 2' : 'Players and cars · Step 2 of 2';
+  document.getElementById(quickRaceStep === 2 ? 'btn-quick-race-confirm' : 'quick-next').focus();
+}
