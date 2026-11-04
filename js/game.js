@@ -183,12 +183,13 @@ function setCarNumber(carId, num) {
 }
 
 // ─── AI Team factory ────────────────────────────────────────
-// Derived from the season's fixed equipment ratings, not current points/form.
+// Named championship rivals plus the strongest remaining fixed equipment rating.
 // Stable IDs keep the same three rivals across races and save/load; no migration.
 function championshipContenderIds() {
   const rivals = (game?.season?.aiTeams || []).flatMap(t => t.cars)
     .filter(c => c.id && Number.isFinite(c.power));
-  rivals.sort((a,b) => b.power-a.power || (a.number || 999)-(b.number || 999) || String(a.id).localeCompare(String(b.id)));
+  const priority = car => car.driverName === 'Parker Holt' ? 2 : car.driverName === 'Joshua Enright' ? 1 : 0;
+  rivals.sort((a,b) => priority(b)-priority(a) || b.power-a.power || (a.number || 999)-(b.number || 999) || String(a.id).localeCompare(String(b.id)));
   return new Set(rivals.slice(0,3).map(c => c.id));
 }
 
@@ -199,8 +200,11 @@ function rivalPreparationCondition(condition, contender = false) {
 function careerRivalPower(car, contender = false) {
   // Rival teams service their cars between events. Apply the same preparation
   // on entry so older midseason saves with exhausted rivals recover immediately.
-  const contenderFloor = [.92,.95,.99][game?.currentSeries ?? 0] ?? .92;
-  const power = contender ? Math.max(car.power+.035,contenderFloor) : car.power;
+  // Prepare all three contenders to the same competitive equipment standard.
+  // Previously the floor included the setup bonus, leaving the strongest raw
+  // car (usually Joshua) with a persistent advantage over the other contenders.
+  const contenderFloor = [.94,.97,.99][game?.currentSeries ?? 0] ?? .94;
+  const power = contender ? Math.max(car.power,contenderFloor)+.035 : car.power;
   return clamp(power * rivalPreparationCondition(car.condition,contender) / 100, .25, contender ? .99 : .95);
 }
 
@@ -312,6 +316,13 @@ function generateAITeams(seriesLevel) {
 
   const strongest=teams.flatMap(t=>t.cars).sort((a,b)=>b.power-a.power)[0];
   if(strongest){for(const c of teams.flatMap(t=>t.cars))if(c.driverName==='Joshua Enright')c.driverName=AI_DRIVER_NAMES.find(n=>!teams.some(t=>t.cars.some(c=>c.driverName===n)))||c.driverName;strongest.driverName='Joshua Enright';strongest.power=Math.max(strongest.power,[.94,.97,.99][seriesLevel]);}
+  // Ensure the recurring rival exists in newly generated rosters; do not
+  // replace an entrant in an already-running or retained Premier season.
+  const roster = teams.flatMap(t => t.cars);
+  if (!roster.some(c => c.driverName === 'Parker Holt')) {
+    const parker = roster.filter(c => c.driverName !== 'Joshua Enright').sort((a,b) => b.power-a.power)[0];
+    if (parker) parker.driverName = 'Parker Holt';
+  }
   return teams;
 }
 
@@ -1166,7 +1177,10 @@ function retainPremierRoster(sorted){
  const teams=old.map(t=>({...t,cars:t.cars.filter(c=>!relegated.has(c.id)).map(c=>({...c,condition:100}))})).filter(t=>t.cars.length);
  let needed=old.flatMap(t=>t.cars).length-teams.flatMap(t=>t.cars).length;
  const usedNumbers=new Set(teams.flatMap(t=>t.cars).map(c=>c.number));
- for(const team of generateAITeams(2)){if(!needed)break;const cars=[];for(const car of team.cars){if(!needed)break;const name=AI_DRIVER_NAMES.find(n=>!oldNames.has(n));if(!name)break;oldNames.add(name);car.driverName=name;while(usedNumbers.has(car.number))car.number=car.number%98+2;usedNumbers.add(car.number);car.condition=100;cars.push(car);needed--;}if(cars.length)teams.push({...team,cars});}
+ // A full39-rival roster leaves only two unused base names for three rookies.
+ // Keep replacement slots filled without immediately recycling relegated names.
+ const rookieNames=[...AI_DRIVER_NAMES,...AI_DRIVER_NAMES.map(name=>`${name} Jr.`)];
+ for(const team of generateAITeams(2)){if(!needed)break;const cars=[];for(const car of team.cars){if(!needed)break;const name=rookieNames.find(n=>!oldNames.has(n));if(!name)break;oldNames.add(name);car.driverName=name;while(usedNumbers.has(car.number))car.number=car.number%98+2;usedNumbers.add(car.number);car.condition=100;cars.push(car);needed--;}if(cars.length)teams.push({...team,cars});}
  return teams;
 }
 

@@ -981,7 +981,7 @@ test('rival garages prevent late-season collapse and restore exhausted legacy-sa
 
 test('the three contenders have series-appropriate developed equipment without changing stored ratings',()=>{
  const c=makeContext();const r=readJson(c,`[0,1,2].map(level=>{newGame('Test','Driver','Car');game.currentSeries=level;const car={power:.5,condition:100};return {level,power:careerRivalPower(car,true),stored:car.power};})`);
- assert.deepEqual(r.map(x=>x.power),[.92,.95,.99]);assert.ok(r.every(x=>x.stored===.5));
+ assert.deepEqual(r.map(x=>x.power),[.975,.99,.99]);assert.ok(r.every(x=>x.stored===.5));
 });
 
 
