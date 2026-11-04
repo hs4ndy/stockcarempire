@@ -13,7 +13,7 @@ One persistent award per player Career race win and season championship. The Tro
 
 ## Award facts
 
-Race IDs are `win:year:series:race`; title IDs are `title:year:series`. Repeated processing does not duplicate awards. New Career race trophies are saved as pending, then offered in the 3D viewer after Race News. Add to Case clears the pending flag and saves the award. A deferred or interrupted claim is available again from the Trophy Case or on loading the career. Existing awards and championship trophies are already in the case. Only a non-DNF player first-place finish earns a race trophy; teammate wins, Quick Race and practice do not. Winning simulated Career races also count. Every repeated victory is a separate record even though each series uses one winner model.
+Race IDs are `win:year:series:race`; title IDs are `title:year:series`. Repeated processing does not duplicate awards. New Career race trophies are saved as pending, then offered in the 3D viewer after Race News. The compact claim window closes only through Claim Trophy. The award is applied immediately, and a saved career attempts to persist it. An interrupted claim reopens on loading the career. Existing awards and championship trophies are already in the case. Only a non-DNF player first-place finish earns a race trophy; teammate wins, Quick Race and practice do not. Winning simulated Career races also count. Every repeated victory is a separate record even though each series uses one winner model.
 
 Awards snapshot series/year, race/track, actual start when recorded, earned points/prize, race type, difficulty and car identity. Championships snapshot season wins, points, starts, top fives/tens before promotion. Later car changes do not rewrite old trophies.
 

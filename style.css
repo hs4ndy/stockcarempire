@@ -26,9 +26,12 @@
 .trophy-filters { display:flex;flex-wrap:wrap;gap:12px 20px; }
 .trophy-more-results { text-align:center;margin-top:24px; }
 .trophy-pending { margin-bottom:16px; }
-.trophy-claim-footer { border-top:1px solid var(--line);padding-top:12px;margin-top:16px;text-align:center; }
-.trophy-claim-footer p:empty { display:none; }
-.trophy-claim-footer button { min-width:min(220px,100%); }
+.trophy-claim-overlay { z-index:1200; }
+.trophy-claim-window { width:min(460px,100%); }
+.trophy-claim-window .trophy-viewport { height:clamp(160px,36svh,300px);min-height:0; }
+.trophy-claim-window .trophy-claim-hint { margin:12px 0 0;text-align:center; }
+.trophy-claim-window #trophy-view-error:empty { display:none; }
+.trophy-claim-window .modal-footer .btn { width:100%; }
 .trophy-viewport canvas[data-trophy-model] { object-fit:contain; }
 .trophy-viewer { position:fixed;inset:0;z-index:1200;background:var(--bg);display:flex;flex-direction:column;padding:24px 32px; }
 .trophy-viewer-header { display:flex;align-items:center;justify-content:space-between;gap:24px;padding-bottom:20px;border-bottom:1px solid var(--line); }

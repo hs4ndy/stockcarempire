@@ -22,11 +22,34 @@ test('real Career start position reaches a winning trophy; Quick Race never awar
  await expect(page.locator('#results-modal .res-pos.podium')).toHaveText('1');
  await page.locator('#btn-close-results').click();await page.locator('#btn-close-news').click();await expect(page.locator('#trophy-viewer canvas')).toBeVisible();
  expect(await page.evaluate(()=>game.trophies[0].unclaimed)).toBe(true);
- await page.getByRole('button',{name:'Add to Case'}).click();await expect(page.locator('#trophy-viewer')).toHaveCount(0);
+ await expect(page.locator('#trophy-viewer button')).toHaveCount(1);
+ await expect(page.locator('.trophy-claim-window')).toBeVisible();
+ await page.keyboard.press('Escape');await expect(page.locator('.trophy-claim-window')).toBeVisible();
+ const preview=page.locator('.trophy-claim-window canvas');await preview.focus();
+ const yaw=await page.evaluate(()=>trophyViewer.stage.yaw);await page.keyboard.press('ArrowLeft');
+ expect(await page.evaluate(()=>trophyViewer.stage.yaw)).toBeGreaterThan(yaw);
+ await page.getByRole('button',{name:'Claim Trophy',exact:true}).click();await expect(page.locator('#trophy-viewer')).toHaveCount(0);
  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('sce_slot_0')).trophies[0].unclaimed)).toBeUndefined();
  await page.evaluate(()=>{handleStartQuickRace(20);});await page.waitForFunction(()=>window._r3d?.mirrorRT);await page.evaluate(()=>{cancelAnimationFrame(window._r3d._raf);window._r3dFinish(1);});expect(await page.evaluate(()=>game.trophies.length)).toBe(1);
 });
 test('long history infinite scroll, escaped details and unavailable WebGL keep collection usable',async({page})=>{
  await open(page);await page.evaluate(()=>{game.history=[{year:1,series:SERIES[0].name,wins:50,champion:true}];delete game.trophies;ensureTrophies();showTab('trophies');});await expect(page.locator('.trophy-card')).toHaveCount(24);await page.locator('.trophy-more-results').scrollIntoViewIfNeeded();await expect(page.locator('.trophy-card')).toHaveCount(48);await page.locator('.trophy-more-results').scrollIntoViewIfNeeded();await expect(page.locator('.trophy-card')).toHaveCount(51);
  await page.evaluate(()=>{game.trophies=[{id:'escaped',kind:'win',series:0,year:1,race:1,track:'<img src=x onerror=alert(1)>',carName:'<b>Not markup</b>'}];showTab('trophies');THREE.WebGLRenderer=function(){throw new Error('Test no WebGL')};});await expect(page.locator('.trophy-card')).toContainText('<img src=x');await page.locator('.trophy-preview').click();await expect(page.locator('#trophy-view-error')).toContainText('could not start');await expect(page.locator('.trophy-viewport canvas[data-trophy-model]')).toBeVisible();await expect(page.locator('.trophy-event b')).toHaveCount(0);await page.locator('#trophy-close').click();await expect(page.locator('#trophy-viewer')).toHaveCount(0);
+});
+
+test('Career Settings exports a complete unsaved career as JSON',async({page})=>{
+ await open(page);
+ const expected=await page.evaluate(()=>{
+   game.trophies.push({id:'test-win',kind:'win',series:0,year:1,race:1,unclaimed:true});
+   showTab('settings');
+   return JSON.parse(JSON.stringify(game));
+ });
+ const pending=page.waitForEvent('download');
+ await page.getByRole('button',{name:'Export this career',exact:true}).click();
+ const download=await pending;
+ expect(download.suggestedFilename()).toBe('stock-car-empire-crown-racing.json');
+ const payload=JSON.parse(require('node:fs').readFileSync(await download.path(),'utf8'));
+ expect(payload).toMatchObject({format:'stock-car-empire-career',version:1});
+ expect(payload.career).toEqual(expected);
+ expect(await page.evaluate(()=>currentSlot)).toBeNull();
 });

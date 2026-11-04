@@ -870,6 +870,32 @@ function handleCloseResults() {
 }
 
 // ─── Settings / save ─────────────────────────────────────────
+function handleExportCareer() {
+  if (!game) return;
+  try {
+    const backup = {
+      format: 'stock-car-empire-career',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      career: game,
+    };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], {type: 'application/json'});
+    const name = String(game.teamName || 'career').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
+    const download = document.createElement('a');
+    download.download = `stock-car-empire-${name || 'career'}.json`;
+    const url = URL.createObjectURL(blob);
+    download.href = url;
+    document.body.append(download);
+    try { download.click(); } finally {
+      download.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+    }
+  } catch (error) {
+    console.warn('Career export failed:', error);
+    toast('Could not export this career. Please try again.', 'error');
+  }
+}
+
 function handleSaveGame() {
   showSaveModal();
 }

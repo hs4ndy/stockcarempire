@@ -1262,6 +1262,11 @@ function renderSettings() {
     <div class="card-header">Start over</div>
     <p class="section-copy">${unsaved ? 'Starting a new career discards this unsaved career.' : `Starting a new career deletes the current career from Slot ${currentSlot + 1}. Other slots are kept.`}</p>
     <button class="btn btn-danger" onclick="handleNewGamePrompt()">New Career</button>
+  </div>
+  <div class="card mb">
+    <div class="card-header">Career Backup</div>
+    <p class="section-copy">Download a JSON copy of this career, including your trophies, race history, and team.</p>
+    <button class="btn btn-secondary" onclick="handleExportCareer()">Export this career</button>
   </div>`;
 }
 
