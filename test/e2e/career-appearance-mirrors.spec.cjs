@@ -16,7 +16,7 @@ for(const [width,file] of [[1440,'index.html'],[375,'releases/Stock-Car-Empire.h
  await page.evaluate(()=>handleStartRace());await page.waitForFunction(()=>window._r3d?.mirrorRT);
  expect(await page.evaluate(()=>[window._r3d.player.number,window._r3d.player.hex])).toEqual([27,0x13b7c9]);
  expect(await page.evaluate(()=>{const e=window._r3d,w=document.getElementById('r3d-mirror-wrap');return e.mirrorRT.width/w.clientWidth;})).toBeGreaterThanOrEqual(1.49);
- await page.locator('#r3d-pause-btn').click();await expect(page.locator('#r3d-quit')).toHaveText('QUIT RACE');await page.locator('#r3d-quit').click();
+ await page.locator('#r3d-pause-btn').click();await expect(page.locator('#r3d-quit')).toHaveText('QUIT RACE WITH DNF');await page.locator('#r3d-quit').click();await page.locator('#game-dialog').getByRole('button',{name:'Yes',exact:true}).click();await page.locator('#btn-close-results').click();await page.locator('#btn-close-news').click();
  await page.evaluate(()=>{showScreen('intro');showQuickRaceScreen();setQuickRacePlayers(2);selectQuickRaceSeries(40);setQuickRaceStep(2);confirmQuickRace();});await page.waitForFunction(()=>window._r3d?.player2 && window._r3d?.mirrorRT);
  const checks=await page.evaluate(()=>{
   const e=window._r3d,r=e.renderer;cancelAnimationFrame(e._raf);e.paused=true;e.cars.forEach(c=>c.mesh.visible=false);e.player.x=e.player2.x=0;e.player.z=6000;e.player2.z=11000;

@@ -42,12 +42,24 @@ function createRaceNews(context, random = Math.random) {
   };
 }
 
-function prepareCareerNews(race, result, photo, simulated=false) {
+let lastQuitNewsId = null;
+function createQuitRaceNews(context, random = Math.random) {
+  const choices = RACE_QUIT_NEWS_ARTICLES.filter(a => a.id !== lastQuitNewsId);
+  const article = choices[Math.min(choices.length - 1, Math.floor(random() * choices.length))];
+  lastQuitNewsId = article.id;
+  raceNewsReporter = (raceNewsReporter + 1 + Math.floor(random() * (RACE_NEWS_REPORTERS.length - 1))) % RACE_NEWS_REPORTERS.length;
+  const fill = text => text.replace(/\{(player|track|series)\}/g, (_, key) => ({player:context.playerName, track:context.trackName, series:context.seriesName}[key]));
+  return {id:article.id, headline:fill(article.headline), reporter:RACE_NEWS_REPORTERS[raceNewsReporter],
+    paragraphs:article.paragraphs.map(fill), playerName:context.playerName, position:context.position,
+    closing:context.nextTrack ? `The next stop is ${context.nextTrack}. Reaching the finish would be a promising change of approach.` : 'The season schedule is complete. This early exit will remain in the record long after the car has been parked.'};
+}
+
+function prepareCareerNews(race, result, photo, simulated=false, quitDNF=false) {
   const series=SERIES[game.currentSeries];
   const standings=getStandings(), index=standings.findIndex(s=>s.id==='player');
   const next=currentRace();
-  pendingRaceNews={mode:'career', photo:photo || null, simulated,
-    reports:[createRaceNews({seriesId:series.id,seriesName:series.name,
+  pendingRaceNews={mode:'career', photo:quitDNF ? null : (photo || null), simulated, suppressPhoto:quitDNF,
+    reports:[(quitDNF ? createQuitRaceNews : createRaceNews)({seriesId:series.id,seriesName:series.name,
       playerName:game.driverName,trackName:TRACKS.find(t=>t.id===race.trackId)?.name || 'the circuit',career:true,
       winner:photo?.leaderName,gridPosition:photo?.grid?.player,
       position:result.position,dnf:result.dnf,points:result.points,
@@ -75,7 +87,7 @@ function showRaceNews(reader=0) {
 function renderRaceNews(news,reader) {
   const report=news.reports[reader], esc=newsEscape;
   const photo=news.photo;
-  const image=photo?.dataUrl?.startsWith('data:image/jpeg;base64,') ? `<figure class="race-news-photo">
+  const image=news.suppressPhoto ? '' : photo?.dataUrl?.startsWith('data:image/jpeg;base64,') ? `<figure class="race-news-photo">
     <img src="${esc(photo.dataUrl)}" width="1024" height="576" alt="Trackside photograph of ${esc(photo.leaderName)} crossing the finish line.">
     <figcaption>${esc(photo.leaderName==='YOU' ? 'Player' : photo.leaderName.replace('PLAYER','Player'))} takes the checkered flag. Photo by Gavin Turnage</figcaption>
   </figure>` : `<div class="race-news-no-photo"><strong>Finish photo unavailable</strong><p>${news.simulated ? 'This race was simulated, so no trackside photograph was captured.' : 'A finish-line photograph could not be captured for this race.'}</p></div>`;
@@ -89,7 +101,7 @@ function renderRaceNews(news,reader) {
         <p class="race-news-lead">${esc(report.paragraphs[0])}</p>
         <p>${esc(report.paragraphs[1])}</p>
         ${report.raceDetail ? `<p>${esc(report.raceDetail)}</p>` : ''}
-        <blockquote><p>“${esc(report.quote)}”</p><cite>${esc(report.playerName)}</cite></blockquote>
+        ${report.quote ? `<blockquote><p>“${esc(report.quote)}”</p><cite>${esc(report.playerName)}</cite></blockquote>` : ''}
         <p>${esc(report.paragraphs[2])}</p><p>${esc(report.closing)}</p>
       </div>
     </article>`;

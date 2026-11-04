@@ -28,7 +28,11 @@ test('Career played results > Next > news has real points and preserves complete
  const data=await page.evaluate(()=>({saved:localStorage.getItem('sce_slot_2'),pos:getPlayerStandingPos(),points:getStandings().find(s=>s.id==='player').points,race:game.season.calendar[0]}));
  await page.locator('#btn-close-results').click();await expect(page.locator('.race-news-copy')).toContainText(`${data.points} points`);await expect(page.locator('figcaption')).toContainText(photo.leader);
  await expect(page.locator('#news-headline')).toContainText('Harrison Santos');await expect(page.locator('figcaption')).toContainText('Photo by Gavin Turnage');const bounds=await page.locator('#race-news-content').evaluate(el=>({scroll:el.scrollHeight>el.clientHeight,h:el.closest('.modal').getBoundingClientRect().height}));expect(bounds.scroll).toBe(true);expect(bounds.h).toBeLessThan(900);await page.screenshot({path:'.impeccable/review/news98-desktop.png'});await page.setViewportSize({width:390,height:844});await page.screenshot({path:'.impeccable/review/news98-mobile.png'});expect(await page.evaluate(()=>localStorage.getItem('sce_slot_2'))).toBe(data.saved);
- await page.locator('#btn-close-news').click();expect(await page.evaluate(()=>game.season.raceIndex)).toBe(1);expect(await page.evaluate(()=>localStorage.getItem('sce_slot_2'))).toBe(data.saved);
+ await page.locator('#btn-close-news').click();expect(await page.evaluate(()=>game.season.raceIndex)).toBe(1);
+ // Returning to Career may mark a primary sponsor offer as announced. That
+ // existing notification metadata is the only permitted save difference.
+ const stripAnnouncement=text=>{const value=JSON.parse(text);for(const offer of value.sponsorship.offers)delete offer.announced;return value;};
+ expect(stripAnnouncement(await page.evaluate(()=>localStorage.getItem('sce_slot_2')))).toEqual(stripAnnouncement(data.saved));
 });
 
 test('offline phone simulated final event: no fake photo or next race, long names fit',async({page})=>{

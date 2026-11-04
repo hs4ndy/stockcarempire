@@ -10,12 +10,12 @@
  *   trackId       - the track being raced
  * @returns {object}  { results, events, playerResult }
  */
-function simulateRace({ playerCarId, trackId }) {
+function simulateRace({ playerCarId, trackId, fullField = false }) {
   const track = TRACKS.find(t => t.id === trackId);
   const series = SERIES[game.currentSeries];
 
   // Build the full entry list
-  const entries = buildEntryList(playerCarId, trackId);
+  const entries = buildEntryList(playerCarId, trackId, fullField);
 
   // Calculate initial performance scores
   entries.forEach(e => {
@@ -119,7 +119,7 @@ function simulateRace({ playerCarId, trackId }) {
 }
 
 // ─── Build entry list ────────────────────────────────────────
-function buildEntryList(playerCarId, trackId) {
+function buildEntryList(playerCarId, trackId, fullField = false) {
   const series  = SERIES[game.currentSeries];
   const entries = [];
   if (!game.cars.some(c => c.id === playerCarId) || hireForCar(playerCarId)) {
@@ -213,7 +213,7 @@ function buildEntryList(playerCarId, trackId) {
   // Do not accidentally omit a recurring contender just because a hired
   // teammate occupied the last available slot in a full field.
   entries.sort((a,b) => (b.isPlayer || b.isTeammate ? 2 : b.isContender ? 1 : 0) - (a.isPlayer || a.isTeammate ? 2 : a.isContender ? 1 : 0));
-  return entries.slice(0, series.fieldSize);
+  return fullField ? entries : entries.slice(0, series.fieldSize);
 }
 
 // ─── Merge a real 3D finish into simulated results ───────────
@@ -334,6 +334,19 @@ function reRankWithTeamOrder(results, playerPosition, trackOrder) {
       points:   r.dnf ? 0 : (series.points[pos - 1] || 0),
       prize:    r.dnf ? Math.round(base * 0.4) : base,
     };
+  });
+}
+
+// Voluntary Career withdrawal always classifies behind every other entrant,
+// including other DNFs. Retain their running order and use existing DNF scoring.
+function classifyQuitDNF(results) {
+  const player = results.find(r => r.isPlayer);
+  if (!player) throw new Error('A Career withdrawal requires the player entry.');
+  const series = SERIES[game.currentSeries];
+  return [...results.filter(r => !r.isPlayer), {...player, dnf:true}].map((r, i) => {
+    const position = i + 1;
+    const prize = series.prize[position - 1] ?? series.prize[series.prize.length - 1];
+    return {...r, position, points:r.dnf ? 0 : (series.points[position - 1] || 0), prize:r.dnf ? Math.round(prize * .4) : prize};
   });
 }
 

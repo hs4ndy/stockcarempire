@@ -505,7 +505,6 @@ function noteIdleCars(idle) {
 }
 
 function handleStartRace() {
-  const preRaceState = JSON.stringify(game);
   const race   = currentRace();
   const series = SERIES[game.currentSeries];
 
@@ -619,15 +618,15 @@ function handleStartRace() {
       difficulty:   game.difficulty || DEFAULT_DIFFICULTY,
       raceRules: {...game.raceRules},
       playerHealth: pCar?.condition ?? 100,
-      onQuit: () => { game = JSON.parse(preRaceState); saveGame(); showScreen('game'); updateHeader(); showTab('dashboard'); toast('Race cancelled. Entry fees refunded; career unchanged.'); },
+      quitWithDNF: true,
       qualifyBoost: Math.round(staffTotal('qualifying') / ANALYST_QUALI_BONUS),   // Data Analysts sharpen the grid draw
       qualifyAI:    true,
       aiEntries:    aiEntries,
     },
-    (playerPosition, trackOrder, finishPhoto) => {
+    (playerPosition, trackOrder, finishPhoto, quitDNF = false) => {
       // 3D race complete - playerPosition is 1-indexed finish position
       // Run background sim to get AI standings (player result will be overridden)
-      const simResult = simulateRace({ playerCarId, trackId: race.trackId });
+      const simResult = simulateRace({ playerCarId, trackId: race.trackId, fullField: quitDNF });
 
       // Your team-mates raced on track alongside you, so their real finishing
       // order has to carry over too - otherwise the car you pushed to the win
@@ -651,7 +650,8 @@ function handleStartRace() {
         position:    playerPosition,
       };
       const merged     = simResult.results.map(r => (r.isPlayer ? stub : r));
-      const allResults = reRankWithTeamOrder(merged, playerPosition, teamOrder);
+      let allResults = reRankWithTeamOrder(merged, playerPosition, teamOrder);
+      if (quitDNF) allResults = classifyQuitDNF(allResults);
       for(const actual of teamOrder) {
         const result=allResults.find(r=>r.entrantId===actual.entrantId || (actual.carId && r.carId===actual.carId));
         if(result){result.raceHealth=actual.raceHealth;result.crashes=actual.crashes;}
@@ -670,7 +670,7 @@ function handleStartRace() {
 
       postRaceUpdate(pr, prize, allResults);
       saveGame();
-      prepareCareerNews(race, pr, finishPhoto);
+      prepareCareerNews(race, pr, finishPhoto, false, quitDNF);
 
       // Show results modal over the now-blank race screen
       showScreen('game');

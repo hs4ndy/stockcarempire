@@ -1207,7 +1207,7 @@ button.standing-driver .st-name { text-decoration:none; }
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 134</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 135</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -3181,7 +3181,7 @@ function postRaceUpdate(playerResult, earnings, allResults) {
       if(rules.damage) car.lifetimeHealth=clamp((car.lifetimeHealth ?? 100)-2.5*(.9+damageLoss/100+Math.min(res.crashes||0,3)*.15),0,100);
       car.races += 1;
       if (res.position === 1) car.wins += 1;
-      car.totalPoints += series.points[res.position - 1] || 0;
+      car.totalPoints += res.points ?? (res.dnf ? 0 : (series.points[res.position - 1] || 0));
     } else {
       // Cars not in this race lose a little condition anyway (idle wear)
       car.condition = clamp(car.condition - randInt(0, 3), 0, 100);
@@ -3857,12 +3857,12 @@ function carFullyUpgraded(car){const cls=CAR_CLASSES[car.classId];return !cls.up
  *   trackId       - the track being raced
  * @returns {object}  { results, events, playerResult }
  */
-function simulateRace({ playerCarId, trackId }) {
+function simulateRace({ playerCarId, trackId, fullField = false }) {
   const track = TRACKS.find(t => t.id === trackId);
   const series = SERIES[game.currentSeries];
 
   // Build the full entry list
-  const entries = buildEntryList(playerCarId, trackId);
+  const entries = buildEntryList(playerCarId, trackId, fullField);
 
   // Calculate initial performance scores
   entries.forEach(e => {
@@ -3966,7 +3966,7 @@ function simulateRace({ playerCarId, trackId }) {
 }
 
 // ─── Build entry list ────────────────────────────────────────
-function buildEntryList(playerCarId, trackId) {
+function buildEntryList(playerCarId, trackId, fullField = false) {
   const series  = SERIES[game.currentSeries];
   const entries = [];
   if (!game.cars.some(c => c.id === playerCarId) || hireForCar(playerCarId)) {
@@ -4060,7 +4060,7 @@ function buildEntryList(playerCarId, trackId) {
   // Do not accidentally omit a recurring contender just because a hired
   // teammate occupied the last available slot in a full field.
   entries.sort((a,b) => (b.isPlayer || b.isTeammate ? 2 : b.isContender ? 1 : 0) - (a.isPlayer || a.isTeammate ? 2 : a.isContender ? 1 : 0));
-  return entries.slice(0, series.fieldSize);
+  return fullField ? entries : entries.slice(0, series.fieldSize);
 }
 
 // ─── Merge a real 3D finish into simulated results ───────────
@@ -4181,6 +4181,19 @@ function reRankWithTeamOrder(results, playerPosition, trackOrder) {
       points:   r.dnf ? 0 : (series.points[pos - 1] || 0),
       prize:    r.dnf ? Math.round(base * 0.4) : base,
     };
+  });
+}
+
+// Voluntary Career withdrawal always classifies behind every other entrant,
+// including other DNFs. Retain their running order and use existing DNF scoring.
+function classifyQuitDNF(results) {
+  const player = results.find(r => r.isPlayer);
+  if (!player) throw new Error('A Career withdrawal requires the player entry.');
+  const series = SERIES[game.currentSeries];
+  return [...results.filter(r => !r.isPlayer), {...player, dnf:true}].map((r, i) => {
+    const position = i + 1;
+    const prize = series.prize[position - 1] ?? series.prize[series.prize.length - 1];
+    return {...r, position, points:r.dnf ? 0 : (series.points[position - 1] || 0), prize:r.dnf ? Math.round(prize * .4) : prize};
   });
 }
 
@@ -4573,7 +4586,7 @@ function launch3DRace(config, onComplete) {
         <div class="r3d-pause-panel">
           <div class="r3d-pause-title">PAUSED</div>
           <button class="r3d-pause-resume" id="r3d-pause-resume">RESUME</button>
-          <button class="r3d-pause-resume" id="r3d-quit">QUIT RACE</button>
+          <button class="r3d-pause-resume" id="r3d-quit">${config.quitWithDNF ? 'QUIT RACE WITH DNF' : 'QUIT RACE'}</button>
         </div>
       </div>
     </div>
@@ -4582,11 +4595,23 @@ function launch3DRace(config, onComplete) {
     </div>
   `;
 
-  document.getElementById('r3d-quit').addEventListener('click', () => {
-    if (!window._r3d || window._r3d.done) return;
-    window._r3d.destroy(); window._r3d = null;
-    window._r3dFinish = () => {};
-    if (config.onQuit) config.onQuit(); else showScreen('intro');
+  let quitting = false;
+  document.getElementById('r3d-quit').addEventListener('click', async () => {
+    const engine = window._r3d;
+    if (!engine || engine.done || quitting) return;
+    quitting = true;
+    try {
+      if (config.quitWithDNF) {
+        const confirmed = await gameConfirm('Are you sure you want to quit this race? It will result in a last-place finish.', 'Yes', 'No');
+        if (confirmed && window._r3d === engine && !engine.done) window._r3dFinish(engine.cars.length, true);
+        return;
+      }
+      engine.destroy(); window._r3d = null;
+      window._r3dFinish = () => {};
+      if (config.onQuit) config.onQuit(); else showScreen('intro');
+    } finally {
+      quitting = false;
+    }
   });
   container.classList.toggle('dual-race', !!config.dualPlayer);
   if (config.dualPlayer) {
@@ -4609,7 +4634,10 @@ function launch3DRace(config, onComplete) {
     window._r3d = new Race3DEngine(canvas, config, onComplete);
   });
 
-  window._r3dFinish = (pos) => {
+  let completionHandled = false;
+  window._r3dFinish = (pos, quitDNF = false) => {
+    if (completionHandled) return;
+    completionHandled = true;
     // Grab the real on-track order before tearing the engine down, so the
     // results table reflects what actually happened - team-mates included.
     let order = [];
@@ -4620,7 +4648,7 @@ function launch3DRace(config, onComplete) {
       try { window._r3d.destroy(); } catch (_) {}
       window._r3d = null;
     }
-    onComplete(pos, order, photo);
+    onComplete(pos, order, quitDNF ? null : photo, quitDNF);
   };
 }
 
@@ -6822,20 +6850,20 @@ function handleDeclineSponsor(id){if(!declineSponsorOffer(id)){toast('Could not 
 /* js/dialogs.js */
 // In-game replacements for browser prompt/confirm. No native dialog overrides.
 let activeGameDialog=false;
-function gameDialog(message,initial,entry=false){
+function gameDialog(message,initial,entry=false,labels={}){
  if(activeGameDialog)return Promise.resolve(entry?null:false);
  activeGameDialog=true;
  return new Promise(resolve=>{
  const previous=document.activeElement,esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const shield=[...document.body.children].filter(e=>e.tagName!=='SCRIPT').map(e=>[e,e.inert]);shield.forEach(([e])=>e.inert=true);
- const overlay=document.createElement('div');overlay.id='game-dialog';overlay.className='modal-overlay';overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-labelledby','game-dialog-title');overlay.innerHTML=`<form class="modal"><div class="modal-header"><h3 id="game-dialog-title">${entry?'Enter Details':'Confirm Action'}</h3></div><div class="modal-body"><${entry?'label for="game-dialog-input"':'p'}>${esc(message)}</${entry?'label':'p'}>${entry?`<input type="text" id="game-dialog-input" value="${esc(initial)}" autocomplete="off">`:''}</div><div class="modal-footer"><button class="btn btn-secondary" type="button" id="game-dialog-cancel">Cancel</button><button class="btn btn-primary" type="submit">${entry?'Save':'Confirm'}</button></div></form>`;
+ const overlay=document.createElement('div');overlay.id='game-dialog';overlay.className='modal-overlay';overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-labelledby','game-dialog-title');overlay.innerHTML=`<form class="modal"><div class="modal-header"><h3 id="game-dialog-title">${entry?'Enter Details':'Confirm Action'}</h3></div><div class="modal-body"><${entry?'label for="game-dialog-input"':'p'}>${esc(message)}</${entry?'label':'p'}>${entry?`<input type="text" id="game-dialog-input" value="${esc(initial)}" autocomplete="off">`:''}</div><div class="modal-footer"><button class="btn btn-secondary" type="button" id="game-dialog-cancel">${esc(labels.cancel || 'Cancel')}</button><button class="btn btn-primary" type="submit">${entry?'Save':esc(labels.confirm || 'Confirm')}</button></div></form>`;
  const close=ok=>{const value=entry?(ok?overlay.querySelector('input').value:null):ok;overlay.remove();shield.forEach(([e,was])=>e.inert=was);activeGameDialog=false;if(previous?.isConnected)previous.focus({preventScroll:true});resolve(value);};
  overlay.querySelector('form').onsubmit=e=>{e.preventDefault();close(true);};overlay.querySelector('#game-dialog-cancel').onclick=()=>close(false);
- overlay.onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();close(false);}if(e.key==='Tab'){const nodes=[...overlay.querySelectorAll('input,button')],first=nodes[0],last=nodes.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}};
+ overlay.onkeydown=e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();close(false);}if(e.key==='Tab'){const nodes=[...overlay.querySelectorAll('input,button')],first=nodes[0],last=nodes.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}};
  document.body.append(overlay);const target=entry?overlay.querySelector('input'):overlay.querySelector('#game-dialog-cancel');target.focus();if(entry)target.select();
  });
 }
-function gameConfirm(message){return gameDialog(message,'',false);}
+function gameConfirm(message,confirm='Confirm',cancel='Cancel'){return gameDialog(message,'',false,{confirm,cancel});}
 function gamePrompt(message,initial=''){return gameDialog(message,initial,true);}
 
 </script>
@@ -7895,7 +7923,7 @@ function renderRaceResultsModal(results, events, playerResult) {
     playerSection = `
       <div class="player-result-hero">
         <div>
-          <div class="big-pos">${pos}${ordinal(pos)} place</div>
+          <div class="big-pos">${pos}${ordinal(pos)} place ${playerResult.dnf ? '<span class="badge badge-red">DNF</span>' : ''}</div>
           <div class="big-prize green">${fmt$(playerResult.prize)} earned</div>
           <div class="muted-text">${playerResult.points} championship points</div>
         </div>
@@ -10982,6 +11010,58 @@ Object.assign(RACE_NEWS_ARTICLES.premier, {
 
 </script>
 <script>
+/* js/news-data/quit.js */
+// In-game fictional journalism. Generated by tools/build_news.cjs; edit authored copy there.
+const RACE_QUIT_NEWS_ARTICLES = [
+  {
+    "id": "quit-dnf-1",
+    "headline": "{player} Discovers the Fastest Route to Last Place",
+    "paragraphs": [
+      "{player} found an unconventional strategy at {track}: leave before the finish and let the results sheet do the overtaking. The reward was dead last in the {series}, a position that required remarkably little defending.",
+      "The car had an exit button and the driver had an idea. Unfortunately, neither involved reaching the checkered flag. The rest of the field now appears above this entry, which is one way to make the standings easy to read.",
+      "No heroic comeback followed. This was a voluntary DNF, with zero championship points and a very efficient demonstration of how to turn a race entry into an early parking reservation."
+    ]
+  },
+  {
+    "id": "quit-dnf-2",
+    "headline": "Checkered Flag Optional, Apparently, for {player}",
+    "paragraphs": [
+      "The {series} visited {track}, but {player} decided the full experience was unnecessary. A voluntary withdrawal delivered last place, proving that the quickest decision of the day was not necessarily a good one.",
+      "Finishing a race usually involves staying in it. That detail appears to have been lost somewhere between the starting grid and the quit button. The official classification has helpfully reserved the bottom line for this experiment.",
+      "There were no points for saving time, no trophy for finding the exit and no bonus for getting the car parked early. There was, however, a DNF, and it fits the performance rather neatly."
+    ]
+  },
+  {
+    "id": "quit-dnf-3",
+    "headline": "{player} Wins the Race to the Exit",
+    "paragraphs": [
+      "At last, a category in which {player} showed decisive pace at {track}: leaving. The {series} entry withdrew voluntarily and secured last place without the inconvenience of completing the race.",
+      "While race strategy normally concerns passing cars, this version focused on passing up the opportunity to finish. The quit button received more commitment than the closing stages, and the classification reflects that choice.",
+      "The official reward is a DNF and zero championship points. An early exit may be convenient, but the championship has yet to introduce a prize for being particularly punctual in the parking area."
+    ]
+  },
+  {
+    "id": "quit-dnf-4",
+    "headline": "{player} Brings a Race Car, Leaves the Finish Behind",
+    "paragraphs": [
+      "{player} entered the {series} race at {track} and then voluntarily removed the finishing part from the plan. The outcome was last place, a result that leaves very little room for optimistic interpretation.",
+      "The team supplied a race car. The schedule supplied a race. Somewhere along the way, completing that race became an optional extra. Pressing quit made the decision official and handed every other classified entrant a place ahead.",
+      "A DNF brings zero championship points, although this outing did offer a useful lesson: the bottom of the results sheet is much easier to reach when the driver helps it happen."
+    ]
+  },
+  {
+    "id": "quit-dnf-5",
+    "headline": "{player} Parks the Ambition at {track}",
+    "paragraphs": [
+      "There are bold calls, cautious calls and whatever {player} chose in the {series} today. A voluntary quit at {track} converted the outing into a last-place DNF, with the finish line left entirely out of the arrangement.",
+      "The route to a better result was still on the racetrack. The chosen route led out of the race instead. It was certainly decisive, although decisiveness is less impressive when it guarantees that everyone else goes above you on the results sheet.",
+      "Zero championship points complete the package. The car may be parked, but the result will stay on the record, providing a permanent reminder that leaving early and finishing strongly are rarely the same strategy."
+    ]
+  }
+];
+
+</script>
+<script>
 /* js/news.js */
 // Post-race reports are transient. Photos never consume career save storage.
 let pendingRaceNews = null;
@@ -11027,12 +11107,24 @@ function createRaceNews(context, random = Math.random) {
   };
 }
 
-function prepareCareerNews(race, result, photo, simulated=false) {
+let lastQuitNewsId = null;
+function createQuitRaceNews(context, random = Math.random) {
+  const choices = RACE_QUIT_NEWS_ARTICLES.filter(a => a.id !== lastQuitNewsId);
+  const article = choices[Math.min(choices.length - 1, Math.floor(random() * choices.length))];
+  lastQuitNewsId = article.id;
+  raceNewsReporter = (raceNewsReporter + 1 + Math.floor(random() * (RACE_NEWS_REPORTERS.length - 1))) % RACE_NEWS_REPORTERS.length;
+  const fill = text => text.replace(/\{(player|track|series)\}/g, (_, key) => ({player:context.playerName, track:context.trackName, series:context.seriesName}[key]));
+  return {id:article.id, headline:fill(article.headline), reporter:RACE_NEWS_REPORTERS[raceNewsReporter],
+    paragraphs:article.paragraphs.map(fill), playerName:context.playerName, position:context.position,
+    closing:context.nextTrack ? `The next stop is ${context.nextTrack}. Reaching the finish would be a promising change of approach.` : 'The season schedule is complete. This early exit will remain in the record long after the car has been parked.'};
+}
+
+function prepareCareerNews(race, result, photo, simulated=false, quitDNF=false) {
   const series=SERIES[game.currentSeries];
   const standings=getStandings(), index=standings.findIndex(s=>s.id==='player');
   const next=currentRace();
-  pendingRaceNews={mode:'career', photo:photo || null, simulated,
-    reports:[createRaceNews({seriesId:series.id,seriesName:series.name,
+  pendingRaceNews={mode:'career', photo:quitDNF ? null : (photo || null), simulated, suppressPhoto:quitDNF,
+    reports:[(quitDNF ? createQuitRaceNews : createRaceNews)({seriesId:series.id,seriesName:series.name,
       playerName:game.driverName,trackName:TRACKS.find(t=>t.id===race.trackId)?.name || 'the circuit',career:true,
       winner:photo?.leaderName,gridPosition:photo?.grid?.player,
       position:result.position,dnf:result.dnf,points:result.points,
@@ -11060,7 +11152,7 @@ function showRaceNews(reader=0) {
 function renderRaceNews(news,reader) {
   const report=news.reports[reader], esc=newsEscape;
   const photo=news.photo;
-  const image=photo?.dataUrl?.startsWith('data:image/jpeg;base64,') ? `<figure class="race-news-photo">
+  const image=news.suppressPhoto ? '' : photo?.dataUrl?.startsWith('data:image/jpeg;base64,') ? `<figure class="race-news-photo">
     <img src="${esc(photo.dataUrl)}" width="1024" height="576" alt="Trackside photograph of ${esc(photo.leaderName)} crossing the finish line.">
     <figcaption>${esc(photo.leaderName==='YOU' ? 'Player' : photo.leaderName.replace('PLAYER','Player'))} takes the checkered flag. Photo by Gavin Turnage</figcaption>
   </figure>` : `<div class="race-news-no-photo"><strong>Finish photo unavailable</strong><p>${news.simulated ? 'This race was simulated, so no trackside photograph was captured.' : 'A finish-line photograph could not be captured for this race.'}</p></div>`;
@@ -11074,7 +11166,7 @@ function renderRaceNews(news,reader) {
         <p class="race-news-lead">${esc(report.paragraphs[0])}</p>
         <p>${esc(report.paragraphs[1])}</p>
         ${report.raceDetail ? `<p>${esc(report.raceDetail)}</p>` : ''}
-        <blockquote><p>“${esc(report.quote)}”</p><cite>${esc(report.playerName)}</cite></blockquote>
+        ${report.quote ? `<blockquote><p>“${esc(report.quote)}”</p><cite>${esc(report.playerName)}</cite></blockquote>` : ''}
         <p>${esc(report.paragraphs[2])}</p><p>${esc(report.closing)}</p>
       </div>
     </article>`;
@@ -11879,7 +11971,6 @@ function noteIdleCars(idle) {
 }
 
 function handleStartRace() {
-  const preRaceState = JSON.stringify(game);
   const race   = currentRace();
   const series = SERIES[game.currentSeries];
 
@@ -11993,15 +12084,15 @@ function handleStartRace() {
       difficulty:   game.difficulty || DEFAULT_DIFFICULTY,
       raceRules: {...game.raceRules},
       playerHealth: pCar?.condition ?? 100,
-      onQuit: () => { game = JSON.parse(preRaceState); saveGame(); showScreen('game'); updateHeader(); showTab('dashboard'); toast('Race cancelled. Entry fees refunded; career unchanged.'); },
+      quitWithDNF: true,
       qualifyBoost: Math.round(staffTotal('qualifying') / ANALYST_QUALI_BONUS),   // Data Analysts sharpen the grid draw
       qualifyAI:    true,
       aiEntries:    aiEntries,
     },
-    (playerPosition, trackOrder, finishPhoto) => {
+    (playerPosition, trackOrder, finishPhoto, quitDNF = false) => {
       // 3D race complete - playerPosition is 1-indexed finish position
       // Run background sim to get AI standings (player result will be overridden)
-      const simResult = simulateRace({ playerCarId, trackId: race.trackId });
+      const simResult = simulateRace({ playerCarId, trackId: race.trackId, fullField: quitDNF });
 
       // Your team-mates raced on track alongside you, so their real finishing
       // order has to carry over too - otherwise the car you pushed to the win
@@ -12025,7 +12116,8 @@ function handleStartRace() {
         position:    playerPosition,
       };
       const merged     = simResult.results.map(r => (r.isPlayer ? stub : r));
-      const allResults = reRankWithTeamOrder(merged, playerPosition, teamOrder);
+      let allResults = reRankWithTeamOrder(merged, playerPosition, teamOrder);
+      if (quitDNF) allResults = classifyQuitDNF(allResults);
       for(const actual of teamOrder) {
         const result=allResults.find(r=>r.entrantId===actual.entrantId || (actual.carId && r.carId===actual.carId));
         if(result){result.raceHealth=actual.raceHealth;result.crashes=actual.crashes;}
@@ -12044,7 +12136,7 @@ function handleStartRace() {
 
       postRaceUpdate(pr, prize, allResults);
       saveGame();
-      prepareCareerNews(race, pr, finishPhoto);
+      prepareCareerNews(race, pr, finishPhoto, false, quitDNF);
 
       // Show results modal over the now-blank race screen
       showScreen('game');

@@ -41,3 +41,6 @@ Release SHA256 4a89fb14feff92152e960b810e2140f78f08d25c4897498fec22fe661cdfa3ad.
 Pre-split fingerprints in test/fixtures/race-news-fingerprints.json cover all270 articles, reporter order and774 deterministic reports (nine selections for every valid position). News tests also verify generator output matches every shipped script. Article copy/IDs/selection/formatting remain unchanged.
 
 VERSION110 race-engine refactor leaves news/photo behavior unchanged. Finish photo methods now belong to js/race3d/results.js; see docs/race-engine.md for script ordering.
+## VERSION135 voluntary Career withdrawal
+
+Career pause quitting now confirms a last-place DNF and uses the normal Results > News > Career pipeline. Five new quote-free/photo-free satirical stories are authored in tools/build_news.cjs and generated to js/news-data/quit.js before js/news.js. The original270 article-bank and deterministic-report fingerprints remain unchanged. Ordinary reports retain photos/quotes; Quick Race retains immediate cancellation and no news. Details and verification: [Career DNF withdrawal](career-quit-dnf.md).

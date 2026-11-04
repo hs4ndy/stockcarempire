@@ -983,7 +983,7 @@ function renderRaceResultsModal(results, events, playerResult) {
     playerSection = `
       <div class="player-result-hero">
         <div>
-          <div class="big-pos">${pos}${ordinal(pos)} place</div>
+          <div class="big-pos">${pos}${ordinal(pos)} place ${playerResult.dnf ? '<span class="badge badge-red">DNF</span>' : ''}</div>
           <div class="big-prize green">${fmt$(playerResult.prize)} earned</div>
           <div class="muted-text">${playerResult.points} championship points</div>
         </div>

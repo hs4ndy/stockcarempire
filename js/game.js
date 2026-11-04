@@ -534,7 +534,7 @@ function postRaceUpdate(playerResult, earnings, allResults) {
       if(rules.damage) car.lifetimeHealth=clamp((car.lifetimeHealth ?? 100)-2.5*(.9+damageLoss/100+Math.min(res.crashes||0,3)*.15),0,100);
       car.races += 1;
       if (res.position === 1) car.wins += 1;
-      car.totalPoints += series.points[res.position - 1] || 0;
+      car.totalPoints += res.points ?? (res.dnf ? 0 : (series.points[res.position - 1] || 0));
     } else {
       // Cars not in this race lose a little condition anyway (idle wear)
       car.condition = clamp(car.condition - randInt(0, 3), 0, 100);

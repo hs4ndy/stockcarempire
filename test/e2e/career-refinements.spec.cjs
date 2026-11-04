@@ -1,6 +1,6 @@
 const {test,expect}=require('playwright/test');
 const path=require('node:path'); const {pathToFileURL}=require('node:url');
-for(const width of [1440,375]) test(`career refinements and race rollback ${width}`,async({page})=>{
+for(const width of [1440,375]) test(`career refinements and Career DNF ${width}`,async({page})=>{
  await page.setViewportSize({width,height:850});
  await page.route('**/three.min.js',r=>r.fulfill({path:path.resolve('node_modules/three/build/three.min.js')}));
  await page.goto(pathToFileURL(path.resolve('releases/Stock-Car-Empire.html')).href);
@@ -16,8 +16,10 @@ for(const width of [1440,375]) test(`career refinements and race rollback ${widt
  await expect(page.locator('#r3d-quit')).toBeVisible();
  await page.screenshot({path:`.impeccable/review/quit-${width}.png`});
  await page.locator('#r3d-quit').click();
- expect(await page.evaluate(()=>JSON.stringify(game)===window.beforeRace)).toBe(true);
- expect(await page.evaluate(()=>localStorage.getItem('sce_slot_3')===window.beforeRace)).toBe(true);
+ await page.locator('#game-dialog').getByRole('button',{name:'Yes',exact:true}).click();
+ await expect(page.locator('#results-modal')).toBeVisible();
+ expect(await page.evaluate(()=>game.season.calendar[0].playerResult.dnf)).toBe(true);
+ await page.locator('#btn-close-results').click();await page.locator('#btn-close-news').click();
  await page.evaluate(()=>{showTab('carstats');});
  await expect(page.locator('#main-content')).not.toContainText('Driver / Owner');
  await page.evaluate(()=>{game.money=0;handleStartRace();});

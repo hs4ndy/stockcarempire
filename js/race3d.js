@@ -207,7 +207,7 @@ function launch3DRace(config, onComplete) {
         <div class="r3d-pause-panel">
           <div class="r3d-pause-title">PAUSED</div>
           <button class="r3d-pause-resume" id="r3d-pause-resume">RESUME</button>
-          <button class="r3d-pause-resume" id="r3d-quit">QUIT RACE</button>
+          <button class="r3d-pause-resume" id="r3d-quit">${config.quitWithDNF ? 'QUIT RACE WITH DNF' : 'QUIT RACE'}</button>
         </div>
       </div>
     </div>
@@ -216,11 +216,23 @@ function launch3DRace(config, onComplete) {
     </div>
   `;
 
-  document.getElementById('r3d-quit').addEventListener('click', () => {
-    if (!window._r3d || window._r3d.done) return;
-    window._r3d.destroy(); window._r3d = null;
-    window._r3dFinish = () => {};
-    if (config.onQuit) config.onQuit(); else showScreen('intro');
+  let quitting = false;
+  document.getElementById('r3d-quit').addEventListener('click', async () => {
+    const engine = window._r3d;
+    if (!engine || engine.done || quitting) return;
+    quitting = true;
+    try {
+      if (config.quitWithDNF) {
+        const confirmed = await gameConfirm('Are you sure you want to quit this race? It will result in a last-place finish.', 'Yes', 'No');
+        if (confirmed && window._r3d === engine && !engine.done) window._r3dFinish(engine.cars.length, true);
+        return;
+      }
+      engine.destroy(); window._r3d = null;
+      window._r3dFinish = () => {};
+      if (config.onQuit) config.onQuit(); else showScreen('intro');
+    } finally {
+      quitting = false;
+    }
   });
   container.classList.toggle('dual-race', !!config.dualPlayer);
   if (config.dualPlayer) {
@@ -243,7 +255,10 @@ function launch3DRace(config, onComplete) {
     window._r3d = new Race3DEngine(canvas, config, onComplete);
   });
 
-  window._r3dFinish = (pos) => {
+  let completionHandled = false;
+  window._r3dFinish = (pos, quitDNF = false) => {
+    if (completionHandled) return;
+    completionHandled = true;
     // Grab the real on-track order before tearing the engine down, so the
     // results table reflects what actually happened - team-mates included.
     let order = [];
@@ -254,7 +269,7 @@ function launch3DRace(config, onComplete) {
       try { window._r3d.destroy(); } catch (_) {}
       window._r3d = null;
     }
-    onComplete(pos, order, photo);
+    onComplete(pos, order, quitDNF ? null : photo, quitDNF);
   };
 }
 
