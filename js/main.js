@@ -24,6 +24,7 @@ function enterGame() {
     showScreen('game');
     updateHeader();
     showTab('dashboard');
+    if (showPendingTrophy()) return;
     offerCareerTutorial();
     showRetirementNotice();
   } catch (e) {

@@ -47,7 +47,7 @@ function awardRaceTrophy(result, state = game) {
   const race = state.season.calendar[state.season.raceIndex];
   const id = `win:${state.season.year}:${state.currentSeries}:${state.season.raceIndex + 1}`;
   if (awards.some(t => t.id === id)) return;
-  awards.push({id, kind: 'win', series: state.currentSeries, year: state.season.year,
+  awards.push({id, kind: 'win', unclaimed: true, series: state.currentSeries, year: state.season.year,
     race: state.season.raceIndex + 1, track: TRACKS.find(t => t.id === race?.trackId)?.name || null,
     startingPosition: result.startingPosition || null, points: result.points ?? null,
     earnings: result.prize ?? null, simulated: result.simulated ?? null,

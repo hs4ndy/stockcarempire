@@ -74,7 +74,13 @@ function showRaceNews(reader=0) {
   document.getElementById('race-news-modal')?.remove();
   showScreen(pendingRaceNews.mode==='career' ? 'game' : 'intro');
   document.querySelectorAll('.screen').forEach(s=>s.inert=true);
-  document.body.insertAdjacentHTML('beforeend', `<div class="modal-overlay" id="race-news-modal" role="dialog" aria-modal="true" aria-labelledby="news-modal-title"><div class="modal modal-wide race-news-modal"><div class="modal-header"><h3 id="news-modal-title">Race News</h3></div><div class="modal-body" id="race-news-content">${renderRaceNews(pendingRaceNews,raceNewsReader)}</div><div class="modal-footer"><button class="btn btn-primary" id="btn-close-news" onclick="finishRaceNews()">${pendingRaceNews.mode==='career' ? 'Continue to Career' : 'Back to Menu'}</button></div></div></div>`);
+  document.body.insertAdjacentHTML('beforeend', `<div class="modal-overlay" id="race-news-modal" role="dialog" aria-modal="true" aria-labelledby="news-modal-title"><div class="modal modal-wide race-news-modal"><div class="modal-header"><h3 id="news-modal-title">Race News</h3></div><div class="modal-body" id="race-news-content">${renderRaceNews(pendingRaceNews,raceNewsReader)}</div><div class="modal-footer"><button class="btn btn-primary" id="btn-close-news" onclick="finishRaceNews()">${pendingRaceNews.mode==='career' ? (ensureTrophies().some(t=>t.unclaimed) ? 'Continue to Trophy' : 'Continue to Career') : 'Back to Menu'}</button></div></div></div>`);
+  if (pendingRaceNews.photo?.canvas) {
+    const frame = pendingRaceNews.photo.canvas;
+    frame.setAttribute('role', 'img');
+    frame.setAttribute('aria-label', `Trackside photograph of ${pendingRaceNews.photo.leaderName} crossing the finish line.`);
+    document.querySelector('#race-news-content .race-news-photo')?.prepend(frame);
+  }
   document.getElementById('race-news-modal').onkeydown=e=>{
     if(e.key!=='Tab') return;
     const buttons=[...e.currentTarget.querySelectorAll('button')],first=buttons[0],last=buttons[buttons.length-1];
@@ -87,8 +93,8 @@ function showRaceNews(reader=0) {
 function renderRaceNews(news,reader) {
   const report=news.reports[reader], esc=newsEscape;
   const photo=news.photo;
-  const image=news.suppressPhoto ? '' : photo?.dataUrl?.startsWith('data:image/jpeg;base64,') ? `<figure class="race-news-photo">
-    <img src="${esc(photo.dataUrl)}" width="1024" height="576" alt="Trackside photograph of ${esc(photo.leaderName)} crossing the finish line.">
+  const image=news.suppressPhoto ? '' : (photo?.canvas || photo?.dataUrl?.startsWith('data:image/jpeg;base64,')) ? `<figure class="race-news-photo">
+    ${photo.canvas ? '' : `<img src="${esc(photo.dataUrl)}" width="1024" height="576" alt="Trackside photograph of ${esc(photo.leaderName)} crossing the finish line.">`}
     <figcaption>${esc(photo.leaderName==='YOU' ? 'Player' : photo.leaderName.replace('PLAYER','Player'))} takes the checkered flag. Photo by Gavin Turnage</figcaption>
   </figure>` : `<div class="race-news-no-photo"><strong>Finish photo unavailable</strong><p>${news.simulated ? 'This race was simulated, so no trackside photograph was captured.' : 'A finish-line photograph could not be captured for this race.'}</p></div>`;
   return `
@@ -113,6 +119,11 @@ function finishRaceNews() {
   document.getElementById('race-news-modal')?.remove();
   document.querySelectorAll('.screen').forEach(s=>s.inert=false);
   if(mode==='quick' || !game) { showScreen('intro'); document.getElementById('btn-quick-race')?.focus(); return; }
+  if (showPendingTrophy()) return;
+  returnFromRaceNews();
+}
+
+function returnFromRaceNews() {
   showScreen('game'); updateHeader(); renderTab('dashboard');
   reportLoanNotes(); if(!showRetirementNotice()) checkSaveReminder();
   document.getElementById('btn-hdr-menu')?.focus();

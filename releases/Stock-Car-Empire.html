@@ -27,7 +27,7 @@
 .trophy-grid { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;align-items:start; }
 .trophy-card { background:var(--panel);border-radius:var(--radius);overflow:hidden;min-width:0; }
 .trophy-preview { display:block;position:relative;width:100%;padding:0;border:0;background:#101316;color:var(--text);cursor:pointer; }
-.trophy-preview img { display:block;width:100%;height:auto;aspect-ratio:6/5;object-fit:contain; }
+.trophy-preview canvas { display:block;width:100%;height:auto;aspect-ratio:6/5;object-fit:contain; }
 .trophy-preview span { position:absolute;bottom:12px;right:16px;font-size:13px;color:var(--text-dim); }
 .trophy-preview:hover span { color:var(--text);text-decoration:underline;text-underline-offset:4px; }
 .trophy-preview:focus-visible { outline:2px solid var(--focus);outline-offset:-3px; }
@@ -42,7 +42,13 @@
 .trophy-history-note { padding-top:16px; }
 .trophy-empty { padding:64px 24px;text-align:center;background:var(--panel);border-radius:var(--radius); }
 .trophy-empty p { max-width:55ch;margin:12px auto 0;color:var(--text-dim); }
-.trophy-pagination { display:flex;justify-content:center;align-items:center;gap:20px;margin-top:32px; }
+.trophy-filters { display:flex;flex-wrap:wrap;gap:12px 20px; }
+.trophy-more-results { text-align:center;margin-top:24px; }
+.trophy-pending { margin-bottom:16px; }
+.trophy-claim-footer { border-top:1px solid var(--line);padding-top:12px;margin-top:16px;text-align:center; }
+.trophy-claim-footer p:empty { display:none; }
+.trophy-claim-footer button { min-width:min(220px,100%); }
+.trophy-viewport canvas[data-trophy-model] { object-fit:contain; }
 .trophy-viewer { position:fixed;inset:0;z-index:1200;background:var(--bg);display:flex;flex-direction:column;padding:24px 32px; }
 .trophy-viewer-header { display:flex;align-items:center;justify-content:space-between;gap:24px;padding-bottom:20px;border-bottom:1px solid var(--line); }
 .trophy-viewer-header h2 { font-size:32px;margin:0; }
@@ -350,7 +356,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .race-news-article h2 { max-width: 24ch; font: 700 clamp(34px, 4.5vw, 56px)/1.05 var(--font-display); letter-spacing: -.01em; overflow-wrap: anywhere; text-wrap: balance; }
 .race-news-byline { margin: 16px 0 24px; }
 .race-news-photo { margin: 0 0 32px; }
-.race-news-photo img { display: block; width: 100%; height: auto; aspect-ratio: 16/9; object-fit: cover; border-radius: var(--radius); }
+.race-news-photo :is(img, canvas) { display: block; width: 100%; height: auto; aspect-ratio: 16/9; object-fit: cover; border-radius: var(--radius); }
 .race-news-photo figcaption { margin-top: 10px; font-size: 14px; color: var(--text-mute); }
 .race-news-copy { max-width: 70ch; margin: 0; font-size: 18px; line-height: 1.65; color: var(--text-dim); overflow-wrap: anywhere; }
 .race-news-copy > p { margin-bottom: 24px; }
@@ -381,7 +387,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .save-slot-actions { display: flex; flex-wrap: wrap; gap: 8px; flex: none; }
 .result-row { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto auto auto; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
 .result-row:last-child { border-bottom: 0; } .result-row.player-result { background: var(--panel-3); border-radius: 4px; }
-.res-pos { text-align: center; font-weight: 600; color: var(--text-dim); } .res-pos.podium { color: var(--warn); }
+.res-pos { text-align: center; font-weight: 600; color: var(--text); } .res-pos.podium { color: var(--warn); }
 .res-name { min-width: 0; overflow-wrap: anywhere; } .res-pts { color: var(--text-dim); font-size: 13px; } .res-prize { text-align: right; font-weight: 600; }
 .player-result-hero { display: flex; flex-direction: column; gap: 12px; padding: 24px; background: var(--panel-2); border-radius: 6px; margin-bottom: 24px; }
 .big-pos-label { color: var(--text-dim); font-size: 14px; } .big-pos { font: 700 44px/1 var(--font-display); }
@@ -950,7 +956,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 }
 
 /* Quick Race personalization and local split screen. */
-.r3d-pause-panel .r3d-pause-resume { width: 180px; }
+.r3d-pause-panel .r3d-pause-resume { width: min(220px, 100%); padding-inline: 10px; white-space: nowrap; }
 .quick-player-mode { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .quick-player-mode [aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
 .quick-car-editor { padding: 24px 0; border-top: 1px solid var(--line); }
@@ -1254,7 +1260,7 @@ button.standing-driver .st-name { text-decoration:none; }
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 137</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 138</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -2742,7 +2748,7 @@ function awardRaceTrophy(result, state = game) {
   const race = state.season.calendar[state.season.raceIndex];
   const id = `win:${state.season.year}:${state.currentSeries}:${state.season.raceIndex + 1}`;
   if (awards.some(t => t.id === id)) return;
-  awards.push({id, kind: 'win', series: state.currentSeries, year: state.season.year,
+  awards.push({id, kind: 'win', unclaimed: true, series: state.currentSeries, year: state.season.year,
     race: state.season.raceIndex + 1, track: TRACKS.find(t => t.id === race?.trackId)?.name || null,
     startingPosition: result.startingPosition || null, points: result.points ?? null,
     earnings: result.prize ?? null, simulated: result.simulated ?? null,
@@ -2954,7 +2960,7 @@ function setCarNumber(carId, num) {
 function championshipContenderIds() {
   const rivals = (game?.season?.aiTeams || []).flatMap(t => t.cars)
     .filter(c => c.id && Number.isFinite(c.power));
-  const priority = car => car.driverName === 'Parker Holt' ? 2 : car.driverName === 'Joshua Enright' ? 1 : 0;
+  const priority = car => car.driverName === 'Parker Holt' ? 2 : car.driverName === 'Joshua Enright' ? 1 : car.driverName === 'Tanner Boyd' ? .5 : 0;
   rivals.sort((a,b) => priority(b)-priority(a) || b.power-a.power || (a.number || 999)-(b.number || 999) || String(a.id).localeCompare(String(b.id)));
   return new Set(rivals.slice(0,3).map(c => c.id));
 }
@@ -3088,6 +3094,10 @@ function generateAITeams(seriesLevel) {
   if (!roster.some(c => c.driverName === 'Parker Holt')) {
     const parker = roster.filter(c => c.driverName !== 'Joshua Enright').sort((a,b) => b.power-a.power)[0];
     if (parker) parker.driverName = 'Parker Holt';
+  }
+  if (!roster.some(c => c.driverName === 'Tanner Boyd')) {
+    const tanner = roster.filter(c => !['Parker Holt', 'Joshua Enright'].includes(c.driverName)).sort((a,b) => b.power-a.power)[0];
+    if (tanner) tanner.driverName = 'Tanner Boyd';
   }
   return teams;
 }
@@ -6898,11 +6908,12 @@ class Race3DEngine {
       r.clear(true,true,true); r.render(this.scene,camera);
       const pixels=new Uint8Array(width*height*4);
       r.readRenderTargetPixels(target,0,0,width,height,pixels);
+      if (!pixels.some((value, i) => i % 4 === 3 && value)) throw new Error('The graphics driver returned an empty finish frame.');
       const canvas=document.createElement('canvas'); canvas.width=width; canvas.height=height;
       const ctx=canvas.getContext('2d'), frame=ctx.createImageData(width,height);
       for(let y=0;y<height;y++) frame.data.set(pixels.subarray((height-1-y)*width*4,(height-y)*width*4),y*width*4);
       ctx.putImageData(frame,0,0);
-      this.finishPhoto={dataUrl:canvas.toDataURL('image/jpeg',0.88),leaderName:leader.label || 'The race winner',leaderId:leader.entrantId,grid:this._newsGrid,width,height};
+      this.finishPhoto={canvas, get dataUrl() { return canvas.toDataURL('image/jpeg',0.88); },leaderName:leader.label || 'The race winner',leaderId:leader.entrantId,grid:this._newsGrid,width,height};
     } catch(error) {
       // Photo failure must not interrupt classification or saving.
       this.finishPhoto=null;
@@ -7077,7 +7088,34 @@ const SC_TROPHY_THUMBNAILS = {"challenger-championship":"data:image/png;base64,i
 <script>
 /* js/trophy-case.js */
 // Static gallery, one on-demand 3D renderer. Never creates a renderer per award.
-let trophyFilter = 'all', trophyPage = 0, trophyGallery = [], trophyViewer = null;
+let trophyFilter = 'all', trophySeries = 'all', trophyGallery = [], trophyViewer = null;
+let trophyGalleryObserver = null;
+const trophyBitmaps = new Map();
+
+async function drawTrophyThumbnail(canvas) {
+  const key = canvas.dataset.trophyModel;
+  try {
+    if (!trophyBitmaps.has(key)) {
+      const bytes = Uint8Array.from(atob(SC_TROPHY_THUMBNAILS[key].split(',')[1]), c => c.charCodeAt(0));
+      trophyBitmaps.set(key, createImageBitmap(new Blob([bytes], {type:'image/png'})));
+    }
+    const bitmap = await trophyBitmaps.get(key);
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  } catch (error) {
+    trophyBitmaps.delete(key);
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = '#f2f2ef';
+      ctx.font = '18px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Preview unavailable', canvas.width / 2, canvas.height / 2);
+    }
+  }
+}
+
+function trophyThumbnail(key) {
+  return `<canvas width="480" height="400" data-trophy-model="${careerArchiveEscape(key)}" aria-hidden="true"></canvas>`;
+}
 function trophyDate(t) { return `Year ${t.year}${t.kind === 'championship' ? ' · Season champion' : t.race ? ` · Race ${t.race}` : ' · Race not recorded'}`; }
 function trophyDetails(t) {
   const esc = careerArchiveEscape;
@@ -7087,22 +7125,95 @@ function trophyDetails(t) {
     : row('Race', t.race) + row('Track', t.track) + row('Started', t.startingPosition ? `${t.startingPosition}${ordinal(t.startingPosition)}` : null) + row('Finished', '1st') + row('Points', t.points) + row('Cash earned', t.earnings != null ? fmt$(t.earnings) : null) + row('Car', t.carName) + row('Difficulty', t.difficulty ? difficultyById(t.difficulty).name : null) + row('Race type', t.simulated === true ? 'Simulated' : t.simulated === false ? 'Driven' : null))
     + (t.historical ? '<p class="muted-text small trophy-history-note">Recovered from your saved career. Missing event details were not recorded in that version.</p>' : '');
 }
-function renderTrophyCase(awards = ensureTrophies()) {
+function renderTrophyCard(t, index) {
+  const esc = careerArchiveEscape;
+  const title = esc(trophyTitle(t)), date = esc(trophyDate(t));
+  const subtitle = t.track ? esc(t.track) : t.kind === 'championship' ? `${t.wins ?? 0} wins this season` : 'Historical win';
+  return `<article class="trophy-card">
+    <button class="trophy-preview" onclick="openTrophyViewer(${index})" aria-label="View ${title} in 3D, ${date}">
+      ${trophyThumbnail(trophyModelKey(t))}<span>View in 3D</span>
+    </button>
+    <div class="trophy-caption"><h3>${title}</h3><p>${date}</p><p class="muted-text small">${subtitle}</p>
+      <details class="trophy-more"><summary>More</summary>${trophyDetails(t)}</details>
+    </div>
+  </article>`;
+}
+
+function renderTrophyCase(awards = ensureTrophies().filter(t => !t.unclaimed), archived = false) {
+  trophyGalleryObserver?.disconnect();
   trophyGallery = [...awards].sort((a,b) => b.year-a.year || (b.kind==='championship'?1000:b.race||0)-(a.kind==='championship'?1000:a.race||0));
-  const filtered = trophyGallery.map((t,i)=>({t,i})).filter(({t})=>trophyFilter==='all'||t.kind===trophyFilter);
-  const pages = Math.max(1, Math.ceil(filtered.length/24)); trophyPage = Math.min(trophyPage,pages-1);
-  const wins=awards.filter(t=>t.kind==='win').length,titles=awards.length-wins;
-  return `<div class="trophy-heading"><div><h2>Trophy Case</h2><p class="muted-text">${wins} race ${wins===1?'win':'wins'} · ${titles} ${titles===1?'championship':'championships'}</p></div><label class="trophy-filter">Show<select class="form-select" id="trophy-filter" onchange="filterTrophies(this.value)"><option value="all" ${trophyFilter==='all'?'selected':''}>All trophies</option><option value="win" ${trophyFilter==='win'?'selected':''}>Race wins</option><option value="championship" ${trophyFilter==='championship'?'selected':''}>Championships</option></select></label></div>
-  ${!filtered.length ? `<div class="trophy-empty"><h3>${awards.length ? 'No trophies in this view' : 'Your first trophy is waiting'}</h3><p>${awards.length ? 'Choose another view to see your collection.' : 'Win a Career race or a season championship to earn a trophy. Every victory gets its own place here.'}</p></div>` : `<div class="trophy-grid">${filtered.slice(trophyPage*24,(trophyPage+1)*24).map(({t,i})=>`<article class="trophy-card"><button class="trophy-preview" onclick="openTrophyViewer(${i})" aria-label="View ${careerArchiveEscape(trophyTitle(t))} in 3D, ${careerArchiveEscape(trophyDate(t))}"><img src="${SC_TROPHY_THUMBNAILS[trophyModelKey(t)]}" alt="${careerArchiveEscape(trophyTitle(t))}" width="480" height="400" loading="lazy"><span>View in 3D</span></button><div class="trophy-caption"><h3>${careerArchiveEscape(trophyTitle(t))}</h3><p>${careerArchiveEscape(trophyDate(t))}</p><p class="muted-text small">${t.track?careerArchiveEscape(t.track):t.kind==='championship'?`${t.wins ?? 0} wins this season`:'Historical win'}</p><details class="trophy-more"><summary>More</summary>${trophyDetails(t)}</details></div></article>`).join('')}</div>`}
-  ${pages>1?`<div class="trophy-pagination"><button class="btn btn-secondary" onclick="pageTrophies(-1)" ${trophyPage===0?'disabled':''}>Previous</button><span>Page ${trophyPage+1} of ${pages}</span><button class="btn btn-secondary" onclick="pageTrophies(1)" ${trophyPage===pages-1?'disabled':''}>Next</button></div>`:''}`;
+  const filtered = trophyGallery.map((t,i) => ({t,i})).filter(({t}) =>
+    (trophyFilter === 'all' || t.kind === trophyFilter) && (trophySeries === 'all' || String(t.series) === trophySeries));
+  const wins = awards.filter(t=>t.kind==='win').length, titles = awards.length-wins;
+  const hasPending = !archived && ensureTrophies().some(t => t.unclaimed);
+  queueMicrotask(() => {
+    const root = document.getElementById(archived ? 'archived-trophies-content' : 'main-content');
+    const gallery = root?.querySelector('.trophy-scroll-gallery');
+    if (!gallery || !filtered.length) return;
+    const grid = gallery.querySelector('.trophy-grid');
+    const more = gallery.querySelector('.trophy-more-results');
+    let displayed = 0;
+    const append = () => {
+      if (!grid.isConnected) { observer?.disconnect(); return; }
+      const batch = filtered.slice(displayed, displayed + 24);
+      if (!batch.length) return;
+      grid.insertAdjacentHTML('beforeend', batch.map(({t,i}) => renderTrophyCard(t,i)).join(''));
+      for (const card of Array.from(grid.children).slice(displayed)) drawTrophyThumbnail(card.querySelector('canvas'));
+      displayed += batch.length;
+      more.hidden = displayed >= filtered.length;
+      observer?.unobserve(more);
+      if (!more.hidden) observer?.observe(more);
+    };
+    const observer = typeof IntersectionObserver === 'function'
+      ? new IntersectionObserver(entries => { if (entries.some(e => e.isIntersecting)) append(); }, {rootMargin:'300px'})
+      : null;
+    trophyGalleryObserver = observer;
+    more.querySelector('button').onclick = append;
+    append();
+  });
+  return `<div class="trophy-heading">
+    <div><h2>Trophy Case</h2><p class="muted-text">${wins} race ${wins===1?'win':'wins'} · ${titles} ${titles===1?'championship':'championships'}</p></div>
+    <div class="trophy-filters">
+      <label class="trophy-filter">Award<select class="form-select" id="trophy-filter" onchange="filterTrophies(this.value, trophySeries, this.id)">
+        ${[['all','All trophies'],['win','Race wins'],['championship','Championships']].map(([key,label])=>`<option value="${key}" ${trophyFilter===key?'selected':''}>${label}</option>`).join('')}
+      </select></label>
+      <label class="trophy-filter">Series<select class="form-select" id="trophy-series" onchange="filterTrophies(trophyFilter, this.value, this.id)">
+        ${[['all','All series'],...SERIES.map((s,i)=>[String(i),s.name])].map(([key,label])=>`<option value="${key}" ${trophySeries===key?'selected':''}>${label}</option>`).join('')}
+      </select></label>
+    </div>
+  </div>
+  ${hasPending ? '<button class="btn btn-primary trophy-pending" onclick="showPendingTrophy()">Claim Race Trophy</button>' : ''}
+  ${filtered.length ? '<div class="trophy-scroll-gallery"><div class="trophy-grid"></div><div class="trophy-more-results" hidden><button class="btn btn-secondary">Load more trophies</button></div></div>'
+    : `<div class="trophy-empty"><h3>${awards.length ? 'No trophies in this view' : 'Your first trophy is waiting'}</h3><p>${awards.length ? 'Try another award or series filter.' : 'Win a Career race or a season championship to earn a trophy.'}</p></div>`}`;
 }
-function refreshTrophyGallery() {
-  const archive=document.getElementById('archived-trophies-content');
-  if(archive) archive.innerHTML=renderTrophyCase(trophyGallery);
+
+function filterTrophies(kind, series, focusId) {
+  trophyFilter = kind;
+  trophySeries = series;
+  const archive = document.getElementById('archived-trophies-content');
+  if (archive) archive.innerHTML = renderTrophyCase(trophyGallery, true);
   else renderTab('trophies');
+  (archive || document.getElementById('main-content'))?.querySelector(`#${focusId}`)?.focus();
 }
-function filterTrophies(value) { trophyFilter=['all','win','championship'].includes(value)?value:'all';trophyPage=0;refreshTrophyGallery();document.getElementById('trophy-filter')?.focus(); }
-function pageTrophies(delta) {trophyPage=Math.max(0,trophyPage+delta);refreshTrophyGallery();document.querySelector('.trophy-heading')?.scrollIntoView({block:'start'});}
+
+function showPendingTrophy() {
+  const career = game;
+  const award = ensureTrophies().find(t => t.unclaimed);
+  if (!award || trophyViewer) return false;
+  openTrophyViewer(award, () => {
+    if (game !== career || !award.unclaimed) return;
+    delete award.unclaimed;
+    if (currentSlot != null && !saveToSlot(currentSlot)) {
+      award.unclaimed = true;
+      const message = document.getElementById('trophy-claim-message');
+      message.textContent = 'Could not save this trophy. Try again when storage is available.';
+      return;
+    }
+    closeTrophyViewer();
+    if (!showPendingTrophy()) returnFromRaceNews();
+  }, returnFromRaceNews);
+  return true;
+}
 
 function createTrophyStage(container, key) {
   const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'low-power',preserveDrawingBuffer:true});
@@ -7131,11 +7242,11 @@ function createTrophyStage(container, key) {
   state.dispose=()=>{state.disposed=true;cancelAnimationFrame(state.frame);state.resize?.disconnect();scene.traverse(o=>{o.geometry?.dispose();if(o.material)o.material.dispose();o.shadow?.map?.dispose();});env.dispose();renderer.dispose();renderer.forceContextLoss();renderer.domElement.remove();};
   state.resize=new ResizeObserver(state.render);state.resize.observe(container);state.render();return state;
 }
-function openTrophyViewer(index) {
-  if(trophyViewer)return;const award=trophyGallery[index];if(!award)return;
+function openTrophyViewer(selection, claim, defer) {
+  if(trophyViewer)return;const award=typeof selection === 'number' ? trophyGallery[selection] : selection;if(!award)return;
   const previous=document.activeElement,shield=[...document.body.children].filter(e=>e.tagName!=='SCRIPT').map(e=>[e,e.inert]);shield.forEach(([e])=>e.inert=true);
   const overlay=document.createElement('div');overlay.id='trophy-viewer';overlay.className='trophy-viewer';overlay.role='dialog';overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-labelledby','trophy-viewer-title');
-  overlay.innerHTML=`<div class="trophy-viewer-header"><h2 id="trophy-viewer-title">${careerArchiveEscape(trophyTitle(award))}</h2><button class="btn btn-secondary" id="trophy-close">Close</button></div><div class="trophy-viewer-layout"><section class="trophy-stage"><div class="trophy-viewport"></div><div class="trophy-controls"><button class="btn btn-secondary" data-view="left" aria-label="Rotate left">Rotate left</button><button class="btn btn-secondary" data-view="right" aria-label="Rotate right">Rotate right</button><button class="btn btn-secondary" data-view="in" aria-label="Zoom in">+</button><button class="btn btn-secondary" data-view="out" aria-label="Zoom out">−</button><button class="btn btn-ghost" data-view="reset">Reset</button></div><p class="muted-text small">Drag to rotate · Scroll to zoom · Arrow keys rotate</p><p id="trophy-view-error" role="status"></p></section><section class="trophy-event"><h3>${careerArchiveEscape(trophyDate(award))}</h3>${trophyDetails(award)}</section></div>`;
+  overlay.innerHTML=`<div class="trophy-viewer-header"><h2 id="trophy-viewer-title">${careerArchiveEscape(trophyTitle(award))}</h2><button class="btn btn-secondary" id="trophy-close">${claim ? 'Later' : 'Close'}</button></div><div class="trophy-viewer-layout"><section class="trophy-stage"><div class="trophy-viewport"></div><div class="trophy-controls"><button class="btn btn-secondary" data-view="left" aria-label="Rotate left">Rotate left</button><button class="btn btn-secondary" data-view="right" aria-label="Rotate right">Rotate right</button><button class="btn btn-secondary" data-view="in" aria-label="Zoom in">+</button><button class="btn btn-secondary" data-view="out" aria-label="Zoom out">−</button><button class="btn btn-ghost" data-view="reset">Reset</button></div><p class="muted-text small">Drag to rotate · Scroll to zoom · Arrow keys rotate</p><p id="trophy-view-error" role="status"></p></section><section class="trophy-event"><h3>${careerArchiveEscape(trophyDate(award))}</h3>${trophyDetails(award)}</section></div>${claim ? '<div class="trophy-claim-footer"><p id="trophy-claim-message" role="status"></p><button class="btn btn-primary" id="trophy-claim">Add to Case</button></div>' : ''}`;
   document.body.append(overlay);const oldOverflow=document.body.style.overflow;document.body.style.overflow='hidden';trophyViewer={overlay,previous,shield,oldOverflow};
   try{
     const stage=createTrophyStage(overlay.querySelector('.trophy-viewport'),trophyModelKey(award));trophyViewer.stage=stage;
@@ -7146,16 +7257,18 @@ function openTrophyViewer(index) {
     canvas.onwheel=e=>{e.preventDefault();move(0,0,e.deltaY*.001);};
     canvas.onkeydown=e=>{const steps={ArrowLeft:[.15,0,0],ArrowRight:[-.15,0,0],ArrowUp:[0,.1,0],ArrowDown:[0,-.1,0],'+':[0,0,-.1],'=':[0,0,-.1],'-':[0,0,.1]};if(steps[e.key]){e.preventDefault();move(...steps[e.key]);}};
     overlay.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{const v=b.dataset.view;if(v==='reset'){Object.assign(stage,{yaw:.25,elevation:.20,zoom:1});stage.render();}else move(v==='left'?.25:v==='right'?-.25:0,0,v==='in'?-.1:v==='out'?.1:0);});
-  }catch(e){console.warn('Trophy preview',e);overlay.querySelector('#trophy-view-error').textContent='The 3D view could not start. Your trophy and its record are safe.';overlay.querySelector('.trophy-viewport').innerHTML=`<img src="${SC_TROPHY_THUMBNAILS[trophyModelKey(award)]}" alt="${careerArchiveEscape(trophyTitle(award))}">`;overlay.querySelectorAll('[data-view]').forEach(b=>b.disabled=true);}
-  overlay.querySelector('#trophy-close').onclick=closeTrophyViewer;
-  overlay.onkeydown=e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();closeTrophyViewer();}if(e.key==='Tab'){const focus=[...overlay.querySelectorAll('button:not(:disabled),canvas[tabindex]')],first=focus[0],last=focus.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}};overlay.querySelector('#trophy-close').focus();
+  }catch(e){console.warn('Trophy preview',e);overlay.querySelector('#trophy-view-error').textContent='The 3D view could not start. Your trophy and its record are safe.';overlay.querySelector('.trophy-viewport').innerHTML=trophyThumbnail(trophyModelKey(award));drawTrophyThumbnail(overlay.querySelector('.trophy-viewport canvas'));overlay.querySelectorAll('[data-view]').forEach(b=>b.disabled=true);}
+  const dismiss = () => { closeTrophyViewer(); defer?.(); };
+  overlay.querySelector('#trophy-close').onclick=dismiss;
+  if (claim) overlay.querySelector('#trophy-claim').onclick=claim;
+  overlay.onkeydown=e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();dismiss();}if(e.key==='Tab'){const focus=[...overlay.querySelectorAll('button:not(:disabled),canvas[tabindex]')],first=focus[0],last=focus.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}};overlay.querySelector('#trophy-close').focus();
 }
 function closeTrophyViewer(){const s=trophyViewer;if(!s)return;trophyViewer=null;s.stage?.dispose();s.overlay.remove();s.shield.forEach(([e,was])=>e.inert=was);document.body.style.overflow=s.oldOverflow;s.previous?.focus({preventScroll:true});}
 function showArchivedTrophies(index){
   const archive=getHallOfFame()[index];if(!archive)return;
-  if(document.getElementById('archived-trophies-modal'))return;trophyPage=0;trophyFilter='all';
+  if(document.getElementById('archived-trophies-modal'))return;trophySeries='all';trophyFilter='all';
   const previous=document.activeElement,oldOverflow=document.body.style.overflow,shield=[...document.body.children].filter(e=>e.tagName!=='SCRIPT').map(e=>[e,e.inert]);shield.forEach(([e])=>e.inert=true);
-  document.body.insertAdjacentHTML('beforeend',`<div class="modal-overlay" id="archived-trophies-modal" role="dialog" aria-modal="true" aria-labelledby="archived-trophies-title"><div class="modal trophy-archive"><div class="modal-header"><h3 id="archived-trophies-title">${careerArchiveEscape(archive.driverName)} · Trophies</h3><button class="btn btn-secondary" id="archived-trophies-close">Close</button></div><div class="modal-body" id="archived-trophies-content">${renderTrophyCase(archive.trophies||[])}</div></div></div>`);
+  document.body.insertAdjacentHTML('beforeend',`<div class="modal-overlay" id="archived-trophies-modal" role="dialog" aria-modal="true" aria-labelledby="archived-trophies-title"><div class="modal trophy-archive"><div class="modal-header"><h3 id="archived-trophies-title">${careerArchiveEscape(archive.driverName)} · Trophies</h3><button class="btn btn-secondary" id="archived-trophies-close">Close</button></div><div class="modal-body" id="archived-trophies-content">${renderTrophyCase(archive.trophies||[], true)}</div></div></div>`);
   const overlay=document.getElementById('archived-trophies-modal'),close=()=>{overlay.remove();shield.forEach(([e,was])=>e.inert=was);document.body.style.overflow=oldOverflow;previous?.focus({preventScroll:true});};
   document.body.style.overflow='hidden';overlay.querySelector('#archived-trophies-close').onclick=close;
   overlay.onkeydown=e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();close();}if(e.key==='Tab'){const focus=[...overlay.querySelectorAll('button:not(:disabled),select,summary')],first=focus[0],last=focus.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}};overlay.querySelector('#archived-trophies-close').focus();
@@ -8121,7 +8234,7 @@ function renderRaceResultsModal(results, events, playerResult) {
   if (!playerResult?.isPlayer) throw new Error('Race results require the player driving for their team.');
   const topRows = results.slice(0, 10).map(r => `
     <div class="result-row ${r.isPlayer ? 'player-result' : ''}">
-      <span class="res-pos ${r.position <= 3 ? 'podium' : ''}">${r.position}</span>
+      <span class="res-pos ${r.position === 1 ? 'podium' : ''}">${r.position}</span>
       <span class="res-name">${resultName(r)}</span>
       <span class="res-pts">${r.points}pts</span>
       <span class="res-prize green">${fmt$(r.prize)}</span>
@@ -8180,7 +8293,7 @@ function renderEndSeasonModal(info) {
 
   const payoutRows = (info.payouts || []).map(p => `
     <div class="result-row ${p.isPlayer ? 'player-result' : p.isTeamCar ? 'team-standing' : ''}">
-      <span class="res-pos ${p.pos <= 3 ? 'podium' : ''}">${p.pos}</span>
+      <span class="res-pos ${p.pos === 1 ? 'podium' : ''}">${p.pos}</span>
       <span class="res-name">${p.isPlayer ? `<strong>${info.driver}</strong>` : p.name}</span>
       <span class="res-prize green">${fmt$(p.amount)}</span>
     </div>`).join('');
@@ -11366,7 +11479,13 @@ function showRaceNews(reader=0) {
   document.getElementById('race-news-modal')?.remove();
   showScreen(pendingRaceNews.mode==='career' ? 'game' : 'intro');
   document.querySelectorAll('.screen').forEach(s=>s.inert=true);
-  document.body.insertAdjacentHTML('beforeend', `<div class="modal-overlay" id="race-news-modal" role="dialog" aria-modal="true" aria-labelledby="news-modal-title"><div class="modal modal-wide race-news-modal"><div class="modal-header"><h3 id="news-modal-title">Race News</h3></div><div class="modal-body" id="race-news-content">${renderRaceNews(pendingRaceNews,raceNewsReader)}</div><div class="modal-footer"><button class="btn btn-primary" id="btn-close-news" onclick="finishRaceNews()">${pendingRaceNews.mode==='career' ? 'Continue to Career' : 'Back to Menu'}</button></div></div></div>`);
+  document.body.insertAdjacentHTML('beforeend', `<div class="modal-overlay" id="race-news-modal" role="dialog" aria-modal="true" aria-labelledby="news-modal-title"><div class="modal modal-wide race-news-modal"><div class="modal-header"><h3 id="news-modal-title">Race News</h3></div><div class="modal-body" id="race-news-content">${renderRaceNews(pendingRaceNews,raceNewsReader)}</div><div class="modal-footer"><button class="btn btn-primary" id="btn-close-news" onclick="finishRaceNews()">${pendingRaceNews.mode==='career' ? (ensureTrophies().some(t=>t.unclaimed) ? 'Continue to Trophy' : 'Continue to Career') : 'Back to Menu'}</button></div></div></div>`);
+  if (pendingRaceNews.photo?.canvas) {
+    const frame = pendingRaceNews.photo.canvas;
+    frame.setAttribute('role', 'img');
+    frame.setAttribute('aria-label', `Trackside photograph of ${pendingRaceNews.photo.leaderName} crossing the finish line.`);
+    document.querySelector('#race-news-content .race-news-photo')?.prepend(frame);
+  }
   document.getElementById('race-news-modal').onkeydown=e=>{
     if(e.key!=='Tab') return;
     const buttons=[...e.currentTarget.querySelectorAll('button')],first=buttons[0],last=buttons[buttons.length-1];
@@ -11379,8 +11498,8 @@ function showRaceNews(reader=0) {
 function renderRaceNews(news,reader) {
   const report=news.reports[reader], esc=newsEscape;
   const photo=news.photo;
-  const image=news.suppressPhoto ? '' : photo?.dataUrl?.startsWith('data:image/jpeg;base64,') ? `<figure class="race-news-photo">
-    <img src="${esc(photo.dataUrl)}" width="1024" height="576" alt="Trackside photograph of ${esc(photo.leaderName)} crossing the finish line.">
+  const image=news.suppressPhoto ? '' : (photo?.canvas || photo?.dataUrl?.startsWith('data:image/jpeg;base64,')) ? `<figure class="race-news-photo">
+    ${photo.canvas ? '' : `<img src="${esc(photo.dataUrl)}" width="1024" height="576" alt="Trackside photograph of ${esc(photo.leaderName)} crossing the finish line.">`}
     <figcaption>${esc(photo.leaderName==='YOU' ? 'Player' : photo.leaderName.replace('PLAYER','Player'))} takes the checkered flag. Photo by Gavin Turnage</figcaption>
   </figure>` : `<div class="race-news-no-photo"><strong>Finish photo unavailable</strong><p>${news.simulated ? 'This race was simulated, so no trackside photograph was captured.' : 'A finish-line photograph could not be captured for this race.'}</p></div>`;
   return `
@@ -11405,6 +11524,11 @@ function finishRaceNews() {
   document.getElementById('race-news-modal')?.remove();
   document.querySelectorAll('.screen').forEach(s=>s.inert=false);
   if(mode==='quick' || !game) { showScreen('intro'); document.getElementById('btn-quick-race')?.focus(); return; }
+  if (showPendingTrophy()) return;
+  returnFromRaceNews();
+}
+
+function returnFromRaceNews() {
   showScreen('game'); updateHeader(); renderTab('dashboard');
   reportLoanNotes(); if(!showRetirementNotice()) checkSaveReminder();
   document.getElementById('btn-hdr-menu')?.focus();
@@ -11717,6 +11841,7 @@ function enterGame() {
     showScreen('game');
     updateHeader();
     showTab('dashboard');
+    if (showPendingTrophy()) return;
     offerCareerTutorial();
     showRetirementNotice();
   } catch (e) {

@@ -189,7 +189,7 @@ function setCarNumber(carId, num) {
 function championshipContenderIds() {
   const rivals = (game?.season?.aiTeams || []).flatMap(t => t.cars)
     .filter(c => c.id && Number.isFinite(c.power));
-  const priority = car => car.driverName === 'Parker Holt' ? 2 : car.driverName === 'Joshua Enright' ? 1 : 0;
+  const priority = car => car.driverName === 'Parker Holt' ? 2 : car.driverName === 'Joshua Enright' ? 1 : car.driverName === 'Tanner Boyd' ? .5 : 0;
   rivals.sort((a,b) => priority(b)-priority(a) || b.power-a.power || (a.number || 999)-(b.number || 999) || String(a.id).localeCompare(String(b.id)));
   return new Set(rivals.slice(0,3).map(c => c.id));
 }
@@ -323,6 +323,10 @@ function generateAITeams(seriesLevel) {
   if (!roster.some(c => c.driverName === 'Parker Holt')) {
     const parker = roster.filter(c => c.driverName !== 'Joshua Enright').sort((a,b) => b.power-a.power)[0];
     if (parker) parker.driverName = 'Parker Holt';
+  }
+  if (!roster.some(c => c.driverName === 'Tanner Boyd')) {
+    const tanner = roster.filter(c => !['Parker Holt', 'Joshua Enright'].includes(c.driverName)).sort((a,b) => b.power-a.power)[0];
+    if (tanner) tanner.driverName = 'Tanner Boyd';
   }
   return teams;
 }

@@ -955,7 +955,7 @@ function renderRaceResultsModal(results, events, playerResult) {
   if (!playerResult?.isPlayer) throw new Error('Race results require the player driving for their team.');
   const topRows = results.slice(0, 10).map(r => `
     <div class="result-row ${r.isPlayer ? 'player-result' : ''}">
-      <span class="res-pos ${r.position <= 3 ? 'podium' : ''}">${r.position}</span>
+      <span class="res-pos ${r.position === 1 ? 'podium' : ''}">${r.position}</span>
       <span class="res-name">${resultName(r)}</span>
       <span class="res-pts">${r.points}pts</span>
       <span class="res-prize green">${fmt$(r.prize)}</span>
@@ -1014,7 +1014,7 @@ function renderEndSeasonModal(info) {
 
   const payoutRows = (info.payouts || []).map(p => `
     <div class="result-row ${p.isPlayer ? 'player-result' : p.isTeamCar ? 'team-standing' : ''}">
-      <span class="res-pos ${p.pos <= 3 ? 'podium' : ''}">${p.pos}</span>
+      <span class="res-pos ${p.pos === 1 ? 'podium' : ''}">${p.pos}</span>
       <span class="res-name">${p.isPlayer ? `<strong>${info.driver}</strong>` : p.name}</span>
       <span class="res-prize green">${fmt$(p.amount)}</span>
     </div>`).join('');

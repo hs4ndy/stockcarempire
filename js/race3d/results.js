@@ -69,11 +69,12 @@
       r.clear(true,true,true); r.render(this.scene,camera);
       const pixels=new Uint8Array(width*height*4);
       r.readRenderTargetPixels(target,0,0,width,height,pixels);
+      if (!pixels.some((value, i) => i % 4 === 3 && value)) throw new Error('The graphics driver returned an empty finish frame.');
       const canvas=document.createElement('canvas'); canvas.width=width; canvas.height=height;
       const ctx=canvas.getContext('2d'), frame=ctx.createImageData(width,height);
       for(let y=0;y<height;y++) frame.data.set(pixels.subarray((height-1-y)*width*4,(height-y)*width*4),y*width*4);
       ctx.putImageData(frame,0,0);
-      this.finishPhoto={dataUrl:canvas.toDataURL('image/jpeg',0.88),leaderName:leader.label || 'The race winner',leaderId:leader.entrantId,grid:this._newsGrid,width,height};
+      this.finishPhoto={canvas, get dataUrl() { return canvas.toDataURL('image/jpeg',0.88); },leaderName:leader.label || 'The race winner',leaderId:leader.entrantId,grid:this._newsGrid,width,height};
     } catch(error) {
       // Photo failure must not interrupt classification or saving.
       this.finishPhoto=null;
