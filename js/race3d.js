@@ -263,13 +263,14 @@ function launch3DRace(config, onComplete) {
     // results table reflects what actually happened - team-mates included.
     let order = [];
     let photo = null;
+    const startingPosition = window._r3d?._startingPos ?? null;
     if (window._r3d) {
       try { order = window._r3d.finalOrder(); } catch (_) {}
       photo = window._r3d.finishPhoto || null;
       try { window._r3d.destroy(); } catch (_) {}
       window._r3d = null;
     }
-    onComplete(pos, order, quitDNF ? null : photo, quitDNF);
+    onComplete(pos, order, quitDNF ? null : photo, quitDNF, {startingPosition});
   };
 }
 

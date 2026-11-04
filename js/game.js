@@ -71,6 +71,7 @@ function loadFromSlot(slot) {
     }
     game = loaded;
     normalizeVehicleState();
+    ensureTrophies();
     const rivals=game.season.aiTeams.flatMap(t=>t.cars);
 
     normalizeSupportStaff();
@@ -358,6 +359,7 @@ function newGame(teamName, driverName, firstCarName) {
       standings: [],         // computed after races
     },
 
+    trophies: [],
     history: [],             // { year, series, finalPos, wins }
     notifications: [],
     achievements: [],
@@ -484,6 +486,7 @@ function applyRaceResults(results) {
 function postRaceUpdate(playerResult, earnings, allResults) {
   if(playerResult._sponsorEvent && game.sponsorship.processed.includes(playerResult._sponsorEvent))return;
   playerResult._sponsorEvent=game.season.year+':'+game.season.raceIndex;
+  awardRaceTrophy(playerResult);
   // Older saves have no reliable difficulty history. Track only newly
   // completed player wins, per career; teammate wins do not count here.
   if (playerResult.position === 1 && !playerResult.dnf) {
@@ -622,6 +625,9 @@ function endSeason() {
   game.money += playerPayout + teamPayout;
 
   const playerEntry = sorted.find(e => e.id === 'player');
+
+  ensureTrophies();
+  if (isChampion) awardChampionshipTrophy(playerEntry);
 
   // Record history
   game.history.push({
@@ -1134,6 +1140,7 @@ function retireCareer() {
     const records=getHallOfFame(), history=JSON.parse(JSON.stringify(game.history||[]));
     const me=(game.season.standings||[]).find(e=>e.id==='player')||{};
     records.push({id:uid(),driverName:game.driverName||game.teamName,teamName:game.teamName,
+      trophies:JSON.parse(JSON.stringify(ensureTrophies())),
       vehicles:JSON.parse(JSON.stringify([...(game.retiredCars||[]),...game.cars.map(c=>({...c,retirementReason:'Career ended'}))])),
       retiredAt:Date.now(),series:SERIES[game.currentSeries].name,year:game.season.year,
       wins:history.reduce((n,h)=>n+(h.wins||0),0)+(me.wins||0),titles:game.titles||history.filter(h=>h.champion).length,

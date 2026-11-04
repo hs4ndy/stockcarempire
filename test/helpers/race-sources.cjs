@@ -11,7 +11,7 @@ function read(file, ref) {
 function raceFiles(ref) {
   return [...read('index.html',ref).matchAll(/<script src="(js\/race3d(?:\/[^"/]+)?\.js)"><\/script>/g)].map(m=>m[1]);
 }
-function sponsorFiles(ref) {return [...read('index.html',ref).matchAll(/<script src="(js\/(?:sponsor[^"]+|car-appearance)\.js)"><\/script>/g)].map(m=>m[1]);}
+function sponsorFiles(ref) {return [...read('index.html',ref).matchAll(/<script src="(js\/(?:sponsor[^"]+|car-appearance|trophies)\.js)"><\/script>/g)].map(m=>m[1]);}
 function snapshot(ref) {
   const files = ['js/data.js',...sponsorFiles(ref),'js/game.js','js/race.js',...raceFiles(ref),'js/ui.js'];
   return Object.fromEntries(files.map(file=>[file,read(file,ref)]));
@@ -20,7 +20,7 @@ function entries(files, baseline = null) {
   const sources = baseline && typeof baseline==='object' ? baseline : null;
   // Old snapshots contain the complete engine in one file. Never fill a
   // missing historical extension with a working-tree script.
-  const support=sources?Object.keys(sources).filter(f=>/^js\/(?:sponsor|car-appearance)/.test(f)):sponsorFiles(baseline);
+  const support=sources?Object.keys(sources).filter(f=>/^js\/(?:sponsor|car-appearance|trophies)/.test(f)):sponsorFiles(baseline);
   const bundle = sources ? Object.keys(sources).filter(isRaceFile) : raceFiles(baseline);
   return files.flatMap(file=>file==='js/race3d.js'?bundle:file==='js/game.js'?[...support,file]:[file]).map(file=>{
     if(sources && !Object.hasOwn(sources,file)) throw new Error(`Missing snapshot source: ${file}`);

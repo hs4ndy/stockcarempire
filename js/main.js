@@ -623,7 +623,7 @@ function handleStartRace() {
       qualifyAI:    true,
       aiEntries:    aiEntries,
     },
-    (playerPosition, trackOrder, finishPhoto, quitDNF = false) => {
+    (playerPosition, trackOrder, finishPhoto, quitDNF = false, raceFacts = {}) => {
       // 3D race complete - playerPosition is 1-indexed finish position
       // Run background sim to get AI standings (player result will be overridden)
       const simResult = simulateRace({ playerCarId, trackId: race.trackId, fullField: quitDNF });
@@ -657,6 +657,8 @@ function handleStartRace() {
         if(result){result.raceHealth=actual.raceHealth;result.crashes=actual.crashes;}
       }
       const pr         = allResults.find(r => r.isPlayer);
+      pr.startingPosition = raceFacts.startingPosition ?? null;
+      pr.simulated = false;
       const prize      = pr.prize;
       const pts        = pr.points;
 
@@ -707,6 +709,7 @@ function handleSimulateRace() {
   const pr = simResult.playerResult;
   if (!pr) { toast('Simulation error.', 'error'); return; }
 
+  pr.simulated = true;
   applyRaceResults(simResult.results);
   race.status       = 'completed';
   race.playerResult = pr;
