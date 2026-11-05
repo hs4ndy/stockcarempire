@@ -132,6 +132,11 @@
 
   _makeCar(x, z, { entrantId, color, number, power, isPlayer, isTeammate, label, teamName, carId, raceNerve, isContender, isRival, appearance }) {
     if(!appearance&&!isPlayer&&!isTeammate&&typeof aiCarAppearance==='function')appearance=aiCarAppearance(entrantId||label||number);
+    if (!isPlayer && !isTeammate && !appearance?.hoodSponsorId && typeof aiHoodSponsorId === 'function') {
+      const series = this.config?.seriesId || SERIES.find(s => s.fieldSize === this.config?.fieldSize)?.id;
+      const hoodSponsorId = aiHoodSponsorId(series, entrantId || label || number);
+      if (hoodSponsorId) appearance = {...appearance, hoodSponsorId};
+    }
     const look=typeof carAppearance==='function'?carAppearance(appearance):{stripes:true,stripeColor:'#f2f3e9',numberColor:'#f2f3e9'};
     const hex = typeof color === 'string' ? parseInt(color.replace('#', ''), 16) : color;
     const G = this.G, M = this.M;

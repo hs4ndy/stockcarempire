@@ -69,6 +69,7 @@ function loadFromSlot(slot) {
         teams.push(team);
       }
     }
+    setChampionshipVenue(loaded.season.calendar, loaded.currentSeries);
     game = loaded;
     normalizeVehicleState();
     ensureTrophies();
@@ -246,9 +247,16 @@ function makeAITeam(template, seriesLevel) {
 }
 
 // ─── Generate season calendar ───────────────────────────────
+function setChampionshipVenue(calendar, seriesLevel) {
+  const finale = calendar?.at(-1);
+  if (finale?.status !== 'upcoming') return;
+  const venue = TRACKS.find(track => track.finaleOnly && track.series.includes(seriesLevel));
+  if (venue) Object.assign(finale, {trackId: venue.id, trackName: venue.name, trackType: venue.type});
+}
+
 function generateCalendar(seriesLevel) {
   const series = SERIES[seriesLevel];
-  const eligibleTracks = TRACKS.filter(t => t.series.includes(seriesLevel));
+  const eligibleTracks = TRACKS.filter(t => !t.finaleOnly && t.series.includes(seriesLevel));
   const calendar = [];
   const used = new Set();
 
@@ -268,6 +276,7 @@ function generateCalendar(seriesLevel) {
       earnings: 0,
     });
   }
+  setChampionshipVenue(calendar, seriesLevel);
   return calendar;
 }
 

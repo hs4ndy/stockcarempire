@@ -83,6 +83,8 @@ const TRACKS = [
   { id: 't18', name: 'Premier Oval Classic',      type: 'intermediate',  length: 1.5,  series: [2],     speedW: 1.0, handW: 1.0, laps: 200 },
   { id: 't19', name: 'Diamond State Speedway',    type: 'intermediate',  length: 1.0,  series: [2],     speedW: 0.95,handW: 1.05,laps: 300 },
   { id: 't20', name: 'Sunset Superspeedway',      type: 'superspeedway', length: 2.5,  series: [2],     speedW: 1.35,handW: 0.75,laps: 200 },
+  { id: 'oasis-speedway', name: 'Oasis Speedway', type: 'intermediate', length: 1.5, series: [1], speedW: 1, handW: 1, laps: 200, finaleOnly: true },
+  { id: 'southwest-florida-speedway', name: 'Southwest Florida Speedway', type: 'intermediate', length: 1.5, series: [2], speedW: 1, handW: 1, laps: 200, finaleOnly: true },
 ];
 
 // ─── Upgrades ────────────────────────────────────────────────

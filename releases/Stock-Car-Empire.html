@@ -1263,7 +1263,7 @@ button.standing-driver .st-name { text-decoration:none; }
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 139</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 140</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -1515,6 +1515,8 @@ const TRACKS = [
   { id: 't18', name: 'Premier Oval Classic',      type: 'intermediate',  length: 1.5,  series: [2],     speedW: 1.0, handW: 1.0, laps: 200 },
   { id: 't19', name: 'Diamond State Speedway',    type: 'intermediate',  length: 1.0,  series: [2],     speedW: 0.95,handW: 1.05,laps: 300 },
   { id: 't20', name: 'Sunset Superspeedway',      type: 'superspeedway', length: 2.5,  series: [2],     speedW: 1.35,handW: 0.75,laps: 200 },
+  { id: 'oasis-speedway', name: 'Oasis Speedway', type: 'intermediate', length: 1.5, series: [1], speedW: 1, handW: 1, laps: 200, finaleOnly: true },
+  { id: 'southwest-florida-speedway', name: 'Southwest Florida Speedway', type: 'intermediate', length: 1.5, series: [2], speedW: 1, handW: 1, laps: 200, finaleOnly: true },
 ];
 
 // ─── Upgrades ────────────────────────────────────────────────
@@ -2843,6 +2845,7 @@ function loadFromSlot(slot) {
         teams.push(team);
       }
     }
+    setChampionshipVenue(loaded.season.calendar, loaded.currentSeries);
     game = loaded;
     normalizeVehicleState();
     ensureTrophies();
@@ -3020,9 +3023,16 @@ function makeAITeam(template, seriesLevel) {
 }
 
 // ─── Generate season calendar ───────────────────────────────
+function setChampionshipVenue(calendar, seriesLevel) {
+  const finale = calendar?.at(-1);
+  if (finale?.status !== 'upcoming') return;
+  const venue = TRACKS.find(track => track.finaleOnly && track.series.includes(seriesLevel));
+  if (venue) Object.assign(finale, {trackId: venue.id, trackName: venue.name, trackType: venue.type});
+}
+
 function generateCalendar(seriesLevel) {
   const series = SERIES[seriesLevel];
-  const eligibleTracks = TRACKS.filter(t => t.series.includes(seriesLevel));
+  const eligibleTracks = TRACKS.filter(t => !t.finaleOnly && t.series.includes(seriesLevel));
   const calendar = [];
   const used = new Set();
 
@@ -3042,6 +3052,7 @@ function generateCalendar(seriesLevel) {
       earnings: 0,
     });
   }
+  setChampionshipVenue(calendar, seriesLevel);
   return calendar;
 }
 
@@ -5499,6 +5510,11 @@ class Race3DEngine {
 
   _makeCar(x, z, { entrantId, color, number, power, isPlayer, isTeammate, label, teamName, carId, raceNerve, isContender, isRival, appearance }) {
     if(!appearance&&!isPlayer&&!isTeammate&&typeof aiCarAppearance==='function')appearance=aiCarAppearance(entrantId||label||number);
+    if (!isPlayer && !isTeammate && !appearance?.hoodSponsorId && typeof aiHoodSponsorId === 'function') {
+      const series = this.config?.seriesId || SERIES.find(s => s.fieldSize === this.config?.fieldSize)?.id;
+      const hoodSponsorId = aiHoodSponsorId(series, entrantId || label || number);
+      if (hoodSponsorId) appearance = {...appearance, hoodSponsorId};
+    }
     const look=typeof carAppearance==='function'?carAppearance(appearance):{stripes:true,stripeColor:'#f2f3e9',numberColor:'#f2f3e9'};
     const hex = typeof color === 'string' ? parseInt(color.replace('#', ''), 16) : color;
     const G = this.G, M = this.M;
@@ -6238,7 +6254,7 @@ class Race3DEngine {
       // AI door contact needs sustained force; human-caused AI strain is
       // reduced modestly, AI-only strain substantially. Player tolerance stays.
       const allOut=(this.config?.difficulty||this.diff?.id)==='allout';
-      const strainScale = car.isPlayer ? 1 : (a.isPlayer || b.isPlayer ? (allOut ? .10 : (this.config?.difficulty||this.diff?.id)==='pro' ? .72 : .80) : allOut ? .24 : .28);
+      const strainScale = car.isPlayer ? 1 : (a.isPlayer || b.isPlayer ? (allOut ? .13 : (this.config?.difficulty||this.diff?.id)==='pro' ? .72 : .80) : allOut ? .24 : .28);
       car.sideStrain=(car.sideStrain||0)+strain*strainScale;car._recentSide=.5;
       const threshold=this._crashThreshold(car);
       if(rules.crashes && car.sideStrain>=threshold) this._beginCrash(car,side,'side contact');
@@ -7012,6 +7028,18 @@ function gamePrompt(message,initial=''){return gameDialog(message,initial,true);
 // Images are preloaded from embedded data; no image-host or PNG URL requests.
 const _hoodLogoImages=new Map(),_hoodLogoTextures=new Map();
 for(const [id,data]of Object.entries(SC_HOOD_LOGOS)){const image=new Image();image.src=data;_hoodLogoImages.set(id,image);}
+const aiSponsorPools = SERIES.map((_, series) => SPONSOR_CATALOG
+  .filter(company => company.series === series && company.tier === 'primary' && _hoodLogoImages.has(company.id))
+  .map(company => company.id));
+
+function aiHoodSponsorId(seriesId, identity) {
+  const pool = aiSponsorPools[SERIES.findIndex(series => series.id === seriesId)];
+  if (!pool?.length) return null;
+  let hash = 2166136261;
+  for (const char of String(identity)) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619) >>> 0;
+  return pool[hash % pool.length];
+}
+
 function hoodLogoTexture(id,onReady){
  const image=_hoodLogoImages.get(id);if(!image)return null;
  let texture=_hoodLogoTextures.get(id);if(!texture){texture=new THREE.Texture(image);texture.encoding=THREE.sRGBEncoding;texture.anisotropy=1;_hoodLogoTextures.set(id,texture);if(image.complete&&image.naturalWidth)texture.needsUpdate=true;else image.addEventListener('load',()=>{texture.needsUpdate=true;},{once:true});}
