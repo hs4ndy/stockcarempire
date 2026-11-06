@@ -120,9 +120,22 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
 
 // ─── Quick Race ───────────────────────────────────────────────
 function showQuickRaceScreen() {
-  quickRaceSeries = null;
+  document.getElementById('quick-race-modal')?.remove();
   quickRaceStep=1;
   document.body.insertAdjacentHTML('beforeend', renderQuickRaceModal());
+  if (quickRaceSeries !== null) selectQuickRaceSeries(quickRaceSeries);
+  const results = document.getElementById('screen-quick-results');
+  if (results) results.inert = true;
+  const modal = document.getElementById('quick-race-modal');
+  modal.querySelector('button').focus();
+  modal.onkeydown = event => {
+    if (event.key === 'Escape') closeQuickRaceSettings();
+    if (event.key !== 'Tab') return;
+    const controls = [...modal.querySelectorAll('button:not(:disabled),input,select')].filter(el => el.getClientRects().length);
+    const first = controls[0], last = controls.at(-1);
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  };
 }
 
 // Quick Race difficulty is chosen in the modal before launching
@@ -132,6 +145,36 @@ let quickRaceSeries = null;
 let quickRaceStep=1;
 let quickRacePlayers = 1;
 const quickRaceCars = [{number: 1, color: '#e8001d'}, {number: 2, color: '#58a6ff'}];
+let quickRaceLastResult = null;
+let quickRaceCompleted = 0;
+const quickRaceWins = [0, 0];
+
+function showQuickRaceResults() {
+  document.getElementById('screen-quick-results')?.remove();
+  document.body.insertAdjacentHTML('beforeend', renderQuickRaceResults());
+  showScreen('quick-results');
+  const photo = quickRaceLastResult?.photo?.canvas;
+  if (photo) {
+    photo.setAttribute('role', 'img');
+    photo.setAttribute('aria-label', 'Trackside photograph of the last race finish');
+    document.getElementById('quick-finish-photo').prepend(photo);
+  }
+  document.getElementById('quick-race-again').focus();
+}
+
+function closeQuickRaceSettings() {
+  document.getElementById('quick-race-modal')?.remove();
+  if (quickRaceLastResult) showQuickRaceResults();
+}
+
+function leaveQuickRaceResults() {
+  quickRaceLastResult = null;
+  quickRaceCompleted = 0;
+  quickRaceWins.fill(0);
+  document.getElementById('screen-quick-results')?.remove();
+  showScreen('intro');
+  document.getElementById('btn-quick-race')?.focus();
+}
 function setQuickRacePlayers(count) {
   quickRacePlayers = count === 2 ? 2 : 1;
   document.querySelectorAll('[data-players]').forEach(el => el.setAttribute('aria-pressed', String(Number(el.dataset.players) === quickRacePlayers)));
@@ -188,7 +231,15 @@ function confirmQuickRace() {
 }
 
 function handleStartQuickRace(fieldSize) {
+  if (quickRacePlayers === 2 && quickRaceCars[0].number === quickRaceCars[1].number) {
+    showQuickRaceScreen();
+    setQuickRaceStep(2);
+    refreshQuickRaceNumberWarning();
+    return;
+  }
+  quickRaceSeries = fieldSize;
   document.getElementById('quick-race-modal')?.remove();
+  document.getElementById('screen-quick-results')?.remove();
   const AI_COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#c0392b','#16a085','#8e44ad','#2980b9','#27ae60'];
   const aiEntries = [];
   const usedNumbers = new Set(quickRaceCars.slice(0, quickRacePlayers).map(c => c.number));
@@ -204,10 +255,17 @@ function handleStartQuickRace(fieldSize) {
   launch3DRace(
     { playerAppearance:carAppearance(quickRaceCars[0]), playerColor: quickRaceCars[0].color, playerNumber: quickRaceCars[0].number, playerName: quickRacePlayers === 2 ? 'PLAYER 1' : 'YOU', dualPlayer: quickRacePlayers === 2, playerPower: 0.75, fieldSize,
       seriesId: SERIES.find(s => s.fieldSize === fieldSize)?.id || 'grassroots',
-      difficulty: quickRaceDifficulty, raceRules:{...quickRaceRules}, aiEntries },
-    (pos) => {
-      showScreen('intro');
-      toast(`Quick Race finished - you placed ${pos}${ordinal(pos)}!`, pos <= 3 ? 'success' : 'info');
+      difficulty: quickRaceDifficulty, raceRules:{...quickRaceRules}, captureFinishPhoto:true, onQuit:leaveQuickRaceResults, aiEntries },
+    (pos, order, photo, quitDNF, facts) => {
+      quickRaceCompleted++;
+      const players = order.filter(r => r.isPlayer).map(r => {
+        const index = r.entrantId === 'player2' ? 1 : 0;
+        if (r.position === 1) quickRaceWins[index]++;
+        return {...r, index, start: facts.startingPositions[r.entrantId], wins:quickRaceWins[index],
+          appearance:{...carAppearance(quickRaceCars[index])}};
+      }).sort((a,b) => a.index-b.index);
+      quickRaceLastResult = {players, photo, race:quickRaceCompleted};
+      showQuickRaceResults();
     }
   );
 }

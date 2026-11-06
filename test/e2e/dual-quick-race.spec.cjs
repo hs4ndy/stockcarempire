@@ -30,7 +30,7 @@ for(const [width,height] of [[1366,768],[375,850]]) test(`customized dual quick 
  await page.evaluate(()=>{const e=window._r3d;e.player.z=e.raceLength+1;e.player2.z=e.raceLength-30;e._checkFinish();});expect(await page.evaluate(()=>window._r3d.done)).toBe(false);
  await page.evaluate(()=>{const e=window._r3d;e.player2.z=e.raceLength+1;e._checkFinish();});expect(await page.evaluate(()=>window._r3d.done)).toBe(true);
  await expect(page.locator('#r3d-finish')).toContainText('Player 1');await expect(page.locator('#r3d-finish')).toContainText('Player 2');
- await page.getByRole('button',{name:'Continue',exact:true}).click();await expect(page.locator('#btn-quick-race')).toBeVisible();
+ await page.getByRole('button',{name:'Continue',exact:true}).click();await expect(page.locator('#screen-quick-results')).toBeVisible();await page.getByRole('button',{name:'Main Menu',exact:true}).click();await expect(page.locator('#btn-quick-race')).toBeVisible();
  await page.locator('#btn-quick-race').click();await page.locator('.quick-series-btn').first().click();await page.locator('#quick-next').click();await page.locator('[data-players="1"]').click();await expect(page.locator('#quick-player-2')).toBeHidden();if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator('#btn-quick-race-confirm').click();await page.waitForFunction(()=>window._r3d?.mirrorRT);
  expect(await page.evaluate(()=>[window._r3d.cars.length,window._r3d.player.number,!!window._r3d.player2])).toEqual([20,27,false]);
  await page.locator('#r3d-pause-btn').click();await page.locator('#r3d-quit').click();await expect(page.locator('#btn-quick-race')).toBeVisible();expect(errors).toEqual([]);

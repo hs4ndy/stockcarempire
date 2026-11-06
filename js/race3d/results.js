@@ -17,7 +17,7 @@
 
     // One capture at the first crossing, not when the human later finishes.
     // Practice has no news flow. No extra render work during ordinary racing.
-    if (!this.finishOrder.length && this.config?.qualifyAI && this.renderer) this._captureFinishPhoto(crossed[0]);
+    if (!this.finishOrder.length && (this.config?.qualifyAI || this.config?.captureFinishPhoto) && this.renderer) this._captureFinishPhoto(crossed[0]);
 
     for (const car of crossed) {
       car.finished = true;

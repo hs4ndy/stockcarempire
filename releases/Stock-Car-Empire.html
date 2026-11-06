@@ -74,6 +74,44 @@
  .trophy-viewer-layout { display:flex;flex-direction:column;flex:none;gap:28px; }.trophy-stage { min-height:380px; }.trophy-viewport { min-height:280px;flex:none;height:35svh; }
  .trophy-controls .btn { padding:9px 12px; }.trophy-event { overflow:visible; }
 }
+.quick-results-screen { min-height:100svh;padding:40px 32px;display:flex;align-items:center; }
+.quick-results-layout { width:100%;max-width:1320px;margin:auto;display:grid;grid-template-columns:1.65fr 1fr 1fr;gap:32px; }
+.quick-results-layout.is-single { max-width:1100px;grid-template-columns:1.65fr 1fr; }
+.quick-results-summary h1 { margin:0 0 24px;font:800 56px/1 var(--font-display);text-transform:uppercase; }
+.quick-results-photo { margin:0; }
+#quick-finish-photo { aspect-ratio:16/9;background:var(--panel);display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:var(--radius); }
+#quick-finish-photo canvas { display:block;width:100%;height:auto; }
+#quick-finish-photo p { color:var(--text-dim); }
+.quick-results-photo figcaption { margin-top:8px;color:var(--text-dim);font-size:14px; }
+.quick-results-settings { margin:24px 0;color:var(--text);font-weight:600; }
+.quick-results-settings span { color:var(--text-dim);font-size:14px;font-weight:400; }
+.quick-results-actions { display:flex;flex-wrap:wrap;gap:8px; }
+.quick-results-actions .btn-primary { flex-basis:100%; }
+.quick-result-player { border-left:1px solid var(--line-2);padding-left:32px;display:flex;flex-direction:column;min-width:0; }
+.quick-result-player h2 { margin:0;font:700 40px/1.1 var(--font-display); }
+.quick-result-player header p { color:var(--text-dim);font-size:14px;margin:8px 0 0; }
+.quick-result-player dl { margin:32px 0;display:grid;gap:24px; }
+.quick-result-player dl div { display:flex;align-items:baseline;justify-content:space-between;gap:12px; }
+.quick-result-player dt { color:var(--text-dim);font-size:18px; }
+.quick-result-player dd { margin:0;font:700 44px/1 var(--font-display);font-variant-numeric:tabular-nums; }
+.quick-result-winner { color:#ffd700; }
+.quick-result-player .quick-result-car { margin-top:auto;height:120px;min-height:120px;width:100%;border-radius:var(--radius); }
+.quick-result-car strong { font-size:72px; }
+@media(max-width:1050px) {
+ .quick-results-screen { padding:24px; }.quick-results-layout { gap:24px;grid-template-columns:1.4fr 1fr 1fr; }
+ .quick-result-player { padding-left:24px; }.quick-result-player h2 { font-size:32px; }.quick-result-player dd { font-size:36px; }
+ .quick-results-summary h1 { font-size:48px; }
+}
+@media(max-width:700px) {
+ .quick-results-screen { padding:24px 16px;align-items:flex-start; }
+ .quick-results-layout,.quick-results-layout.is-single { grid-template-columns:1fr 1fr;gap:24px 16px; }
+ .quick-results-summary { grid-column:1/-1; }.quick-results-summary h1 { font-size:40px;margin-bottom:20px; }
+ .quick-result-player { border-left:0;padding:24px 0 0;border-top:1px solid var(--line-2); }
+ .quick-result-player + .quick-result-player { border-left:1px solid var(--line-2);padding-left:16px; }
+ .quick-results-layout.is-single .quick-result-player { grid-column:1/-1; }
+ .quick-result-player dl { margin:24px 0;gap:16px; }.quick-result-player .quick-result-car { min-height:96px;height:96px; }
+ .quick-results-settings { margin:20px 0; }.quick-results-actions .btn { flex-grow:1; }
+}
 :root {
   --bg: #131517; --panel: #1e2124; --panel-2: #282c30; --panel-3: #363b40;
   --line: #393e43; --line-2: #60676e; --text: #f5f5f2; --text-dim: #c1c5c8; --text-mute: #a9b0b6;
@@ -1263,7 +1301,7 @@ button.standing-driver .st-name { text-decoration:none; }
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 144</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 145</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -4834,13 +4872,14 @@ function launch3DRace(config, onComplete) {
     let order = [];
     let photo = null;
     const startingPosition = window._r3d?._startingPos ?? null;
+    const startingPositions = {...window._r3d?._newsGrid};
     if (window._r3d) {
       try { order = window._r3d.finalOrder(); } catch (_) {}
       photo = window._r3d.finishPhoto || null;
       try { window._r3d.destroy(); } catch (_) {}
       window._r3d = null;
     }
-    onComplete(pos, order, quitDNF ? null : photo, quitDNF, {startingPosition});
+    onComplete(pos, order, quitDNF ? null : photo, quitDNF, {startingPosition, startingPositions});
   };
 }
 
@@ -6917,7 +6956,7 @@ class Race3DEngine {
 
     // One capture at the first crossing, not when the human later finishes.
     // Practice has no news flow. No extra render work during ordinary racing.
-    if (!this.finishOrder.length && this.config?.qualifyAI && this.renderer) this._captureFinishPhoto(crossed[0]);
+    if (!this.finishOrder.length && (this.config?.qualifyAI || this.config?.captureFinishPhoto) && this.renderer) this._captureFinishPhoto(crossed[0]);
 
     for (const car of crossed) {
       car.finished = true;
@@ -8717,10 +8756,31 @@ function renderCarCustomizer(car, i, career = false) {
   </section>`;
 }
 
+function renderQuickRaceResults() {
+  const result = quickRaceLastResult;
+  const series = SERIES.find(s => s.fieldSize === quickRaceSeries);
+  const rules = raceFeatureRules(quickRaceDifficulty, quickRaceRules);
+  return `<main id="screen-quick-results" class="screen quick-results-screen">
+    <div class="quick-results-layout${result.players.length === 1 ? ' is-single' : ''}">
+      <section class="quick-results-summary" aria-labelledby="quick-results-title">
+        <h1 id="quick-results-title">Quick Race</h1>
+        <figure class="quick-results-photo"><div id="quick-finish-photo">${result.photo?.canvas ? '' : '<p>Finish photo unavailable</p>'}</div><figcaption>Last race’s finish · Race ${result.race}</figcaption></figure>
+        <p class="quick-results-settings">${series.name} · ${difficultyById(quickRaceDifficulty).name}<br><span>Crashes ${rules.crashes ? 'on' : 'off'} · Damage ${rules.damage ? 'on' : 'off'}</span></p>
+        <div class="quick-results-actions"><button class="btn btn-primary btn-lg" id="quick-race-again" onclick="handleStartQuickRace(quickRaceSeries)">Race Again</button><button class="btn btn-secondary" onclick="showQuickRaceScreen()">Change Settings</button><button class="btn btn-ghost" onclick="leaveQuickRaceResults()">Main Menu</button></div>
+      </section>
+      ${result.players.map(player => `<section class="quick-result-player" aria-labelledby="quick-result-player-${player.index}">
+        <header><h2 id="quick-result-player-${player.index}">Player ${player.index + 1}</h2><p>Results from race ${result.race}</p></header>
+        <dl><div><dt>Start</dt><dd>${player.start ?? '—'}</dd></div><div><dt>Finish</dt><dd${player.position === 1 ? ' class="quick-result-winner"' : ''}>${player.position}${ordinal(player.position)}</dd></div><div><dt>Wins</dt><dd>${player.wins}</dd></div></dl>
+        <div class="quick-car-preview quick-result-car" style="--car-color:${player.teamColor}"><strong style="color:${player.appearance.numberColor}">${String(player.number).padStart(2,'0')}</strong></div>
+      </section>`).join('')}
+    </div>
+  </main>`;
+}
+
 function renderQuickRaceModal() {
  const summaries={beginner:'Learn the draft.',amateur:'Find your rhythm.',semipro:'Keep the tow.',pro:'Earn every position.',allout:'Maximum competition.'};
  return `<div class="modal-overlay" id="quick-race-modal"><div class="modal quick-setup-modal quick-wizard" role="dialog" aria-modal="true" aria-labelledby="quick-title">
- <div class="modal-header"><div><h3 id="quick-title">Quick Race</h3><p class="small muted-text" id="quick-step-label">Race setup · Step 1 of 2</p></div><button class="modal-close" onclick="document.getElementById('quick-race-modal')?.remove()">Close</button></div>
+ <div class="modal-header"><div><h3 id="quick-title">Quick Race</h3><p class="small muted-text" id="quick-step-label">Race setup · Step 1 of 2</p></div><button class="modal-close" onclick="closeQuickRaceSettings()">Close</button></div>
  <div class="modal-body quick-setup-body"><div id="quick-stage-race" class="quick-race-stage">
  <section><h4>Difficulty</h4><div class="difficulty-grid">${DIFFICULTIES.map(d=>`<button type="button" class="difficulty-card${d.id===quickRaceDifficulty?' selected':''}" data-diff="${d.id}" aria-pressed="${d.id===quickRaceDifficulty}" onclick="setQuickRaceDifficulty('${d.id}')"><span class="difficulty-name">${d.name}</span></button>`).join('')}</div><p id="quick-difficulty-hint" class="small muted-text">${summaries[quickRaceDifficulty]}</p></section>
  <section><h4>Series</h4><div class="quick-series">${SERIES.map(s=>`<button type="button" class="quick-series-btn" data-field-size="${s.fieldSize}" aria-pressed="false" onclick="selectQuickRaceSeries(${s.fieldSize})"><span class="quick-series-name" style="--series-color:${s.color}">${s.name}</span><span class="quick-series-meta">${s.fieldSize} cars</span></button>`).join('')}</div></section>
@@ -12022,9 +12082,22 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
 
 // ─── Quick Race ───────────────────────────────────────────────
 function showQuickRaceScreen() {
-  quickRaceSeries = null;
+  document.getElementById('quick-race-modal')?.remove();
   quickRaceStep=1;
   document.body.insertAdjacentHTML('beforeend', renderQuickRaceModal());
+  if (quickRaceSeries !== null) selectQuickRaceSeries(quickRaceSeries);
+  const results = document.getElementById('screen-quick-results');
+  if (results) results.inert = true;
+  const modal = document.getElementById('quick-race-modal');
+  modal.querySelector('button').focus();
+  modal.onkeydown = event => {
+    if (event.key === 'Escape') closeQuickRaceSettings();
+    if (event.key !== 'Tab') return;
+    const controls = [...modal.querySelectorAll('button:not(:disabled),input,select')].filter(el => el.getClientRects().length);
+    const first = controls[0], last = controls.at(-1);
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  };
 }
 
 // Quick Race difficulty is chosen in the modal before launching
@@ -12034,6 +12107,36 @@ let quickRaceSeries = null;
 let quickRaceStep=1;
 let quickRacePlayers = 1;
 const quickRaceCars = [{number: 1, color: '#e8001d'}, {number: 2, color: '#58a6ff'}];
+let quickRaceLastResult = null;
+let quickRaceCompleted = 0;
+const quickRaceWins = [0, 0];
+
+function showQuickRaceResults() {
+  document.getElementById('screen-quick-results')?.remove();
+  document.body.insertAdjacentHTML('beforeend', renderQuickRaceResults());
+  showScreen('quick-results');
+  const photo = quickRaceLastResult?.photo?.canvas;
+  if (photo) {
+    photo.setAttribute('role', 'img');
+    photo.setAttribute('aria-label', 'Trackside photograph of the last race finish');
+    document.getElementById('quick-finish-photo').prepend(photo);
+  }
+  document.getElementById('quick-race-again').focus();
+}
+
+function closeQuickRaceSettings() {
+  document.getElementById('quick-race-modal')?.remove();
+  if (quickRaceLastResult) showQuickRaceResults();
+}
+
+function leaveQuickRaceResults() {
+  quickRaceLastResult = null;
+  quickRaceCompleted = 0;
+  quickRaceWins.fill(0);
+  document.getElementById('screen-quick-results')?.remove();
+  showScreen('intro');
+  document.getElementById('btn-quick-race')?.focus();
+}
 function setQuickRacePlayers(count) {
   quickRacePlayers = count === 2 ? 2 : 1;
   document.querySelectorAll('[data-players]').forEach(el => el.setAttribute('aria-pressed', String(Number(el.dataset.players) === quickRacePlayers)));
@@ -12090,7 +12193,15 @@ function confirmQuickRace() {
 }
 
 function handleStartQuickRace(fieldSize) {
+  if (quickRacePlayers === 2 && quickRaceCars[0].number === quickRaceCars[1].number) {
+    showQuickRaceScreen();
+    setQuickRaceStep(2);
+    refreshQuickRaceNumberWarning();
+    return;
+  }
+  quickRaceSeries = fieldSize;
   document.getElementById('quick-race-modal')?.remove();
+  document.getElementById('screen-quick-results')?.remove();
   const AI_COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#c0392b','#16a085','#8e44ad','#2980b9','#27ae60'];
   const aiEntries = [];
   const usedNumbers = new Set(quickRaceCars.slice(0, quickRacePlayers).map(c => c.number));
@@ -12106,10 +12217,17 @@ function handleStartQuickRace(fieldSize) {
   launch3DRace(
     { playerAppearance:carAppearance(quickRaceCars[0]), playerColor: quickRaceCars[0].color, playerNumber: quickRaceCars[0].number, playerName: quickRacePlayers === 2 ? 'PLAYER 1' : 'YOU', dualPlayer: quickRacePlayers === 2, playerPower: 0.75, fieldSize,
       seriesId: SERIES.find(s => s.fieldSize === fieldSize)?.id || 'grassroots',
-      difficulty: quickRaceDifficulty, raceRules:{...quickRaceRules}, aiEntries },
-    (pos) => {
-      showScreen('intro');
-      toast(`Quick Race finished - you placed ${pos}${ordinal(pos)}!`, pos <= 3 ? 'success' : 'info');
+      difficulty: quickRaceDifficulty, raceRules:{...quickRaceRules}, captureFinishPhoto:true, onQuit:leaveQuickRaceResults, aiEntries },
+    (pos, order, photo, quitDNF, facts) => {
+      quickRaceCompleted++;
+      const players = order.filter(r => r.isPlayer).map(r => {
+        const index = r.entrantId === 'player2' ? 1 : 0;
+        if (r.position === 1) quickRaceWins[index]++;
+        return {...r, index, start: facts.startingPositions[r.entrantId], wins:quickRaceWins[index],
+          appearance:{...carAppearance(quickRaceCars[index])}};
+      }).sort((a,b) => a.index-b.index);
+      quickRaceLastResult = {players, photo, race:quickRaceCompleted};
+      showQuickRaceResults();
     }
   );
 }

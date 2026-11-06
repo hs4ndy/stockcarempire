@@ -391,7 +391,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "86b76c991f56071da26b1508c05b494e8aac0b1bfe9d80e5875dbcd42b20605c"
+      "hash": "cb662fd341396f117169c551686348fa9384f4a36f408bd892c60d1937bcd757"
     },
     {
       "name": "_captureFinishPhoto",
@@ -543,7 +543,7 @@
     {
       "name": "launch3DRace",
       "length": 2,
-      "hash": "16c2e35ab2f08197f0f426f04be80e0b84178ffbe9d641f47168b4f68846ce1c"
+      "hash": "97de35ceb1af33b3b9727c1056165bc87f46bb4f1a8bf17dc5a4073d7a24c37f"
     }
   ],
   "sourceCommit": "20c3f0c77f0934c085371c2e19c73357fe1c9b58",

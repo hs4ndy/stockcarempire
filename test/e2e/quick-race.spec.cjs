@@ -79,7 +79,7 @@ for (const [name, viewport] of [
       { difficulty: 'pro', seriesId: 'premier', fieldSize: 40 },
     ]);
     await page.evaluate(() => { showScreen('intro'); showQuickRaceScreen(); });
-    await expect(page.locator('#btn-quick-race-confirm')).toBeDisabled();
-    await expect(page.locator('.quick-series-btn[aria-pressed="true"]')).toHaveCount(0);
+    await expect(page.locator('#quick-next')).toBeEnabled();
+    await expect(page.locator('.quick-series-btn[aria-pressed="true"]')).toHaveAttribute('data-field-size','40');
   });
 }

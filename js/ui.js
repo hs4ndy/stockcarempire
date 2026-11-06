@@ -1358,10 +1358,31 @@ function renderCarCustomizer(car, i, career = false) {
   </section>`;
 }
 
+function renderQuickRaceResults() {
+  const result = quickRaceLastResult;
+  const series = SERIES.find(s => s.fieldSize === quickRaceSeries);
+  const rules = raceFeatureRules(quickRaceDifficulty, quickRaceRules);
+  return `<main id="screen-quick-results" class="screen quick-results-screen">
+    <div class="quick-results-layout${result.players.length === 1 ? ' is-single' : ''}">
+      <section class="quick-results-summary" aria-labelledby="quick-results-title">
+        <h1 id="quick-results-title">Quick Race</h1>
+        <figure class="quick-results-photo"><div id="quick-finish-photo">${result.photo?.canvas ? '' : '<p>Finish photo unavailable</p>'}</div><figcaption>Last race’s finish · Race ${result.race}</figcaption></figure>
+        <p class="quick-results-settings">${series.name} · ${difficultyById(quickRaceDifficulty).name}<br><span>Crashes ${rules.crashes ? 'on' : 'off'} · Damage ${rules.damage ? 'on' : 'off'}</span></p>
+        <div class="quick-results-actions"><button class="btn btn-primary btn-lg" id="quick-race-again" onclick="handleStartQuickRace(quickRaceSeries)">Race Again</button><button class="btn btn-secondary" onclick="showQuickRaceScreen()">Change Settings</button><button class="btn btn-ghost" onclick="leaveQuickRaceResults()">Main Menu</button></div>
+      </section>
+      ${result.players.map(player => `<section class="quick-result-player" aria-labelledby="quick-result-player-${player.index}">
+        <header><h2 id="quick-result-player-${player.index}">Player ${player.index + 1}</h2><p>Results from race ${result.race}</p></header>
+        <dl><div><dt>Start</dt><dd>${player.start ?? '—'}</dd></div><div><dt>Finish</dt><dd${player.position === 1 ? ' class="quick-result-winner"' : ''}>${player.position}${ordinal(player.position)}</dd></div><div><dt>Wins</dt><dd>${player.wins}</dd></div></dl>
+        <div class="quick-car-preview quick-result-car" style="--car-color:${player.teamColor}"><strong style="color:${player.appearance.numberColor}">${String(player.number).padStart(2,'0')}</strong></div>
+      </section>`).join('')}
+    </div>
+  </main>`;
+}
+
 function renderQuickRaceModal() {
  const summaries={beginner:'Learn the draft.',amateur:'Find your rhythm.',semipro:'Keep the tow.',pro:'Earn every position.',allout:'Maximum competition.'};
  return `<div class="modal-overlay" id="quick-race-modal"><div class="modal quick-setup-modal quick-wizard" role="dialog" aria-modal="true" aria-labelledby="quick-title">
- <div class="modal-header"><div><h3 id="quick-title">Quick Race</h3><p class="small muted-text" id="quick-step-label">Race setup · Step 1 of 2</p></div><button class="modal-close" onclick="document.getElementById('quick-race-modal')?.remove()">Close</button></div>
+ <div class="modal-header"><div><h3 id="quick-title">Quick Race</h3><p class="small muted-text" id="quick-step-label">Race setup · Step 1 of 2</p></div><button class="modal-close" onclick="closeQuickRaceSettings()">Close</button></div>
  <div class="modal-body quick-setup-body"><div id="quick-stage-race" class="quick-race-stage">
  <section><h4>Difficulty</h4><div class="difficulty-grid">${DIFFICULTIES.map(d=>`<button type="button" class="difficulty-card${d.id===quickRaceDifficulty?' selected':''}" data-diff="${d.id}" aria-pressed="${d.id===quickRaceDifficulty}" onclick="setQuickRaceDifficulty('${d.id}')"><span class="difficulty-name">${d.name}</span></button>`).join('')}</div><p id="quick-difficulty-hint" class="small muted-text">${summaries[quickRaceDifficulty]}</p></section>
  <section><h4>Series</h4><div class="quick-series">${SERIES.map(s=>`<button type="button" class="quick-series-btn" data-field-size="${s.fieldSize}" aria-pressed="false" onclick="selectQuickRaceSeries(${s.fieldSize})"><span class="quick-series-name" style="--series-color:${s.color}">${s.name}</span><span class="quick-series-meta">${s.fieldSize} cars</span></button>`).join('')}</div></section>
