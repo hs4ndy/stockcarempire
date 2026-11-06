@@ -74,38 +74,37 @@
  .trophy-viewer-layout { display:flex;flex-direction:column;flex:none;gap:28px; }.trophy-stage { min-height:380px; }.trophy-viewport { min-height:280px;flex:none;height:35svh; }
  .trophy-controls .btn { padding:9px 12px; }.trophy-event { overflow:visible; }
 }
-.quick-results-screen { min-height:100svh;padding:40px 32px;display:flex;align-items:center; }
-.quick-results-layout { width:100%;max-width:1320px;margin:auto;display:grid;grid-template-columns:1.65fr 1fr 1fr;gap:32px; }
-.quick-results-layout.is-single { max-width:1100px;grid-template-columns:1.65fr 1fr; }
-.quick-results-summary h1 { margin:0 0 24px;font:800 56px/1 var(--font-display);text-transform:uppercase; }
+.modal.quick-results-window { max-width:900px;padding:24px;overflow:auto; }
+.quick-results-layout { width:100%;margin:auto;display:grid;grid-template-columns:1.65fr 1fr 1fr;gap:24px; }
+.quick-results-layout.is-single { grid-template-columns:1.65fr 1fr; }
+.quick-results-screen:has(.is-single) .quick-results-window { max-width:760px; }
+.quick-results-summary h1 { margin:0 0 20px;font:800 36px/1 var(--font-display);text-transform:uppercase; }
 .quick-results-photo { margin:0; }
 #quick-finish-photo { aspect-ratio:16/9;background:var(--panel);display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:var(--radius); }
 #quick-finish-photo canvas { display:block;width:100%;height:auto; }
 #quick-finish-photo p { color:var(--text-dim); }
 .quick-results-photo figcaption { margin-top:8px;color:var(--text-dim);font-size:14px; }
-.quick-results-settings { margin:24px 0;color:var(--text);font-weight:600; }
+.quick-results-settings { margin:20px 0;color:var(--text);font-weight:600; }
 .quick-results-settings span { color:var(--text-dim);font-size:14px;font-weight:400; }
 .quick-results-actions { display:flex;flex-wrap:wrap;gap:8px; }
 .quick-results-actions .btn-primary { flex-basis:100%; }
-.quick-result-player { border-left:1px solid var(--line-2);padding-left:32px;display:flex;flex-direction:column;min-width:0; }
-.quick-result-player h2 { margin:0;font:700 40px/1.1 var(--font-display); }
+.quick-result-player { border-left:1px solid var(--line-2);padding-left:24px;display:flex;flex-direction:column;min-width:0; }
+.quick-result-player h2 { margin:0;font:700 28px/1.1 var(--font-display); }
 .quick-result-player header p { color:var(--text-dim);font-size:14px;margin:8px 0 0; }
-.quick-result-player dl { margin:32px 0;display:grid;gap:24px; }
+.quick-result-player dl { margin:24px 0;display:grid;gap:20px; }
 .quick-result-player dl div { display:flex;align-items:baseline;justify-content:space-between;gap:12px; }
-.quick-result-player dt { color:var(--text-dim);font-size:18px; }
-.quick-result-player dd { margin:0;font:700 44px/1 var(--font-display);font-variant-numeric:tabular-nums; }
+.quick-result-player dt { color:var(--text-dim);font-size:16px; }
+.quick-result-player dd { margin:0;font:700 32px/1 var(--font-display);font-variant-numeric:tabular-nums; }
 .quick-result-winner { color:#ffd700; }
-.quick-result-player .quick-result-car { margin-top:auto;height:120px;min-height:120px;width:100%;border-radius:var(--radius); }
+.quick-result-player .quick-result-car { margin-top:auto;height:80px;min-height:80px;width:100%;border-radius:var(--radius); }
 .quick-result-car strong { font-size:72px; }
 @media(max-width:1050px) {
- .quick-results-screen { padding:24px; }.quick-results-layout { gap:24px;grid-template-columns:1.4fr 1fr 1fr; }
- .quick-result-player { padding-left:24px; }.quick-result-player h2 { font-size:32px; }.quick-result-player dd { font-size:36px; }
- .quick-results-summary h1 { font-size:48px; }
+ .quick-results-layout { grid-template-columns:1.4fr 1fr 1fr; }
 }
 @media(max-width:700px) {
- .quick-results-screen { padding:24px 16px;align-items:flex-start; }
+ .quick-results-screen { padding:16px; }.quick-results-window { padding:20px;max-height:calc(100svh - 32px); }
  .quick-results-layout,.quick-results-layout.is-single { grid-template-columns:1fr 1fr;gap:24px 16px; }
- .quick-results-summary { grid-column:1/-1; }.quick-results-summary h1 { font-size:40px;margin-bottom:20px; }
+ .quick-results-summary { grid-column:1/-1; }.quick-results-summary h1 { font-size:32px; }
  .quick-result-player { border-left:0;padding:24px 0 0;border-top:1px solid var(--line-2); }
  .quick-result-player + .quick-result-player { border-left:1px solid var(--line-2);padding-left:16px; }
  .quick-results-layout.is-single .quick-result-player { grid-column:1/-1; }
@@ -1301,7 +1300,7 @@ button.standing-driver .st-name { text-decoration:none; }
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 145</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 146</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -8760,7 +8759,7 @@ function renderQuickRaceResults() {
   const result = quickRaceLastResult;
   const series = SERIES.find(s => s.fieldSize === quickRaceSeries);
   const rules = raceFeatureRules(quickRaceDifficulty, quickRaceRules);
-  return `<main id="screen-quick-results" class="screen quick-results-screen">
+  return `<div id="screen-quick-results" class="modal-overlay quick-results-screen"><div class="modal quick-results-window" role="dialog" aria-modal="true" aria-labelledby="quick-results-title">
     <div class="quick-results-layout${result.players.length === 1 ? ' is-single' : ''}">
       <section class="quick-results-summary" aria-labelledby="quick-results-title">
         <h1 id="quick-results-title">Quick Race</h1>
@@ -8774,7 +8773,7 @@ function renderQuickRaceResults() {
         <div class="quick-car-preview quick-result-car" style="--car-color:${player.teamColor}"><strong style="color:${player.appearance.numberColor}">${String(player.number).padStart(2,'0')}</strong></div>
       </section>`).join('')}
     </div>
-  </main>`;
+  </div></div>`;
 }
 
 function renderQuickRaceModal() {
@@ -12113,8 +12112,17 @@ const quickRaceWins = [0, 0];
 
 function showQuickRaceResults() {
   document.getElementById('screen-quick-results')?.remove();
+  showScreen('intro');
+  document.getElementById('screen-intro').inert = true;
   document.body.insertAdjacentHTML('beforeend', renderQuickRaceResults());
-  showScreen('quick-results');
+  document.getElementById('screen-quick-results').onkeydown = event => {
+    if (event.key === 'Escape') leaveQuickRaceResults();
+    if (event.key !== 'Tab') return;
+    const buttons = [...event.currentTarget.querySelectorAll('button')];
+    const first = buttons[0], last = buttons.at(-1);
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  };
   const photo = quickRaceLastResult?.photo?.canvas;
   if (photo) {
     photo.setAttribute('role', 'img');
@@ -12134,6 +12142,7 @@ function leaveQuickRaceResults() {
   quickRaceCompleted = 0;
   quickRaceWins.fill(0);
   document.getElementById('screen-quick-results')?.remove();
+  document.getElementById('screen-intro').inert = false;
   showScreen('intro');
   document.getElementById('btn-quick-race')?.focus();
 }

@@ -1362,7 +1362,7 @@ function renderQuickRaceResults() {
   const result = quickRaceLastResult;
   const series = SERIES.find(s => s.fieldSize === quickRaceSeries);
   const rules = raceFeatureRules(quickRaceDifficulty, quickRaceRules);
-  return `<main id="screen-quick-results" class="screen quick-results-screen">
+  return `<div id="screen-quick-results" class="modal-overlay quick-results-screen"><div class="modal quick-results-window" role="dialog" aria-modal="true" aria-labelledby="quick-results-title">
     <div class="quick-results-layout${result.players.length === 1 ? ' is-single' : ''}">
       <section class="quick-results-summary" aria-labelledby="quick-results-title">
         <h1 id="quick-results-title">Quick Race</h1>
@@ -1376,7 +1376,7 @@ function renderQuickRaceResults() {
         <div class="quick-car-preview quick-result-car" style="--car-color:${player.teamColor}"><strong style="color:${player.appearance.numberColor}">${String(player.number).padStart(2,'0')}</strong></div>
       </section>`).join('')}
     </div>
-  </main>`;
+  </div></div>`;
 }
 
 function renderQuickRaceModal() {

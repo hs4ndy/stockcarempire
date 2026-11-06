@@ -57,10 +57,17 @@ for (const [name, players, width, height, file] of [
     expect(data.players.map(p=>p.start)).toEqual(data.players.map(p=>starts[p.entrantId]));
     expect(data.players.at(-1).wins).toBe(1);
     await expect(page.locator('.quick-result-winner')).toHaveCount(1);
+    const bounds = await page.locator('.quick-results-window').boundingBox();
+    expect(bounds.width).toBeLessThan(width);
+    expect(bounds.height).toBeLessThanOrEqual(height-32);
+    if(width>1050) {
+      expect(bounds.width).toBeLessThanOrEqual(900);
+      if(players===2) expect(bounds.width).toBeGreaterThanOrEqual(800);
+    }
     expect(await page.evaluate(() => document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     if(width>700) expect(await page.evaluate(() => document.documentElement.scrollHeight<=innerHeight)).toBe(true);
     fs.mkdirSync('.impeccable/review',{recursive:true});
-    await page.screenshot({path:`.impeccable/review/quick-results145-${name}.png`,fullPage:true});
+    await page.screenshot({path:`.impeccable/review/quick-results146-${name}.png`,fullPage:true});
     await page.getByRole('button',{name:'Change Settings',exact:true}).click();
     await expect(page.locator('[data-field-size="26"]')).toHaveAttribute('aria-pressed','true');
     await expect(page.locator('[data-diff="allout"]')).toHaveAttribute('aria-pressed','true');

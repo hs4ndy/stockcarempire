@@ -151,8 +151,17 @@ const quickRaceWins = [0, 0];
 
 function showQuickRaceResults() {
   document.getElementById('screen-quick-results')?.remove();
+  showScreen('intro');
+  document.getElementById('screen-intro').inert = true;
   document.body.insertAdjacentHTML('beforeend', renderQuickRaceResults());
-  showScreen('quick-results');
+  document.getElementById('screen-quick-results').onkeydown = event => {
+    if (event.key === 'Escape') leaveQuickRaceResults();
+    if (event.key !== 'Tab') return;
+    const buttons = [...event.currentTarget.querySelectorAll('button')];
+    const first = buttons[0], last = buttons.at(-1);
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  };
   const photo = quickRaceLastResult?.photo?.canvas;
   if (photo) {
     photo.setAttribute('role', 'img');
@@ -172,6 +181,7 @@ function leaveQuickRaceResults() {
   quickRaceCompleted = 0;
   quickRaceWins.fill(0);
   document.getElementById('screen-quick-results')?.remove();
+  document.getElementById('screen-intro').inert = false;
   showScreen('intro');
   document.getElementById('btn-quick-race')?.focus();
 }
