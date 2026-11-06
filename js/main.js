@@ -627,7 +627,7 @@ function handleStartRace() {
     (playerPosition, trackOrder, finishPhoto, quitDNF = false, raceFacts = {}) => {
       // 3D race complete - playerPosition is 1-indexed finish position
       // Run background sim to get AI standings (player result will be overridden)
-      const simResult = simulateRace({ playerCarId, trackId: race.trackId, fullField: quitDNF });
+      const simResult = simulateRace({ playerCarId, trackId: race.trackId, fullField: true });
 
       // Your team-mates raced on track alongside you, so their real finishing
       // order has to carry over too - otherwise the car you pushed to the win

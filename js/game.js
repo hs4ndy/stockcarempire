@@ -72,6 +72,7 @@ function loadFromSlot(slot) {
     setChampionshipVenue(loaded.season.calendar, loaded.currentSeries);
     game = loaded;
     normalizeVehicleState();
+    normalizeTeamStandings();
     ensureTrophies();
     const rivals=game.season.aiTeams.flatMap(t=>t.cars);
 
@@ -433,6 +434,7 @@ function rebuildStandings() {
       name: `${game.teamName} (${drv ? drv.name : 'Driver'})`,
       isPlayer: false,
       isTeamCar: true,
+      driverId: hire.driverId,
       points: 0, wins: 0, top5: 0, top10: 0, races: 0,
     });
   });
@@ -458,7 +460,45 @@ function rebuildStandings() {
   game.season.standings = entries;
 }
 
+// Championship records follow hired drivers when a worn-out car is replaced.
+// Legacy saves identify these rows by the driver name stored in the row.
+function normalizeTeamStandings() {
+  const byDriver = new Map();
+  const entries = [];
+  for (const entry of game.season.standings) {
+    if (!entry.isTeamCar) {
+      entries.push(entry);
+      continue;
+    }
+    const namedDriver = HIREABLE_DRIVERS.find(d =>
+      String(entry.name || '').endsWith(` (${d.name})`) ||
+      String(entry.name || '').endsWith(` / ${d.name}`));
+    const driverId = entry.driverId || namedDriver?.id;
+    if (!driverId) {
+      entries.push(entry);
+      continue;
+    }
+    const existing = byDriver.get(driverId);
+    if (existing) {
+      for (const stat of ['points', 'wins', 'top5', 'top10', 'races']) {
+        existing[stat] = (existing[stat] || 0) + (entry[stat] || 0);
+      }
+    } else {
+      const row = {...entry, driverId};
+      byDriver.set(driverId, row);
+      entries.push(row);
+    }
+  }
+  for (const [driverId, entry] of byDriver) {
+    const hire = (game.hiredDrivers || []).find(h => h.driverId === driverId);
+    if (hire?.carId) entry.id = hire.carId;
+    else if (hireForCar(entry.id)) entry.id = `driver:${driverId}`;
+  }
+  game.season.standings = entries;
+}
+
 function getStandings() {
+  normalizeTeamStandings();
   return [...game.season.standings].sort((a, b) => b.points - a.points);
 }
 
@@ -469,6 +509,7 @@ function getPlayerStandingPos() {
 
 // ─── Apply race results to standings ─────────────────────────
 function applyRaceResults(results) {
+  normalizeTeamStandings();
   const series = SERIES[game.currentSeries];
   results.forEach(r => {
     const pos = r.position;
@@ -482,6 +523,7 @@ function applyRaceResults(results) {
         id: r.entrantId,
         name: `${game.teamName} (${HIREABLE_DRIVERS.find(d => d.id === hireForCar(r.carId)?.driverId)?.name || String(r.displayName || 'Driver').split(' / ').pop()})`,
         isPlayer: false, isTeamCar: true,
+        driverId: hireForCar(r.carId)?.driverId,
         points: 0, wins: 0, top5: 0, top10: 0, races: 0,
       };
       game.season.standings.push(entry);

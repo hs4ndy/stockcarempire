@@ -79,7 +79,7 @@ function toast(msg, type = 'info', duration = 4000) {
 // name and keep the team as the secondary label.
 function standingIdentity(entry) {
  if(entry.isPlayer)return {driver:game.driverName||'You',team:game.teamName};
- if(entry.isTeamCar){const hire=hireForCar(entry.id),driver=HIREABLE_DRIVERS.find(d=>d.id===hire?.driverId);if(driver)return {driver:driver.name,team:game.teamName};const parts=String(entry.name||'').split(' / ');if(parts.length>1)return {driver:parts.at(-1),team:parts[0]};}
+ if(entry.isTeamCar){const hire=hireForCar(entry.id),driver=HIREABLE_DRIVERS.find(d=>d.id===(entry.driverId||hire?.driverId));if(driver)return {driver:driver.name,team:game.teamName};const parts=String(entry.name||'').split(' / ');if(parts.length>1)return {driver:parts.at(-1),team:parts[0]};}
  const match=/^(.*?)\s*\(([^)]+)\)\s*$/.exec(entry.name||'');
  return match?{driver:match[2],team:match[1]}:{driver:entry.name||'',team:''};
 }
