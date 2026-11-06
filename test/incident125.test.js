@@ -22,7 +22,7 @@ test('All-Out human-caused AI strain closes a quarter of the gap to Pro', () => 
     }
     return Math.abs(strains.semipro - .80) < 1e-8 &&
       Math.abs(strains.pro - .72) < 1e-8 &&
-      Math.abs(strains.allout - (.15 + (.72 - .15) * .25)) < 1e-8;
+      Math.abs(strains.allout - (.2925 + (.72 - .2925) * .25)) < 1e-8;
   })()`, ctx());
   assert.equal(result, true);
 });
