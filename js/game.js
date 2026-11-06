@@ -513,7 +513,7 @@ function applyRaceResults(results) {
   const series = SERIES[game.currentSeries];
   results.forEach(r => {
     const pos = r.position;
-    const pts = series.points[pos - 1] || 0;
+    const pts = r.dnf ? 0 : (series.points[pos - 1] || 0);
 
     let entry = game.season.standings.find(e => e.id === r.entrantId);
     // A car hired a driver mid-season - give it a standings entry on the fly

@@ -1,4 +1,18 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+test('Grassroots last-place withdrawal earns zero even when twentieth pays a point', () => {
+  const c = context();
+  const points = vm.runInContext(`(() => {
+    newGame('Team','Driver','Car');
+    const results = Array.from({length:20}, (_,i) => ({
+      entrantId:i === 0 ? 'player' : 'rival-' + i,
+      isPlayer:i === 0, position:i+1, dnf:false
+    }));
+    const classified = classifyQuitDNF(results);
+    applyRaceResults(classified);
+    return game.season.standings.find(e => e.id === 'player').points;
+  })()`, c);
+  assert.equal(points, 0);
+});
 function context(){const c=vm.createContext({console,Math,window:{},document:{},localStorage:{getItem(){return null},setItem(){},removeItem(){}}});const news=[...fs.readFileSync('index.html','utf8').matchAll(/<script src="(js\/news-data(?:\/[^\"]+)?\.js)"><\/script>/g)].map(m=>m[1]);for(const[f,s]of require('./helpers/race-sources.cjs').entries(['js/data.js','js/game.js','js/race.js']))vm.runInContext(s,c,{filename:f});for(const f of [...news,'js/news.js'])vm.runInContext(fs.readFileSync(f,'utf8'),c,{filename:f});return c;}
 test('voluntary withdrawal is last behind other DNFs with existing zero-point/reduced-payout scoring',()=>{const c=context();assert.equal(vm.runInContext(`(()=>{newGame('T','D','C');return [0,1,2].every(level=>{game.currentSeries=level;const source=[{entrantId:'player',isPlayer:true,position:1,dnf:false,raceHealth:42,crashes:1},{entrantId:'rival',position:2,dnf:false},{entrantId:'retired',position:3,dnf:true}],before=JSON.stringify(source),r=classifyQuitDNF(source);return before===JSON.stringify(source)&&r.length===3&&r.map(x=>x.entrantId).join(',')==='rival,retired,player'&&r[2].dnf&&r[2].points===0&&r[2].prize===Math.round(SERIES[level].prize[2]*.4)&&r[2].raceHealth===42&&r[2].crashes===1&&r.every((x,i)=>x.position===i+1);});})()`,c),true);});
 test('five authored withdrawal stories fill context, rotate without immediate repeats and omit quotes/photos',()=>{const c=context();assert.equal(vm.runInContext(`RACE_QUIT_NEWS_ARTICLES.length`,c),5);assert.equal(vm.runInContext(`(()=>{newGame('T','<img src=x>','C');const ids=new Set();for(const value of [0,.249,.499,.749,.999]){lastQuitNewsId=null;const r=createQuitRaceNews({playerName:'<img src=x>',trackName:'Track',seriesName:'Premier',position:40},()=>value);ids.add(r.id);if(r.quote||r.paragraphs.length!==3||JSON.stringify(r).includes('{player}'))return false;const html=renderRaceNews({suppressPhoto:true,reports:[r],photo:{dataUrl:'data:image/jpeg;base64,x'}},0);if(/<img |<figure|<blockquote|Finish photo unavailable/.test(html)||!html.includes('&lt;img'))return false;}const ctx={playerName:'D',trackName:'T',seriesName:'S',position:20};return ids.size===5&&createQuitRaceNews(ctx,()=>0).id!==createQuitRaceNews(ctx,()=>0).id;})()`,c),true);});
