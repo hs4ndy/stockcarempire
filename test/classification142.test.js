@@ -28,6 +28,28 @@ function context() {
   return c;
 }
 
+test('Premier points stay tied to finishing position across forty to forty-three entrants', () => {
+  const c = context();
+  for (const [size, lastPoints] of [[40,4], [41,3], [42,2], [43,1]]) {
+    c.fieldSize = size;
+    const actual = vm.runInContext(`(() => {
+      const results = Array.from({length:fieldSize}, (_,i) => ({
+        entrantId:'entry-'+i, position:i+1, dnf:false
+      }));
+      game.season.standings = results.map(r => ({
+        id:r.entrantId, points:0, races:0, wins:0, top5:0, top10:0
+      }));
+      applyRaceResults(results);
+      const classified = reRankWithTeamOrder(results, 1, results);
+      return JSON.stringify([
+        game.season.standings.at(-1).points, classified.at(-1).points,
+        game.season.standings[0].points, classified[0].points
+      ]);
+    })()`, c);
+    assert.deepEqual(JSON.parse(actual), [lastPoints, lastPoints, 60, 60]);
+  }
+});
+
 test('replacing all three teammate cars keeps 43 standings entries and each driver total', () => {
   const c = context();
   const result = vm.runInContext(`(() => {
