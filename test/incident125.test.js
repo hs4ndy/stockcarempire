@@ -17,7 +17,7 @@ test('All-Out human-caused AI strain closes a quarter of the gap to Pro', () => 
       const a = {raceHealth:100}, b = {raceHealth:100};
       engine.cars = [a, b];
       engine._sideContact(a, b, 4, 1, .1, 1);
-      const aiOnly = difficulty === 'allout' ? .24 : .28;
+      const aiOnly = difficulty === 'allout' ? .192 : .224;
       if (Math.abs(a.sideStrain - 1.05 * aiOnly) > 1e-8) return false;
     }
     return Math.abs(strains.semipro - .80) < 1e-8 &&

@@ -140,6 +140,7 @@ function showQuickRaceScreen() {
 
 // Quick Race difficulty is chosen in the modal before launching
 let quickRaceDifficulty = DEFAULT_DIFFICULTY;
+let quickRaceLength = 'standard';
 const quickRaceRules={crashes:true,damage:true};
 let quickRaceSeries = null;
 let quickRaceStep=1;
@@ -265,7 +266,7 @@ function handleStartQuickRace(fieldSize) {
   launch3DRace(
     { playerAppearance:carAppearance(quickRaceCars[0]), playerColor: quickRaceCars[0].color, playerNumber: quickRaceCars[0].number, playerName: quickRacePlayers === 2 ? 'PLAYER 1' : 'YOU', dualPlayer: quickRacePlayers === 2, playerPower: 0.75, fieldSize,
       seriesId: SERIES.find(s => s.fieldSize === fieldSize)?.id || 'grassroots',
-      difficulty: quickRaceDifficulty, raceRules:{...quickRaceRules}, captureFinishPhoto:true, onQuit:leaveQuickRaceResults, aiEntries },
+      difficulty: quickRaceDifficulty, raceLength:quickRaceLength, raceRules:{...quickRaceRules}, captureFinishPhoto:true, onQuit:leaveQuickRaceResults, aiEntries },
     (pos, order, photo, quitDNF, facts) => {
       quickRaceCompleted++;
       const players = order.filter(r => r.isPlayer).map(r => {
@@ -686,6 +687,7 @@ function handleStartRace() {
       seriesId:     series.id,
       difficulty:   game.difficulty || DEFAULT_DIFFICULTY,
       raceRules: {...game.raceRules},
+      raceLength: game.raceLength,
       playerHealth: pCar?.condition ?? 100,
       quitWithDNF: true,
       qualifyBoost: Math.round(staffTotal('qualifying') / ANALYST_QUALI_BONUS),   // Data Analysts sharpen the grid draw
@@ -1085,6 +1087,27 @@ function closeVehicleModal(id) {
 }
 
 async function handleRepairAll(){const cost=game.cars.reduce((n,c)=>n+carRepairCost(c),0);if(!await gameConfirm(`Repair all damaged cars for ${fmt$(cost)}? Lifetime health will not change.`))return;const r=repairAllCars();if(!r.ok){toast(r.msg,'error');return;}updateHeader();renderTab('garage');toast(`${r.count} cars repaired for ${fmt$(r.cost)}.`,'success');}
+
+function setRaceLength(scope, index) {
+  const selected = RACE_LENGTHS[Number(index)] || RACE_LENGTHS[3];
+  let option = selected;
+  if (scope === 'quick') quickRaceLength = selected.id;
+  else {
+    const previous = game.raceLength;
+    game.raceLength = selected.id;
+    if (currentSlot !== null && !saveToSlot(currentSlot)) {
+      game.raceLength = previous;
+      option = raceLengthOption(previous);
+      toast('Race length could not be saved.', 'error');
+    }
+  }
+  const value = RACE_LENGTHS.indexOf(option);
+  const input = document.getElementById(`${scope}-race-length`);
+  input.value = value;
+  input.setAttribute('aria-valuetext', option.label);
+  input.style.setProperty('--length-progress', `${value / 6 * 100}%`);
+  document.getElementById(`${scope}-race-length-value`).textContent = `${option.label} · ${option.scale * 100}%`;
+}
 
 function setQuickRaceStep(step) {
   if (step === 2 && quickRaceSeries === null) return;

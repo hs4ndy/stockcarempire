@@ -51,8 +51,8 @@
       // Ordinary pack pressure cannot consume the headroom reserved for
       // detached groups. In-pack humans no longer receive the same free pace.
       const ordinary = Math.min(normalPace+catchUp,Math.max(normalPace,leaderPace+6),ahead ? R3D.RECOVERY_MAX : R3D.SPEED_MAX);
-      const tgt = Math.min(Math.max(ordinary,pursuit), R3D.RECOVERY_MAX) * (this.speedScale ?? 1) * this._healthPace(car);
-      car.speed += (tgt - car.speed) * (1 - Math.exp(-2.2 * dt));   // frame-rate independent
+      const tgt = this._postCrashTarget(car, Math.min(Math.max(ordinary,pursuit), R3D.RECOVERY_MAX) * (this.speedScale ?? 1) * this._healthPace(car));
+      car.speed += (tgt - car.speed) * (1 - Math.exp(-2.2 * (car._postCrashCatchup > 0 ? 1.25 : 1) * dt));
 
       // ── Lateral motion with inertia ─────────────────────────
       // A stock car has mass: it cannot reverse direction instantly. Steering

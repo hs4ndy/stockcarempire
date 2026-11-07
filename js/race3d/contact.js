@@ -39,7 +39,7 @@
       // AI door contact needs sustained force; human-caused AI strain is
       // reduced modestly, AI-only strain substantially. Player tolerance stays.
       const allOut=(this.config?.difficulty||this.diff?.id)==='allout';
-      const strainScale = car.isPlayer ? 1 : (a.isPlayer || b.isPlayer ? (allOut ? .399375 : (this.config?.difficulty||this.diff?.id)==='pro' ? .72 : .80) : allOut ? .24 : .28);
+      const strainScale = car.isPlayer ? 1 : (a.isPlayer || b.isPlayer ? (allOut ? .399375 : (this.config?.difficulty||this.diff?.id)==='pro' ? .72 : .80) : allOut ? .192 : .224);
       car.sideStrain=(car.sideStrain||0)+strain*strainScale;car._recentSide=.5;
       const threshold=this._crashThreshold(car);
       if(rules.crashes && car.sideStrain>=threshold) this._beginCrash(car,side,'side contact');
@@ -55,7 +55,7 @@
     if(!this._incidentRules().crashes || car.spinning || car.finished || car.dnf || car._crashGrace>0) return false;
     if(cause==='collected' && ((this._collectedCount||0)>=4 || this.cars.filter(c=>c.spinning).length>=5)) return false;
     if(cause==='collected') this._collectedCount=(this._collectedCount||0)+1;
-    car.spinning=true;car._crashPhase='veer';car._veerTime=.85;car.spinTimer=2.5;car.spinDir=side||1;
+    car.spinning=true;car._postCrashCatchup=0;car._crashPhase='veer';car._veerTime=.85;car.spinTimer=2.5;car.spinDir=side||1;
     car.crashCount=(car.crashCount||0)+1;car.sideStrain=0;car._crashCause=cause;
     this.wreckCount=(this.wreckCount||0)+1;
     this._damageCar(car,cause==='blowout'?0:18);
@@ -76,7 +76,7 @@
       car.spinTimer=(car.spinTimer ?? 2.5)-dt;car.mesh.rotation.y+=car.spinDir*4.5*dt;
       car.speed=Math.max(30,car.speed-65*dt);
       if(car.spinTimer<=0) {
-        car.spinning=false;car._crashPhase=null;car._crashGrace=5;car.mesh.rotation.y=0;
+        car.spinning=false;car._crashPhase=null;car._crashGrace=5;car._postCrashCatchup=12;car.mesh.rotation.y=0;
         car.lv=car.lvx=0;car.targetX=clamp(car.x,-6,6);
       }
     }
@@ -88,6 +88,7 @@
     const rules=this._incidentRules();
     if(!rules.crashes && !rules.damage) return;
     for(const car of this.cars) {
+      car._postCrashCatchup=Math.max(0,(car._postCrashCatchup||0)-dt);
       car._crashGrace=Math.max(0,(car._crashGrace||0)-dt);
       car._recentSide=Math.max(0,(car._recentSide||0)-dt);
       if(!car._recentSide) car.sideStrain=Math.max(0,(car.sideStrain||0)-.35*dt);
@@ -100,11 +101,21 @@
       if(car===wreck || car.spinning || car.finished || car.dnf || car._crashGrace>0 || car._recentSide>0) continue;
       if((wreck._crashPhase==='veer' || Math.abs(Math.sin(wreck.mesh.rotation.y))>.25) && this._wreckOverlap(wreck,car)) {
         this._damageCar(car,14);car._recentSide=1;
-        car.sideStrain=(car.sideStrain||0)+(car.isPlayer?12:25);
+        car.sideStrain=(car.sideStrain||0)+(car.isPlayer?12:wreck.isPlayer?25:20);
         car.speed*=.8;
         if(car.sideStrain>=this._crashThreshold(car)) this._beginCrash(car,Math.sign(car.x-wreck.x)||1,'collected');
       }
     }
+  }
+
+  _postCrashTarget(car, target) {
+    if (!(car._postCrashCatchup > 0)) return target;
+    const next = this.cars.reduce((nearest, other) => other !== car && !other.dnf &&
+      !other.finished && !other.spinning && other.z > car.z && (!nearest || other.z < nearest.z) ? other : nearest, null);
+    const gap = next ? next.z - car.z : 0;
+    if (gap <= 18) { car._postCrashCatchup = 0; return target; }
+    const gain = 18 * clamp((gap - 18) / 102, 0, 1) * Math.min(1, car._postCrashCatchup / 3);
+    return Math.min(R3D.RECOVERY_MAX * (this.speedScale ?? 1), target + gain * (this.speedScale ?? 1));
   }
 
   _wreckOverlap(a,b) {

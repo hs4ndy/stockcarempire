@@ -1246,6 +1246,7 @@ function renderSettings() {
     </div>
   </div>
 
+  <div class="card mb"><div class="card-header">Race Length</div><div class="card-body">${renderRaceLengthControl('career',game.raceLength)}</div></div>
   <div class="card mb"><div class="card-header">Crashes and Vehicle Health</div><div class="card-body">${renderRaceRuleControls(curDiff,game.raceRules,'career')}</div></div>
   <div class="card mb">
     <div class="card-header">Auto Save</div>
@@ -1367,7 +1368,7 @@ function renderQuickRaceResults() {
       <section class="quick-results-summary" aria-labelledby="quick-results-title">
         <h1 id="quick-results-title">Quick Race</h1>
         <figure class="quick-results-photo"><div id="quick-finish-photo">${result.photo?.canvas ? '' : '<p>Finish photo unavailable</p>'}</div><figcaption>Last race’s finish · Race ${result.race}</figcaption></figure>
-        <p class="quick-results-settings">${series.name} · ${difficultyById(quickRaceDifficulty).name}<br><span>Crashes ${rules.crashes ? 'on' : 'off'} · Damage ${rules.damage ? 'on' : 'off'}</span></p>
+        <p class="quick-results-settings">${series.name} · ${difficultyById(quickRaceDifficulty).name}<br><span>${raceLengthOption(quickRaceLength).label} length · Crashes ${rules.crashes ? 'on' : 'off'} · Damage ${rules.damage ? 'on' : 'off'}</span></p>
         <div class="quick-results-actions"><button class="btn btn-primary btn-lg" id="quick-race-again" onclick="handleStartQuickRace(quickRaceSeries)">Race Again</button><button class="btn btn-secondary" onclick="showQuickRaceScreen()">Change Settings</button><button class="btn btn-ghost" onclick="leaveQuickRaceResults()">Main Menu</button></div>
       </section>
       ${result.players.map(player => `<section class="quick-result-player" aria-labelledby="quick-result-player-${player.index}">
@@ -1386,7 +1387,7 @@ function renderQuickRaceModal() {
  <div class="modal-body quick-setup-body"><div id="quick-stage-race" class="quick-race-stage">
  <section><h4>Difficulty</h4><div class="difficulty-grid">${DIFFICULTIES.map(d=>`<button type="button" class="difficulty-card${d.id===quickRaceDifficulty?' selected':''}" data-diff="${d.id}" aria-pressed="${d.id===quickRaceDifficulty}" onclick="setQuickRaceDifficulty('${d.id}')"><span class="difficulty-name">${d.name}</span></button>`).join('')}</div><p id="quick-difficulty-hint" class="small muted-text">${summaries[quickRaceDifficulty]}</p></section>
  <section><h4>Series</h4><div class="quick-series">${SERIES.map(s=>`<button type="button" class="quick-series-btn" data-field-size="${s.fieldSize}" aria-pressed="false" onclick="selectQuickRaceSeries(${s.fieldSize})"><span class="quick-series-name" style="--series-color:${s.color}">${s.name}</span><span class="quick-series-meta">${s.fieldSize} cars</span></button>`).join('')}</div></section>
- <section><h4>Race settings</h4><div id="quick-race-rules">${renderRaceRuleControls(quickRaceDifficulty,quickRaceRules,'quick')}</div></section></div>
+ <section><h4>Race settings</h4>${renderRaceLengthControl('quick',quickRaceLength)}<div id="quick-race-rules">${renderRaceRuleControls(quickRaceDifficulty,quickRaceRules,'quick')}</div></section></div>
  <div id="quick-stage-cars" hidden><div class="quick-player-toolbar"><h4>Players and cars</h4><div class="quick-player-mode" role="group" aria-label="Player mode"><button class="btn" data-players="1" aria-pressed="${quickRacePlayers===1}" onclick="setQuickRacePlayers(1)">Single player</button><button class="btn" data-players="2" aria-pressed="${quickRacePlayers===2}" onclick="setQuickRacePlayers(2)">Dual player</button></div></div>
  <div class="quick-setup-cars">${quickRaceCars.map((car,i)=>renderCarCustomizer(car,i)).join('')}</div><p class="small muted-text quick-key-help">Player 1: A / S / D · Player 2: J / K / L · Middle key brakes</p><p class="form-warning" id="quick-number-warning" hidden>Choose a different number for each player.</p></div></div>
  <div class="modal-footer quick-race-footer"><button type="button" class="btn btn-secondary" id="quick-back" onclick="setQuickRaceStep(1)" hidden>Back</button><button type="button" class="btn btn-primary btn-lg" id="quick-next" onclick="setQuickRaceStep(2)" disabled>Next: Players and cars</button><button type="button" class="btn btn-primary btn-lg" id="btn-quick-race-confirm" onclick="confirmQuickRace()" hidden disabled>Confirm Race</button></div></div></div>`;
@@ -1395,6 +1396,13 @@ function renderQuickRaceModal() {
 // ─── Listeners wired after each tab render ───────────────────
 function attachTabListeners(tabName) {
   // Nothing extra for most tabs; specific interactions are via onclick attributes
+}
+
+function renderRaceLengthControl(scope, value) {
+  const option = raceLengthOption(value), index = RACE_LENGTHS.indexOf(option);
+  return `<div class="race-length-control"><div class="race-length-heading"><label for="${scope}-race-length">Race length</label><output id="${scope}-race-length-value" for="${scope}-race-length">${option.label} · ${option.scale * 100}%</output></div>
+    <input id="${scope}-race-length" type="range" min="0" max="6" step="1" value="${index}" aria-valuetext="${option.label}" style="--length-progress:${index / 6 * 100}%" oninput="setRaceLength('${scope}',this.value)">
+    <div class="race-length-labels" aria-hidden="true">${RACE_LENGTHS.map(o=>`<span>${o.label}</span>`).join('')}</div></div>`;
 }
 
 function renderRaceRuleControls(difficulty,preferences={},scope='career') {

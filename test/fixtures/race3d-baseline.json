@@ -7,7 +7,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "526b731491914dccc8a56c797c1ca664e143ccd834d3e69081291271f9c9aca5"
+      "hash": "48bb1d8e6ebbaa7b359ac10e0b05be7ed951ef7c8087f1044af40644d0bee9a5"
     },
     {
       "name": "_init",
@@ -135,7 +135,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "276ba424fcdd75283c168e1d558b3cfc718c0e2a2c175b01294447f30f2e7d76"
+      "hash": "f54bd5a7f9caaf0159892e86463219c3c0fe00b49458f7eb63a8a23eca0d54e1"
     },
     {
       "name": "_naturalAIPace",
@@ -175,7 +175,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "9295009f549c994aa07b9a0bfc99105d7e8adc8fde47ab1850ac4e491a53bf25"
+      "hash": "5134981cf4b2092a7e7ce73c96638cae4fbe3249822645201b8ef7db39c14264"
     },
     {
       "name": "_raceAggression",
@@ -263,7 +263,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "802c5dd5e9bbbd7d6ba8f5f1d266fb0c5d86837f47bf1dff8f8c740d554b6f9a"
+      "hash": "3176d24e4338fd6ff42134f0e1ecd4f7414df05efd409873c00fcec67ef313e6"
     },
     {
       "name": "_crashThreshold",
@@ -279,7 +279,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "4d57929d5ceade8995c501762ae4ab5dc15b548553a870d2c4bb0a0d5cdd4cc4"
+      "hash": "00d94780b8a3461cd5539edfee53bc5e8f8c204b83ad861d04a711a84c4d6435"
     },
     {
       "name": "_advanceCrash",
@@ -287,7 +287,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "4188a8f71b9b8e345ff35ffd77e5a8c081247f52d2ab2c99dd1b1234f60593eb"
+      "hash": "8c6aa2aeff0b03a45cce83d7dc1c4e36170ffc1b5c1cb78ed2cce4cecd811b4a"
     },
     {
       "name": "_stepContactState",
@@ -295,7 +295,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "8d244c31be4994edd4ebc9f5b03574ddbc7baad3b9540dc96268f63e33a446aa"
+      "hash": "0e5e5e3f10a18b0143bb2c5fc44b8e7ad797cbdb16fe79ee8bd11641de017bc1"
     },
     {
       "name": "_wreckOverlap",
@@ -536,6 +536,14 @@
       "configurable": true,
       "writable": true,
       "hash": "b432d8f4adcb5841ae03933ed91455900aba23d204e74aa14c9e4482b07c02f3"
+    },
+    {
+      "name": "_postCrashTarget",
+      "length": 2,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "e6f1299cc1f8d7e3c2ae633772d1726aa9f42b1d21cd30a9dba714de0af305a4"
     }
   ],
   "helpers": [

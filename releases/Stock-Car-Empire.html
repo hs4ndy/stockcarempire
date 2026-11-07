@@ -122,6 +122,17 @@
   --maxw: 1320px; --radius: 8px; --t: 180ms; --shell-height: 80px;
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px; --space-6: 32px; --space-7: 48px;
 }
+.race-length-control { margin:0 0 20px; }
+.race-length-heading { display:flex;align-items:baseline;justify-content:space-between;gap:12px;font-size:14px; }
+.race-length-heading label { font-weight:600;color:var(--text); }
+.race-length-heading output { color:var(--text-dim);font-variant-numeric:tabular-nums; }
+.race-length-control input[type=range] { appearance:none;display:block;width:100%;height:44px;margin:4px 0;padding:0;border:0;background:transparent;cursor:pointer; }
+.race-length-control input::-webkit-slider-runnable-track { height:6px;border-radius:4px;background:linear-gradient(to right,var(--accent-solid) var(--length-progress),var(--line-2) var(--length-progress)); }
+.race-length-control input::-webkit-slider-thumb { appearance:none;width:22px;height:22px;border-radius:50%;background:var(--text);border:3px solid var(--accent-solid);margin-top:-8px; }
+.race-length-control input::-moz-range-track { height:6px;background:var(--line-2);border-radius:4px; }
+.race-length-control input::-moz-range-progress { height:6px;background:var(--accent-solid); }
+.race-length-control input::-moz-range-thumb { width:16px;height:16px;border-radius:50%;background:var(--text);border:3px solid var(--accent-solid); }
+.race-length-labels { display:flex;justify-content:space-between;gap:2px;font:600 12px/1.3 var(--font-display);color:var(--text-dim); }
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 html { color-scheme: dark; scrollbar-color: var(--line-2) var(--bg); scrollbar-width: thin; scroll-padding-top: 152px; }
@@ -851,7 +862,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .r3d-pause-btn, .r3d-pause-resume { min-height: 44px; border-radius: 6px; font-family: var(--font); font-size: 14px; letter-spacing: 0; text-transform: none; }
 .r3d-pause-resume { background: var(--accent-solid); border-color: var(--accent-solid); }
 .r3d-pause-btn:hover { background: var(--text); color: var(--bg); border-color: var(--text); }
-.r3d-controls-hint { border: 0; border-radius: 6px; font-size: 13px; }
+.r3d-controls-hint { border: 0; border-radius: 6px; font-size: 13px; pointer-events:none; }
 .r3d-progress-label { color: #fff; text-shadow: 0 1px 4px #000; font-size: 13px; top: -22px; }
 .r3d-warning { color: var(--accent-ink); background: var(--race-accent); border: 0; border-radius: 6px; letter-spacing: 0; padding: 9px 20px; }
 .r3d-practice-tip { top: 142px; border-radius: 6px; font: 500 14px/1.4 var(--font); }
@@ -1210,6 +1221,10 @@ button.standing-driver .st-name { text-decoration:none; }
 .market-workspace>.card {margin-top:0;}
 .market-workspace .card-header {font:700 24px var(--font-display);margin-bottom:20px;}
 .market-workspace .staff-row {padding:20px 0;}
+@media(min-width:601px) and (max-width:1000px){
+ .quick-race-stage{grid-template-columns:1fr 1fr 1.6fr;gap:20px;}
+ .quick-race-stage>section+section{padding-left:20px;}
+}
 @media(max-width:800px){
  #main-content[data-tab=team] .team-workspace,.market-cars {grid-template-columns:1fr;gap:24px;}
  .driver-browse {grid-template-columns:1fr 150px;}
@@ -1302,7 +1317,7 @@ button.standing-driver .st-name { text-decoration:none; }
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 152</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 153</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -1478,6 +1493,14 @@ function raceFeatureRules(difficulty, preferences = {}) {
   const eligible=['semipro','pro','allout'].includes(difficulty);
   return {crashes:eligible && preferences.crashes!==false,damage:eligible && preferences.damage!==false};
 }
+
+const RACE_LENGTHS = [
+  {id:'shortest',label:'Shortest',scale:.25}, {id:'shorter',label:'Shorter',scale:.5},
+  {id:'short',label:'Short',scale:.75}, {id:'standard',label:'Standard',scale:1},
+  {id:'long',label:'Long',scale:1.25}, {id:'longer',label:'Longer',scale:1.5},
+  {id:'longest',label:'Longest',scale:2},
+];
+function raceLengthOption(id) { return RACE_LENGTHS.find(option=>option.id===id) || RACE_LENGTHS[3]; }
 
 const SERIES = [
   {
@@ -2961,6 +2984,7 @@ function makeCar(name, classId, overrideStats, opts = {}) {
 }
 
 function normalizeVehicleState() {
+  game.raceLength = raceLengthOption(game.raceLength).id;
   game.raceRules={crashes:game.raceRules?.crashes!==false,damage:game.raceRules?.damage!==false};
   game.retiredCars=Array.isArray(game.retiredCars)?game.retiredCars:[];
   game.cars.forEach(c=>{c.lifetimeHealth=Number.isFinite(c.lifetimeHealth)?clamp(c.lifetimeHealth,0,100):100;});
@@ -3173,6 +3197,7 @@ function newGame(teamName, driverName, firstCarName) {
     cars: [firstCar],
     retiredCars: [],
     raceRules: {crashes:true,damage:true},
+    raceLength: 'standard',
     hiredDrivers: [],    // { driverId, carId }
     staff: [],           // { staffType, name, weeklyCost }
     loans: [],           // bank loans currently outstanding
@@ -4894,7 +4919,7 @@ class Race3DEngine {
     const fullDistance = R3D.TRACK_LEN * (seriesId === 'premier' ? 1.25 : 1.15);
     this.raceLength   = Number.isFinite(config.finishDistance) &&
       config.finishDistance >= 1000 && config.finishDistance <= fullDistance
-      ? config.finishDistance : fullDistance;
+      ? config.finishDistance : fullDistance * raceLengthOption(config.raceLength).scale;
     this.isGrassroots = (config.seriesId || SERIES.find(s => s.fieldSize === config.fieldSize)?.id) === 'grassroots';
     this.speedScale = this.isGrassroots ? 0.9 : 1;
     this.trackHalfWidth = R3D.HALF_W * (this.isGrassroots ? .94 : 1);
@@ -5811,14 +5836,14 @@ class Race3DEngine {
     const gap = nextCar ? nextCar.z - startZ : 0;
     const basePace = R3D.SPEED_BASE * (0.83 + p.power * 0.28);
     const normalPace = Math.min(R3D.SPEED_MAX, basePace + this._aeroPace(p) + rubberBand);
-    const tgt = this._playerRecoveryTarget(normalPace, nextCar, gap) * (this.speedScale ?? 1) * this._healthPace(p);
+    const tgt = this._postCrashTarget(p, this._playerRecoveryTarget(normalPace, nextCar, gap) * (this.speedScale ?? 1) * this._healthPace(p));
     let braking = false;
     if (this.keys.s) {
       p.speed = Math.max(tgt * 0.38, p.speed - R3D.BRAKE_FORCE * dt);
       braking = true;
     } else {
       const accel = 2.2 + (R3D.ACCEL - 2.2) * clamp((p.speed - 180) / 30, 0, 1);
-      p.speed += (tgt - p.speed) * (1 - Math.exp(-accel * dt));
+      p.speed += (tgt - p.speed) * (1 - Math.exp(-accel * (p._postCrashCatchup > 0 ? 1.25 : 1) * dt));
     }
 
     p.z += p.speed * dt;
@@ -6079,8 +6104,8 @@ class Race3DEngine {
       // Ordinary pack pressure cannot consume the headroom reserved for
       // detached groups. In-pack humans no longer receive the same free pace.
       const ordinary = Math.min(normalPace+catchUp,Math.max(normalPace,leaderPace+6),ahead ? R3D.RECOVERY_MAX : R3D.SPEED_MAX);
-      const tgt = Math.min(Math.max(ordinary,pursuit), R3D.RECOVERY_MAX) * (this.speedScale ?? 1) * this._healthPace(car);
-      car.speed += (tgt - car.speed) * (1 - Math.exp(-2.2 * dt));   // frame-rate independent
+      const tgt = this._postCrashTarget(car, Math.min(Math.max(ordinary,pursuit), R3D.RECOVERY_MAX) * (this.speedScale ?? 1) * this._healthPace(car));
+      car.speed += (tgt - car.speed) * (1 - Math.exp(-2.2 * (car._postCrashCatchup > 0 ? 1.25 : 1) * dt));
 
       // ── Lateral motion with inertia ─────────────────────────
       // A stock car has mass: it cannot reverse direction instantly. Steering
@@ -6407,7 +6432,7 @@ class Race3DEngine {
       // AI door contact needs sustained force; human-caused AI strain is
       // reduced modestly, AI-only strain substantially. Player tolerance stays.
       const allOut=(this.config?.difficulty||this.diff?.id)==='allout';
-      const strainScale = car.isPlayer ? 1 : (a.isPlayer || b.isPlayer ? (allOut ? .399375 : (this.config?.difficulty||this.diff?.id)==='pro' ? .72 : .80) : allOut ? .24 : .28);
+      const strainScale = car.isPlayer ? 1 : (a.isPlayer || b.isPlayer ? (allOut ? .399375 : (this.config?.difficulty||this.diff?.id)==='pro' ? .72 : .80) : allOut ? .192 : .224);
       car.sideStrain=(car.sideStrain||0)+strain*strainScale;car._recentSide=.5;
       const threshold=this._crashThreshold(car);
       if(rules.crashes && car.sideStrain>=threshold) this._beginCrash(car,side,'side contact');
@@ -6423,7 +6448,7 @@ class Race3DEngine {
     if(!this._incidentRules().crashes || car.spinning || car.finished || car.dnf || car._crashGrace>0) return false;
     if(cause==='collected' && ((this._collectedCount||0)>=4 || this.cars.filter(c=>c.spinning).length>=5)) return false;
     if(cause==='collected') this._collectedCount=(this._collectedCount||0)+1;
-    car.spinning=true;car._crashPhase='veer';car._veerTime=.85;car.spinTimer=2.5;car.spinDir=side||1;
+    car.spinning=true;car._postCrashCatchup=0;car._crashPhase='veer';car._veerTime=.85;car.spinTimer=2.5;car.spinDir=side||1;
     car.crashCount=(car.crashCount||0)+1;car.sideStrain=0;car._crashCause=cause;
     this.wreckCount=(this.wreckCount||0)+1;
     this._damageCar(car,cause==='blowout'?0:18);
@@ -6444,7 +6469,7 @@ class Race3DEngine {
       car.spinTimer=(car.spinTimer ?? 2.5)-dt;car.mesh.rotation.y+=car.spinDir*4.5*dt;
       car.speed=Math.max(30,car.speed-65*dt);
       if(car.spinTimer<=0) {
-        car.spinning=false;car._crashPhase=null;car._crashGrace=5;car.mesh.rotation.y=0;
+        car.spinning=false;car._crashPhase=null;car._crashGrace=5;car._postCrashCatchup=12;car.mesh.rotation.y=0;
         car.lv=car.lvx=0;car.targetX=clamp(car.x,-6,6);
       }
     }
@@ -6456,6 +6481,7 @@ class Race3DEngine {
     const rules=this._incidentRules();
     if(!rules.crashes && !rules.damage) return;
     for(const car of this.cars) {
+      car._postCrashCatchup=Math.max(0,(car._postCrashCatchup||0)-dt);
       car._crashGrace=Math.max(0,(car._crashGrace||0)-dt);
       car._recentSide=Math.max(0,(car._recentSide||0)-dt);
       if(!car._recentSide) car.sideStrain=Math.max(0,(car.sideStrain||0)-.35*dt);
@@ -6468,11 +6494,21 @@ class Race3DEngine {
       if(car===wreck || car.spinning || car.finished || car.dnf || car._crashGrace>0 || car._recentSide>0) continue;
       if((wreck._crashPhase==='veer' || Math.abs(Math.sin(wreck.mesh.rotation.y))>.25) && this._wreckOverlap(wreck,car)) {
         this._damageCar(car,14);car._recentSide=1;
-        car.sideStrain=(car.sideStrain||0)+(car.isPlayer?12:25);
+        car.sideStrain=(car.sideStrain||0)+(car.isPlayer?12:wreck.isPlayer?25:20);
         car.speed*=.8;
         if(car.sideStrain>=this._crashThreshold(car)) this._beginCrash(car,Math.sign(car.x-wreck.x)||1,'collected');
       }
     }
+  }
+
+  _postCrashTarget(car, target) {
+    if (!(car._postCrashCatchup > 0)) return target;
+    const next = this.cars.reduce((nearest, other) => other !== car && !other.dnf &&
+      !other.finished && !other.spinning && other.z > car.z && (!nearest || other.z < nearest.z) ? other : nearest, null);
+    const gap = next ? next.z - car.z : 0;
+    if (gap <= 18) { car._postCrashCatchup = 0; return target; }
+    const gain = 18 * clamp((gap - 18) / 102, 0, 1) * Math.min(1, car._postCrashCatchup / 3);
+    return Math.min(R3D.RECOVERY_MAX * (this.speedScale ?? 1), target + gain * (this.speedScale ?? 1));
   }
 
   _wreckOverlap(a,b) {
@@ -8716,6 +8752,7 @@ function renderSettings() {
     </div>
   </div>
 
+  <div class="card mb"><div class="card-header">Race Length</div><div class="card-body">${renderRaceLengthControl('career',game.raceLength)}</div></div>
   <div class="card mb"><div class="card-header">Crashes and Vehicle Health</div><div class="card-body">${renderRaceRuleControls(curDiff,game.raceRules,'career')}</div></div>
   <div class="card mb">
     <div class="card-header">Auto Save</div>
@@ -8837,7 +8874,7 @@ function renderQuickRaceResults() {
       <section class="quick-results-summary" aria-labelledby="quick-results-title">
         <h1 id="quick-results-title">Quick Race</h1>
         <figure class="quick-results-photo"><div id="quick-finish-photo">${result.photo?.canvas ? '' : '<p>Finish photo unavailable</p>'}</div><figcaption>Last race’s finish · Race ${result.race}</figcaption></figure>
-        <p class="quick-results-settings">${series.name} · ${difficultyById(quickRaceDifficulty).name}<br><span>Crashes ${rules.crashes ? 'on' : 'off'} · Damage ${rules.damage ? 'on' : 'off'}</span></p>
+        <p class="quick-results-settings">${series.name} · ${difficultyById(quickRaceDifficulty).name}<br><span>${raceLengthOption(quickRaceLength).label} length · Crashes ${rules.crashes ? 'on' : 'off'} · Damage ${rules.damage ? 'on' : 'off'}</span></p>
         <div class="quick-results-actions"><button class="btn btn-primary btn-lg" id="quick-race-again" onclick="handleStartQuickRace(quickRaceSeries)">Race Again</button><button class="btn btn-secondary" onclick="showQuickRaceScreen()">Change Settings</button><button class="btn btn-ghost" onclick="leaveQuickRaceResults()">Main Menu</button></div>
       </section>
       ${result.players.map(player => `<section class="quick-result-player" aria-labelledby="quick-result-player-${player.index}">
@@ -8856,7 +8893,7 @@ function renderQuickRaceModal() {
  <div class="modal-body quick-setup-body"><div id="quick-stage-race" class="quick-race-stage">
  <section><h4>Difficulty</h4><div class="difficulty-grid">${DIFFICULTIES.map(d=>`<button type="button" class="difficulty-card${d.id===quickRaceDifficulty?' selected':''}" data-diff="${d.id}" aria-pressed="${d.id===quickRaceDifficulty}" onclick="setQuickRaceDifficulty('${d.id}')"><span class="difficulty-name">${d.name}</span></button>`).join('')}</div><p id="quick-difficulty-hint" class="small muted-text">${summaries[quickRaceDifficulty]}</p></section>
  <section><h4>Series</h4><div class="quick-series">${SERIES.map(s=>`<button type="button" class="quick-series-btn" data-field-size="${s.fieldSize}" aria-pressed="false" onclick="selectQuickRaceSeries(${s.fieldSize})"><span class="quick-series-name" style="--series-color:${s.color}">${s.name}</span><span class="quick-series-meta">${s.fieldSize} cars</span></button>`).join('')}</div></section>
- <section><h4>Race settings</h4><div id="quick-race-rules">${renderRaceRuleControls(quickRaceDifficulty,quickRaceRules,'quick')}</div></section></div>
+ <section><h4>Race settings</h4>${renderRaceLengthControl('quick',quickRaceLength)}<div id="quick-race-rules">${renderRaceRuleControls(quickRaceDifficulty,quickRaceRules,'quick')}</div></section></div>
  <div id="quick-stage-cars" hidden><div class="quick-player-toolbar"><h4>Players and cars</h4><div class="quick-player-mode" role="group" aria-label="Player mode"><button class="btn" data-players="1" aria-pressed="${quickRacePlayers===1}" onclick="setQuickRacePlayers(1)">Single player</button><button class="btn" data-players="2" aria-pressed="${quickRacePlayers===2}" onclick="setQuickRacePlayers(2)">Dual player</button></div></div>
  <div class="quick-setup-cars">${quickRaceCars.map((car,i)=>renderCarCustomizer(car,i)).join('')}</div><p class="small muted-text quick-key-help">Player 1: A / S / D · Player 2: J / K / L · Middle key brakes</p><p class="form-warning" id="quick-number-warning" hidden>Choose a different number for each player.</p></div></div>
  <div class="modal-footer quick-race-footer"><button type="button" class="btn btn-secondary" id="quick-back" onclick="setQuickRaceStep(1)" hidden>Back</button><button type="button" class="btn btn-primary btn-lg" id="quick-next" onclick="setQuickRaceStep(2)" disabled>Next: Players and cars</button><button type="button" class="btn btn-primary btn-lg" id="btn-quick-race-confirm" onclick="confirmQuickRace()" hidden disabled>Confirm Race</button></div></div></div>`;
@@ -8865,6 +8902,13 @@ function renderQuickRaceModal() {
 // ─── Listeners wired after each tab render ───────────────────
 function attachTabListeners(tabName) {
   // Nothing extra for most tabs; specific interactions are via onclick attributes
+}
+
+function renderRaceLengthControl(scope, value) {
+  const option = raceLengthOption(value), index = RACE_LENGTHS.indexOf(option);
+  return `<div class="race-length-control"><div class="race-length-heading"><label for="${scope}-race-length">Race length</label><output id="${scope}-race-length-value" for="${scope}-race-length">${option.label} · ${option.scale * 100}%</output></div>
+    <input id="${scope}-race-length" type="range" min="0" max="6" step="1" value="${index}" aria-valuetext="${option.label}" style="--length-progress:${index / 6 * 100}%" oninput="setRaceLength('${scope}',this.value)">
+    <div class="race-length-labels" aria-hidden="true">${RACE_LENGTHS.map(o=>`<span>${o.label}</span>`).join('')}</div></div>`;
 }
 
 function renderRaceRuleControls(difficulty,preferences={},scope='career') {
@@ -12211,6 +12255,7 @@ function showQuickRaceScreen() {
 
 // Quick Race difficulty is chosen in the modal before launching
 let quickRaceDifficulty = DEFAULT_DIFFICULTY;
+let quickRaceLength = 'standard';
 const quickRaceRules={crashes:true,damage:true};
 let quickRaceSeries = null;
 let quickRaceStep=1;
@@ -12336,7 +12381,7 @@ function handleStartQuickRace(fieldSize) {
   launch3DRace(
     { playerAppearance:carAppearance(quickRaceCars[0]), playerColor: quickRaceCars[0].color, playerNumber: quickRaceCars[0].number, playerName: quickRacePlayers === 2 ? 'PLAYER 1' : 'YOU', dualPlayer: quickRacePlayers === 2, playerPower: 0.75, fieldSize,
       seriesId: SERIES.find(s => s.fieldSize === fieldSize)?.id || 'grassroots',
-      difficulty: quickRaceDifficulty, raceRules:{...quickRaceRules}, captureFinishPhoto:true, onQuit:leaveQuickRaceResults, aiEntries },
+      difficulty: quickRaceDifficulty, raceLength:quickRaceLength, raceRules:{...quickRaceRules}, captureFinishPhoto:true, onQuit:leaveQuickRaceResults, aiEntries },
     (pos, order, photo, quitDNF, facts) => {
       quickRaceCompleted++;
       const players = order.filter(r => r.isPlayer).map(r => {
@@ -12757,6 +12802,7 @@ function handleStartRace() {
       seriesId:     series.id,
       difficulty:   game.difficulty || DEFAULT_DIFFICULTY,
       raceRules: {...game.raceRules},
+      raceLength: game.raceLength,
       playerHealth: pCar?.condition ?? 100,
       quitWithDNF: true,
       qualifyBoost: Math.round(staffTotal('qualifying') / ANALYST_QUALI_BONUS),   // Data Analysts sharpen the grid draw
@@ -13156,6 +13202,27 @@ function closeVehicleModal(id) {
 }
 
 async function handleRepairAll(){const cost=game.cars.reduce((n,c)=>n+carRepairCost(c),0);if(!await gameConfirm(`Repair all damaged cars for ${fmt$(cost)}? Lifetime health will not change.`))return;const r=repairAllCars();if(!r.ok){toast(r.msg,'error');return;}updateHeader();renderTab('garage');toast(`${r.count} cars repaired for ${fmt$(r.cost)}.`,'success');}
+
+function setRaceLength(scope, index) {
+  const selected = RACE_LENGTHS[Number(index)] || RACE_LENGTHS[3];
+  let option = selected;
+  if (scope === 'quick') quickRaceLength = selected.id;
+  else {
+    const previous = game.raceLength;
+    game.raceLength = selected.id;
+    if (currentSlot !== null && !saveToSlot(currentSlot)) {
+      game.raceLength = previous;
+      option = raceLengthOption(previous);
+      toast('Race length could not be saved.', 'error');
+    }
+  }
+  const value = RACE_LENGTHS.indexOf(option);
+  const input = document.getElementById(`${scope}-race-length`);
+  input.value = value;
+  input.setAttribute('aria-valuetext', option.label);
+  input.style.setProperty('--length-progress', `${value / 6 * 100}%`);
+  document.getElementById(`${scope}-race-length-value`).textContent = `${option.label} · ${option.scale * 100}%`;
+}
 
 function setQuickRaceStep(step) {
   if (step === 2 && quickRaceSeries === null) return;

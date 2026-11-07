@@ -34,14 +34,14 @@
     const gap = nextCar ? nextCar.z - startZ : 0;
     const basePace = R3D.SPEED_BASE * (0.83 + p.power * 0.28);
     const normalPace = Math.min(R3D.SPEED_MAX, basePace + this._aeroPace(p) + rubberBand);
-    const tgt = this._playerRecoveryTarget(normalPace, nextCar, gap) * (this.speedScale ?? 1) * this._healthPace(p);
+    const tgt = this._postCrashTarget(p, this._playerRecoveryTarget(normalPace, nextCar, gap) * (this.speedScale ?? 1) * this._healthPace(p));
     let braking = false;
     if (this.keys.s) {
       p.speed = Math.max(tgt * 0.38, p.speed - R3D.BRAKE_FORCE * dt);
       braking = true;
     } else {
       const accel = 2.2 + (R3D.ACCEL - 2.2) * clamp((p.speed - 180) / 30, 0, 1);
-      p.speed += (tgt - p.speed) * (1 - Math.exp(-accel * dt));
+      p.speed += (tgt - p.speed) * (1 - Math.exp(-accel * (p._postCrashCatchup > 0 ? 1.25 : 1) * dt));
     }
 
     p.z += p.speed * dt;

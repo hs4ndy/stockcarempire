@@ -8,6 +8,14 @@ function raceFeatureRules(difficulty, preferences = {}) {
   return {crashes:eligible && preferences.crashes!==false,damage:eligible && preferences.damage!==false};
 }
 
+const RACE_LENGTHS = [
+  {id:'shortest',label:'Shortest',scale:.25}, {id:'shorter',label:'Shorter',scale:.5},
+  {id:'short',label:'Short',scale:.75}, {id:'standard',label:'Standard',scale:1},
+  {id:'long',label:'Long',scale:1.25}, {id:'longer',label:'Longer',scale:1.5},
+  {id:'longest',label:'Longest',scale:2},
+];
+function raceLengthOption(id) { return RACE_LENGTHS.find(option=>option.id===id) || RACE_LENGTHS[3]; }
+
 const SERIES = [
   {
     id: 'grassroots',

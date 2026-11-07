@@ -146,6 +146,7 @@ function makeCar(name, classId, overrideStats, opts = {}) {
 }
 
 function normalizeVehicleState() {
+  game.raceLength = raceLengthOption(game.raceLength).id;
   game.raceRules={crashes:game.raceRules?.crashes!==false,damage:game.raceRules?.damage!==false};
   game.retiredCars=Array.isArray(game.retiredCars)?game.retiredCars:[];
   game.cars.forEach(c=>{c.lifetimeHealth=Number.isFinite(c.lifetimeHealth)?clamp(c.lifetimeHealth,0,100):100;});
@@ -358,6 +359,7 @@ function newGame(teamName, driverName, firstCarName) {
     cars: [firstCar],
     retiredCars: [],
     raceRules: {crashes:true,damage:true},
+    raceLength: 'standard',
     hiredDrivers: [],    // { driverId, carId }
     staff: [],           // { staffType, name, weeklyCost }
     loans: [],           // bank loans currently outstanding

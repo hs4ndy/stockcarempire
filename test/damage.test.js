@@ -47,8 +47,8 @@ test('repair rates are ten percent lower and mechanic discount still applies',()
 });
 
 
-test('AI-only contact builds slightly increased AI-only strain, human-caused AI strain drops twenty percent',()=>{
- assert.equal(run(`(()=>{const e=engine(),a=car(),b=car();e.cars=[a,b];e._sideContact(a,b,4,1,.1,1);if(Math.abs(a.sideStrain-.294)>.00001)return false;const p=car(true),c=car();e.cars=[p,c];e._sideContact(p,c,4,1,.1,1);return Math.abs(c.sideStrain-.756)<.00001&&Math.abs(p.sideStrain-1.05)<.00001;})()`),true);
+test('AI-only contact uses reduced strain and preserves human-pair tolerances',()=>{
+ assert.equal(run(`(()=>{const e=engine(),a=car(),b=car();e.cars=[a,b];e._sideContact(a,b,4,1,.1,1);if(Math.abs(a.sideStrain-.2352)>.00001)return false;const p=car(true),c=car();e.cars=[p,c];e._sideContact(p,c,4,1,.1,1);return Math.abs(c.sideStrain-.756)<.00001&&Math.abs(p.sideStrain-1.05)<.00001;})()`),true);
 });
 
 test('condition sparks require below fifty, moving, damage-enabled traffic and freeze on pause',()=>{
