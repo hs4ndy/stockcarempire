@@ -29,20 +29,29 @@
   }
 
   _positionTrack() {
-    if (!this.lowPower || !this._trackLayout) return;
-    const {length, count} = this._trackLayout;
-    const center = Math.floor((this.player?.z || 0) / length);
-    if (center === this._trackCenter) return;
-    this._trackCenter = center;
-    const reach = Math.ceil(4200 / length);
-    for (const mesh of this.trackGroup.children) {
-      mesh.count = Math.min(count, reach * 2 + 1);
-      for (let i = 0; i < mesh.count; i++) {
-        this._dummy.position.set(0, 0, (center + i - reach) * length);
-        this._dummy.rotation.set(0, 0, 0); this._dummy.scale.set(1, 1, 1); this._dummy.updateMatrix();
-        mesh.setMatrixAt(i, this._dummy.matrix);
+    // r134 submits every instance of an InstancedMesh. Bound both track and
+    // ground to the cameras' 4000-unit far plane, including rear-view/runout.
+    for (const [group, layout, key] of [
+      [this.trackGroup, this._trackLayout, '_trackCenter'],
+      [this.environmentGroup, this._environmentLayout, '_environmentCenter'],
+    ]) {
+      if (!group || !layout) continue;
+      const {length, count} = layout;
+      const center = Math.floor((this.player?.z || 0) / length);
+      // Use the far-plane safety margin to avoid rebuilding the pools when
+      // adjacent split-screen players straddle a module boundary.
+      if (Math.abs(center - this[key]) * length <= Math.max(0, 150 - length)) continue;
+      this[key] = center;
+      const reach = Math.ceil(4200 / length);
+      for (const mesh of group.children) {
+        mesh.count = Math.min(count, reach * 2 + 1);
+        for (let i = 0; i < mesh.count; i++) {
+          this._dummy.position.set(0, 0, (center + i - reach) * length);
+          this._dummy.rotation.set(0, 0, 0); this._dummy.scale.set(1, 1, 1); this._dummy.updateMatrix();
+          mesh.setMatrixAt(i, this._dummy.matrix);
+        }
+        mesh.instanceMatrix.needsUpdate = true;
       }
-      mesh.instanceMatrix.needsUpdate = true;
     }
   }
 
@@ -129,6 +138,7 @@
     this.environmentGroup.userData = { seriesId: this._grandstandModel.id, frontX: model.frontX, backX: model.backX };
     const runout = Math.ceil(4200 / asset.moduleLength);
     const count = Math.ceil(Math.max(this.raceLength, R3D.TRACK_LEN) / asset.moduleLength) + runout * 2;
+    this._environmentLayout = {length:asset.moduleLength, count};
     for (const [name, data] of Object.entries(model.parts)) {
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute('position', new THREE.Float32BufferAttribute(data.position, 3));
@@ -210,7 +220,7 @@
     for (const { lod, meshes } of this._grandstandBands) {
       let index = 0;
       for (let offset = -reach; offset <= reach; offset++) {
-        const near = Math.abs(offset * model.pitch) <= 300;
+        const near = Math.abs(offset * model.pitch) <= (this.lowPower ? 150 : 300);
         if (near !== (lod === 'near')) continue;
         for (const side of [-1, 1]) {
           // Rotate rather than use a negative instance scale (unsupported by Three).

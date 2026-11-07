@@ -15,7 +15,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "8eaf4e74a3507d06967d4a15f550baf266f0c2a429111265991f52174016883d"
+      "hash": "563d1644ab2dfbbf0d9f424f4b289493a4aaf7ccd0a23cc7cd85a4004d73f99f"
     },
     {
       "name": "_initGeometries",
@@ -39,7 +39,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "a85f1561ee9ae9bf218ffbc2c78b0e522079f6a6b1645c1f537b4e7bc9cb778c"
+      "hash": "8f345cb92af09388e7d1ce95df5c7e3f0087fedc4674fa2a465063a8d6da07c1"
     },
     {
       "name": "_buildTrack",
@@ -55,7 +55,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "d06a44d8e5c246db25feb35109b88463009806eecf760d4a3760128582e53a95"
+      "hash": "1bc45c3de61737efdf756e33f7cb56ed491d9451e57182d6e9230de2613777d4"
     },
     {
       "name": "_buildGrandstands",
@@ -71,7 +71,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "5f19e53c93dee9514813cd2950d20485ef35d16c0b2bbbc8aa42e163f1d77712"
+      "hash": "a71eb9faa595a5ea6c004b6252daf253e8bfc5bc02ebda36b3130cc43f1a7495"
     },
     {
       "name": "_buildCars",
@@ -503,7 +503,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "54ed85cae88b5f199f8db3de3bf6d094629375ffd4eaf5ce2a747c5507889747"
+      "hash": "425d67e4d164ab41082d367fde6f2fb998fe6453e5f1b5b95a0213cfacb170d9"
     },
     {
       "name": "destroy",
@@ -512,6 +512,30 @@
       "configurable": true,
       "writable": true,
       "hash": "385bab696b715891b435c1826dda27385dd1fecb0a6830a395992b62bb323280"
+    },
+    {
+      "name": "_configureGraphics",
+      "length": 0,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "0a4b1c56777ef7029d721c17acbe572016551dccbb0a3f99b1b42851e176eb96"
+    },
+    {
+      "name": "_setGraphicsQuality",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "b3244789b06c429638b529e179f6547c26fcb18f19740218041df13bd492f03f"
+    },
+    {
+      "name": "_sampleGraphics",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "b432d8f4adcb5841ae03933ed91455900aba23d204e74aa14c9e4482b07c02f3"
     }
   ],
   "helpers": [
@@ -543,7 +567,7 @@
     {
       "name": "launch3DRace",
       "length": 2,
-      "hash": "97de35ceb1af33b3b9727c1056165bc87f46bb4f1a8bf17dc5a4073d7a24c37f"
+      "hash": "b64fe10043626a85efaefaa67278d43bed2472ffcead74f0dfaf3d6009c0e6c9"
     }
   ],
   "sourceCommit": "20c3f0c77f0934c085371c2e19c73357fe1c9b58",

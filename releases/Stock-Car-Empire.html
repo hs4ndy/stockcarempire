@@ -122,6 +122,8 @@
   --maxw: 1320px; --radius: 8px; --t: 180ms; --shell-height: 80px;
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px; --space-6: 32px; --space-7: 48px;
 }
+.intro-graphics { display:flex;align-items:center;justify-content:center;gap:12px;margin-top:20px;color:var(--text-dim);font-size:14px; }
+.intro-graphics select { width:auto;min-height:48px;padding:12px 14px;font-size:16px;background:var(--panel-2);color:var(--text);border:1px solid var(--line-2);border-radius:4px; }
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 html { color-scheme: dark; scrollbar-color: var(--line-2) var(--bg); scrollbar-width: thin; scroll-padding-top: 152px; }
@@ -1297,10 +1299,15 @@ button.standing-driver .st-name { text-decoration:none; }
           <span>Quick Race</span>
         </button>
       </div>
+      <label class="intro-graphics">Graphics
+        <select id="graphics-mode" onchange="setRaceGraphicsMode(this.value)">
+          <option value="auto">Auto</option><option value="high">High</option><option value="performance">Performance</option>
+        </select>
+      </label>
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 149</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 150</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -4754,6 +4761,7 @@ function r3dRoundelTex(num,numberColor='#f2f3e9') {
 
 // ─── Public launcher ─────────────────────────────────────────
 function launch3DRace(config, onComplete) {
+  config = {...config, graphicsMode: config.graphicsMode || window.readRaceGraphicsMode?.() || 'auto'};
   config={...config,raceRules:config.raceRules || {crashes:true,damage:true}};
   const container = document.getElementById('race-3d-container');
   if (!container) { console.error('race-3d-container not found'); return; }
@@ -4944,13 +4952,7 @@ class Race3DEngine {
 
     this.renderer = new THREE.WebGLRenderer({ canvas: c, antialias: true });
     // Budget rendering work rather than multiplying every screen pixel by four.
-    this.lowPower = !!this.config.dualPlayer || (navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4)
-      || (navigator.deviceMemory > 0 && navigator.deviceMemory <= 4);
-    this._pixelRatio = Math.min(window.devicePixelRatio || 1, this.lowPower ? 1 : 1.5,
-      Math.sqrt((this.lowPower ? 1000000 : 2000000) / (w * h)));
-    this.renderer.setPixelRatio(this._pixelRatio);
-    this.renderer.setSize(w, h, false);
-    this.renderer.shadowMap.enabled = !this.lowPower;
+    this._configureGraphics();
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.5));
@@ -5024,9 +5026,7 @@ class Race3DEngine {
       if (!el) return;
       const nw = el.clientWidth  || window.innerWidth;
       const nh = el.clientHeight || window.innerHeight;
-      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.lowPower ? 1 : 1.5,
-        Math.sqrt((this.lowPower ? 1000000 : 2000000) / (nw * nh))));
-      this.renderer.setSize(nw, nh, false);
+      this._setGraphicsQuality(this.lowPower);
       this.camera.aspect = nw / nh;
       this.camera.updateProjectionMatrix();
     };
@@ -5160,7 +5160,9 @@ class Race3DEngine {
   // Frame scheduling
   _loop() {
     this._raf = requestAnimationFrame(() => this._loop());
-    const dt = Math.min(this.clock.getDelta(), 0.1);
+    const elapsed = this.clock.getDelta();
+    this._sampleGraphics(elapsed);
+    const dt = Math.min(elapsed, 0.1);
     // Fixed steps keep contact and steering consistent at 30/60/120Hz.
     this._physicsAcc += dt;
     while (this._physicsAcc >= 1 / 120) {
@@ -5220,6 +5222,74 @@ class Race3DEngine {
 
 </script>
 <script>
+/* js/race3d/graphics.js */
+// Render quality is independent of race physics and Career saves.
+(() => {
+  class Methods {
+    _configureGraphics() {
+      this.graphicsMode = ['auto', 'high', 'performance'].includes(this.config.graphicsMode)
+        ? this.config.graphicsMode : 'auto';
+      const limited = (navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4) ||
+        (navigator.deviceMemory > 0 && navigator.deviceMemory <= 4);
+      let software = false;
+      try {
+        const gl = this.renderer.getContext();
+        const info = gl.getExtension('WEBGL_debug_renderer_info');
+        software = !!info && /swiftshader|llvmpipe|software/i.test(gl.getParameter(info.UNMASKED_RENDERER_WEBGL));
+      } catch (_) {}
+      // Resource hints alone do not identify a slow PC. ChromeOS plus limited
+      // resources is a startup hint; sustained frame times refine Auto later.
+      const startLow = this.graphicsMode === 'performance' ||
+        (this.graphicsMode === 'auto' && (software || (/CrOS/.test(navigator.userAgent || '') && limited)));
+      this._graphicsFrames = 0;
+      this._graphicsSeconds = 0;
+      this._graphicsSlow = 0;
+      this._graphicsFast = 0;
+      this._graphicsCooldown = 0;
+      this._setGraphicsQuality(startLow);
+    }
+
+    _setGraphicsQuality(low) {
+      this.lowPower = low;
+      this.renderer.shadowMap.enabled = !low && !this.config.dualPlayer;
+      if (this.mirrorRT) { this.mirrorRT.dispose(); this.mirrorRT = null; }
+      this._grandstandCenter = null;
+      const el = this.canvas.parentElement;
+      const w = el?.clientWidth || this.canvas.clientWidth || window.innerWidth;
+      const h = el?.clientHeight || this.canvas.clientHeight || window.innerHeight;
+      this._pixelRatio = Math.min(window.devicePixelRatio || 1, low ? 1 : 1.5,
+        Math.sqrt((low ? 750000 : 2000000) / (w * h)));
+      this.renderer.setPixelRatio(this._pixelRatio);
+      this.renderer.setSize(w, h, false);
+    }
+
+    _sampleGraphics(dt) {
+      if (this.graphicsMode !== 'auto' || !this.racing || this.paused || this.done ||
+          document.hidden || dt <= 0 || dt > .5) return;
+      this._graphicsCooldown = Math.max(0, this._graphicsCooldown - dt);
+      this._graphicsFrames++;
+      this._graphicsSeconds += dt;
+      if (this._graphicsSeconds < 1) return;
+      const average = this._graphicsSeconds / this._graphicsFrames;
+      this._graphicsSlow = average > .028 ? this._graphicsSlow + 1 : 0;
+      this._graphicsFast = average < .018 ? this._graphicsFast + 1 : 0;
+      if (!this._graphicsCooldown && ((!this.lowPower && this._graphicsSlow >= 3) ||
+          (this.lowPower && this._graphicsFast >= 12))) {
+        this._setGraphicsQuality(!this.lowPower);
+        this._graphicsCooldown = 30;
+        this._graphicsSlow = this._graphicsFast = 0;
+      }
+      this._graphicsFrames = this._graphicsSeconds = 0;
+    }
+  }
+  for (const name of Object.getOwnPropertyNames(Methods.prototype)) {
+    if (name !== 'constructor') Object.defineProperty(Race3DEngine.prototype, name,
+      Object.getOwnPropertyDescriptor(Methods.prototype, name));
+  }
+})();
+
+</script>
+<script>
 /* js/race3d/world.js */
 // World responsibilities for the shared race engine.
 (() => {
@@ -5252,20 +5322,29 @@ class Race3DEngine {
   }
 
   _positionTrack() {
-    if (!this.lowPower || !this._trackLayout) return;
-    const {length, count} = this._trackLayout;
-    const center = Math.floor((this.player?.z || 0) / length);
-    if (center === this._trackCenter) return;
-    this._trackCenter = center;
-    const reach = Math.ceil(4200 / length);
-    for (const mesh of this.trackGroup.children) {
-      mesh.count = Math.min(count, reach * 2 + 1);
-      for (let i = 0; i < mesh.count; i++) {
-        this._dummy.position.set(0, 0, (center + i - reach) * length);
-        this._dummy.rotation.set(0, 0, 0); this._dummy.scale.set(1, 1, 1); this._dummy.updateMatrix();
-        mesh.setMatrixAt(i, this._dummy.matrix);
+    // r134 submits every instance of an InstancedMesh. Bound both track and
+    // ground to the cameras' 4000-unit far plane, including rear-view/runout.
+    for (const [group, layout, key] of [
+      [this.trackGroup, this._trackLayout, '_trackCenter'],
+      [this.environmentGroup, this._environmentLayout, '_environmentCenter'],
+    ]) {
+      if (!group || !layout) continue;
+      const {length, count} = layout;
+      const center = Math.floor((this.player?.z || 0) / length);
+      // Use the far-plane safety margin to avoid rebuilding the pools when
+      // adjacent split-screen players straddle a module boundary.
+      if (Math.abs(center - this[key]) * length <= Math.max(0, 150 - length)) continue;
+      this[key] = center;
+      const reach = Math.ceil(4200 / length);
+      for (const mesh of group.children) {
+        mesh.count = Math.min(count, reach * 2 + 1);
+        for (let i = 0; i < mesh.count; i++) {
+          this._dummy.position.set(0, 0, (center + i - reach) * length);
+          this._dummy.rotation.set(0, 0, 0); this._dummy.scale.set(1, 1, 1); this._dummy.updateMatrix();
+          mesh.setMatrixAt(i, this._dummy.matrix);
+        }
+        mesh.instanceMatrix.needsUpdate = true;
       }
-      mesh.instanceMatrix.needsUpdate = true;
     }
   }
 
@@ -5352,6 +5431,7 @@ class Race3DEngine {
     this.environmentGroup.userData = { seriesId: this._grandstandModel.id, frontX: model.frontX, backX: model.backX };
     const runout = Math.ceil(4200 / asset.moduleLength);
     const count = Math.ceil(Math.max(this.raceLength, R3D.TRACK_LEN) / asset.moduleLength) + runout * 2;
+    this._environmentLayout = {length:asset.moduleLength, count};
     for (const [name, data] of Object.entries(model.parts)) {
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute('position', new THREE.Float32BufferAttribute(data.position, 3));
@@ -5433,7 +5513,7 @@ class Race3DEngine {
     for (const { lod, meshes } of this._grandstandBands) {
       let index = 0;
       for (let offset = -reach; offset <= reach; offset++) {
-        const near = Math.abs(offset * model.pitch) <= 300;
+        const near = Math.abs(offset * model.pitch) <= (this.lowPower ? 150 : 300);
         if (near !== (lod === 'near')) continue;
         for (const side of [-1, 1]) {
           // Rotate rather than use a negative instance scale (unsupported by Three).
@@ -11977,7 +12057,21 @@ let racePlayback = {
 // ─── Startup ─────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   showScreen('intro');
+  document.getElementById('graphics-mode').value = readRaceGraphicsMode();
 });
+
+function readRaceGraphicsMode() {
+  try {
+    const mode = localStorage.getItem('sce_graphics_mode');
+    return ['auto','high','performance'].includes(mode) ? mode : 'auto';
+  } catch (_) { return 'auto'; }
+}
+
+function setRaceGraphicsMode(mode) {
+  if (!['auto','high','performance'].includes(mode)) return;
+  try { localStorage.setItem('sce_graphics_mode', mode); }
+  catch (_) { toast('Graphics preference could not be saved.', 'error'); }
+}
 
 function enterGame() {
   if (!game) return;

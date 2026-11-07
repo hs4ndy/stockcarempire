@@ -147,6 +147,7 @@ function r3dRoundelTex(num,numberColor='#f2f3e9') {
 
 // ─── Public launcher ─────────────────────────────────────────
 function launch3DRace(config, onComplete) {
+  config = {...config, graphicsMode: config.graphicsMode || window.readRaceGraphicsMode?.() || 'auto'};
   config={...config,raceRules:config.raceRules || {crashes:true,damage:true}};
   const container = document.getElementById('race-3d-container');
   if (!container) { console.error('race-3d-container not found'); return; }
@@ -337,13 +338,7 @@ class Race3DEngine {
 
     this.renderer = new THREE.WebGLRenderer({ canvas: c, antialias: true });
     // Budget rendering work rather than multiplying every screen pixel by four.
-    this.lowPower = !!this.config.dualPlayer || (navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4)
-      || (navigator.deviceMemory > 0 && navigator.deviceMemory <= 4);
-    this._pixelRatio = Math.min(window.devicePixelRatio || 1, this.lowPower ? 1 : 1.5,
-      Math.sqrt((this.lowPower ? 1000000 : 2000000) / (w * h)));
-    this.renderer.setPixelRatio(this._pixelRatio);
-    this.renderer.setSize(w, h, false);
-    this.renderer.shadowMap.enabled = !this.lowPower;
+    this._configureGraphics();
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.5));
@@ -417,9 +412,7 @@ class Race3DEngine {
       if (!el) return;
       const nw = el.clientWidth  || window.innerWidth;
       const nh = el.clientHeight || window.innerHeight;
-      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.lowPower ? 1 : 1.5,
-        Math.sqrt((this.lowPower ? 1000000 : 2000000) / (nw * nh))));
-      this.renderer.setSize(nw, nh, false);
+      this._setGraphicsQuality(this.lowPower);
       this.camera.aspect = nw / nh;
       this.camera.updateProjectionMatrix();
     };
@@ -553,7 +546,9 @@ class Race3DEngine {
   // Frame scheduling
   _loop() {
     this._raf = requestAnimationFrame(() => this._loop());
-    const dt = Math.min(this.clock.getDelta(), 0.1);
+    const elapsed = this.clock.getDelta();
+    this._sampleGraphics(elapsed);
+    const dt = Math.min(elapsed, 0.1);
     // Fixed steps keep contact and steering consistent at 30/60/120Hz.
     this._physicsAcc += dt;
     while (this._physicsAcc >= 1 / 120) {

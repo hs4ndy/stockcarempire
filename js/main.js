@@ -16,7 +16,21 @@ let racePlayback = {
 // ─── Startup ─────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   showScreen('intro');
+  document.getElementById('graphics-mode').value = readRaceGraphicsMode();
 });
+
+function readRaceGraphicsMode() {
+  try {
+    const mode = localStorage.getItem('sce_graphics_mode');
+    return ['auto','high','performance'].includes(mode) ? mode : 'auto';
+  } catch (_) { return 'auto'; }
+}
+
+function setRaceGraphicsMode(mode) {
+  if (!['auto','high','performance'].includes(mode)) return;
+  try { localStorage.setItem('sce_graphics_mode', mode); }
+  catch (_) { toast('Graphics preference could not be saved.', 'error'); }
+}
 
 function enterGame() {
   if (!game) return;

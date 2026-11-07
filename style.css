@@ -103,6 +103,8 @@
   --maxw: 1320px; --radius: 8px; --t: 180ms; --shell-height: 80px;
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px; --space-6: 32px; --space-7: 48px;
 }
+.intro-graphics { display:flex;align-items:center;justify-content:center;gap:12px;margin-top:20px;color:var(--text-dim);font-size:14px; }
+.intro-graphics select { width:auto;min-height:48px;padding:12px 14px;font-size:16px;background:var(--panel-2);color:var(--text);border:1px solid var(--line-2);border-radius:4px; }
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 html { color-scheme: dark; scrollbar-color: var(--line-2) var(--bg); scrollbar-width: thin; scroll-padding-top: 152px; }

@@ -4,7 +4,7 @@ for(const series of [0,1,2]) for(const broken of [false,true]) {
   test(`low-resource series ${series} renders pavement with ${broken?'failed':'loaded'} asphalt`,async({browser})=>{
     const context=await browser.newContext({viewport:{width:1366,height:768},deviceScaleFactor:2});
     const page=await context.newPage();
-    await page.addInitScript(()=>{Object.defineProperty(navigator,'hardwareConcurrency',{get:()=>4});Object.defineProperty(navigator,'deviceMemory',{get:()=>4});});
+    await page.addInitScript(()=>{Object.defineProperty(navigator,'userAgent',{get:()=> 'Mozilla/5.0 (X11; CrOS x86_64)'});Object.defineProperty(navigator,'hardwareConcurrency',{get:()=>4});Object.defineProperty(navigator,'deviceMemory',{get:()=>4});});
     await page.route('**/three.min.js',r=>r.fulfill({path:path.resolve(__dirname,'../../node_modules/three/build/three.min.js')}));
     if(broken) for(const file of ['assets/track/track-textures.js','assets/track/grassroots/track-textures.js']) {
       const body=fs.readFileSync(path.resolve(__dirname,'../..',file),'utf8').replace(/("speedway-asphalt"\s*:\s*")[^"]+/, '$1data:image/png;base64,broken');

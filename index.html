@@ -42,10 +42,15 @@
           <span>Quick Race</span>
         </button>
       </div>
+      <label class="intro-graphics">Graphics
+        <select id="graphics-mode" onchange="setRaceGraphicsMode(this.value)">
+          <option value="auto">Auto</option><option value="high">High</option><option value="performance">Performance</option>
+        </select>
+      </label>
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 149</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 150</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -221,6 +226,7 @@
 <script src="assets/cars/hood-logo-meshes.js"></script>
 <script src="assets/cars/racing-stripes.js"></script>
 <script src="js/race3d.js"></script>
+<script src="js/race3d/graphics.js"></script>
 <script src="js/race3d/world.js"></script>
 <script src="js/race3d/cars.js"></script>
 <script src="js/race3d/driving.js"></script>
