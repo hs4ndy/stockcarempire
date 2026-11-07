@@ -1373,7 +1373,7 @@ function renderQuickRaceResults() {
       </section>
       ${result.players.map(player => `<section class="quick-result-player" aria-labelledby="quick-result-player-${player.index}">
         <header><h2 id="quick-result-player-${player.index}">Player ${player.index + 1}</h2><p>Results from race ${result.race}</p></header>
-        <dl><div><dt>Start</dt><dd>${player.start ?? '—'}</dd></div><div><dt>Finish</dt><dd${player.position === 1 ? ' class="quick-result-winner"' : ''}>${player.position}${ordinal(player.position)}</dd></div><div><dt>Wins</dt><dd>${player.wins}</dd></div></dl>
+        <dl><div><dt>Start</dt><dd>${player.start ?? '—'}</dd></div><div><dt>Finish</dt><dd${player.position === 1 ? ' class="quick-result-winner"' : ''}>${player.position}${ordinal(player.position)}</dd></div><div><dt>Wins</dt><dd>${player.wins}</dd></div><div><dt>Average finish</dt><dd>${player.averageFinish.toFixed(1)}</dd></div></dl>
         <div class="quick-car-preview quick-result-car" style="--car-color:${player.teamColor}"><strong style="color:${player.appearance.numberColor}">${String(player.number).padStart(2,'0')}</strong></div>
       </section>`).join('')}
     </div>
@@ -1402,7 +1402,7 @@ function renderRaceLengthControl(scope, value) {
   const option = raceLengthOption(value), index = RACE_LENGTHS.indexOf(option);
   return `<div class="race-length-control"><div class="race-length-heading"><label for="${scope}-race-length">Race length</label><output id="${scope}-race-length-value" for="${scope}-race-length">${option.label} · ${option.scale * 100}%</output></div>
     <input id="${scope}-race-length" type="range" min="0" max="6" step="1" value="${index}" aria-valuetext="${option.label}" style="--length-progress:${index / 6 * 100}%" oninput="setRaceLength('${scope}',this.value)">
-    <div class="race-length-labels" aria-hidden="true">${RACE_LENGTHS.map(o=>`<span>${o.label}</span>`).join('')}</div></div>`;
+    <div class="race-length-labels" aria-hidden="true">${RACE_LENGTHS.map(()=>`<span></span>`).join('')}</div></div>`;
 }
 
 function renderRaceRuleControls(difficulty,preferences={},scope='career') {

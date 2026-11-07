@@ -132,7 +132,8 @@
 .race-length-control input::-moz-range-track { height:6px;background:var(--line-2);border-radius:4px; }
 .race-length-control input::-moz-range-progress { height:6px;background:var(--accent-solid); }
 .race-length-control input::-moz-range-thumb { width:16px;height:16px;border-radius:50%;background:var(--text);border:3px solid var(--accent-solid); }
-.race-length-labels { display:flex;justify-content:space-between;gap:2px;font:600 12px/1.3 var(--font-display);color:var(--text-dim); }
+.race-length-labels { display:flex;justify-content:space-between;padding:0 8px; }
+.race-length-labels span { width:6px;height:6px;border-radius:50%;background:var(--text-dim); }
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 html { color-scheme: dark; scrollbar-color: var(--line-2) var(--bg); scrollbar-width: thin; scroll-padding-top: 152px; }
@@ -1317,7 +1318,7 @@ button.standing-driver .st-name { text-decoration:none; }
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 153</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 154</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -8879,7 +8880,7 @@ function renderQuickRaceResults() {
       </section>
       ${result.players.map(player => `<section class="quick-result-player" aria-labelledby="quick-result-player-${player.index}">
         <header><h2 id="quick-result-player-${player.index}">Player ${player.index + 1}</h2><p>Results from race ${result.race}</p></header>
-        <dl><div><dt>Start</dt><dd>${player.start ?? '—'}</dd></div><div><dt>Finish</dt><dd${player.position === 1 ? ' class="quick-result-winner"' : ''}>${player.position}${ordinal(player.position)}</dd></div><div><dt>Wins</dt><dd>${player.wins}</dd></div></dl>
+        <dl><div><dt>Start</dt><dd>${player.start ?? '—'}</dd></div><div><dt>Finish</dt><dd${player.position === 1 ? ' class="quick-result-winner"' : ''}>${player.position}${ordinal(player.position)}</dd></div><div><dt>Wins</dt><dd>${player.wins}</dd></div><div><dt>Average finish</dt><dd>${player.averageFinish.toFixed(1)}</dd></div></dl>
         <div class="quick-car-preview quick-result-car" style="--car-color:${player.teamColor}"><strong style="color:${player.appearance.numberColor}">${String(player.number).padStart(2,'0')}</strong></div>
       </section>`).join('')}
     </div>
@@ -8908,7 +8909,7 @@ function renderRaceLengthControl(scope, value) {
   const option = raceLengthOption(value), index = RACE_LENGTHS.indexOf(option);
   return `<div class="race-length-control"><div class="race-length-heading"><label for="${scope}-race-length">Race length</label><output id="${scope}-race-length-value" for="${scope}-race-length">${option.label} · ${option.scale * 100}%</output></div>
     <input id="${scope}-race-length" type="range" min="0" max="6" step="1" value="${index}" aria-valuetext="${option.label}" style="--length-progress:${index / 6 * 100}%" oninput="setRaceLength('${scope}',this.value)">
-    <div class="race-length-labels" aria-hidden="true">${RACE_LENGTHS.map(o=>`<span>${o.label}</span>`).join('')}</div></div>`;
+    <div class="race-length-labels" aria-hidden="true">${RACE_LENGTHS.map(()=>`<span></span>`).join('')}</div></div>`;
 }
 
 function renderRaceRuleControls(difficulty,preferences={},scope='career') {
@@ -12264,6 +12265,7 @@ const quickRaceCars = [{number: 1, color: '#e8001d'}, {number: 2, color: '#58a6f
 let quickRaceLastResult = null;
 let quickRaceCompleted = 0;
 const quickRaceWins = [0, 0];
+const quickRaceFinishes = [[], []];
 
 function showQuickRaceResults() {
   document.getElementById('screen-quick-results')?.remove();
@@ -12296,6 +12298,7 @@ function leaveQuickRaceResults() {
   quickRaceLastResult = null;
   quickRaceCompleted = 0;
   quickRaceWins.fill(0);
+  quickRaceFinishes.forEach(finishes => finishes.length = 0);
   document.getElementById('screen-quick-results')?.remove();
   document.getElementById('screen-intro').inert = false;
   showScreen('intro');
@@ -12387,7 +12390,9 @@ function handleStartQuickRace(fieldSize) {
       const players = order.filter(r => r.isPlayer).map(r => {
         const index = r.entrantId === 'player2' ? 1 : 0;
         if (r.position === 1) quickRaceWins[index]++;
-        return {...r, index, start: facts.startingPositions[r.entrantId], wins:quickRaceWins[index],
+        quickRaceFinishes[index].push(r.position);
+        const averageFinish = quickRaceFinishes[index].reduce((sum, position) => sum + position, 0) / quickRaceFinishes[index].length;
+        return {...r, index, start: facts.startingPositions[r.entrantId], wins:quickRaceWins[index], averageFinish,
           appearance:{...carAppearance(quickRaceCars[index])}};
       }).sort((a,b) => a.index-b.index);
       quickRaceLastResult = {players, photo, race:quickRaceCompleted};

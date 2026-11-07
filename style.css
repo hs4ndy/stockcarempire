@@ -113,7 +113,8 @@
 .race-length-control input::-moz-range-track { height:6px;background:var(--line-2);border-radius:4px; }
 .race-length-control input::-moz-range-progress { height:6px;background:var(--accent-solid); }
 .race-length-control input::-moz-range-thumb { width:16px;height:16px;border-radius:50%;background:var(--text);border:3px solid var(--accent-solid); }
-.race-length-labels { display:flex;justify-content:space-between;gap:2px;font:600 12px/1.3 var(--font-display);color:var(--text-dim); }
+.race-length-labels { display:flex;justify-content:space-between;padding:0 8px; }
+.race-length-labels span { width:6px;height:6px;border-radius:50%;background:var(--text-dim); }
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 html { color-scheme: dark; scrollbar-color: var(--line-2) var(--bg); scrollbar-width: thin; scroll-padding-top: 152px; }

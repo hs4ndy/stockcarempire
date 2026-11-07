@@ -149,6 +149,7 @@ const quickRaceCars = [{number: 1, color: '#e8001d'}, {number: 2, color: '#58a6f
 let quickRaceLastResult = null;
 let quickRaceCompleted = 0;
 const quickRaceWins = [0, 0];
+const quickRaceFinishes = [[], []];
 
 function showQuickRaceResults() {
   document.getElementById('screen-quick-results')?.remove();
@@ -181,6 +182,7 @@ function leaveQuickRaceResults() {
   quickRaceLastResult = null;
   quickRaceCompleted = 0;
   quickRaceWins.fill(0);
+  quickRaceFinishes.forEach(finishes => finishes.length = 0);
   document.getElementById('screen-quick-results')?.remove();
   document.getElementById('screen-intro').inert = false;
   showScreen('intro');
@@ -272,7 +274,9 @@ function handleStartQuickRace(fieldSize) {
       const players = order.filter(r => r.isPlayer).map(r => {
         const index = r.entrantId === 'player2' ? 1 : 0;
         if (r.position === 1) quickRaceWins[index]++;
-        return {...r, index, start: facts.startingPositions[r.entrantId], wins:quickRaceWins[index],
+        quickRaceFinishes[index].push(r.position);
+        const averageFinish = quickRaceFinishes[index].reduce((sum, position) => sum + position, 0) / quickRaceFinishes[index].length;
+        return {...r, index, start: facts.startingPositions[r.entrantId], wins:quickRaceWins[index], averageFinish,
           appearance:{...carAppearance(quickRaceCars[index])}};
       }).sort((a,b) => a.index-b.index);
       quickRaceLastResult = {players, photo, race:quickRaceCompleted};
