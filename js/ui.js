@@ -1246,7 +1246,7 @@ function renderSettings() {
     </div>
   </div>
 
-  <div class="card mb"><div class="card-header">Race Length</div><div class="card-body">${renderRaceLengthControl('career',game.raceLength)}</div></div>
+  <div class="card mb"><div class="card-body">${renderRaceLengthControl('career',game.raceLength)}</div></div>
   <div class="card mb"><div class="card-header">Crashes and Vehicle Health</div><div class="card-body">${renderRaceRuleControls(curDiff,game.raceRules,'career')}</div></div>
   <div class="card mb">
     <div class="card-header">Auto Save</div>
