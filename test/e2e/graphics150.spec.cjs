@@ -5,13 +5,13 @@ for(const [mode,players,file] of [
   ['high',1,'index.html'],['performance',1,'index.html'],
   ['high',2,'index.html'],['performance',2,'index.html'],
   ['auto',1,'releases/Stock-Car-Empire.html'],
-]) test(`graphics quality and coverage ${mode} ${players} ${file}`,async({page})=>{
+]) test(`Auto ignores legacy preference ${mode}, coverage ${players} ${file}`,async({page})=>{
   test.setTimeout(120000);
   await page.route('**/three.min.js',r=>r.fulfill({path:path.resolve('node_modules/three/build/three.min.js')}));
   await page.goto(pathToFileURL(path.resolve(file)).href);
-  await page.locator('#graphics-mode').selectOption(mode);
+  await page.evaluate(mode=>localStorage.setItem('sce_graphics_mode',mode),mode);
   await page.reload();
-  await expect(page.locator('#graphics-mode')).toHaveValue(mode);
+  await expect(page.locator('#graphics-mode')).toHaveCount(0);
   if(players===1&&file==='index.html') {
     fs.mkdirSync('.impeccable/review',{recursive:true});
     await page.screenshot({path:`.impeccable/review/graphics150-${mode}-menu.png`});
@@ -20,7 +20,13 @@ for(const [mode,players,file] of [
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await page.setViewportSize({width:1440,height:900});
   }
-  await page.evaluate(players=>{quickRacePlayers=players;handleStartQuickRace(40);},players);
+  await page.evaluate(({mode,players,file})=>{
+    if(mode==='high'&&players===1&&file==='index.html') {
+      newGame('Team','Driver','Car');game.currentSeries=2;game.cars[0].classId=SERIES[2].carClass;
+      game.season.aiTeams=generateAITeams(2);game.season.calendar=generateCalendar(2);game.tutorial.status='skipped';
+      rebuildStandings();enterGame();handleStartRace();
+    } else {quickRacePlayers=players;handleStartQuickRace(40);}
+  },{mode,players,file});
   await page.waitForFunction(()=>window._r3d?.mirrorRT);
   const report=await page.evaluate(()=>{
     const e=window._r3d;cancelAnimationFrame(e._raf);
@@ -42,11 +48,10 @@ for(const [mode,players,file] of [
     return {mode:e.graphicsMode,low:e.lowPower,pixels:e.canvas.width*e.canvas.height,
       shadows:e.renderer.shadowMap.enabled,coverage,field:e.cars.length};
   });
-  expect(report.mode).toBe(mode);
-  if(mode!=='auto')expect(report.low).toBe(mode==='performance');
+  expect(report.mode).toBe('auto');
   expect(report.coverage.every(Boolean)).toBe(true);
   expect(report.field).toBe(40);
-  if(mode==='performance'){expect(report.pixels).toBeLessThanOrEqual(750000);expect(report.shadows).toBe(false);}
+  if(report.low){expect(report.pixels).toBeLessThanOrEqual(750000);expect(report.shadows).toBe(false);}
   if(players===2)expect(report.shadows).toBe(false);
   if(mode==='auto') {
     const transitions=await page.evaluate(()=>{

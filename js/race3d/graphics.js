@@ -2,8 +2,7 @@
 (() => {
   class Methods {
     _configureGraphics() {
-      this.graphicsMode = ['auto', 'high', 'performance'].includes(this.config.graphicsMode)
-        ? this.config.graphicsMode : 'auto';
+      this.graphicsMode = 'auto';
       const limited = (navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4) ||
         (navigator.deviceMemory > 0 && navigator.deviceMemory <= 4);
       let software = false;
@@ -14,8 +13,7 @@
       } catch (_) {}
       // Resource hints alone do not identify a slow PC. ChromeOS plus limited
       // resources is a startup hint; sustained frame times refine Auto later.
-      const startLow = this.graphicsMode === 'performance' ||
-        (this.graphicsMode === 'auto' && (software || (/CrOS/.test(navigator.userAgent || '') && limited)));
+      const startLow = software || (/CrOS/.test(navigator.userAgent || '') && limited);
       this._graphicsFrames = 0;
       this._graphicsSeconds = 0;
       this._graphicsSlow = 0;

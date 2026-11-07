@@ -147,7 +147,7 @@ function r3dRoundelTex(num,numberColor='#f2f3e9') {
 
 // ─── Public launcher ─────────────────────────────────────────
 function launch3DRace(config, onComplete) {
-  config = {...config, graphicsMode: config.graphicsMode || window.readRaceGraphicsMode?.() || 'auto'};
+  config = {...config, graphicsMode:'auto'};
   config={...config,raceRules:config.raceRules || {crashes:true,damage:true}};
   const container = document.getElementById('race-3d-container');
   if (!container) { console.error('race-3d-container not found'); return; }

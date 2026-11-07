@@ -519,7 +519,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "0a4b1c56777ef7029d721c17acbe572016551dccbb0a3f99b1b42851e176eb96"
+      "hash": "f451abd609402f82c680533e13e7d8fcdffc924856c3964d928fef1247e155a9"
     },
     {
       "name": "_setGraphicsQuality",
@@ -567,7 +567,7 @@
     {
       "name": "launch3DRace",
       "length": 2,
-      "hash": "b64fe10043626a85efaefaa67278d43bed2472ffcead74f0dfaf3d6009c0e6c9"
+      "hash": "4fed7d241cb9000864c24e61aa1591883123a4844660d38a9839654b0e19f87e"
     }
   ],
   "sourceCommit": "20c3f0c77f0934c085371c2e19c73357fe1c9b58",

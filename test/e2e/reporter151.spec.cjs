@@ -15,6 +15,8 @@ for(const [name,slug] of reporters) for(const offline of [false,true]) {
       pendingRaceNews={mode:'career',simulated:true,reports:[{headline:'A race to remember',reporter:name,
         playerName:'Driver',quote:'We kept working together and brought the car home.',
         paragraphs:['Driver brought the car home after a hard-fought race.','The team now turns its attention to the next event.','The championship continues next weekend.'],closing:'The team is ready.'}]};
+      const finish=document.createElement('canvas');finish.width=1024;finish.height=576;
+      pendingRaceNews.photo={canvas:finish,leaderName:'Driver'};
       showRaceNews(0);
     },name);
     const canvas=page.locator('blockquote canvas');
@@ -26,9 +28,15 @@ for(const [name,slug] of reporters) for(const offline of [false,true]) {
         overflow:el.getBoundingClientRect().width>el.parentElement.getBoundingClientRect().width};
     });
     expect(layout).toEqual({beforeQuote:true,pixels:true,overflow:false});
+    const sizes=await page.evaluate(()=>{
+      const finish=document.querySelector('.race-news-photo canvas').getBoundingClientRect();
+      const interview=document.querySelector('.race-news-interview').getBoundingClientRect();
+      return [Math.abs(finish.width-interview.width),Math.abs(finish.height-interview.height),Math.abs(finish.left-interview.left)];
+    });
+    expect(sizes.every(delta=>delta<1)).toBe(true);
     await canvas.evaluate(el=>el.parentElement.scrollIntoView({block:'center'}));
     fs.mkdirSync('.impeccable/review',{recursive:true});
-    await page.screenshot({path:`.impeccable/review/reporter151-${slug}-${offline?'mobile':'desktop'}.png`});
+    await page.screenshot({path:`.impeccable/review/reporter152-${slug}-${offline?'mobile':'desktop'}.png`});
     expect(await page.evaluate(()=>JSON.stringify(game)===window.beforeReporter151)).toBe(true);
     await page.evaluate(()=>{pendingRaceNews.reports[0].quote=null;showRaceNews(0);});
     await expect(page.locator('blockquote')).toHaveCount(0);

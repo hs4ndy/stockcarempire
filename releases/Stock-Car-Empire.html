@@ -122,8 +122,6 @@
   --maxw: 1320px; --radius: 8px; --t: 180ms; --shell-height: 80px;
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px; --space-6: 32px; --space-7: 48px;
 }
-.intro-graphics { display:flex;align-items:center;justify-content:center;gap:12px;margin-top:20px;color:var(--text-dim);font-size:14px; }
-.intro-graphics select { width:auto;min-height:48px;padding:12px 14px;font-size:16px;background:var(--panel-2);color:var(--text);border:1px solid var(--line-2);border-radius:4px; }
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 html { color-scheme: dark; scrollbar-color: var(--line-2) var(--bg); scrollbar-width: thin; scroll-padding-top: 152px; }
@@ -398,14 +396,15 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .race-news-article h2 { max-width: 24ch; font: 700 clamp(34px, 4.5vw, 56px)/1.05 var(--font-display); letter-spacing: -.01em; overflow-wrap: anywhere; text-wrap: balance; }
 .race-news-byline { margin: 16px 0 24px; }
 .race-news-photo { margin: 0 0 32px; }
-.race-news-photo :is(img, canvas) { display: block; width: 100%; height: auto; aspect-ratio: 16/9; object-fit: cover; border-radius: var(--radius); }
+.race-news-photo :is(img, canvas), .race-news-interview { display: block; width: 100%; height: auto; aspect-ratio: 16/9; object-fit: cover; border-radius: var(--radius); }
 .race-news-photo figcaption { margin-top: 10px; font-size: 14px; color: var(--text-mute); }
-.race-news-copy { max-width: 70ch; margin: 0; font-size: 18px; line-height: 1.65; color: var(--text-dim); overflow-wrap: anywhere; }
+.race-news-copy { margin: 0; font-size: 18px; line-height: 1.65; color: var(--text-dim); overflow-wrap: anywhere; }
+.race-news-copy > p, .race-news-copy blockquote p { max-width:70ch; }
 .race-news-copy > p { margin-bottom: 24px; }
 .race-news-copy .race-news-lead { color: var(--text); font-weight: 500; }
 .race-news-copy blockquote { margin: 32px 0; padding: 24px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: var(--text); }
 .race-news-copy blockquote p { font: 600 28px/1.25 var(--font-display); margin-bottom: 12px; }
-.race-news-interview { display:block;width:100%;max-width:560px;height:auto;margin:0 auto 20px;border-radius:var(--radius); }
+.race-news-interview { margin:0 0 20px; }
 .race-news-copy cite { font-size: 15px; font-style: normal; color: var(--text-dim); }
 .race-news-no-photo { padding: 32px; background: var(--panel); border-radius: var(--radius); margin-bottom: 32px; }
 .race-news-no-photo p { margin-top: 8px; color: var(--text-dim); }
@@ -1300,15 +1299,10 @@ button.standing-driver .st-name { text-decoration:none; }
           <span>Quick Race</span>
         </button>
       </div>
-      <label class="intro-graphics">Graphics
-        <select id="graphics-mode" onchange="setRaceGraphicsMode(this.value)">
-          <option value="auto">Auto</option><option value="high">High</option><option value="performance">Performance</option>
-        </select>
-      </label>
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 151</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 152</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -4762,7 +4756,7 @@ function r3dRoundelTex(num,numberColor='#f2f3e9') {
 
 // ─── Public launcher ─────────────────────────────────────────
 function launch3DRace(config, onComplete) {
-  config = {...config, graphicsMode: config.graphicsMode || window.readRaceGraphicsMode?.() || 'auto'};
+  config = {...config, graphicsMode:'auto'};
   config={...config,raceRules:config.raceRules || {crashes:true,damage:true}};
   const container = document.getElementById('race-3d-container');
   if (!container) { console.error('race-3d-container not found'); return; }
@@ -5228,8 +5222,7 @@ class Race3DEngine {
 (() => {
   class Methods {
     _configureGraphics() {
-      this.graphicsMode = ['auto', 'high', 'performance'].includes(this.config.graphicsMode)
-        ? this.config.graphicsMode : 'auto';
+      this.graphicsMode = 'auto';
       const limited = (navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4) ||
         (navigator.deviceMemory > 0 && navigator.deviceMemory <= 4);
       let software = false;
@@ -5240,8 +5233,7 @@ class Race3DEngine {
       } catch (_) {}
       // Resource hints alone do not identify a slow PC. ChromeOS plus limited
       // resources is a startup hint; sustained frame times refine Auto later.
-      const startLow = this.graphicsMode === 'performance' ||
-        (this.graphicsMode === 'auto' && (software || (/CrOS/.test(navigator.userAgent || '') && limited)));
+      const startLow = software || (/CrOS/.test(navigator.userAgent || '') && limited);
       this._graphicsFrames = 0;
       this._graphicsSeconds = 0;
       this._graphicsSlow = 0;
@@ -12095,21 +12087,7 @@ let racePlayback = {
 // ─── Startup ─────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   showScreen('intro');
-  document.getElementById('graphics-mode').value = readRaceGraphicsMode();
 });
-
-function readRaceGraphicsMode() {
-  try {
-    const mode = localStorage.getItem('sce_graphics_mode');
-    return ['auto','high','performance'].includes(mode) ? mode : 'auto';
-  } catch (_) { return 'auto'; }
-}
-
-function setRaceGraphicsMode(mode) {
-  if (!['auto','high','performance'].includes(mode)) return;
-  try { localStorage.setItem('sce_graphics_mode', mode); }
-  catch (_) { toast('Graphics preference could not be saved.', 'error'); }
-}
 
 function enterGame() {
   if (!game) return;

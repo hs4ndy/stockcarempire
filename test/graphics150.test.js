@@ -22,12 +22,13 @@ test('four-thread or four-GB PC hints do not force low graphics; limited ChromeO
   assert.equal(engine('auto','CrOS x86_64').lowPower,true);
   assert.equal(engine('auto','CrOS x86_64',8,8).lowPower,false);
 });
-test('explicit High/Performance override detection and automatic frame sampling',()=>{
-  const high=engine('high','CrOS',2,2),low=engine('performance');
-  for(let i=0;i<300;i++)high._sampleGraphics(1/30);
-  assert.equal(high.lowPower,false);
-  assert.equal(low.lowPower,true);
-  assert.ok(low.renderer.ratio**2*1366*768<=750001);
+test('legacy High/Performance configuration cannot override automatic selection',()=>{
+  const chromebook=engine('high','CrOS',2,2),pc=engine('performance');
+  assert.equal(chromebook.graphicsMode,'auto');
+  assert.equal(chromebook.lowPower,true);
+  assert.equal(pc.graphicsMode,'auto');
+  assert.equal(pc.lowPower,false);
+  assert.ok(chromebook.renderer.ratio**2*1366*768<=750001);
 });
 test('Auto reacts to sustained slow frames, ignores pause and recovers after stable frames',()=>{
   const e=engine();

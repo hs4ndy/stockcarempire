@@ -20,11 +20,12 @@ const {pathToFileURL}=require('node:url');
         });
       }
       await page.goto(pathToFileURL(path.resolve('index.html')).href);
-      await page.evaluate(players=>{setRaceGraphicsMode('performance');quickRacePlayers=players;handleStartQuickRace(40);},players);
+      await page.evaluate(players=>{quickRacePlayers=players;handleStartQuickRace(40);},players);
       await page.waitForFunction(()=>window._r3d?.mirrorRT);
       await page.waitForFunction(()=>window._r3d.trackGroup.getObjectByName('track:asphalt').material.map.userData.loadState!=='loading');
       const report=await page.evaluate(()=>{
         const e=window._r3d,r=e.renderer;cancelAnimationFrame(e._raf);
+        if (e._setGraphicsQuality) e._setGraphicsQuality(true);
         e.cars.forEach((c,i)=>{c.x=(i%3-1)*3.5;c.z=6000+Math.floor(i/3)*7;c.mesh.position.set(c.x,0,c.z);});
         e._updateCamera(1);r.info.autoReset=false;
         const samples=[];let triangles,calls;
@@ -41,7 +42,7 @@ const {pathToFileURL}=require('node:url');
           trackInstances:e.trackGroup.children[0].count,groundInstances:e.environmentGroup.children[0].count};
         e.destroy();return result;
       });
-      console.log(JSON.stringify({version:baseline?'149':'150',players,...report}));
+      console.log(JSON.stringify({version:baseline?'149':'working',players,...report}));
       await page.close();
     }
   } finally {await browser.close();}
