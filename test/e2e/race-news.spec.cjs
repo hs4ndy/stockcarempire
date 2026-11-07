@@ -46,6 +46,6 @@ test('offline phone simulated final event: no fake photo or next race, long name
 
 for(const dual of [false,true])test(`Quick Race has no news (${dual?'dual':'single'})`,async({page})=>{
  await open(page);await page.evaluate(dual=>{quickRacePlayers=dual?2:1;handleStartQuickRace(26);},dual);await page.waitForFunction(()=>window._r3d?.mirrorRT);
- await finishFixture(page);expect(await page.evaluate(()=>window._r3d.finishPhoto)).toBeUndefined();
- await page.locator('#r3d-finish').getByRole('button',{name:'Continue',exact:true}).click();await expect(page.locator('#btn-quick-race')).toBeVisible();await expect(page.locator('#race-news-modal')).toHaveCount(0);
+ await finishFixture(page);expect(await page.evaluate(()=>!!window._r3d.finishPhoto?.canvas)).toBe(true);
+ await page.locator('#r3d-finish').getByRole('button',{name:'Continue',exact:true}).click();await expect(page.locator('#screen-quick-results')).toBeVisible();await expect(page.locator('#race-news-modal')).toHaveCount(0);
 });

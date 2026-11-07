@@ -3,6 +3,31 @@ let pendingRaceNews = null;
 let raceNewsReader = 0;
 const raceNewsLastVariants = new Map();
 let raceNewsReporter = -1;
+const reporterBitmaps = new Map();
+
+async function drawReporterPhoto(canvas) {
+  const name = canvas.dataset.newsReporter;
+  try {
+    if (!reporterBitmaps.has(name)) {
+      const bytes = Uint8Array.from(atob(SC_REPORTER_IMAGES[name].split(',')[1]), c => c.charCodeAt(0));
+      reporterBitmaps.set(name, createImageBitmap(new Blob([bytes], {type:'image/jpeg'})));
+    }
+    const bitmap = await reporterBitmaps.get(name);
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    canvas.getContext('2d').drawImage(bitmap, 0, 0);
+    canvas.dataset.loaded = 'true';
+  } catch (_) {
+    reporterBitmaps.delete(name);
+    canvas.width = 600; canvas.height = 100;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = '#f5f5f2'; ctx.font = '16px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('Interview image unavailable', 300, 55);
+    }
+    canvas.setAttribute('aria-label', 'Interview image unavailable');
+  }
+}
 
 function newsOrdinal(n) {
   const rem=n%100;
@@ -88,6 +113,7 @@ function showRaceNews(reader=0) {
     else if(!e.shiftKey && document.activeElement===last) {e.preventDefault();first.focus();}
   };
   document.getElementById('news-headline')?.focus({preventScroll:true});
+  document.querySelectorAll('[data-news-reporter]').forEach(drawReporterPhoto);
 }
 
 function renderRaceNews(news,reader) {
@@ -107,7 +133,7 @@ function renderRaceNews(news,reader) {
         <p class="race-news-lead">${esc(report.paragraphs[0])}</p>
         <p>${esc(report.paragraphs[1])}</p>
         ${report.raceDetail ? `<p>${esc(report.raceDetail)}</p>` : ''}
-        ${report.quote ? `<blockquote><p>“${esc(report.quote)}”</p><cite>${esc(report.playerName)}</cite></blockquote>` : ''}
+        ${report.quote ? `<blockquote>${typeof SC_REPORTER_IMAGES !== 'undefined' && SC_REPORTER_IMAGES[report.reporter] ? `<canvas class="race-news-interview" width="600" height="400" data-news-reporter="${esc(report.reporter)}" role="img" aria-label="${esc(report.reporter)} interviewing a racing driver."></canvas>` : ''}<p>“${esc(report.quote)}”</p><cite>${esc(report.playerName)}</cite></blockquote>` : ''}
         <p>${esc(report.paragraphs[2])}</p><p>${esc(report.closing)}</p>
       </div>
     </article>`;

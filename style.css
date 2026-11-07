@@ -386,6 +386,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .race-news-copy .race-news-lead { color: var(--text); font-weight: 500; }
 .race-news-copy blockquote { margin: 32px 0; padding: 24px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: var(--text); }
 .race-news-copy blockquote p { font: 600 28px/1.25 var(--font-display); margin-bottom: 12px; }
+.race-news-interview { display:block;width:100%;max-width:560px;height:auto;margin:0 auto 20px;border-radius:var(--radius); }
 .race-news-copy cite { font-size: 15px; font-style: normal; color: var(--text-dim); }
 .race-news-no-photo { padding: 32px; background: var(--panel); border-radius: var(--radius); margin-bottom: 32px; }
 .race-news-no-photo p { margin-top: 8px; color: var(--text-dim); }
