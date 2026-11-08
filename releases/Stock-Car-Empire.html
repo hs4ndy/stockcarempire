@@ -95,6 +95,7 @@
 .quick-result-player dl div { display:flex;align-items:baseline;justify-content:space-between;gap:12px; }
 .quick-result-player dt { color:var(--text-dim);font-size:16px; }
 .quick-result-player dd { margin:0;font:700 32px/1 var(--font-display);font-variant-numeric:tabular-nums; }
+.quick-result-points small { display:block;margin-top:6px;font-size:12px;line-height:1.4;font-weight:400; }
 .quick-result-winner { color:#ffd700; }
 .quick-result-player .quick-result-car { margin-top:auto;height:80px;min-height:80px;width:100%;border-radius:var(--radius); }
 .quick-result-car strong { font-size:72px; }
@@ -1335,7 +1336,7 @@ button.standing-driver .st-name { text-decoration:none; }
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 156</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 157</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -8897,7 +8898,7 @@ function renderQuickRaceResults() {
       </section>
       ${result.players.map(player => `<section class="quick-result-player" aria-labelledby="quick-result-player-${player.index}">
         <header><h2 id="quick-result-player-${player.index}">Player ${player.index + 1}</h2><p>Results from race ${result.race}</p></header>
-        <dl><div><dt>Start</dt><dd>${player.start ?? '—'}</dd></div><div><dt>Finish</dt><dd${player.position === 1 ? ' class="quick-result-winner"' : ''}>${player.position}${ordinal(player.position)}</dd></div><div><dt>Wins</dt><dd>${player.wins}</dd></div><div><dt>Average finish</dt><dd>${player.averageFinish.toFixed(1)}</dd></div></dl>
+        <dl><div><dt>Start</dt><dd>${player.start ?? '—'}</dd></div><div><dt>Finish</dt><dd${player.position === 1 ? ' class="quick-result-winner"' : ''}>${player.position}${ordinal(player.position)}</dd></div><div><dt>Wins</dt><dd>${player.wins}</dd></div><div><dt>Average finish</dt><dd>${player.averageFinish.toFixed(1)}</dd></div><div class="quick-result-points"><dt>Total points earned<small>Across ${player.races} ${player.races === 1 ? 'race' : 'races'}</small></dt><dd>${player.totalPoints}</dd></div></dl>
         <div class="quick-car-preview quick-result-car" style="--car-color:${player.teamColor}"><strong style="color:${player.appearance.numberColor}">${String(player.number).padStart(2,'0')}</strong></div>
       </section>`).join('')}
     </div>
@@ -12283,6 +12284,7 @@ let quickRaceLastResult = null;
 let quickRaceCompleted = 0;
 const quickRaceWins = [0, 0];
 const quickRaceFinishes = [[], []];
+const quickRacePoints = [0, 0];
 
 function showQuickRaceResults() {
   document.getElementById('screen-quick-results')?.remove();
@@ -12316,6 +12318,7 @@ function leaveQuickRaceResults() {
   quickRaceCompleted = 0;
   quickRaceWins.fill(0);
   quickRaceFinishes.forEach(finishes => finishes.length = 0);
+  quickRacePoints.fill(0);
   document.getElementById('screen-quick-results')?.remove();
   document.getElementById('screen-intro').inert = false;
   showScreen('intro');
@@ -12377,6 +12380,7 @@ function confirmQuickRace() {
 }
 
 function handleStartQuickRace(fieldSize) {
+  const series = SERIES.find(s => s.fieldSize === fieldSize) || SERIES[0];
   if (quickRacePlayers === 2 && quickRaceCars[0].number === quickRaceCars[1].number) {
     showQuickRaceScreen();
     setQuickRaceStep(2);
@@ -12400,7 +12404,7 @@ function handleStartQuickRace(fieldSize) {
   showScreen('game-race');
   launch3DRace(
     { playerAppearance:carAppearance(quickRaceCars[0]), playerColor: quickRaceCars[0].color, playerNumber: quickRaceCars[0].number, playerName: quickRacePlayers === 2 ? 'PLAYER 1' : 'YOU', dualPlayer: quickRacePlayers === 2, playerPower: 0.75, fieldSize,
-      seriesId: SERIES.find(s => s.fieldSize === fieldSize)?.id || 'grassroots',
+      seriesId: series.id,
       difficulty: quickRaceDifficulty, raceLength:quickRaceLength, raceRules:{...quickRaceRules}, captureFinishPhoto:true, onQuit:leaveQuickRaceResults, aiEntries },
     (pos, order, photo, quitDNF, facts) => {
       quickRaceCompleted++;
@@ -12408,8 +12412,10 @@ function handleStartQuickRace(fieldSize) {
         const index = r.entrantId === 'player2' ? 1 : 0;
         if (r.position === 1) quickRaceWins[index]++;
         quickRaceFinishes[index].push(r.position);
+        quickRacePoints[index] += r.dnf ? 0 : (series.points[r.position - 1] || 0);
         const averageFinish = quickRaceFinishes[index].reduce((sum, position) => sum + position, 0) / quickRaceFinishes[index].length;
         return {...r, index, start: facts.startingPositions[r.entrantId], wins:quickRaceWins[index], averageFinish,
+          totalPoints:quickRacePoints[index], races:quickRaceFinishes[index].length,
           appearance:{...carAppearance(quickRaceCars[index])}};
       }).sort((a,b) => a.index-b.index);
       quickRaceLastResult = {players, photo, race:quickRaceCompleted};

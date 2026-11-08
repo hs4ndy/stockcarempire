@@ -76,6 +76,7 @@
 .quick-result-player dl div { display:flex;align-items:baseline;justify-content:space-between;gap:12px; }
 .quick-result-player dt { color:var(--text-dim);font-size:16px; }
 .quick-result-player dd { margin:0;font:700 32px/1 var(--font-display);font-variant-numeric:tabular-nums; }
+.quick-result-points small { display:block;margin-top:6px;font-size:12px;line-height:1.4;font-weight:400; }
 .quick-result-winner { color:#ffd700; }
 .quick-result-player .quick-result-car { margin-top:auto;height:80px;min-height:80px;width:100%;border-radius:var(--radius); }
 .quick-result-car strong { font-size:72px; }

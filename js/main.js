@@ -150,6 +150,7 @@ let quickRaceLastResult = null;
 let quickRaceCompleted = 0;
 const quickRaceWins = [0, 0];
 const quickRaceFinishes = [[], []];
+const quickRacePoints = [0, 0];
 
 function showQuickRaceResults() {
   document.getElementById('screen-quick-results')?.remove();
@@ -183,6 +184,7 @@ function leaveQuickRaceResults() {
   quickRaceCompleted = 0;
   quickRaceWins.fill(0);
   quickRaceFinishes.forEach(finishes => finishes.length = 0);
+  quickRacePoints.fill(0);
   document.getElementById('screen-quick-results')?.remove();
   document.getElementById('screen-intro').inert = false;
   showScreen('intro');
@@ -244,6 +246,7 @@ function confirmQuickRace() {
 }
 
 function handleStartQuickRace(fieldSize) {
+  const series = SERIES.find(s => s.fieldSize === fieldSize) || SERIES[0];
   if (quickRacePlayers === 2 && quickRaceCars[0].number === quickRaceCars[1].number) {
     showQuickRaceScreen();
     setQuickRaceStep(2);
@@ -267,7 +270,7 @@ function handleStartQuickRace(fieldSize) {
   showScreen('game-race');
   launch3DRace(
     { playerAppearance:carAppearance(quickRaceCars[0]), playerColor: quickRaceCars[0].color, playerNumber: quickRaceCars[0].number, playerName: quickRacePlayers === 2 ? 'PLAYER 1' : 'YOU', dualPlayer: quickRacePlayers === 2, playerPower: 0.75, fieldSize,
-      seriesId: SERIES.find(s => s.fieldSize === fieldSize)?.id || 'grassroots',
+      seriesId: series.id,
       difficulty: quickRaceDifficulty, raceLength:quickRaceLength, raceRules:{...quickRaceRules}, captureFinishPhoto:true, onQuit:leaveQuickRaceResults, aiEntries },
     (pos, order, photo, quitDNF, facts) => {
       quickRaceCompleted++;
@@ -275,8 +278,10 @@ function handleStartQuickRace(fieldSize) {
         const index = r.entrantId === 'player2' ? 1 : 0;
         if (r.position === 1) quickRaceWins[index]++;
         quickRaceFinishes[index].push(r.position);
+        quickRacePoints[index] += r.dnf ? 0 : (series.points[r.position - 1] || 0);
         const averageFinish = quickRaceFinishes[index].reduce((sum, position) => sum + position, 0) / quickRaceFinishes[index].length;
         return {...r, index, start: facts.startingPositions[r.entrantId], wins:quickRaceWins[index], averageFinish,
+          totalPoints:quickRacePoints[index], races:quickRaceFinishes[index].length,
           appearance:{...carAppearance(quickRaceCars[index])}};
       }).sort((a,b) => a.index-b.index);
       quickRaceLastResult = {players, photo, race:quickRaceCompleted};
