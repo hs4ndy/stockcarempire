@@ -86,13 +86,14 @@
 .quick-results-photo figcaption { margin-top:8px;color:var(--text-dim);font-size:14px; }
 .quick-results-settings { margin:20px 0;color:var(--text);font-weight:600; }
 .quick-results-settings span { color:var(--text-dim);font-size:14px;font-weight:400; }
-.quick-results-actions { display:flex;flex-wrap:wrap;gap:8px; }
-.quick-results-actions .btn-primary { flex-basis:100%; }
+.quick-results-actions { display:grid;grid-template-columns:1fr 1fr;gap:8px; }
+.quick-results-actions .btn-primary { grid-column:1/-1; }
 .quick-result-player { border-left:1px solid var(--line-2);padding-left:24px;display:flex;flex-direction:column;min-width:0; }
 .quick-result-player h2 { margin:0;font:700 28px/1.1 var(--font-display); }
 .quick-result-player header p { color:var(--text-dim);font-size:14px;margin:8px 0 0; }
 .quick-result-player dl { margin:24px 0;display:grid;gap:20px; }
 .quick-result-player dl div { display:flex;align-items:baseline;justify-content:space-between;gap:12px; }
+.quick-result-player .quick-session-heading { margin:0;border-top:1px solid var(--line-2);padding-top:16px;font-size:12px;line-height:1.4;color:var(--text-dim); }
 .quick-result-player dt { color:var(--text-dim);font-size:16px; }
 .quick-result-player dd { margin:0;font:700 32px/1 var(--font-display);font-variant-numeric:tabular-nums; }
 .quick-result-points small { display:block;margin-top:6px;font-size:12px;line-height:1.4;font-weight:400; }
@@ -1336,7 +1337,7 @@ button.standing-driver .st-name { text-decoration:none; }
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 157</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 158</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -8898,7 +8899,7 @@ function renderQuickRaceResults() {
       </section>
       ${result.players.map(player => `<section class="quick-result-player" aria-labelledby="quick-result-player-${player.index}">
         <header><h2 id="quick-result-player-${player.index}">Player ${player.index + 1}</h2><p>Results from race ${result.race}</p></header>
-        <dl><div><dt>Start</dt><dd>${player.start ?? '—'}</dd></div><div><dt>Finish</dt><dd${player.position === 1 ? ' class="quick-result-winner"' : ''}>${player.position}${ordinal(player.position)}</dd></div><div><dt>Wins</dt><dd>${player.wins}</dd></div><div><dt>Average finish</dt><dd>${player.averageFinish.toFixed(1)}</dd></div><div class="quick-result-points"><dt>Total points earned<small>Across ${player.races} ${player.races === 1 ? 'race' : 'races'}</small></dt><dd>${player.totalPoints}</dd></div></dl>
+        <dl><div><dt>Start</dt><dd>${player.start == null ? '—' : `${player.start}${ordinal(player.start)}`}</dd></div><div><dt>Finish</dt><dd${player.position === 1 ? ' class="quick-result-winner"' : ''}>${player.position}${ordinal(player.position)}</dd></div></dl><p class="quick-session-heading">All-time results (in this play session)</p><dl><div><dt>Wins</dt><dd>${player.wins}</dd></div><div><dt>Average finish</dt><dd>${player.averageFinish.toFixed(1)}</dd></div><div class="quick-result-points"><dt>Total points earned<small>Across ${player.races} ${player.races === 1 ? 'race' : 'races'}</small></dt><dd>${player.totalPoints}</dd></div></dl>
         <div class="quick-car-preview quick-result-car" style="--car-color:${player.teamColor}"><strong style="color:${player.appearance.numberColor}">${String(player.number).padStart(2,'0')}</strong></div>
       </section>`).join('')}
     </div>

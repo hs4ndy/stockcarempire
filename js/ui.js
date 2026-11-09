@@ -1373,7 +1373,7 @@ function renderQuickRaceResults() {
       </section>
       ${result.players.map(player => `<section class="quick-result-player" aria-labelledby="quick-result-player-${player.index}">
         <header><h2 id="quick-result-player-${player.index}">Player ${player.index + 1}</h2><p>Results from race ${result.race}</p></header>
-        <dl><div><dt>Start</dt><dd>${player.start ?? '—'}</dd></div><div><dt>Finish</dt><dd${player.position === 1 ? ' class="quick-result-winner"' : ''}>${player.position}${ordinal(player.position)}</dd></div><div><dt>Wins</dt><dd>${player.wins}</dd></div><div><dt>Average finish</dt><dd>${player.averageFinish.toFixed(1)}</dd></div><div class="quick-result-points"><dt>Total points earned<small>Across ${player.races} ${player.races === 1 ? 'race' : 'races'}</small></dt><dd>${player.totalPoints}</dd></div></dl>
+        <dl><div><dt>Start</dt><dd>${player.start == null ? '—' : `${player.start}${ordinal(player.start)}`}</dd></div><div><dt>Finish</dt><dd${player.position === 1 ? ' class="quick-result-winner"' : ''}>${player.position}${ordinal(player.position)}</dd></div></dl><p class="quick-session-heading">All-time results (in this play session)</p><dl><div><dt>Wins</dt><dd>${player.wins}</dd></div><div><dt>Average finish</dt><dd>${player.averageFinish.toFixed(1)}</dd></div><div class="quick-result-points"><dt>Total points earned<small>Across ${player.races} ${player.races === 1 ? 'race' : 'races'}</small></dt><dd>${player.totalPoints}</dd></div></dl>
         <div class="quick-car-preview quick-result-car" style="--car-color:${player.teamColor}"><strong style="color:${player.appearance.numberColor}">${String(player.number).padStart(2,'0')}</strong></div>
       </section>`).join('')}
     </div>
