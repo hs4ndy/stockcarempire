@@ -426,6 +426,8 @@ function renderUpgradeModal(carId) {
   }).join('');
 
   const totalFitted = (car.appliedUpgrades || []).length;
+  const upgradeAll = planAllCarUpgrades(car);
+  const canUpgradeAll = upgradeAll.parts.length > 0 && game.money >= upgradeAll.cost;
   const analystNote = analysts > 0
     ? `<p class="muted-text small">${analysts} Data Analyst${analysts > 1 ? 's' : ''} on staff - ${staffTotal('upgradeSlots')} extra slot${staffTotal('upgradeSlots') > 1 ? 's' : ''} in every tier.</p>`
     : `<p class="muted-text small">Hire a Data Analyst to open an extra slot in every tier.</p>`;
@@ -437,6 +439,11 @@ function renderUpgradeModal(carId) {
         <button class="modal-close" onclick="closeUpgradeModal()">Close</button>
       </div>
       <div class="modal-body">
+        <div class="upgrade-all">
+          <button type="button" class="btn btn-primary" onclick="handleUpgradeAll('${carId}')" ${canUpgradeAll ? '' : 'disabled'}>Upgrade All</button>
+          <p class="small muted-text">${!upgradeAll.parts.length ? 'All available slots are filled.'
+            : `${upgradeAll.parts.length} parts · ${fmt$(upgradeAll.cost)}${canUpgradeAll ? '' : ' · Insufficient funds'}`}</p>
+        </div>
         <div class="upgrade-summary">
           <div><span class="upgrade-sum-label">Fitted</span><span class="upgrade-sum-val">${totalFitted} / ${UPGRADE_TIERS.length * cap}</span></div>
           <div><span class="upgrade-sum-label">Speed</span><span class="upgrade-sum-val">${car.speed}</span></div>

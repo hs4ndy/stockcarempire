@@ -991,12 +991,73 @@ function upgradeCar(carId, upgradeId) {
   if (game.money < upgrade.cost) return { ok: false, msg: 'Not enough money. Take out a loan in Market > Loans and Financing.' };
 
   game.money -= upgrade.cost;
-  car.appliedUpgrades.push(upgradeId);
+  fitCarUpgrade(car, upgrade);
+  saveGame();
+  return { ok: true };
+}
+
+function fitCarUpgrade(car, upgrade) {
+  car.appliedUpgrades.push(upgrade.id);
   if (upgrade.effect.speed)       car.speed       = clamp(car.speed       + upgrade.effect.speed, 0, 99);
   if (upgrade.effect.handling)    car.handling    = clamp(car.handling    + upgrade.effect.handling, 0, 99);
   if (upgrade.effect.reliability) car.reliability = clamp(car.reliability + upgrade.effect.reliability, 0, 99);
-  saveGame();
-  return { ok: true };
+}
+
+function planAllCarUpgrades(car) {
+  const cls = CAR_CLASSES[car.classId];
+  const preview = {...car, appliedUpgrades: [...car.appliedUpgrades]};
+  const capacity = tierCapacity();
+  const parts = [];
+  for (const {tier} of UPGRADE_TIERS) {
+    if (!tierUnlocked(preview, tier, cls)) break;
+    const availableSlots = Math.max(0, capacity - tierInstalled(preview, tier, cls));
+    const choices = cls.upgrades
+      .filter(part => part.tier === tier && !preview.appliedUpgrades.includes(part.id))
+      .sort((a, b) => a.cost - b.cost)
+      .slice(0, availableSlots);
+    for (const part of choices) preview.appliedUpgrades.push(part.id);
+    parts.push(...choices);
+  }
+  return { parts, cost: parts.reduce((total, part) => total + part.cost, 0) };
+}
+
+function upgradeAllCarParts(carId, quote) {
+  const car = game.cars.find(c => c.id === carId);
+  if (!car) return { ok: false, msg: 'Car not found.' };
+  const {parts, cost} = planAllCarUpgrades(car);
+  if (!parts.length) return { ok: false, msg: 'Car is already fully upgraded.' };
+  if (cost !== quote.cost || parts.length !== quote.parts.length ||
+      parts.some((part, i) => part.id !== quote.parts[i].id)) {
+    return { ok: false, msg: 'The available upgrades changed. Review the new total and try again.' };
+  }
+  if (game.money < cost) return { ok: false, msg: `You need ${fmt$(cost)} to upgrade this car.` };
+
+  const before = {...car};
+  const previousMoney = game.money;
+  const slot = currentSlot;
+  const slotKey = SLOT_PREFIX + slot;
+  let previousSave;
+  if (slot != null) {
+    try {
+      previousSave = localStorage.getItem(slotKey);
+    } catch (_) {
+      return { ok: false, msg: 'Upgrades could not be saved. Please try again.' };
+    }
+  }
+  car.appliedUpgrades = [...car.appliedUpgrades];
+  for (const part of parts) fitCarUpgrade(car, part);
+  game.money -= cost;
+  if (slot != null && !saveToSlot(slot)) {
+    Object.assign(car, before);
+    game.money = previousMoney;
+    // The slot write may succeed before the save metadata write fails.
+    try {
+      if (previousSave === null) localStorage.removeItem(slotKey);
+      else localStorage.setItem(slotKey, previousSave);
+    } catch (_) {}
+    return { ok: false, msg: 'Upgrades could not be saved. Please try again.' };
+  }
+  return { ok: true, count: parts.length, cost };
 }
 
 function renameCar(carId, newName) {

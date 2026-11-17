@@ -413,6 +413,30 @@ function handleUpgrade(carId, upgradeId) {
   if(body)body.scrollTop=scrollTop;
 }
 
+async function handleUpgradeAll(carId) {
+  const career = game;
+  const car = career.cars.find(c => c.id === carId);
+  if (!car) return;
+  const quote = planAllCarUpgrades(car);
+  if (!quote.parts.length || game.money < quote.cost) return;
+  const confirmed = await gameConfirm(
+    `Install ${quote.parts.length} parts for ${fmt$(quote.cost)}? This fills each tier with its lowest-cost remaining parts.`,
+    'Upgrade All'
+  );
+  if (!confirmed || career !== game) return;
+  const result = upgradeAllCarParts(carId, quote);
+  if (!result.ok) {
+    toast(result.msg, 'error');
+    showUpgradeModal(carId);
+    return;
+  }
+  toast(`Fitted ${result.count} parts for ${fmt$(result.cost)}.`, 'success');
+  updateHeader();
+  renderTab(activeTab());
+  showUpgradeModal(carId);
+  document.querySelector('#upgrade-modal .modal-close')?.focus();
+}
+
 async function handleRenameCar(carId) {
   const car = game.cars.find(c => c.id === carId);
   if (!car) return;

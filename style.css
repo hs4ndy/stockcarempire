@@ -330,6 +330,8 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .badge { display: inline-flex; align-items: center; font-size: 12px; line-height: 1.4; font-weight: 600; padding: 4px 8px; border-radius: 4px; background: var(--panel-3); color: var(--text-dim); }
 .badge-green { color: var(--good); } .badge-red { color: var(--danger-text); } .badge-yellow, .badge-orange { color: var(--warn); }
 .badge-blue, .badge-gray { color: var(--text-dim); }
+.upgrade-all { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:16px; }
+.upgrade-all p { margin:0; }
 .upgrade-summary { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; margin-bottom: 24px; background: var(--line); }
 .upgrade-summary > div { display: flex; flex-direction: column; gap: 4px; padding: 12px; background: var(--panel-2); }
 .upgrade-sum-label { font-size: 12px; color: var(--text-dim); } .upgrade-sum-val { font-size: 18px; font-weight: 600; }
