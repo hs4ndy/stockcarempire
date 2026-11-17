@@ -41,14 +41,14 @@
 
   _initMirrorTarget(w, h) {
     if (this.mirrorRT) this.mirrorRT.dispose();
-    const Target = this.renderer.capabilities.isWebGL2 && !this.lowPower
+    const Target = this.renderer.capabilities.isWebGL2 && this.graphicsMode === 'high'
       ? THREE.WebGLMultisampleRenderTarget : THREE.WebGLRenderTarget;
     this.mirrorRT = new Target(Math.max(2, w), Math.max(2, h), {
       minFilter: THREE.LinearFilter,
       magFilter: THREE.LinearFilter,
       format:    THREE.RGBAFormat,
     });
-    if (this.renderer.capabilities.isWebGL2 && !this.lowPower) this.mirrorRT.samples = 4;
+    if (this.renderer.capabilities.isWebGL2 && this.graphicsMode === 'high') this.mirrorRT.samples = 4;
     this.mirrorRTSize = { w, h };
 
     if (!this.mirrorScene) {
@@ -92,7 +92,7 @@
 
     // Mirror readability must not inherit the reduced full-screen pixel budget.
     // Supersample this small surface, then filter down into its CSS rectangle.
-    const mirrorRatio = this.lowPower ? 1.5 : Math.max(1.5, Math.min(2, window.devicePixelRatio || 1));
+    const mirrorRatio = this.graphicsMode === 'high' ? Math.max(2, window.devicePixelRatio || 1) : this.lowPower ? 1 : 1.5;
     const rtW = Math.max(2, Math.round(mw * mirrorRatio));
     const rtH = Math.max(2, Math.round(mh * mirrorRatio));
     if (!this.mirrorRT || this.mirrorRTSize.w !== rtW || this.mirrorRTSize.h !== rtH) {

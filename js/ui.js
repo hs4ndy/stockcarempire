@@ -1246,6 +1246,7 @@ function renderSettings() {
     </div>
   </div>
 
+  <div class="card mb"><div class="card-body">${renderRaceGraphicsControl('career')}</div></div>
   <div class="card mb"><div class="card-body">${renderRaceLengthControl('career',game.raceLength)}</div></div>
   <div class="card mb"><div class="card-header">Crashes and Vehicle Health</div><div class="card-body">${renderRaceRuleControls(curDiff,game.raceRules,'career')}</div></div>
   <div class="card mb">
@@ -1387,7 +1388,7 @@ function renderQuickRaceModal() {
  <div class="modal-body quick-setup-body"><div id="quick-stage-race" class="quick-race-stage">
  <section><h4>Difficulty</h4><div class="difficulty-grid">${DIFFICULTIES.map(d=>`<button type="button" class="difficulty-card${d.id===quickRaceDifficulty?' selected':''}" data-diff="${d.id}" aria-pressed="${d.id===quickRaceDifficulty}" onclick="setQuickRaceDifficulty('${d.id}')"><span class="difficulty-name">${d.name}</span></button>`).join('')}</div><p id="quick-difficulty-hint" class="small muted-text">${summaries[quickRaceDifficulty]}</p></section>
  <section><h4>Series</h4><div class="quick-series">${SERIES.map(s=>`<button type="button" class="quick-series-btn" data-field-size="${s.fieldSize}" aria-pressed="false" onclick="selectQuickRaceSeries(${s.fieldSize})"><span class="quick-series-name" style="--series-color:${s.color}">${s.name}</span><span class="quick-series-meta">${s.fieldSize} cars</span></button>`).join('')}</div></section>
- <section><h4>Race settings</h4>${renderRaceLengthControl('quick',quickRaceLength)}<div id="quick-race-rules">${renderRaceRuleControls(quickRaceDifficulty,quickRaceRules,'quick')}</div></section></div>
+ <section><h4>Race settings</h4>${renderRaceLengthControl('quick',quickRaceLength)}${renderRaceGraphicsControl('quick')}<div id="quick-race-rules">${renderRaceRuleControls(quickRaceDifficulty,quickRaceRules,'quick')}</div></section></div>
  <div id="quick-stage-cars" hidden><div class="quick-player-toolbar"><h4>Players and cars</h4><div class="quick-player-mode" role="group" aria-label="Player mode"><button class="btn" data-players="1" aria-pressed="${quickRacePlayers===1}" onclick="setQuickRacePlayers(1)">Single player</button><button class="btn" data-players="2" aria-pressed="${quickRacePlayers===2}" onclick="setQuickRacePlayers(2)">Dual player</button></div></div>
  <div class="quick-setup-cars">${quickRaceCars.map((car,i)=>renderCarCustomizer(car,i)).join('')}</div><p class="small muted-text quick-key-help">Player 1: A / S / D · Player 2: J / K / L · Middle key brakes</p><p class="form-warning" id="quick-number-warning" hidden>Choose a different number for each player.</p></div></div>
  <div class="modal-footer quick-race-footer"><button type="button" class="btn btn-secondary" id="quick-back" onclick="setQuickRaceStep(1)" hidden>Back</button><button type="button" class="btn btn-primary btn-lg" id="quick-next" onclick="setQuickRaceStep(2)" disabled>Next: Players and cars</button><button type="button" class="btn btn-primary btn-lg" id="btn-quick-race-confirm" onclick="confirmQuickRace()" hidden disabled>Confirm Race</button></div></div></div>`;
@@ -1396,6 +1397,17 @@ function renderQuickRaceModal() {
 // ─── Listeners wired after each tab render ───────────────────
 function attachTabListeners(tabName) {
   // Nothing extra for most tabs; specific interactions are via onclick attributes
+}
+
+function renderRaceGraphicsControl(scope) {
+  const id = `${scope}-race-graphics`;
+  const preset = raceGraphicsPreset();
+  const options = GRAPHICS_PRESETS.map(value =>
+    `<option value="${value}"${value === preset ? ' selected' : ''}>${value[0].toUpperCase() + value.slice(1)}</option>`
+  ).join('');
+  return `<div class="race-graphics-control"><label class="form-label" for="${id}">Graphics</label>
+    <select class="form-select" id="${id}" onchange="setRaceGraphicsPreset(this)" aria-describedby="${id}-hint">${options}</select>
+    <p class="small muted-text" id="${id}-hint">High enables track textures.</p></div>`;
 }
 
 function renderRaceLengthControl(scope, value) {

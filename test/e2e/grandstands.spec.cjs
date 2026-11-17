@@ -11,10 +11,11 @@ for (const [series, decks, mode] of [[0,1,'desktop'],[1,2,'desktop'],[2,4,'deskt
     await page.route('**/three.min.js',route=>route.fulfill({path:path.resolve(__dirname,'../../node_modules/three/build/three.min.js'),contentType:'application/javascript'}));
     await page.goto(mode==='file'?pathToFileURL(path.resolve(__dirname,'../../index.html')).href:'/');
     await page.locator('#btn-quick-race').click();
+    await page.locator('#quick-race-graphics').selectOption('high');
     await page.locator('.quick-series-btn').nth(series).click();
     if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator("#btn-quick-race-confirm").click();
     await page.waitForFunction(()=>window._r3d?.racing && window._r3d?.grandstandGroup?.children.every(m=>!m.material.map || m.material.map.image?.naturalWidth>0));
-    await page.waitForFunction(()=>window._r3d?.environmentGroup?.children.every(m=>m.material.map.image?.naturalWidth===512));
+    await page.waitForFunction(()=>window._r3d?.environmentGroup?.children.every(m=>m.material.map?.userData.loadState === 'loaded' && m.material.map.image.width === 512));
     const metadata=await page.evaluate(()=>{
       const e=window._r3d; e.paused=true; e.paceMode=false; cancelAnimationFrame(e._raf);
       return {...e.grandstandGroup.userData,selected:e.config.seriesId};
@@ -28,7 +29,10 @@ for (const [series, decks, mode] of [[0,1,'desktop'],[1,2,'desktop'],[2,4,'deskt
       const e=window._r3d, group=e.environmentGroup, {frontX,backX}=group.userData;
       e.scene.updateMatrixWorld(true);
       const ray=new THREE.Raycaster(); let continuous=true;
+      const startZ = e.player.z;
       for(const z of [-4100,0,59.999,60.001,7500,15000,19100]) {
+        e.player.z = z;
+        e._positionTrack();
         for(const side of [-1,1]) {
           for(const [x,name] of [[12,'grass'],[(frontX+backX)/2,'concrete'],[backX+1,'grass']]) {
             ray.set(new THREE.Vector3(side*x,2,z),new THREE.Vector3(0,-1,0));
@@ -37,6 +41,8 @@ for (const [series, decks, mode] of [[0,1,'desktop'],[1,2,'desktop'],[2,4,'deskt
           }
         }
       }
+      e.player.z = startZ;
+      e._positionTrack();
       return {continuous,meshes:group.children.length,
         noLegacyMeshes:e.scene.children.filter(o=>o.isMesh && o!==e.sky).length===0,
         clearSky:e.sky.name==='environment:clear-midday' && !e.sky.material.depthWrite,

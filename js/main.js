@@ -1097,6 +1097,15 @@ function closeVehicleModal(id) {
 
 async function handleRepairAll(){const cost=game.cars.reduce((n,c)=>n+carRepairCost(c),0);if(!await gameConfirm(`Repair all damaged cars for ${fmt$(cost)}? Lifetime health will not change.`))return;const r=repairAllCars();if(!r.ok){toast(r.msg,'error');return;}updateHeader();renderTab('garage');toast(`${r.count} cars repaired for ${fmt$(r.cost)}.`,'success');}
 
+function setRaceGraphicsPreset(select) {
+  try {
+    localStorage.setItem('sce_graphics_preset', normalizeGraphicsPreset(select.value));
+  } catch (_) {
+    select.value = raceGraphicsPreset();
+    toast('Graphics setting could not be saved.', 'error');
+  }
+}
+
 function setRaceLength(scope, index) {
   const selected = RACE_LENGTHS[Number(index)] || RACE_LENGTHS[3];
   let option = selected;

@@ -40,12 +40,22 @@ function newsEscape(value) {
 
 function createRaceNews(context, random = Math.random) {
   const articles=RACE_NEWS_ARTICLES[context.seriesId]?.[context.position];
-  if (!articles) throw new Error('No news article for this series/position.');
   const key=`${context.seriesId}-${context.position}`;
-  const last=raceNewsLastVariants.get(key);
-  const choices=articles.filter(a=>a.id!==last);
-  const article=choices[Math.min(choices.length-1,Math.floor(random()*choices.length))];
-  raceNewsLastVariants.set(key,article.id);
+  let article;
+  if (articles?.length) {
+    const last = raceNewsLastVariants.get(key);
+    const choices = articles.filter(a => a.id !== last);
+    const available = choices.length ? choices : articles;
+    article = available[Math.min(available.length - 1, Math.floor(random() * available.length))];
+    raceNewsLastVariants.set(key, article.id);
+  } else {
+    article = {
+      id: `classification-${key}`,
+      headline: '{player} finishes {position} at {track}',
+      paragraphs: ['{player} took the checkered flag in {position} at {track}.'],
+      quote: 'We’ll review the race and prepare for the next one.'
+    };
+  }
   raceNewsReporter=(raceNewsReporter+1+Math.floor(random()*(RACE_NEWS_REPORTERS.length-1)))%RACE_NEWS_REPORTERS.length;
   const fill=text=>text.replace(/\{(player|track|position)\}/g,(_,name)=>({player:context.playerName,track:context.trackName,position:newsOrdinal(context.position)}[name]));
   const paragraphs=context.dnf ? [

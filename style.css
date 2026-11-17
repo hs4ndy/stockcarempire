@@ -122,6 +122,9 @@
   --maxw: 1320px; --radius: 8px; --t: 180ms; --shell-height: 80px;
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px; --space-6: 32px; --space-7: 48px;
 }
+.race-graphics-control { margin-bottom:16px; }
+.race-graphics-control select { min-height:44px; }
+.race-graphics-control p { margin:6px 0 0; }
 .race-length-control { margin:0 0 20px; }
 .race-length-heading { display:flex;align-items:baseline;justify-content:space-between;gap:12px;font-size:14px; }
 .race-length-heading label { font-weight:600;color:var(--text); }
@@ -1174,8 +1177,8 @@ button.standing-driver .st-name { text-decoration:none; }
 /* Focused management menus: shared sports identity, quieter task hierarchy. */
 [hidden] {display:none !important;}
 #quick-race-modal .quick-wizard {width:min(1180px,calc(100vw - 32px));max-width:1180px;max-height:calc(100svh - 24px);}
-.quick-wizard .modal-header {padding:20px 28px;}
-.quick-wizard .quick-setup-body {padding:24px 28px;overflow:hidden;flex:none;}
+.quick-wizard .modal-header {padding:20px 28px;flex-shrink:0;}
+.quick-wizard .quick-setup-body {padding:24px 28px;overflow:auto;min-height:0;flex:0 1 auto;}
 .quick-race-stage {display:grid;grid-template-columns:1fr 1fr .95fr;gap:32px;align-items:start;}
 .quick-race-stage>section+section {border-left:1px solid var(--line);padding-left:28px;}
 .quick-wizard h4 {font:700 24px var(--font-display);margin-bottom:16px;}
@@ -1188,7 +1191,7 @@ button.standing-driver .st-name { text-decoration:none; }
 .quick-wizard .quick-series-meta {font-size:14px;margin-top:2px;}
 .quick-wizard .compact-rules .radio-row {min-height:60px;padding:14px 0;gap:12px;}
 .quick-wizard .compact-rules>p {margin-bottom:16px;}
-.quick-wizard .quick-race-footer {display:flex;gap:12px;padding:16px 28px;}
+.quick-wizard .quick-race-footer {display:flex;gap:12px;padding:16px 28px;flex-shrink:0;}
 .quick-wizard .quick-race-footer .btn {width:auto;flex:1;}
 .quick-wizard #quick-back {flex:0 0 120px;}
 .quick-player-toolbar {display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:24px;}

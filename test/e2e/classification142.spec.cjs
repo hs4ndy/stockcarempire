@@ -7,8 +7,11 @@ for (const [level, position, file] of [
   [1, 4, 'index.html'],
   [2, 4, 'index.html'],
   [2, 20, 'releases/Stock-Car-Empire.html'],
+  [0, 23, 'index.html'],
+  [1, 29, 'index.html'],
+  [2, 43, 'releases/Stock-Car-Empire.html'],
 ]) {
-  test(`Career ${level} preserves actual ${position}th place through Continue (${file})`, async ({page}) => {
+  test(`Career ${level} preserves actual position ${position} through Continue (${file})`, async ({page}) => {
     test.setTimeout(120000);
     await page.route('**/three.min.js', route => route.fulfill({
       path: path.resolve('node_modules/three/build/three.min.js'),
@@ -56,7 +59,8 @@ for (const [level, position, file] of [
       engine._checkFinish();
       return engine.finalOrder().map(c => c.entrantId);
     }, position);
-    await expect(page.locator('#r3d-finish')).toContainText(`${position}th`);
+    const finishLabel = await page.evaluate(position => `${position}${ordinal(position)} Place`, position);
+    await expect(page.locator('#r3d-finish')).toContainText(finishLabel);
     await page.locator('#r3d-finish button').click();
     await expect(page.locator('#results-modal')).toBeVisible();
     const actual = await page.evaluate(() => {
@@ -72,6 +76,12 @@ for (const [level, position, file] of [
     expect(actual.points).toBe(actual.expectedPoints);
     expect(await page.evaluate(() => window.classification142.map(r => r.entrantId))).toEqual(expected);
     await expect(page.locator('.player-result-hero')).toContainText(String(position));
+    if (position === expected.length) {
+      await page.locator('#btn-close-results').click();
+      await expect(page.locator('#news-headline')).toContainText(finishLabel.replace(' Place', ''));
+      await page.locator('#btn-close-news').click();
+      await expect(page.locator('#race-news-modal')).toHaveCount(0);
+    }
   });
 }
 

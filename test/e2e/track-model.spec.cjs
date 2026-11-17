@@ -25,12 +25,13 @@ for (const [label, viewport, dpr] of [
     await page.goto(label === 'direct-file'
       ? pathToFileURL(path.resolve(__dirname, '../../index.html')).href : '/');
     await page.locator('#btn-quick-race').click();
+    await page.locator('#quick-race-graphics').selectOption('high');
     await page.locator('.quick-series-btn').last().click();
     if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator("#btn-quick-race-confirm").click();
     await page.waitForFunction(() => {
       const group = window._r3d?.trackGroup;
       return group && window._r3d.mirrorRT && window._r3d.racing && !window._r3d.paceMode && group.children.every(m =>
-        !m.material.map || m.material.map.image?.complete && m.material.map.image.naturalWidth > 0);
+        !m.material.map || m.material.map.userData.loadState === 'loaded');
     });
     const report = await page.evaluate(() => {
       const e = window._r3d;
@@ -45,7 +46,10 @@ for (const [label, viewport, dpr] of [
       // Raycasts across multiple module joins and both race endpoints catch
       // absent/reversed instances, cracks, and off-by-one coverage errors.
       let surface = true, barriers = true;
+      const startZ = e.player.z;
       for (const z of [-4100, -35, 0, 59.999, 60.001, 7499.999, 7500.001, 14999, 15030, 19100]) {
+        e.player.z = z;
+        e._positionTrack();
         for (const x of [-10.95, 0, 10.95]) {
           ray.set(new THREE.Vector3(x, 2, z), new THREE.Vector3(0, -1, 0));
           const hits = ray.intersectObject(asphalt);
@@ -57,6 +61,8 @@ for (const [label, viewport, dpr] of [
           barriers &&= hits.length > 0 && Math.abs(hits[0].distance - 11.2) < .001;
         }
       }
+      e.player.z = startZ;
+      e._positionTrack();
       const geo = meshes.map(m => m.geometry);
       const startColors = [];
       e.scene.traverse(o => {

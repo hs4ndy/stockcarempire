@@ -8,6 +8,20 @@ function raceFeatureRules(difficulty, preferences = {}) {
   return {crashes:eligible && preferences.crashes!==false,damage:eligible && preferences.damage!==false};
 }
 
+const GRAPHICS_PRESETS = ['low', 'medium', 'high'];
+
+function normalizeGraphicsPreset(value) {
+  return GRAPHICS_PRESETS.includes(value) ? value : 'medium';
+}
+
+function raceGraphicsPreset() {
+  try {
+    return normalizeGraphicsPreset(localStorage.getItem('sce_graphics_preset'));
+  } catch (_) {
+    return 'medium';
+  }
+}
+
 const RACE_LENGTHS = [
   {id:'shortest',label:'Shortest',scale:.25}, {id:'shorter',label:'Shorter',scale:.5},
   {id:'short',label:'Short',scale:.75}, {id:'standard',label:'Standard',scale:1},

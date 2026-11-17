@@ -147,7 +147,7 @@ function r3dRoundelTex(num,numberColor='#f2f3e9') {
 
 // ─── Public launcher ─────────────────────────────────────────
 function launch3DRace(config, onComplete) {
-  config = {...config, graphicsMode:'auto'};
+  config = {...config, graphicsMode: normalizeGraphicsPreset(config.graphicsMode ?? raceGraphicsPreset())};
   config={...config,raceRules:config.raceRules || {crashes:true,damage:true}};
   const container = document.getElementById('race-3d-container');
   if (!container) { console.error('race-3d-container not found'); return; }
@@ -336,7 +336,7 @@ class Race3DEngine {
     this.mirrorCam = new THREE.PerspectiveCamera(72, 3.5, 0.5, 4000);
     this.mirrorCam.position.set(0, 4, 0);
 
-    this.renderer = new THREE.WebGLRenderer({ canvas: c, antialias: true });
+    this.renderer = new THREE.WebGLRenderer({ canvas: c, antialias: this.config.graphicsMode === 'high' });
     // Budget rendering work rather than multiplying every screen pixel by four.
     this._configureGraphics();
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -347,7 +347,8 @@ class Race3DEngine {
     const sun = new THREE.DirectionalLight(0xfff3df, 1.05);
     sun.position.set(90, 220, 120);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(1024, 1024);
+    const shadowSize = Math.min(2048, this.renderer.capabilities.maxTextureSize);
+    sun.shadow.mapSize.set(shadowSize, shadowSize);
     sun.shadow.camera.left = -320; sun.shadow.camera.right = 320;
     sun.shadow.camera.top = 320;   sun.shadow.camera.bottom = -320;
     sun.shadow.camera.far = 2400;
@@ -355,7 +356,7 @@ class Race3DEngine {
 
     // Max anisotropy keeps the heavily-tiled asphalt/grass sharp at distance
     // instead of shimmering - most visible in the mirror.
-    this._maxAniso = Math.min(this.lowPower ? 2 : 4, this.renderer.capabilities?.getMaxAnisotropy?.() || 1);
+    this._maxAniso = Math.min(this.graphicsMode === 'high' ? Infinity : 2, this.renderer.capabilities.getMaxAnisotropy());
 
     this._initGeometries();
     this._buildTrack();
@@ -412,7 +413,7 @@ class Race3DEngine {
       if (!el) return;
       const nw = el.clientWidth  || window.innerWidth;
       const nh = el.clientHeight || window.innerHeight;
-      this._setGraphicsQuality(this.lowPower);
+      this._resizeGraphics();
       this.camera.aspect = nw / nh;
       this.camera.updateProjectionMatrix();
     };
@@ -420,7 +421,14 @@ class Race3DEngine {
 
     this.clock = new THREE.Clock();
     this._loop();
-    this._countdown();
+    if (this._surfaceTextureLoads?.length) {
+      document.getElementById('r3d-countdown').textContent = 'Preparing track textures…';
+      Promise.all(this._surfaceTextureLoads).then(() => {
+        if (!this._disposed) this._countdown();
+      });
+    } else {
+      this._countdown();
+    }
   }
 
   // Second-player context
@@ -547,7 +555,6 @@ class Race3DEngine {
   _loop() {
     this._raf = requestAnimationFrame(() => this._loop());
     const elapsed = this.clock.getDelta();
-    this._sampleGraphics(elapsed);
     const dt = Math.min(elapsed, 0.1);
     // Fixed steps keep contact and steering consistent at 30/60/120Hz.
     this._physicsAcc += dt;

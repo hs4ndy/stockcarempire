@@ -8,23 +8,31 @@
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
     tex.anisotropy = this._maxAniso;
     tex.userData.loadState = 'loading';
-    const image = new Image();
-    image.onload = () => {
-      if (this._disposed) return;
-      const limit = Math.min(this.renderer.capabilities.maxTextureSize, this.lowPower ? 1024 : 2048);
-      const scale = Math.min(1, limit / Math.max(image.width, image.height));
-      let decoded = image;
-      if (scale < 1) {
-        decoded = document.createElement('canvas');
-        // Power-of-two dimensions keep repeat/mipmaps valid on WebGL 1 too.
-        decoded.width = 2 ** Math.floor(Math.log2(image.width * scale));
-        decoded.height = 2 ** Math.floor(Math.log2(image.height * scale));
-        decoded.getContext('2d').drawImage(image, 0, 0, decoded.width, decoded.height);
+    // Decode bundled bytes directly so image URLs, filtering, and network
+    // timing do not determine whether the race starts with textures.
+    const load = async () => {
+      let bitmap;
+      try {
+        const [header, payload] = source.split(',');
+        const bytes = Uint8Array.from(atob(payload), char => char.charCodeAt(0));
+        bitmap = await createImageBitmap(new Blob([bytes], {type: header.slice(5).split(';')[0]}));
+        if (this._disposed) return;
+        const limit = this.renderer.capabilities.maxTextureSize;
+        const canvas = document.createElement('canvas');
+        // Power-of-two dimensions preserve repeating mipmaps on WebGL 1.
+        canvas.width = 2 ** Math.floor(Math.log2(Math.min(bitmap.width, limit)));
+        canvas.height = 2 ** Math.floor(Math.log2(Math.min(bitmap.height, limit)));
+        canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        tex.image = canvas;
+        tex.needsUpdate = true;
+        tex.userData.loadState = 'loaded';
+      } catch (_) {
+        if (!this._disposed) tex.userData.loadState = 'fallback';
+      } finally {
+        bitmap?.close();
       }
-      tex.image = decoded; tex.needsUpdate = true; tex.userData.loadState = 'loaded';
     };
-    image.onerror = () => { if (!this._disposed) tex.userData.loadState = 'fallback'; };
-    image.src = source || '';
+    (this._surfaceTextureLoads ??= []).push(load());
     return tex;
   }
 
@@ -68,17 +76,20 @@
     const load = name => {
       // Data URLs remain valid WebGL sources when index.html is opened via
       // file://. Neighboring file images are rejected by Chrome's CORS rules.
+      if (this.graphicsMode !== 'high') return null;
       return this._loadSurfaceTexture(textures[name], name === 'speedway-asphalt' ? '#777777' : '#deded8', name === 'speedway-mesh');
     };
     const trackMaterials = {
-      asphalt: new THREE.MeshLambertMaterial({ map: load('speedway-asphalt'), color: 0xbdbdbd, side: THREE.DoubleSide }),
-      wall: new THREE.MeshLambertMaterial({ map: load('speedway-wall'), side: THREE.DoubleSide }),
+      asphalt: new THREE.MeshLambertMaterial({ map: load('speedway-asphalt'), color: this.graphicsMode === 'high' ? 0xbdbdbd : 0x666666, side: THREE.DoubleSide }),
+      wall: new THREE.MeshLambertMaterial({ map: load('speedway-wall'), color: this.graphicsMode === 'high' ? 0xffffff : 0xdeded8, side: THREE.DoubleSide }),
       concrete: new THREE.MeshLambertMaterial({ color: 0x858984, side: THREE.DoubleSide }),
       steel: new THREE.MeshLambertMaterial({ color: 0x505b60, side: THREE.DoubleSide }),
       absorber: new THREE.MeshLambertMaterial({ color: 0x252a28, side: THREE.DoubleSide }),
       paint: new THREE.MeshLambertMaterial({ color: 0xe2dfcf, side: THREE.DoubleSide }),
       fence: new THREE.MeshLambertMaterial({ map: load('speedway-mesh'), side: THREE.DoubleSide,
-        alphaTest: 0.35, alphaToCoverage: true }),
+        alphaTest: this.graphicsMode === 'high' ? .35 : 0, alphaToCoverage: this.graphicsMode === 'high',
+        transparent: this.graphicsMode !== 'high',
+        opacity: this.graphicsMode === 'high' ? 1 : .18, depthWrite: this.graphicsMode === 'high' }),
     };
     // Visual runout extends past the cameras' 4,000-unit far plane at both
     // endpoints, including the longer series-specific racing distances.
@@ -145,9 +156,9 @@
       geometry.setAttribute('normal', new THREE.Float32BufferAttribute(data.normal, 3));
       geometry.setAttribute('uv', new THREE.Float32BufferAttribute(data.uv, 2));
       geometry.setIndex(data.index);
-      const map = this._loadSurfaceTexture(asset.textures[name], name === 'grass' ? '#567745' : '#858984');
-      map.wrapS = map.wrapT = THREE.RepeatWrapping;
-      const mesh = new THREE.InstancedMesh(geometry, new THREE.MeshLambertMaterial({ map }), count);
+      const color = name === 'grass' ? '#567745' : '#858984';
+      const map = this.graphicsMode === 'high' ? this._loadSurfaceTexture(asset.textures[name], color) : null;
+      const mesh = new THREE.InstancedMesh(geometry, new THREE.MeshLambertMaterial({map, color: map ? '#ffffff' : color}), count);
       mesh.name = 'ground:' + name; mesh.receiveShadow = true; mesh.frustumCulled = false;
       for (let i = 0; i < count; i++) {
         this._dummy.position.set(0, 0, (i - runout) * asset.moduleLength);
@@ -220,7 +231,7 @@
     for (const { lod, meshes } of this._grandstandBands) {
       let index = 0;
       for (let offset = -reach; offset <= reach; offset++) {
-        const near = Math.abs(offset * model.pitch) <= (this.lowPower ? 150 : 300);
+        const near = Math.abs(offset * model.pitch) <= (this.graphicsMode === 'high' ? 300 : this.lowPower ? 150 : 220);
         if (near !== (lod === 'near')) continue;
         for (const side of [-1, 1]) {
           // Rotate rather than use a negative instance scale (unsupported by Three).

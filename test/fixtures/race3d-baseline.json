@@ -15,7 +15,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "563d1644ab2dfbbf0d9f424f4b289493a4aaf7ccd0a23cc7cd85a4004d73f99f"
+      "hash": "e076bf82ad937ce9b527929083834004c2ad8a7a3386d5f95012e52d58af0064"
     },
     {
       "name": "_initGeometries",
@@ -31,7 +31,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "e94707e72c9bd09f90c3d976ce3e9ec95c762dc92d4b938b90951baf8c1b2efe"
+      "hash": "f3bd6d24e6a31acd85cdd9c122e6620107d65a461f8c3df636a444ee5d89b84f"
     },
     {
       "name": "_positionTrack",
@@ -47,7 +47,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "31d796c87428dd61eaad4fcb0c767f36f35913f9803256b6d3037e209d8e8ec3"
+      "hash": "c406863b025a1f5d8224645918e2cb6847c478c411e1a9548a08c133a52ea8fd"
     },
     {
       "name": "_buildEnvironment",
@@ -55,7 +55,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "1bc45c3de61737efdf756e33f7cb56ed491d9451e57182d6e9230de2613777d4"
+      "hash": "1f3f2ba4f966182cea06e848942bd32c804e3594da00a97c68cd76d59a35a81e"
     },
     {
       "name": "_buildGrandstands",
@@ -71,7 +71,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "a71eb9faa595a5ea6c004b6252daf253e8bfc5bc02ebda36b3130cc43f1a7495"
+      "hash": "c902ddd994f99cd373751b51b0943980998e6e2ae3acec32af84576d216bc099"
     },
     {
       "name": "_buildCars",
@@ -439,7 +439,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "92651c9dac47602eff6271b0ab3248f90944409d1ff26b8967a33d0da5ddf1d4"
+      "hash": "db076a41c4f6dd3ba682d7075d4f99c108a95b47a55bd488e2f7cf0526437f9e"
     },
     {
       "name": "_renderMirror",
@@ -447,7 +447,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "a0a6da161754593129fac5b77297e571e0379ba2510b4566d3fea01f481010c3"
+      "hash": "aeddfedb46bca7c1b5ed8b4a192368fb817221ae04f94261605fedb196890961"
     },
     {
       "name": "_updateHUD",
@@ -503,7 +503,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "425d67e4d164ab41082d367fde6f2fb998fe6453e5f1b5b95a0213cfacb170d9"
+      "hash": "267c3088abb0584a1cc6781b1461ed4fe688cedbd62958aee66ad1e721ea28a0"
     },
     {
       "name": "destroy",
@@ -519,23 +519,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "f451abd609402f82c680533e13e7d8fcdffc924856c3964d928fef1247e155a9"
-    },
-    {
-      "name": "_setGraphicsQuality",
-      "length": 1,
-      "enumerable": false,
-      "configurable": true,
-      "writable": true,
-      "hash": "b3244789b06c429638b529e179f6547c26fcb18f19740218041df13bd492f03f"
-    },
-    {
-      "name": "_sampleGraphics",
-      "length": 1,
-      "enumerable": false,
-      "configurable": true,
-      "writable": true,
-      "hash": "b432d8f4adcb5841ae03933ed91455900aba23d204e74aa14c9e4482b07c02f3"
+      "hash": "9881adc813e2fc2a6bc493ef80a7d23b3d9984730ea746bf567b81e1b69b11e1"
     },
     {
       "name": "_postCrashTarget",
@@ -544,6 +528,14 @@
       "configurable": true,
       "writable": true,
       "hash": "e6f1299cc1f8d7e3c2ae633772d1726aa9f42b1d21cd30a9dba714de0af305a4"
+    },
+    {
+      "name": "_resizeGraphics",
+      "length": 0,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "861471156cedcf1314f892bb89414a809ebd8c76a9f2fc783095c98acda7a016"
     }
   ],
   "helpers": [
@@ -575,7 +567,7 @@
     {
       "name": "launch3DRace",
       "length": 2,
-      "hash": "4fed7d241cb9000864c24e61aa1591883123a4844660d38a9839654b0e19f87e"
+      "hash": "6b94e3c238a8284534d62f2a82b3e88efe0494f70d52e8267465ebb2e70f9d11"
     }
   ],
   "sourceCommit": "20c3f0c77f0934c085371c2e19c73357fe1c9b58",

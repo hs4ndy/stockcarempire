@@ -15,7 +15,7 @@ test('Grassroots has its own track, legacy cars and 90-percent player and AI pac
     await page.locator('.quick-series-btn').nth(series).click();
     if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator("#btn-quick-race-confirm").click();
     await page.waitForFunction(() => window._r3d?.mirrorRT && window._r3d.trackGroup.children.every(m =>
-      !m.material.map || m.material.map.image?.complete && m.material.map.image.naturalWidth > 0));
+      !m.material.map || m.material.map.userData.loadState === 'loaded'));
     const report = await page.evaluate(() => {
       const e = window._r3d;
       cancelAnimationFrame(e._raf); e.paused = true; e.paceMode = false;
@@ -41,6 +41,8 @@ test('Grassroots has its own track, legacy cars and 90-percent player and AI pac
       const ray = new THREE.Raycaster();
       let surface = true, walls = true;
       for (const z of [59.999, 60.001, 14999]) {
+        p.z = z;
+        e._positionTrack();
         ray.set(new THREE.Vector3(half - .1, 2, z), new THREE.Vector3(0, -1, 0));
         surface &&= ray.intersectObject(e.trackGroup.getObjectByName('track:asphalt')).length > 0;
         for (const sign of [-1, 1]) {
@@ -76,13 +78,14 @@ test('Grassroots has its own track, legacy cars and 90-percent player and AI pac
     await page.screenshot({ path: testInfo.outputPath(`series-${series}.png`) });
     await page.evaluate(() => window._r3d.destroy());
   }
-  // Verify the new embedded textures also load from the user's local HTML file.
+  // Verify the High preset loads its embedded textures from the local HTML file.
   await page.goto(pathToFileURL(path.resolve(__dirname, '../../index.html')).href);
   await page.locator('#btn-quick-race').click();
+  await page.locator('#quick-race-graphics').selectOption('high');
   await page.locator('.quick-series-btn').first().click();
   if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator("#btn-quick-race-confirm").click();
   await page.waitForFunction(() => window._r3d?.trackGroup.children.every(m =>
-    !m.material.map || m.material.map.image?.complete && m.material.map.image.naturalWidth > 0));
+    !m.material.map || m.material.map.userData.loadState === 'loaded'));
   await page.evaluate(() => window._r3d.destroy());
   expect(errors).toEqual([]);
 });

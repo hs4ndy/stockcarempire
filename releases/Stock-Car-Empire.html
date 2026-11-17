@@ -141,6 +141,9 @@
   --maxw: 1320px; --radius: 8px; --t: 180ms; --shell-height: 80px;
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px; --space-6: 32px; --space-7: 48px;
 }
+.race-graphics-control { margin-bottom:16px; }
+.race-graphics-control select { min-height:44px; }
+.race-graphics-control p { margin:6px 0 0; }
 .race-length-control { margin:0 0 20px; }
 .race-length-heading { display:flex;align-items:baseline;justify-content:space-between;gap:12px;font-size:14px; }
 .race-length-heading label { font-weight:600;color:var(--text); }
@@ -1193,8 +1196,8 @@ button.standing-driver .st-name { text-decoration:none; }
 /* Focused management menus: shared sports identity, quieter task hierarchy. */
 [hidden] {display:none !important;}
 #quick-race-modal .quick-wizard {width:min(1180px,calc(100vw - 32px));max-width:1180px;max-height:calc(100svh - 24px);}
-.quick-wizard .modal-header {padding:20px 28px;}
-.quick-wizard .quick-setup-body {padding:24px 28px;overflow:hidden;flex:none;}
+.quick-wizard .modal-header {padding:20px 28px;flex-shrink:0;}
+.quick-wizard .quick-setup-body {padding:24px 28px;overflow:auto;min-height:0;flex:0 1 auto;}
 .quick-race-stage {display:grid;grid-template-columns:1fr 1fr .95fr;gap:32px;align-items:start;}
 .quick-race-stage>section+section {border-left:1px solid var(--line);padding-left:28px;}
 .quick-wizard h4 {font:700 24px var(--font-display);margin-bottom:16px;}
@@ -1207,7 +1210,7 @@ button.standing-driver .st-name { text-decoration:none; }
 .quick-wizard .quick-series-meta {font-size:14px;margin-top:2px;}
 .quick-wizard .compact-rules .radio-row {min-height:60px;padding:14px 0;gap:12px;}
 .quick-wizard .compact-rules>p {margin-bottom:16px;}
-.quick-wizard .quick-race-footer {display:flex;gap:12px;padding:16px 28px;}
+.quick-wizard .quick-race-footer {display:flex;gap:12px;padding:16px 28px;flex-shrink:0;}
 .quick-wizard .quick-race-footer .btn {width:auto;flex:1;}
 .quick-wizard #quick-back {flex:0 0 120px;}
 .quick-player-toolbar {display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:24px;}
@@ -1337,7 +1340,7 @@ button.standing-driver .st-name { text-decoration:none; }
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 158</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 159</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -1512,6 +1515,20 @@ button.standing-driver .st-name { text-decoration:none; }
 function raceFeatureRules(difficulty, preferences = {}) {
   const eligible=['semipro','pro','allout'].includes(difficulty);
   return {crashes:eligible && preferences.crashes!==false,damage:eligible && preferences.damage!==false};
+}
+
+const GRAPHICS_PRESETS = ['low', 'medium', 'high'];
+
+function normalizeGraphicsPreset(value) {
+  return GRAPHICS_PRESETS.includes(value) ? value : 'medium';
+}
+
+function raceGraphicsPreset() {
+  try {
+    return normalizeGraphicsPreset(localStorage.getItem('sce_graphics_preset'));
+  } catch (_) {
+    return 'medium';
+  }
 }
 
 const RACE_LENGTHS = [
@@ -4801,7 +4818,7 @@ function r3dRoundelTex(num,numberColor='#f2f3e9') {
 
 // ─── Public launcher ─────────────────────────────────────────
 function launch3DRace(config, onComplete) {
-  config = {...config, graphicsMode:'auto'};
+  config = {...config, graphicsMode: normalizeGraphicsPreset(config.graphicsMode ?? raceGraphicsPreset())};
   config={...config,raceRules:config.raceRules || {crashes:true,damage:true}};
   const container = document.getElementById('race-3d-container');
   if (!container) { console.error('race-3d-container not found'); return; }
@@ -4990,7 +5007,7 @@ class Race3DEngine {
     this.mirrorCam = new THREE.PerspectiveCamera(72, 3.5, 0.5, 4000);
     this.mirrorCam.position.set(0, 4, 0);
 
-    this.renderer = new THREE.WebGLRenderer({ canvas: c, antialias: true });
+    this.renderer = new THREE.WebGLRenderer({ canvas: c, antialias: this.config.graphicsMode === 'high' });
     // Budget rendering work rather than multiplying every screen pixel by four.
     this._configureGraphics();
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -5001,7 +5018,8 @@ class Race3DEngine {
     const sun = new THREE.DirectionalLight(0xfff3df, 1.05);
     sun.position.set(90, 220, 120);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(1024, 1024);
+    const shadowSize = Math.min(2048, this.renderer.capabilities.maxTextureSize);
+    sun.shadow.mapSize.set(shadowSize, shadowSize);
     sun.shadow.camera.left = -320; sun.shadow.camera.right = 320;
     sun.shadow.camera.top = 320;   sun.shadow.camera.bottom = -320;
     sun.shadow.camera.far = 2400;
@@ -5009,7 +5027,7 @@ class Race3DEngine {
 
     // Max anisotropy keeps the heavily-tiled asphalt/grass sharp at distance
     // instead of shimmering - most visible in the mirror.
-    this._maxAniso = Math.min(this.lowPower ? 2 : 4, this.renderer.capabilities?.getMaxAnisotropy?.() || 1);
+    this._maxAniso = Math.min(this.graphicsMode === 'high' ? Infinity : 2, this.renderer.capabilities.getMaxAnisotropy());
 
     this._initGeometries();
     this._buildTrack();
@@ -5066,7 +5084,7 @@ class Race3DEngine {
       if (!el) return;
       const nw = el.clientWidth  || window.innerWidth;
       const nh = el.clientHeight || window.innerHeight;
-      this._setGraphicsQuality(this.lowPower);
+      this._resizeGraphics();
       this.camera.aspect = nw / nh;
       this.camera.updateProjectionMatrix();
     };
@@ -5074,7 +5092,14 @@ class Race3DEngine {
 
     this.clock = new THREE.Clock();
     this._loop();
-    this._countdown();
+    if (this._surfaceTextureLoads?.length) {
+      document.getElementById('r3d-countdown').textContent = 'Preparing track textures…';
+      Promise.all(this._surfaceTextureLoads).then(() => {
+        if (!this._disposed) this._countdown();
+      });
+    } else {
+      this._countdown();
+    }
   }
 
   // Second-player context
@@ -5201,7 +5226,6 @@ class Race3DEngine {
   _loop() {
     this._raf = requestAnimationFrame(() => this._loop());
     const elapsed = this.clock.getDelta();
-    this._sampleGraphics(elapsed);
     const dt = Math.min(elapsed, 0.1);
     // Fixed steps keep contact and steering consistent at 30/60/120Hz.
     this._physicsAcc += dt;
@@ -5263,61 +5287,30 @@ class Race3DEngine {
 </script>
 <script>
 /* js/race3d/graphics.js */
-// Render quality is independent of race physics and Career saves.
+// Fixed graphics presets keep the rendering workload predictable.
 (() => {
   class Methods {
     _configureGraphics() {
-      this.graphicsMode = 'auto';
-      const limited = (navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4) ||
-        (navigator.deviceMemory > 0 && navigator.deviceMemory <= 4);
-      let software = false;
-      try {
-        const gl = this.renderer.getContext();
-        const info = gl.getExtension('WEBGL_debug_renderer_info');
-        software = !!info && /swiftshader|llvmpipe|software/i.test(gl.getParameter(info.UNMASKED_RENDERER_WEBGL));
-      } catch (_) {}
-      // Resource hints alone do not identify a slow PC. ChromeOS plus limited
-      // resources is a startup hint; sustained frame times refine Auto later.
-      const startLow = software || (/CrOS/.test(navigator.userAgent || '') && limited);
-      this._graphicsFrames = 0;
-      this._graphicsSeconds = 0;
-      this._graphicsSlow = 0;
-      this._graphicsFast = 0;
-      this._graphicsCooldown = 0;
-      this._setGraphicsQuality(startLow);
+      this.graphicsMode = normalizeGraphicsPreset(this.config.graphicsMode);
+      this.lowPower = this.graphicsMode === 'low';
+      this.renderer.shadowMap.enabled = this.graphicsMode === 'high';
+      this._resizeGraphics();
     }
 
-    _setGraphicsQuality(low) {
-      this.lowPower = low;
-      this.renderer.shadowMap.enabled = !low && !this.config.dualPlayer;
-      if (this.mirrorRT) { this.mirrorRT.dispose(); this.mirrorRT = null; }
-      this._grandstandCenter = null;
+    _resizeGraphics() {
       const el = this.canvas.parentElement;
-      const w = el?.clientWidth || this.canvas.clientWidth || window.innerWidth;
-      const h = el?.clientHeight || this.canvas.clientHeight || window.innerHeight;
-      this._pixelRatio = Math.min(window.devicePixelRatio || 1, low ? 1 : 1.5,
-        Math.sqrt((low ? 750000 : 2000000) / (w * h)));
-      this.renderer.setPixelRatio(this._pixelRatio);
-      this.renderer.setSize(w, h, false);
-    }
-
-    _sampleGraphics(dt) {
-      if (this.graphicsMode !== 'auto' || !this.racing || this.paused || this.done ||
-          document.hidden || dt <= 0 || dt > .5) return;
-      this._graphicsCooldown = Math.max(0, this._graphicsCooldown - dt);
-      this._graphicsFrames++;
-      this._graphicsSeconds += dt;
-      if (this._graphicsSeconds < 1) return;
-      const average = this._graphicsSeconds / this._graphicsFrames;
-      this._graphicsSlow = average > .028 ? this._graphicsSlow + 1 : 0;
-      this._graphicsFast = average < .018 ? this._graphicsFast + 1 : 0;
-      if (!this._graphicsCooldown && ((!this.lowPower && this._graphicsSlow >= 3) ||
-          (this.lowPower && this._graphicsFast >= 12))) {
-        this._setGraphicsQuality(!this.lowPower);
-        this._graphicsCooldown = 30;
-        this._graphicsSlow = this._graphicsFast = 0;
+      const width = el?.clientWidth || this.canvas.clientWidth || window.innerWidth;
+      const height = el?.clientHeight || this.canvas.clientHeight || window.innerHeight;
+      const nativeRatio = window.devicePixelRatio || 1;
+      if (this.graphicsMode === 'high') {
+        const maxSize = this.renderer.capabilities.maxTextureSize;
+        this._pixelRatio = Math.min(nativeRatio, maxSize / Math.max(width, height));
+      } else {
+        const budget = this.lowPower ? 750000 : 1350000;
+        this._pixelRatio = Math.min(nativeRatio, this.lowPower ? 1 : 1.25, Math.sqrt(budget / (width * height)));
       }
-      this._graphicsFrames = this._graphicsSeconds = 0;
+      this.renderer.setPixelRatio(this._pixelRatio);
+      this.renderer.setSize(width, height, false);
     }
   }
   for (const name of Object.getOwnPropertyNames(Methods.prototype)) {
@@ -5339,23 +5332,31 @@ class Race3DEngine {
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
     tex.anisotropy = this._maxAniso;
     tex.userData.loadState = 'loading';
-    const image = new Image();
-    image.onload = () => {
-      if (this._disposed) return;
-      const limit = Math.min(this.renderer.capabilities.maxTextureSize, this.lowPower ? 1024 : 2048);
-      const scale = Math.min(1, limit / Math.max(image.width, image.height));
-      let decoded = image;
-      if (scale < 1) {
-        decoded = document.createElement('canvas');
-        // Power-of-two dimensions keep repeat/mipmaps valid on WebGL 1 too.
-        decoded.width = 2 ** Math.floor(Math.log2(image.width * scale));
-        decoded.height = 2 ** Math.floor(Math.log2(image.height * scale));
-        decoded.getContext('2d').drawImage(image, 0, 0, decoded.width, decoded.height);
+    // Decode bundled bytes directly so image URLs, filtering, and network
+    // timing do not determine whether the race starts with textures.
+    const load = async () => {
+      let bitmap;
+      try {
+        const [header, payload] = source.split(',');
+        const bytes = Uint8Array.from(atob(payload), char => char.charCodeAt(0));
+        bitmap = await createImageBitmap(new Blob([bytes], {type: header.slice(5).split(';')[0]}));
+        if (this._disposed) return;
+        const limit = this.renderer.capabilities.maxTextureSize;
+        const canvas = document.createElement('canvas');
+        // Power-of-two dimensions preserve repeating mipmaps on WebGL 1.
+        canvas.width = 2 ** Math.floor(Math.log2(Math.min(bitmap.width, limit)));
+        canvas.height = 2 ** Math.floor(Math.log2(Math.min(bitmap.height, limit)));
+        canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        tex.image = canvas;
+        tex.needsUpdate = true;
+        tex.userData.loadState = 'loaded';
+      } catch (_) {
+        if (!this._disposed) tex.userData.loadState = 'fallback';
+      } finally {
+        bitmap?.close();
       }
-      tex.image = decoded; tex.needsUpdate = true; tex.userData.loadState = 'loaded';
     };
-    image.onerror = () => { if (!this._disposed) tex.userData.loadState = 'fallback'; };
-    image.src = source || '';
+    (this._surfaceTextureLoads ??= []).push(load());
     return tex;
   }
 
@@ -5399,17 +5400,20 @@ class Race3DEngine {
     const load = name => {
       // Data URLs remain valid WebGL sources when index.html is opened via
       // file://. Neighboring file images are rejected by Chrome's CORS rules.
+      if (this.graphicsMode !== 'high') return null;
       return this._loadSurfaceTexture(textures[name], name === 'speedway-asphalt' ? '#777777' : '#deded8', name === 'speedway-mesh');
     };
     const trackMaterials = {
-      asphalt: new THREE.MeshLambertMaterial({ map: load('speedway-asphalt'), color: 0xbdbdbd, side: THREE.DoubleSide }),
-      wall: new THREE.MeshLambertMaterial({ map: load('speedway-wall'), side: THREE.DoubleSide }),
+      asphalt: new THREE.MeshLambertMaterial({ map: load('speedway-asphalt'), color: this.graphicsMode === 'high' ? 0xbdbdbd : 0x666666, side: THREE.DoubleSide }),
+      wall: new THREE.MeshLambertMaterial({ map: load('speedway-wall'), color: this.graphicsMode === 'high' ? 0xffffff : 0xdeded8, side: THREE.DoubleSide }),
       concrete: new THREE.MeshLambertMaterial({ color: 0x858984, side: THREE.DoubleSide }),
       steel: new THREE.MeshLambertMaterial({ color: 0x505b60, side: THREE.DoubleSide }),
       absorber: new THREE.MeshLambertMaterial({ color: 0x252a28, side: THREE.DoubleSide }),
       paint: new THREE.MeshLambertMaterial({ color: 0xe2dfcf, side: THREE.DoubleSide }),
       fence: new THREE.MeshLambertMaterial({ map: load('speedway-mesh'), side: THREE.DoubleSide,
-        alphaTest: 0.35, alphaToCoverage: true }),
+        alphaTest: this.graphicsMode === 'high' ? .35 : 0, alphaToCoverage: this.graphicsMode === 'high',
+        transparent: this.graphicsMode !== 'high',
+        opacity: this.graphicsMode === 'high' ? 1 : .18, depthWrite: this.graphicsMode === 'high' }),
     };
     // Visual runout extends past the cameras' 4,000-unit far plane at both
     // endpoints, including the longer series-specific racing distances.
@@ -5476,9 +5480,9 @@ class Race3DEngine {
       geometry.setAttribute('normal', new THREE.Float32BufferAttribute(data.normal, 3));
       geometry.setAttribute('uv', new THREE.Float32BufferAttribute(data.uv, 2));
       geometry.setIndex(data.index);
-      const map = this._loadSurfaceTexture(asset.textures[name], name === 'grass' ? '#567745' : '#858984');
-      map.wrapS = map.wrapT = THREE.RepeatWrapping;
-      const mesh = new THREE.InstancedMesh(geometry, new THREE.MeshLambertMaterial({ map }), count);
+      const color = name === 'grass' ? '#567745' : '#858984';
+      const map = this.graphicsMode === 'high' ? this._loadSurfaceTexture(asset.textures[name], color) : null;
+      const mesh = new THREE.InstancedMesh(geometry, new THREE.MeshLambertMaterial({map, color: map ? '#ffffff' : color}), count);
       mesh.name = 'ground:' + name; mesh.receiveShadow = true; mesh.frustumCulled = false;
       for (let i = 0; i < count; i++) {
         this._dummy.position.set(0, 0, (i - runout) * asset.moduleLength);
@@ -5551,7 +5555,7 @@ class Race3DEngine {
     for (const { lod, meshes } of this._grandstandBands) {
       let index = 0;
       for (let offset = -reach; offset <= reach; offset++) {
-        const near = Math.abs(offset * model.pitch) <= (this.lowPower ? 150 : 300);
+        const near = Math.abs(offset * model.pitch) <= (this.graphicsMode === 'high' ? 300 : this.lowPower ? 150 : 220);
         if (near !== (lod === 'near')) continue;
         for (const side of [-1, 1]) {
           // Rotate rather than use a negative instance scale (unsupported by Three).
@@ -6745,14 +6749,14 @@ class Race3DEngine {
 
   _initMirrorTarget(w, h) {
     if (this.mirrorRT) this.mirrorRT.dispose();
-    const Target = this.renderer.capabilities.isWebGL2 && !this.lowPower
+    const Target = this.renderer.capabilities.isWebGL2 && this.graphicsMode === 'high'
       ? THREE.WebGLMultisampleRenderTarget : THREE.WebGLRenderTarget;
     this.mirrorRT = new Target(Math.max(2, w), Math.max(2, h), {
       minFilter: THREE.LinearFilter,
       magFilter: THREE.LinearFilter,
       format:    THREE.RGBAFormat,
     });
-    if (this.renderer.capabilities.isWebGL2 && !this.lowPower) this.mirrorRT.samples = 4;
+    if (this.renderer.capabilities.isWebGL2 && this.graphicsMode === 'high') this.mirrorRT.samples = 4;
     this.mirrorRTSize = { w, h };
 
     if (!this.mirrorScene) {
@@ -6796,7 +6800,7 @@ class Race3DEngine {
 
     // Mirror readability must not inherit the reduced full-screen pixel budget.
     // Supersample this small surface, then filter down into its CSS rectangle.
-    const mirrorRatio = this.lowPower ? 1.5 : Math.max(1.5, Math.min(2, window.devicePixelRatio || 1));
+    const mirrorRatio = this.graphicsMode === 'high' ? Math.max(2, window.devicePixelRatio || 1) : this.lowPower ? 1 : 1.5;
     const rtW = Math.max(2, Math.round(mw * mirrorRatio));
     const rtH = Math.max(2, Math.round(mh * mirrorRatio));
     if (!this.mirrorRT || this.mirrorRTSize.w !== rtW || this.mirrorRTSize.h !== rtH) {
@@ -8772,6 +8776,7 @@ function renderSettings() {
     </div>
   </div>
 
+  <div class="card mb"><div class="card-body">${renderRaceGraphicsControl('career')}</div></div>
   <div class="card mb"><div class="card-body">${renderRaceLengthControl('career',game.raceLength)}</div></div>
   <div class="card mb"><div class="card-header">Crashes and Vehicle Health</div><div class="card-body">${renderRaceRuleControls(curDiff,game.raceRules,'career')}</div></div>
   <div class="card mb">
@@ -8913,7 +8918,7 @@ function renderQuickRaceModal() {
  <div class="modal-body quick-setup-body"><div id="quick-stage-race" class="quick-race-stage">
  <section><h4>Difficulty</h4><div class="difficulty-grid">${DIFFICULTIES.map(d=>`<button type="button" class="difficulty-card${d.id===quickRaceDifficulty?' selected':''}" data-diff="${d.id}" aria-pressed="${d.id===quickRaceDifficulty}" onclick="setQuickRaceDifficulty('${d.id}')"><span class="difficulty-name">${d.name}</span></button>`).join('')}</div><p id="quick-difficulty-hint" class="small muted-text">${summaries[quickRaceDifficulty]}</p></section>
  <section><h4>Series</h4><div class="quick-series">${SERIES.map(s=>`<button type="button" class="quick-series-btn" data-field-size="${s.fieldSize}" aria-pressed="false" onclick="selectQuickRaceSeries(${s.fieldSize})"><span class="quick-series-name" style="--series-color:${s.color}">${s.name}</span><span class="quick-series-meta">${s.fieldSize} cars</span></button>`).join('')}</div></section>
- <section><h4>Race settings</h4>${renderRaceLengthControl('quick',quickRaceLength)}<div id="quick-race-rules">${renderRaceRuleControls(quickRaceDifficulty,quickRaceRules,'quick')}</div></section></div>
+ <section><h4>Race settings</h4>${renderRaceLengthControl('quick',quickRaceLength)}${renderRaceGraphicsControl('quick')}<div id="quick-race-rules">${renderRaceRuleControls(quickRaceDifficulty,quickRaceRules,'quick')}</div></section></div>
  <div id="quick-stage-cars" hidden><div class="quick-player-toolbar"><h4>Players and cars</h4><div class="quick-player-mode" role="group" aria-label="Player mode"><button class="btn" data-players="1" aria-pressed="${quickRacePlayers===1}" onclick="setQuickRacePlayers(1)">Single player</button><button class="btn" data-players="2" aria-pressed="${quickRacePlayers===2}" onclick="setQuickRacePlayers(2)">Dual player</button></div></div>
  <div class="quick-setup-cars">${quickRaceCars.map((car,i)=>renderCarCustomizer(car,i)).join('')}</div><p class="small muted-text quick-key-help">Player 1: A / S / D · Player 2: J / K / L · Middle key brakes</p><p class="form-warning" id="quick-number-warning" hidden>Choose a different number for each player.</p></div></div>
  <div class="modal-footer quick-race-footer"><button type="button" class="btn btn-secondary" id="quick-back" onclick="setQuickRaceStep(1)" hidden>Back</button><button type="button" class="btn btn-primary btn-lg" id="quick-next" onclick="setQuickRaceStep(2)" disabled>Next: Players and cars</button><button type="button" class="btn btn-primary btn-lg" id="btn-quick-race-confirm" onclick="confirmQuickRace()" hidden disabled>Confirm Race</button></div></div></div>`;
@@ -8922,6 +8927,17 @@ function renderQuickRaceModal() {
 // ─── Listeners wired after each tab render ───────────────────
 function attachTabListeners(tabName) {
   // Nothing extra for most tabs; specific interactions are via onclick attributes
+}
+
+function renderRaceGraphicsControl(scope) {
+  const id = `${scope}-race-graphics`;
+  const preset = raceGraphicsPreset();
+  const options = GRAPHICS_PRESETS.map(value =>
+    `<option value="${value}"${value === preset ? ' selected' : ''}>${value[0].toUpperCase() + value.slice(1)}</option>`
+  ).join('');
+  return `<div class="race-graphics-control"><label class="form-label" for="${id}">Graphics</label>
+    <select class="form-select" id="${id}" onchange="setRaceGraphicsPreset(this)" aria-describedby="${id}-hint">${options}</select>
+    <p class="small muted-text" id="${id}-hint">High enables track textures.</p></div>`;
 }
 
 function renderRaceLengthControl(scope, value) {
@@ -11737,12 +11753,22 @@ function newsEscape(value) {
 
 function createRaceNews(context, random = Math.random) {
   const articles=RACE_NEWS_ARTICLES[context.seriesId]?.[context.position];
-  if (!articles) throw new Error('No news article for this series/position.');
   const key=`${context.seriesId}-${context.position}`;
-  const last=raceNewsLastVariants.get(key);
-  const choices=articles.filter(a=>a.id!==last);
-  const article=choices[Math.min(choices.length-1,Math.floor(random()*choices.length))];
-  raceNewsLastVariants.set(key,article.id);
+  let article;
+  if (articles?.length) {
+    const last = raceNewsLastVariants.get(key);
+    const choices = articles.filter(a => a.id !== last);
+    const available = choices.length ? choices : articles;
+    article = available[Math.min(available.length - 1, Math.floor(random() * available.length))];
+    raceNewsLastVariants.set(key, article.id);
+  } else {
+    article = {
+      id: `classification-${key}`,
+      headline: '{player} finishes {position} at {track}',
+      paragraphs: ['{player} took the checkered flag in {position} at {track}.'],
+      quote: 'We’ll review the race and prepare for the next one.'
+    };
+  }
   raceNewsReporter=(raceNewsReporter+1+Math.floor(random()*(RACE_NEWS_REPORTERS.length-1)))%RACE_NEWS_REPORTERS.length;
   const fill=text=>text.replace(/\{(player|track|position)\}/g,(_,name)=>({player:context.playerName,track:context.trackName,position:newsOrdinal(context.position)}[name]));
   const paragraphs=context.dnf ? [
@@ -13231,6 +13257,15 @@ function closeVehicleModal(id) {
 }
 
 async function handleRepairAll(){const cost=game.cars.reduce((n,c)=>n+carRepairCost(c),0);if(!await gameConfirm(`Repair all damaged cars for ${fmt$(cost)}? Lifetime health will not change.`))return;const r=repairAllCars();if(!r.ok){toast(r.msg,'error');return;}updateHeader();renderTab('garage');toast(`${r.count} cars repaired for ${fmt$(r.cost)}.`,'success');}
+
+function setRaceGraphicsPreset(select) {
+  try {
+    localStorage.setItem('sce_graphics_preset', normalizeGraphicsPreset(select.value));
+  } catch (_) {
+    select.value = raceGraphicsPreset();
+    toast('Graphics setting could not be saved.', 'error');
+  }
+}
 
 function setRaceLength(scope, index) {
   const selected = RACE_LENGTHS[Number(index)] || RACE_LENGTHS[3];

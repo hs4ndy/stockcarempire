@@ -1,7 +1,7 @@
 const {test,expect}=require('playwright/test');
 const path=require('node:path'),fs=require('node:fs');
 for(const series of [0,1,2]) for(const broken of [false,true]) {
-  test(`low-resource series ${series} renders pavement with ${broken?'failed':'loaded'} asphalt`,async({browser})=>{
+  test(`low-resource series ${series} renders pavement with ${broken?'failed High textures':'Low flat surfaces'}`,async({browser})=>{
     const context=await browser.newContext({viewport:{width:1366,height:768},deviceScaleFactor:2});
     const page=await context.newPage();
     await page.addInitScript(()=>{Object.defineProperty(navigator,'userAgent',{get:()=> 'Mozilla/5.0 (X11; CrOS x86_64)'});Object.defineProperty(navigator,'hardwareConcurrency',{get:()=>4});Object.defineProperty(navigator,'deviceMemory',{get:()=>4});});
@@ -10,8 +10,8 @@ for(const series of [0,1,2]) for(const broken of [false,true]) {
       const body=fs.readFileSync(path.resolve(__dirname,'../..',file),'utf8').replace(/("speedway-asphalt"\s*:\s*")[^"]+/, '$1data:image/png;base64,broken');
       await page.route('**/'+file,r=>r.fulfill({body,contentType:'application/javascript'}));
     }
-    await page.goto('/');await page.locator('#btn-quick-race').click();await page.locator('.quick-series-btn').nth(series).click();if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator('#btn-quick-race-confirm').click();
-    await page.waitForFunction(()=>window._r3d?.trackGroup.getObjectByName('track:asphalt').material.map.userData.loadState!=='loading' && window._r3d?.mirrorRT);
+    await page.goto('/');await page.locator('#btn-quick-race').click();await page.locator('#quick-race-graphics').selectOption(broken?'high':'low');await page.locator('.quick-series-btn').nth(series).click();if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator('#btn-quick-race-confirm').click();
+    await page.waitForFunction(()=>window._r3d?.trackGroup.getObjectByName('track:asphalt').material.map?.userData.loadState!=='loading' && window._r3d?.mirrorRT);
     const report=await page.evaluate(()=>{
       const e=window._r3d,r=e.renderer;cancelAnimationFrame(e._raf);e.done=true;
       const road=e.trackGroup.getObjectByName('track:asphalt'),tex=road.material.map;
@@ -20,10 +20,10 @@ for(const series of [0,1,2]) for(const broken of [false,true]) {
       const pixels=new Uint8Array(4);r.readRenderTargetPixels(target,8,8,1,1,pixels);r.setRenderTarget(null);target.dispose();
       const covered=[];
       for(const z of [0,7500,15000]){e.player.z=z;e._positionTrack();const ray=new THREE.Raycaster(new THREE.Vector3(0,5,z),new THREE.Vector3(0,-1,0));covered.push(ray.intersectObject(road).length>0);}
-      const result={low:e.lowPower,dpr:r.getPixelRatio(),count:road.count,state:tex.userData.loadState,size:Math.max(tex.image.width,tex.image.height),pixel:[...pixels],covered,shadows:r.shadowMap.enabled};e.destroy();return result;
+      const result={low:e.lowPower,dpr:r.getPixelRatio(),count:road.count,state:tex?.userData.loadState ?? 'untextured',size:tex ? Math.max(tex.image.width,tex.image.height) : 0,pixel:[...pixels],covered,shadows:r.shadowMap.enabled};e.destroy();return result;
     });
-    expect(report.low).toBe(true);expect(report.dpr).toBeLessThanOrEqual(1);expect(report.shadows).toBe(false);expect(report.count).toBeLessThan(150);
-    expect(report.state).toBe(broken?'fallback':'loaded');expect(report.size).toBeLessThanOrEqual(1024);expect(report.pixel.slice(0,3).reduce((a,b)=>a+b,0)).toBeGreaterThan(80);expect(report.covered).toEqual([true,true,true]);
+    expect(report.low).toBe(!broken);expect(report.dpr).toBeLessThanOrEqual(broken?2:1);expect(report.shadows).toBe(broken);expect(report.count).toBeLessThan(150);
+    expect(report.state).toBe(broken?'fallback':'untextured');expect(report.size).toBeLessThanOrEqual(1024);expect(report.pixel.slice(0,3).reduce((a,b)=>a+b,0)).toBeGreaterThan(80);expect(report.covered).toEqual([true,true,true]);
     await context.close();
   });
 }
