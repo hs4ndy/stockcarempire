@@ -106,6 +106,7 @@
       teamColor: r3dHex(c.hex),
       raceHealth: c.raceHealth ?? 100,
       crashes: c.crashCount || 0,
+      ...(c.playerRivalContact > 0 ? {playerRivalContact: c.playerRivalContact} : {}),
       position: i + 1,
       dnf:      !!c.dnf,
     }));

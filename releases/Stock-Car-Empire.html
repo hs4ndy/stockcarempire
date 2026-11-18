@@ -1367,7 +1367,7 @@ button.standing-driver .st-name { text-decoration:none; }
     </div>
   </div>
 
-  <footer class="intro-version logo-beta">BETA / VERSION 164</footer>
+  <footer class="intro-version logo-beta">BETA / VERSION 165</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -3692,6 +3692,7 @@ function endSeason() {
   rebuildStandings();
   rolloverSponsorship(series.level);
   game.rivalries=[];
+  delete game.pendingRivalry;
 
   // Reset car conditions (off-season maintenance)
   game.cars.forEach(c => {
@@ -4241,6 +4242,20 @@ function retireOwnedCar(carId) {
  if(hire)hire.carId=null;game.cars=game.cars.filter(c=>c.id!==carId);
  if(currentSlot!==null&&!saveToSlot(currentSlot)){game=JSON.parse(before);return {ok:false,msg:'Retirement could not be saved.'};}
  return {ok:true};
+}
+
+function declareContactRivalry(order) {
+  if (game.pendingRivalry) return;
+  const contenders = championshipContenderIds();
+  const rivalries = game.rivalries ??= [];
+  const opponent = order
+    .filter(result => result.playerRivalContact >= .85
+      && contenders.has(result.entrantId) && !rivalries.includes(result.entrantId))
+    .sort((a,b) => b.playerRivalContact - a.playerRivalContact)[0];
+  if (!opponent) return;
+  const driver = game.season.aiTeams.flatMap(team => team.cars).find(car => car.id === opponent.entrantId);
+  rivalries.push(driver.id);
+  game.pendingRivalry = driver.driverName;
 }
 
 function toggleRivalry(id){
@@ -6594,6 +6609,14 @@ class Race3DEngine {
   }
 
   _sideContact(a,b,closing,pressure,dt,dir) {
+    if (this.config?.rivalryContacts && closing > 2 && a.isPlayer !== b.isPlayer) {
+      const [player, opponent] = a.isPlayer ? [a,b] : [b,a];
+      const inwardSpeed = (player.lv || 0) * (a.isPlayer ? dir : -dir);
+      if (opponent.isContender && !opponent.isRival && !player.spinning && !opponent.spinning) {
+        const contact = Math.max(0, Math.min(closing, inwardSpeed) - 2) * dt;
+        if (contact > 0) opponent.playerRivalContact = (opponent.playerRivalContact || 0) + contact;
+      }
+    }
     const rules=this._incidentRules();if(!rules.crashes && !rules.damage) return;
     // Bumper drafts never call this path. Brief/light rubs produce negligible
     // strain; repeated sustained lateral force builds toward loss of control.
@@ -7325,6 +7348,7 @@ class Race3DEngine {
       teamColor: r3dHex(c.hex),
       raceHealth: c.raceHealth ?? 100,
       crashes: c.crashCount || 0,
+      ...(c.playerRivalContact > 0 ? {playerRivalContact: c.playerRivalContact} : {}),
       position: i + 1,
       dnf:      !!c.dnf,
     }));
@@ -7369,18 +7393,21 @@ function handleDeclineSponsor(id){if(!declineSponsorOffer(id)){toast('Could not 
 let activeGameDialog=false;
 function gameDialog(message,initial,entry=false,labels={}){
  if(activeGameDialog)return Promise.resolve(entry?null:false);
+ const notice = labels.notice === true;
  activeGameDialog=true;
  return new Promise(resolve=>{
  const previous=document.activeElement,esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const shield=[...document.body.children].filter(e=>e.tagName!=='SCRIPT').map(e=>[e,e.inert]);shield.forEach(([e])=>e.inert=true);
- const overlay=document.createElement('div');overlay.id='game-dialog';overlay.className='modal-overlay';overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-labelledby','game-dialog-title');overlay.innerHTML=`<form class="modal"><div class="modal-header"><h3 id="game-dialog-title">${entry?'Enter Details':'Confirm Action'}</h3></div><div class="modal-body"><${entry?'label for="game-dialog-input"':'p'}>${esc(message)}</${entry?'label':'p'}>${entry?`<input type="text" id="game-dialog-input" value="${esc(initial)}" autocomplete="off">`:''}</div><div class="modal-footer"><button class="btn btn-secondary" type="button" id="game-dialog-cancel">${esc(labels.cancel || 'Cancel')}</button><button class="btn btn-primary" type="submit">${entry?'Save':esc(labels.confirm || 'Confirm')}</button></div></form>`;
+ const overlay=document.createElement('div');overlay.id='game-dialog';overlay.className='modal-overlay';overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-labelledby','game-dialog-title');overlay.innerHTML=`<form class="modal"><div class="modal-header"><h3 id="game-dialog-title">${esc(labels.title || (entry?'Enter Details':'Confirm Action'))}</h3></div><div class="modal-body"><${entry?'label for="game-dialog-input"':'p'}>${esc(message)}</${entry?'label':'p'}>${entry?`<input type="text" id="game-dialog-input" value="${esc(initial)}" autocomplete="off">`:''}</div><div class="modal-footer">${notice ? '' : `<button class="btn btn-secondary" type="button" id="game-dialog-cancel">${esc(labels.cancel || 'Cancel')}</button>`}<button class="btn btn-primary" type="submit">${entry?'Save':esc(labels.confirm || 'Confirm')}</button></div></form>`;
  const close=ok=>{const value=entry?(ok?overlay.querySelector('input').value:null):ok;overlay.remove();shield.forEach(([e,was])=>e.inert=was);activeGameDialog=false;if(previous?.isConnected)previous.focus({preventScroll:true});resolve(value);};
- overlay.querySelector('form').onsubmit=e=>{e.preventDefault();close(true);};overlay.querySelector('#game-dialog-cancel').onclick=()=>close(false);
+ overlay.querySelector('form').onsubmit=e=>{e.preventDefault();close(true);};const cancel = overlay.querySelector('#game-dialog-cancel');
+ if (cancel) cancel.onclick=()=>close(false);
  overlay.onkeydown=e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();close(false);}if(e.key==='Tab'){const nodes=[...overlay.querySelectorAll('input,button')],first=nodes[0],last=nodes.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}};
- document.body.append(overlay);const target=entry?overlay.querySelector('input'):overlay.querySelector('#game-dialog-cancel');target.focus();if(entry)target.select();
+ document.body.append(overlay);const target=entry ? overlay.querySelector('input') : cancel || overlay.querySelector('[type=submit]');target.focus();if(entry)target.select();
  });
 }
 function gameConfirm(message,confirm='Confirm',cancel='Cancel'){return gameDialog(message,'',false,{confirm,cancel});}
+function gameNotice(title,message){return gameDialog(message,'',false,{notice:true,title,confirm:'Continue'});}
 function gamePrompt(message,initial=''){return gameDialog(message,initial,true);}
 
 </script>
@@ -12033,7 +12060,23 @@ function finishRaceNews() {
   returnFromRaceNews();
 }
 
+function showPendingRivalry(onClose) {
+  const career = game;
+  const driverName = career?.pendingRivalry;
+  if (!driverName || activeGameDialog) return false;
+  gameNotice('Rivalry Declared',
+    `${driverName} called you out after contact on track. Expect them to race you more aggressively for the rest of the season.`)
+    .then(() => {
+      if (game !== career) return;
+      delete career.pendingRivalry;
+      saveGame();
+      onClose();
+    });
+  return true;
+}
+
 function returnFromRaceNews() {
+  if (showPendingRivalry(returnFromRaceNews)) return;
   showScreen('game'); updateHeader(); renderTab('dashboard');
   reportLoanNotes(); if(!showRetirementNotice()) checkSaveReminder();
   document.getElementById('btn-hdr-menu')?.focus();
@@ -12346,7 +12389,7 @@ function enterGame() {
     showScreen('game');
     updateHeader();
     showTab('dashboard');
-    if (showPendingTrophy()) return;
+    if (showPendingTrophy() || showPendingRivalry(returnFromRaceNews)) return;
     offerCareerTutorial();
     showRetirementNotice();
   } catch (e) {
@@ -13045,6 +13088,7 @@ function handleStartRace() {
       raceLength: game.raceLength,
       playerHealth: pCar?.condition ?? 100,
       quitWithDNF: true,
+      rivalryContacts: true,
       qualifyBoost: Math.round(staffTotal('qualifying') / ANALYST_QUALI_BONUS),   // Data Analysts sharpen the grid draw
       qualifyAI:    true,
       aiEntries:    aiEntries,
@@ -13096,6 +13140,7 @@ function handleStartRace() {
       race.playerPoints = pts;
       race.earnings     = prize;
 
+      if (!quitDNF) declareContactRivalry(teamOrder);
       postRaceUpdate(pr, prize, allResults);
       saveGame();
       prepareCareerNews(race, pr, finishPhoto, false, quitDNF);

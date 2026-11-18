@@ -159,7 +159,23 @@ function finishRaceNews() {
   returnFromRaceNews();
 }
 
+function showPendingRivalry(onClose) {
+  const career = game;
+  const driverName = career?.pendingRivalry;
+  if (!driverName || activeGameDialog) return false;
+  gameNotice('Rivalry Declared',
+    `${driverName} called you out after contact on track. Expect them to race you more aggressively for the rest of the season.`)
+    .then(() => {
+      if (game !== career) return;
+      delete career.pendingRivalry;
+      saveGame();
+      onClose();
+    });
+  return true;
+}
+
 function returnFromRaceNews() {
+  if (showPendingRivalry(returnFromRaceNews)) return;
   showScreen('game'); updateHeader(); renderTab('dashboard');
   reportLoanNotes(); if(!showRetirementNotice()) checkSaveReminder();
   document.getElementById('btn-hdr-menu')?.focus();

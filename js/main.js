@@ -24,7 +24,7 @@ function enterGame() {
     showScreen('game');
     updateHeader();
     showTab('dashboard');
-    if (showPendingTrophy()) return;
+    if (showPendingTrophy() || showPendingRivalry(returnFromRaceNews)) return;
     offerCareerTutorial();
     showRetirementNotice();
   } catch (e) {
@@ -723,6 +723,7 @@ function handleStartRace() {
       raceLength: game.raceLength,
       playerHealth: pCar?.condition ?? 100,
       quitWithDNF: true,
+      rivalryContacts: true,
       qualifyBoost: Math.round(staffTotal('qualifying') / ANALYST_QUALI_BONUS),   // Data Analysts sharpen the grid draw
       qualifyAI:    true,
       aiEntries:    aiEntries,
@@ -774,6 +775,7 @@ function handleStartRace() {
       race.playerPoints = pts;
       race.earnings     = prize;
 
+      if (!quitDNF) declareContactRivalry(teamOrder);
       postRaceUpdate(pr, prize, allResults);
       saveGame();
       prepareCareerNews(race, pr, finishPhoto, false, quitDNF);

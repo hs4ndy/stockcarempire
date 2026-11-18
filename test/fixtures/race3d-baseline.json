@@ -263,7 +263,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "3176d24e4338fd6ff42134f0e1ecd4f7414df05efd409873c00fcec67ef313e6"
+      "hash": "d19e6dd484ba3eca320a8e634ac2f3baf626b9866bda0806a74ea0eb9d23e94d"
     },
     {
       "name": "_crashThreshold",
@@ -407,7 +407,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "e15807aa96bd211d3a3ccd10a9f7a517006b76ee0a88beddbfc6775ef89a3b8e"
+      "hash": "1c20d519c10f03fd4278ccd0a42524546a38b2a535f617fa229c1a79e1a2edcc"
     },
     {
       "name": "_triggerWreck",

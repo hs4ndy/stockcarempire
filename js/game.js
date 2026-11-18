@@ -789,6 +789,7 @@ function endSeason() {
   rebuildStandings();
   rolloverSponsorship(series.level);
   game.rivalries=[];
+  delete game.pendingRivalry;
 
   // Reset car conditions (off-season maintenance)
   game.cars.forEach(c => {
@@ -1338,6 +1339,20 @@ function retireOwnedCar(carId) {
  if(hire)hire.carId=null;game.cars=game.cars.filter(c=>c.id!==carId);
  if(currentSlot!==null&&!saveToSlot(currentSlot)){game=JSON.parse(before);return {ok:false,msg:'Retirement could not be saved.'};}
  return {ok:true};
+}
+
+function declareContactRivalry(order) {
+  if (game.pendingRivalry) return;
+  const contenders = championshipContenderIds();
+  const rivalries = game.rivalries ??= [];
+  const opponent = order
+    .filter(result => result.playerRivalContact >= .85
+      && contenders.has(result.entrantId) && !rivalries.includes(result.entrantId))
+    .sort((a,b) => b.playerRivalContact - a.playerRivalContact)[0];
+  if (!opponent) return;
+  const driver = game.season.aiTeams.flatMap(team => team.cars).find(car => car.id === opponent.entrantId);
+  rivalries.push(driver.id);
+  game.pendingRivalry = driver.driverName;
 }
 
 function toggleRivalry(id){

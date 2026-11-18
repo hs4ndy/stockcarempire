@@ -29,6 +29,14 @@
   }
 
   _sideContact(a,b,closing,pressure,dt,dir) {
+    if (this.config?.rivalryContacts && closing > 2 && a.isPlayer !== b.isPlayer) {
+      const [player, opponent] = a.isPlayer ? [a,b] : [b,a];
+      const inwardSpeed = (player.lv || 0) * (a.isPlayer ? dir : -dir);
+      if (opponent.isContender && !opponent.isRival && !player.spinning && !opponent.spinning) {
+        const contact = Math.max(0, Math.min(closing, inwardSpeed) - 2) * dt;
+        if (contact > 0) opponent.playerRivalContact = (opponent.playerRivalContact || 0) + contact;
+      }
+    }
     const rules=this._incidentRules();if(!rules.crashes && !rules.damage) return;
     // Bumper drafts never call this path. Brief/light rubs produce negligible
     // strain; repeated sustained lateral force builds toward loss of control.
