@@ -335,14 +335,14 @@ function renderGarage() {
 
       </div>
       <div class="team-stat"><span>Driver</span><span class="${noDriver ? 'red' : ''}">${driverName}</span></div>
+      <div class="car-actions">
+        ${car.condition < 100 ? `<button class="btn btn-sm btn-warning" onclick="handleRepair('${car.id}', ${repairCost})">Repair (${fmt$(repairCost)})</button>` : `<span class="badge badge-green">Full Condition</span>`}
+        ${carFullyUpgraded(car)?'<span class="btn btn-sm btn-complete" role="status">Fully Upgraded</span>':`<button class="btn btn-sm btn-primary" onclick="showUpgradeModal('${car.id}')">Upgrade Car</button>`}
+      </div>
+      <button class="btn btn-primary car-studio-open" onclick="openCarStudio('career','${car.id}')">Customize Car</button>
       <div class="car-stats">
         ${condBar(car.condition)}
         ${raceFeatureRules(game.difficulty,game.raceRules).damage ? statBar("Lifetime health (permanent)", Math.ceil((car.lifetimeHealth ?? 100)*10)/10,100,'','%') : ""}
-      </div>
-      <div class="car-actions">
-        ${car.condition < 100 ? `<button class="btn btn-sm btn-warning" onclick="handleRepair('${car.id}', ${repairCost})">Repair (${fmt$(repairCost)})</button>` : ''}
-        ${carFullyUpgraded(car)?'<span class="btn btn-sm btn-complete" role="status">Fully Upgraded</span>':`<button class="btn btn-sm btn-primary" onclick="showUpgradeModal('${car.id}')">Upgrade Car</button>`}
-        <button class="btn btn-sm btn-secondary car-studio-open" onclick="openCarStudio('career','${car.id}')">Customize Car</button>
       </div>
       <details class="ui-details">
         <summary>Performance and race record</summary>
@@ -357,18 +357,15 @@ function renderGarage() {
       </div>
         </div>
       </details>
-        <details class="ui-details car-ownership"><summary>Sell or retire</summary><div class="ui-details-body car-disposal-actions"><button class="btn btn-sm btn-danger" onclick="handleSellCar('${car.id}')" ${game.cars.length === 1 ? 'disabled title="You must keep at least one car."' : ''}>Sell</button><button class="btn btn-sm btn-danger" onclick="handleRetireCar('${car.id}')">Retire Car</button></div></details>
+        <div class="car-disposal-actions"><button class="btn btn-sm btn-danger" onclick="handleSellCar('${car.id}')" ${game.cars.length === 1 ? 'disabled title="You must keep at least one car."' : ''}>Sell</button><button class="btn btn-sm btn-danger" onclick="handleRetireCar('${car.id}')">Retire Car</button></div>
     </div>`;
   }).join('');
 
   return `
   <div class="page-header">
-    <div><h2>Garage</h2><p>${game.cars.length} of ${MAX_TEAM_CARS} spaces used</p></div>
-    <div class="garage-tools">
-      <button class="btn btn-secondary" onclick="showVehicleGraveyard()">Vehicle Graveyard (${(game.retiredCars||[]).length})</button>
-      <button class="btn btn-warning btn-repair-all" onclick="handleRepairAll()" ${game.cars.some(c=>c.condition<100)?'':'disabled'}>Repair All</button>
-      <button class="btn btn-primary" onclick="showMarketView('cars')">Browse Cars</button>
-    </div>
+    <div class="btn-row" style="margin:0"><h2>Garage</h2><button class="btn btn-warning btn-repair-all" onclick="handleRepairAll()" ${game.cars.some(c=>c.condition<100)?'':'disabled'}>Repair All</button></div>
+    <button class="btn btn-secondary" onclick="showVehicleGraveyard()">Vehicle Graveyard (${(game.retiredCars||[]).length})</button>
+    <button class="btn btn-primary" onclick="showTab('market')">Browse Cars</button>
   </div>
   ${game.cars.length ? '' : '<div class="card"><p>No active cars. Buy a replacement in Market. Loans are available if you need funds.</p></div>'}
   <div class="car-grid">${carCards}</div>`;
@@ -494,20 +491,23 @@ function renderTeam() {
     const skill = hiredDriverSkill(h);
     const start = h.startSkill != null ? h.startSkill : d.skill;
     const gained = Math.floor(skill) - Math.floor(start);
-    const ceiling = h.potential != null ? h.potential : d.skill;
+    const ceiling = hiredDriverPotential(h, d);
     return `<div class="staff-row">
       <div class="staff-info">
         <span class="staff-name">${d.name}</span>
         <div class="staff-meta">
           ${Math.floor(skill)} OVR${gained > 0 ? ` <span class="green">+${gained}</span>` : ''}
-          · ${fmt$(h.weeklyCost)} per race
+          · Base ${start} · Potential ${ceiling}
+        </div>
+        <div class="staff-meta">
+          ${fmt$(h.weeklyCost)} per race
         </div>
         <div class="staff-meta muted-text">
           ${car ? `#${car.number || 1} ${car.name}` : 'Unassigned'}
           ${!car ? `<select class="form-select" aria-label="Assign car to ${d.name}" onchange="handleAssignDriverCar('${d.id}',this.value)"><option value="">Assign another car</option>${game.cars.filter(c=>c.assignedDriverId!=='player'&&!hireForCar(c.id)).map(c=>`<option value="${c.id}">#${c.number} ${c.name}</option>`).join('')}</select>` : ''}
         </div>
         <details class="driver-development"><summary>Development</summary>
-          <p>Aggression ${d.aggression} · Potential ${ceiling} · ${h.racesRun || 0} races run</p>
+          <p>Aggression ${d.aggression} · ${h.racesRun || 0} races run</p>
         </details>
       </div>
       <button class="btn btn-sm btn-danger" onclick="handleFireDriver('${d.id}')">Release</button>
@@ -528,7 +528,7 @@ function renderTeam() {
     </div>`;
   }).join('') || '<p class="team-empty">No support staff yet. Recruit a specialist to improve your team.</p>';
 
-  const availableDrivers = HIREABLE_DRIVERS.filter(d => !hiredIds.has(d.id)).sort((a,b)=>driverRecruitSort==='price'?a.weeklyCost-b.weeklyCost:b.skill-a.skill);
+  const availableDrivers = HIREABLE_DRIVERS.filter(d => !hiredIds.has(d.id)).sort((a,b)=>driverRecruitSort==='price'?a.weeklyCost-b.weeklyCost:driverRecruitSort==='potential'?b.potential-a.potential||b.skill-a.skill:b.skill-a.skill);
   const openSeats = freeCarsForHire().length;
   const seatWarning = game.cars.length === 0
     ? `<p class="form-warning">No car - buy a car before hiring a driver.</p>`
@@ -545,9 +545,9 @@ function renderTeam() {
     return `<div class="staff-row" data-driver-candidate="${d.id}" data-driver-name="${careerArchiveEscape(d.name.toLowerCase())}">
       <div class="staff-info">
         <span class="staff-name">${d.name} <span class="staff-ovr">${d.skill} OVR</span></span>
-        <div class="staff-meta">${d.aggression>=75?'Aggressive racer':d.aggression<=50?'Measured racer':'Balanced racer'}</div>
+        <div class="staff-meta">Potential ${d.potential} · ${d.aggression>=75?'Aggressive racer':d.aggression<=50?'Measured racer':'Balanced racer'}</div>
       </div>
-      <div class="recruit-cost"><strong><span class="recruit-cost-label">Signing fee </span>${fmt$(signingFee)}</strong><span>${fmt$(d.weeklyCost)} per race</span></div>
+      <div class="recruit-cost"><strong><span class="recruit-cost-label">Signing fee </span>${fmt$(signingFee)}</strong><span>${fmt$(driverRecruitSalary(d))} per race</span></div>
       ${!disabledReason ? `<button class="btn btn-sm btn-primary" aria-label="Hire ${d.name}" onclick="openHireDriverModal('${d.id}')">Hire</button>`
                   : `<button class="btn btn-sm" disabled>${disabledReason}</button>`}
     </div>`;
@@ -592,7 +592,7 @@ function renderTeam() {
       ${teamView === 'drivers' ? seatWarning : ''}
       <p class="recruitment-caption"><span>${teamView === 'drivers' ? `${availableDrivers.length} available · ${game.hiredDrivers.length}/${MAX_HIRED_DRIVERS} hired` : `${filteredStaff.length} specialists available`}</span><span>${teamView==='drivers'?'OVR reflects driving skill':'Specialists improve your team'}</span></p>
       ${teamView === 'staff' ? `<div class="staff-filter"><label for="staff-role-filter">Staff role</label><select class="form-select" id="staff-role-filter" onchange="showStaffRole(this.value)"><option value="all">All roles</option>${STAFF_TYPES.map(t=>`<option value="${t.id}" ${staffRoleFilter===t.id?'selected':''}>${t.name}</option>`).join('')}</select></div>` : ''}
-      ${teamView==='drivers'?`<div class="driver-browse"><label>Find a driver<input type="search" placeholder="Search by name" oninput="filterDriverRecruitment(this.value)"></label><label>Sort by<select id="driver-sort" class="form-select" onchange="sortDriverRecruitment(this.value)"><option value="rating" ${driverRecruitSort==='rating'?'selected':''}>Highest OVR</option><option value="price" ${driverRecruitSort==='price'?'selected':''}>Lowest signing fee</option></select></label></div><p id="driver-results" class="small muted-text">${availableDrivers.length} drivers available</p>`:''}
+      ${teamView==='drivers'?`<div class="driver-browse"><label>Find a driver<input type="search" placeholder="Search by name" oninput="filterDriverRecruitment(this.value)"></label><label>Sort by<select id="driver-sort" class="form-select" onchange="sortDriverRecruitment(this.value)"><option value="rating" ${driverRecruitSort==='rating'?'selected':''}>Highest base OVR</option><option value="potential" ${driverRecruitSort==='potential'?'selected':''}>Highest potential</option><option value="price" ${driverRecruitSort==='price'?'selected':''}>Lowest signing fee</option></select></label></div><p id="driver-results" class="small muted-text">${availableDrivers.length} drivers available</p>`:''}
       <div class="recruitment-columns" aria-hidden="true"><span>${teamView === 'drivers' ? 'Driver' : 'Specialist'}</span><span>Signing fee / salary</span><span></span></div>
       <div class="recruitment-list" tabindex="0" aria-label="${teamView === 'drivers' ? 'Available drivers' : 'Available support staff'}">${teamView === 'drivers' ? driverRows : staffHireRows}</div>
     </section>
@@ -616,8 +616,11 @@ function renderHireDriverModal(driverId) {
     <div class="modal" onclick="event.stopPropagation()">
       <div class="modal-header"><h3>Hire ${d.name}</h3><button class="modal-close" onclick="closeHireModal()">Close</button></div>
       <div class="modal-body">
-        <p>${d.skill} OVR · Aggression ${d.aggression}</p>
-        <p>${fmt$(d.weeklyCost)} per race | Signing fee: ${fmt$(d.weeklyCost*4)}</p>
+        <div class="team-stat"><span>Base OVR</span><strong>${d.skill}</strong></div>
+        <div class="team-stat"><span>Potential</span><strong>${d.potential}</strong></div>
+        <div class="team-stat"><span>Aggression</span><strong>${d.aggression}</strong></div>
+        <div class="team-stat"><span>Pay per race</span><strong>${fmt$(driverRecruitSalary(d))}</strong></div>
+        <div class="team-stat"><span>Signing fee</span><strong>${fmt$(d.weeklyCost * 4)}</strong></div>
         <label class="form-label" for="hire-car-select">Assign to car</label>
         <select id="hire-car-select" class="form-select">${carOpts}</select>
         <div class="btn-row mt">

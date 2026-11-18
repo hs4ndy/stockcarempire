@@ -1283,12 +1283,7 @@ button.standing-driver .st-name { text-decoration:none; }
 .quick-wizard #quick-number-warning{font-size:12px;line-height:1.5;margin:20px 0 0;padding:0;border:0;}
 @media(max-height:620px) and (min-width:601px){.quick-wizard #quick-number-warning{margin-top:8px;}}
 
-/* Career management */
-.garage-tools { display: flex; flex-wrap: wrap; gap: 8px; }
-.car-card .car-actions { margin: 16px 0; gap: 8px; }
-.car-actions .car-studio-open { width: auto; margin: 0; }
-.car-card .car-actions .btn, .car-ownership .btn { min-height: 44px; }
-.car-ownership .car-disposal-actions { margin: 0; border: 0; flex-wrap: wrap; }
+/* Career financing */
 .finance-workspace { display: grid; grid-template-columns: minmax(0, 2fr) minmax(290px, 1fr); gap: 32px; align-items: start; }
 .finance-workspace h3 { font: 700 27px/1.12 var(--font-display); margin-bottom: 12px; }
 .finance-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; }

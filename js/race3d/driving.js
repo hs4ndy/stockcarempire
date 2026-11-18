@@ -57,7 +57,12 @@
   }
 
   _naturalAIPace(car) {
-    return R3D.SPEED_BASE * (.845 + car.power * .215) * this.diff.aiSpeed;
+    // Career contenders have stronger race trim as well as good qualifying
+    // power. The shared speed caps and normal drafting still decide the race.
+    const rivalTrim = this.config?.qualifyAI && car.isContender
+      ? 1.006 + .009 * Math.min(1, this.diff.racecraft || 0)
+      : 1;
+    return R3D.SPEED_BASE * (.845 + car.power * .215) * this.diff.aiSpeed * rivalTrim;
   }
 
   _aeroPace(car) {

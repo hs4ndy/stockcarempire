@@ -183,7 +183,7 @@ test('releasing a hired driver removes their wages from subsequent event payroll
   })()`);
   assert.equal(result.hired, true);
   assert.equal(result.signingFee, result.weeklyCost * 4);
-  assert.equal(result.contractedPayroll, result.weeklyCost);
+  assert.equal(result.contractedPayroll, Math.round(result.weeklyCost * 1.10));
   assert.equal(result.releasedPayroll, 0);
   assert.equal(result.afterEvent, result.afterSigning);
 });
@@ -908,17 +908,17 @@ test('race construction uses the same power bounds regardless of team ownership'
 });
 
 
-test('three Career contenders stay stable through condition, points, roster order and save/load',()=>{
+test('six Career contenders stay stable through condition, points, roster order and save/load',()=>{
  const c=makeContext();const r=readJson(c,`(()=>{newGame('Test','Driver','Car');const first=[...championshipContenderIds()].sort();
  game.season.aiTeams.reverse();game.season.aiTeams.forEach(t=>{t.points=999;t.cars.reverse();t.cars.forEach(c=>c.condition=50);});
  const changed=[...championshipContenderIds()].sort();saveToSlot(2);loadFromSlot(2);return {first,changed,loaded:[...championshipContenderIds()].sort(),owned:game.cars.map(c=>c.id)};})()`);
- assert.equal(r.first.length,3);assert.deepEqual(r.first,r.changed);assert.deepEqual(r.first,r.loaded);assert.ok(r.first.every(id=>!r.owned.includes(id)));
+ assert.equal(r.first.length,6);assert.deepEqual(r.first,r.changed);assert.deepEqual(r.first,r.loaded);assert.ok(r.first.every(id=>!r.owned.includes(id)));
 });
 
 test('contender profiles respect condition and never alter stored rival stats',()=>{
  const c=makeContext();const r=readJson(c,`(()=>{newGame('Test','Driver','Car');const before=JSON.stringify(game.season.aiTeams),car=game.season.aiTeams[0].cars[0];
  const normal=careerRivalPower(car),elite=careerRivalPower(car,true),damaged=careerRivalPower({...car,condition:50},true);return {normal,elite,damaged,unchanged:before===JSON.stringify(game.season.aiTeams),count:buildEntryList(game.cars[0].id,'t01').filter(e=>e.isContender).length};})()`);
- assert.ok(r.elite>r.normal);assert.ok(r.damaged<r.elite);assert.equal(r.unchanged,true);assert.equal(r.count,3);
+ assert.ok(r.elite>r.normal);assert.ok(r.damaged<r.elite);assert.equal(r.unchanged,true);assert.equal(r.count,6);
 });
 
 test('contenders remain entered when hired teammates displace ordinary rivals',()=>{
@@ -979,9 +979,10 @@ test('rival garages prevent late-season collapse and restore exhausted legacy-sa
 });
 
 
-test('the three contenders have series-appropriate developed equipment without changing stored ratings',()=>{
+test('the contenders have series-appropriate developed equipment without changing stored ratings',()=>{
  const c=makeContext();const r=readJson(c,`[0,1,2].map(level=>{newGame('Test','Driver','Car');game.currentSeries=level;const car={power:.5,condition:100};return {level,power:careerRivalPower(car,true),stored:car.power};})`);
- assert.deepEqual(r.map(x=>x.power),[.975,.99,.99]);assert.ok(r.every(x=>x.stored===.5));
+ assert.ok(r.every(x=>x.power>=.84&&x.power<=.99&&x.stored===.5));
+ assert.ok(r[0].power<r[1].power&&r[1].power<=r[2].power);
 });
 
 

@@ -187,14 +187,57 @@ function setCarNumber(carId, num) {
 }
 
 // ─── AI Team factory ────────────────────────────────────────
-// Named championship rivals plus the strongest remaining fixed equipment rating.
-// Stable IDs keep the same three rivals across races and save/load; no migration.
+const RECURRING_RIVALS = ['Joshua Enright', 'Parker Holt', 'Tanner Boyd'];
+const CHAMPIONSHIP_CONTENDER_COUNT = 6;
+
+// Derive stable defaults for older saves and race-day form for both race modes.
+function rivalNoise(key) {
+  let hash = 2166136261;
+  for (const ch of key) hash = Math.imul(hash ^ ch.charCodeAt(0), 16777619);
+  hash ^= hash >>> 16;
+  return (hash >>> 0) / 4294967296;
+}
+
+function careerRivalForm(car) {
+  const saved = game?.rivalForm;
+  if (saved && Object.hasOwn(saved, car.driverName)) return saved[car.driverName];
+  const seed = rivalNoise(car.driverName || String(car.power));
+  const recurring = RECURRING_RIVALS.includes(car.driverName);
+  return { rating: recurring ? .89 + .09 * seed : .58 + .36 * seed, trend: 0 };
+}
+
+function advanceCareerRivalForm(nextTeams) {
+  const oldRoster = game.season.aiTeams.flatMap(team => team.cars);
+  const nextRoster = nextTeams.flatMap(team => team.cars);
+  const available = new Map([...nextRoster, ...oldRoster].map(car => [car.driverName, car]));
+  const form = Object.assign(Object.create(null), game.rivalForm);
+  for (const [name, car] of available) {
+    const previous = careerRivalForm(car);
+    // A trend usually lasts several seasons. A reversal can start a breakout
+    // or a decline, and the smaller seasonal swing keeps progress from being linear.
+    let trend = previous.trend;
+    const recurring = RECURRING_RIVALS.includes(name);
+    if (!trend || Math.random() < .26) {
+      const direction = trend ? -Math.sign(trend) : pick([-1, 1]);
+      trend = direction * (recurring ? rand(.010, .025) : rand(.022, .050));
+    }
+    const floor = recurring ? .88 : .50;
+    const rating = clamp(previous.rating + trend + rand(-.016, .016), floor, .99);
+    if (rating === floor || rating === .99) trend = -trend;
+    form[name] = {rating, trend};
+  }
+  game.rivalForm = form;
+}
+
+// Keep the established rivals and the strongest emerging drivers on the grid.
 function championshipContenderIds() {
-  const rivals = (game?.season?.aiTeams || []).flatMap(t => t.cars)
-    .filter(c => c.id && Number.isFinite(c.power));
-  const priority = car => car.driverName === 'Parker Holt' ? 2 : car.driverName === 'Joshua Enright' ? 1 : car.driverName === 'Tanner Boyd' ? .5 : 0;
-  rivals.sort((a,b) => priority(b)-priority(a) || b.power-a.power || (a.number || 999)-(b.number || 999) || String(a.id).localeCompare(String(b.id)));
-  return new Set(rivals.slice(0,3).map(c => c.id));
+  const rivals = (game?.season?.aiTeams || []).flatMap(team => team.cars)
+    .filter(car => car.id && Number.isFinite(car.power));
+  const recurring = car => Number(RECURRING_RIVALS.includes(car.driverName));
+  rivals.sort((a,b) => recurring(b)-recurring(a)
+    || careerRivalForm(b).rating-careerRivalForm(a).rating
+    || b.power-a.power || String(a.id).localeCompare(String(b.id)));
+  return new Set(rivals.slice(0, CHAMPIONSHIP_CONTENDER_COUNT).map(car => car.id));
 }
 
 function rivalPreparationCondition(condition, contender = false) {
@@ -202,14 +245,14 @@ function rivalPreparationCondition(condition, contender = false) {
 }
 
 function careerRivalPower(car, contender = false) {
-  // Rival teams service their cars between events. Apply the same preparation
-  // on entry so older midseason saves with exhausted rivals recover immediately.
-  // Prepare all three contenders to the same competitive equipment standard.
-  // Previously the floor included the setup bonus, leaving the strongest raw
-  // car (usually Joshua) with a persistent advantage over the other contenders.
-  const contenderFloor = [.94,.97,.99][game?.currentSeries ?? 0] ?? .94;
-  const power = contender ? Math.max(car.power,contenderFloor)+.035 : car.power;
-  return clamp(power * rivalPreparationCondition(car.condition,contender) / 100, .25, contender ? .99 : .95);
+  const {rating} = careerRivalForm(car);
+  const day = rivalNoise(`${car.id}:${game?.season?.year}:${game?.season?.raceIndex}`) - .5;
+  const series = game?.currentSeries ?? 0;
+  const power = contender
+    ? .950 + series * .010 + (rating - .90) * .22 + day * .075
+    : .66 + (rating - .50) * .65 + series * .018
+      + (car.power - (.55 + series * .15)) * .20 + day * .065;
+  return clamp(power * rivalPreparationCondition(car.condition, contender) / 100, .25, contender ? .99 : .95);
 }
 
 function makeAITeam(template, seriesLevel) {
@@ -730,7 +773,11 @@ function endSeason() {
   }
 
   // Start new season
-  const nextAI=series.level===2&&game.currentSeries===2?retainPremierRoster(sorted):generateAITeams(game.currentSeries);
+  const staying = series.level === game.currentSeries;
+  const nextAI = !staying ? generateAITeams(game.currentSeries)
+    : series.level === 2 ? retainPremierRoster(sorted)
+    : game.season.aiTeams.map(team => ({...team, cars: team.cars.map(car => ({...car, condition: 100}))}));
+  advanceCareerRivalForm(nextAI);
   const newYear = game.season.year + 1;
   game.season = {
     year: newYear,
@@ -1110,6 +1157,10 @@ function fireStaff(staffId) {
 }
 
 // ─── Driver management ───────────────────────────────────────
+function driverRecruitSalary(driver) {
+  return Math.round(driver.weeklyCost * 1.10);
+}
+
 function hireDriver(driverId, carId) {
   if (game.hiredDrivers.length >= MAX_HIRED_DRIVERS)
     return { ok: false, msg: `${MAX_HIRED_DRIVERS} drivers is the most you can carry.` };
@@ -1130,16 +1181,13 @@ function hireDriver(driverId, carId) {
   const car = game.cars.find(c => c.id === carId);
   if (car) car.assignedDriverId = driverId;
 
-  // Skill lives on the hire record, not on HIREABLE_DRIVERS - that list is a
-  // shared constant, so mutating it would leak between save slots.
-  // Each driver has a ceiling, so a cheap rookie can develop but a journeyman
-  // will not turn into a superstar.
+  // Current skill and terms belong to this career's signed contract.
   game.hiredDrivers.push({
     driverId, carId,
-    weeklyCost: driver.weeklyCost,
+    weeklyCost: driverRecruitSalary(driver),
     skill:      driver.skill,
     startSkill: driver.skill,
-    potential:  clamp(driver.skill + randInt(6, 20), 0, 99),
+    potential:  driver.potential,
     racesRun:   0,
   });
   saveGame();
@@ -1151,6 +1199,12 @@ function hiredDriverSkill(hire) {
   if (!hire) return 0;
   if (hire.skill != null) return hire.skill;
   return HIREABLE_DRIVERS.find(d => d.id === hire.driverId)?.skill || 0;
+}
+
+function hiredDriverPotential(hire, driver) {
+  // Legacy hires keep their negotiated ceiling and earned progress.
+  const quoted = Number.isFinite(hire.potential) ? hire.potential : (driver?.potential ?? 50);
+  return clamp(Math.max(quoted, hiredDriverSkill(hire)), 0, 99);
 }
 
 // Find the hire record driving a given car
@@ -1168,13 +1222,10 @@ function developHiredDrivers(allResults, fieldSize) {
     const res = byCar.get(h.carId);
     if (!res) return;                       // that car did not run
 
-    if (h.skill == null) {                  // migrate an older save
-      const base = HIREABLE_DRIVERS.find(d => d.id === h.driverId);
-      h.skill = h.startSkill = base ? base.skill : 50;
-      h.potential = clamp(h.skill + randInt(6, 20), 0, 99);
-      h.racesRun = 0;
-    }
-
+    const driver = HIREABLE_DRIVERS.find(d => d.id === h.driverId);
+    h.startSkill ??= driver?.skill ?? 50;
+    h.skill ??= h.startSkill;
+    h.potential = hiredDriverPotential(h, driver);
     h.racesRun = (h.racesRun || 0) + 1;
     const before  = h.skill;
     const relPerf = clamp(1 - (res.position - 1) / Math.max(1, fieldSize), 0, 1);
@@ -1183,12 +1234,11 @@ function developHiredDrivers(allResults, fieldSize) {
     const room    = clamp((h.potential - h.skill) / 20, 0, 1);
     // The floor means even a bad day is still seat time; a strong run is worth
     // roughly six times as much.
-    const gain    = (0.15 + relPerf * 0.85) * room;
+    const gain    = room > 0 ? Math.max(.1, (0.15 + relPerf * 0.85) * room) : 0;
     h.skill = clamp(Math.round((h.skill + gain) * 10) / 10, 0, h.potential);
 
     if (Math.floor(h.skill) > Math.floor(before)) {
-      const drv = HIREABLE_DRIVERS.find(d => d.id === h.driverId);
-      grown.push(`${drv ? drv.name : 'Your driver'} improved to skill ${Math.floor(h.skill)}.`);
+      grown.push(`${driver?.name || 'Your driver'} improved to ${Math.floor(h.skill)} OVR.`);
     }
   });
 
@@ -1298,7 +1348,11 @@ function toggleRivalry(id){
 }
 
 function retainPremierRoster(sorted){
- const relegated=new Set(sorted.slice(-3).map(e=>e.id)),old=game.season.aiTeams,oldNames=new Set(old.flatMap(t=>t.cars).map(c=>c.driverName));
+ const old = game.season.aiTeams;
+ const roster = old.flatMap(team => team.cars);
+ const oldNames = new Set(roster.map(car => car.driverName));
+ const eligible = new Set(roster.filter(car => !RECURRING_RIVALS.includes(car.driverName)).map(car => car.id));
+ const relegated = new Set(sorted.filter(entry => eligible.has(entry.id)).slice(-3).map(entry => entry.id));
  const teams=old.map(t=>({...t,cars:t.cars.filter(c=>!relegated.has(c.id)).map(c=>({...c,condition:100}))})).filter(t=>t.cars.length);
  let needed=old.flatMap(t=>t.cars).length-teams.flatMap(t=>t.cars).length;
  const usedNumbers=new Set(teams.flatMap(t=>t.cars).map(c=>c.number));
