@@ -1,7 +1,7 @@
 const path = require('node:path');
 const { test, expect } = require('playwright/test');
 
-for (const [series, fieldSize] of [[0, 20], [1, 26], [2, 36]]) {
+for (const [series, fieldSize] of [[0, 20], [1, 26], [2, 40]]) {
 test(`Series cars share geometry and retain identities in the ${fieldSize}-car series`, async ({ page }, testInfo) => {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));

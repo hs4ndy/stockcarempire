@@ -1,6 +1,73 @@
 // Cars responsibilities for the shared race engine.
 (() => {
   class Methods {
+  _batchRunningGear() {
+    // The individual wheel transforms still carry roll, damage and body tilt.
+    // Draw their shared geometry once per view across the visible field.
+    const group = new THREE.Group();
+    const wheels = new THREE.InstancedMesh(this.G.wheel, this.M.wheel, this.cars.length * 4);
+    wheels.name = 'field:wheels';
+    wheels.castShadow = true;
+    wheels.frustumCulled = false;
+    wheels.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    for (const car of this.cars) {
+      for (const part of car.mesh.children) {
+        if (car.wheels.includes(part)) continue;
+        part.updateMatrix();
+        part.matrixAutoUpdate = false;
+      }
+      for (const wheel of car.wheels) wheel.visible = false;
+    }
+
+    // A soft contact patch anchors the tires on untextured asphalt and fills
+    // the gap beneath cars beyond the High preset's directional shadow map.
+    const positions = [], colors = [], indices = [];
+    const segments = 16;
+    for (const [radius, alpha] of [[.64, .46], [1, 0]]) {
+      for (let i = 0; i < segments; i++) {
+        const a = i * 2 * Math.PI / segments;
+        positions.push(Math.cos(a) * 1.5 * radius, .018, Math.sin(a) * 2.95 * radius);
+        colors.push(.06, .07, .08, alpha);
+      }
+    }
+    for (let i = 0; i < segments; i++) {
+      const j = (i + 1) % segments;
+      indices.push(i, j, segments + i, j, segments + j, segments + i);
+      if (i > 0 && j !== 0) indices.push(0, j, i);
+    }
+    const patch = new THREE.BufferGeometry();
+    patch.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    patch.setAttribute('color', new THREE.Float32BufferAttribute(colors, 4));
+    patch.setIndex(indices);
+    const material = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false });
+    const shadows = new THREE.InstancedMesh(patch, material, this.cars.length);
+    shadows.name = 'field:contact-shadows';
+    shadows.frustumCulled = false;
+    shadows.renderOrder = -1;
+    shadows.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    group.add(wheels, shadows);
+    this.scene.add(group);
+
+    const projection = new THREE.Matrix4(), frustum = new THREE.Frustum();
+    const bounds = new THREE.Sphere(new THREE.Vector3(), 3.5);
+    const footprint = new THREE.Matrix4();
+    this.scene.onBeforeRender = (_renderer, _scene, camera) => {
+      frustum.setFromProjectionMatrix(projection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+      let wheelCount = 0, shadowCount = 0;
+      for (const car of this.cars) {
+        bounds.center.copy(car.mesh.position);
+        if (!car.mesh.visible || !frustum.intersectsSphere(bounds)) continue;
+        for (const wheel of car.wheels) wheels.setMatrixAt(wheelCount++, wheel.matrixWorld);
+        footprint.makeRotationY(car.mesh.rotation.y);
+        footprint.setPosition(car.mesh.position.x, 0, car.mesh.position.z);
+        shadows.setMatrixAt(shadowCount++, footprint);
+      }
+      wheels.count = wheelCount;
+      shadows.count = shadowCount;
+      wheels.instanceMatrix.needsUpdate = shadows.instanceMatrix.needsUpdate = true;
+    };
+  }
+
   _initGeometries() {
     // Blender exports local, indexed geometry. Decode once per race; every car
     // shares these GPU buffers. No asynchronous model loading during a start.

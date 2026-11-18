@@ -362,6 +362,7 @@ class Race3DEngine {
     this._buildTrack();
     this._buildEnvironment();
     this._buildCars();
+    this._batchRunningGear();
     if (this.player2) this.camera2 = this.camera.clone();
     if (!this.player2) this._buildMinimap();
 

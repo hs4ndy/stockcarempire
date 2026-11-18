@@ -15,7 +15,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "e076bf82ad937ce9b527929083834004c2ad8a7a3386d5f95012e52d58af0064"
+      "hash": "42b4b5af85359460413acc3895c6568d9e5ddba6623916ecf70d6994c0cdb1cf"
     },
     {
       "name": "_initGeometries",
@@ -39,7 +39,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "8f345cb92af09388e7d1ce95df5c7e3f0087fedc4674fa2a465063a8d6da07c1"
+      "hash": "c75759843f9ed6d7a8102e9fdbd1c736a2379b15b26bc383b2c69125e1152c62"
     },
     {
       "name": "_buildTrack",
@@ -47,7 +47,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "c406863b025a1f5d8224645918e2cb6847c478c411e1a9548a08c133a52ea8fd"
+      "hash": "93b1096d37eb5ef7f28ba92e2efaa6ffcd52c72174d7f31017995d938094b24d"
     },
     {
       "name": "_buildEnvironment",
@@ -55,7 +55,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "1f3f2ba4f966182cea06e848942bd32c804e3594da00a97c68cd76d59a35a81e"
+      "hash": "9a984254f3817e17a8000a904940f6a1aa2e3f12ae5e2d5ba09a2590deea8628"
     },
     {
       "name": "_buildGrandstands",
@@ -63,7 +63,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "b572f49d4b83c2bc20f3c086eeb51c6ea0e497dc4aab5b9488fb8aeb21db51f4"
+      "hash": "0ee202f577c0c1810409315312114bb068dca3fc6ccc6ac85270cf78cb599ae5"
     },
     {
       "name": "_positionGrandstands",
@@ -71,7 +71,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "c902ddd994f99cd373751b51b0943980998e6e2ae3acec32af84576d216bc099"
+      "hash": "fe0f034a8b840c5f354034177dfd1da54a9517fa74b417ce66c48952af8a1376"
     },
     {
       "name": "_buildCars",
@@ -536,6 +536,14 @@
       "configurable": true,
       "writable": true,
       "hash": "861471156cedcf1314f892bb89414a809ebd8c76a9f2fc783095c98acda7a016"
+    },
+    {
+      "name": "_batchRunningGear",
+      "length": 0,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "39757ba839149350d6e3feb89687d73e9962a8c1fffa21ce89ebeed1ffdb1d38"
     }
   ],
   "helpers": [

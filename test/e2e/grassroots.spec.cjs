@@ -36,7 +36,8 @@ test('Grassroots has its own track, legacy cars and 90-percent player and AI pac
       e.speedScale = actualScale; e.cars = roster;
       const half = e.trackHalfWidth;
       p.x = half; p.lv = 2; e.keys.a = true; e._updatePlayer(.1);
-      const contactInside = p.x + 1.075 < e.trackGroup.userData.wallInnerX;
+      e._resolveWalls(.1);
+      const contactInside = Math.abs(p.x + e._wallExtent(p, 1) - e.trackGroup.userData.wallInnerX) < .001;
       e.scene.updateMatrixWorld(true);
       const ray = new THREE.Raycaster();
       let surface = true, walls = true;

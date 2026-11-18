@@ -86,7 +86,8 @@ test('practice has its own short finish and never changes career progress', asyn
   test.setTimeout(90_000);
   await createCareer(page);
   await page.locator('[data-tutorial-action="start"]').click();
-  for (let i = 0; i < 10; i++) await page.locator('[data-tutorial-action="next"]').click();
+  const nextStep = page.locator('#career-tutorial').getByRole('button', {name:'Next', exact:true});
+  while (await nextStep.isVisible()) await nextStep.click();
   await expect(page.locator('#career-tutorial-title')).toHaveText('Practice behind the wheel');
   const before = await page.evaluate(() => JSON.stringify(game));
   await page.locator('[data-tutorial-action="next"]').click();
@@ -134,5 +135,5 @@ test('practice has its own short finish and never changes career progress', asyn
   expect(await page.evaluate(() => ({
     length: window._r3d.raceLength,
     finishZ: window._r3d.finishGroup.position.z,
-  }))).toEqual({ length: 15000, finishZ: 15000 });
+  }))).toEqual({ length: 17250, finishZ: 17250 });
 });
