@@ -266,10 +266,8 @@ function renderDashboard() {
           <p class="section-copy">Entry fees and repairs are paid separately.</p>
         </div>
       </details>
-      ${totalDebt() > 0 ? `
-        <div class="team-stat"><span>Bank Debt</span><span class="red">${fmt$(totalDebt())}</span></div>
-        <button class="btn btn-sm btn-ghost section-action" onclick="showTab('market')">Manage Loans</button>`
-      : game.money < 0 ? `<button class="btn btn-sm btn-ghost section-action" onclick="showTab('market')">Visit the Bank</button>` : ''}
+      ${totalDebt() > 0 ? `<div class="team-stat"><span>Outstanding debt</span><span>${fmt$(totalDebt())}</span></div>` : ''}
+      <button class="btn btn-secondary section-action" onclick="showMarketView('loans')">${totalDebt() > 0 ? 'Manage Loans' : 'View Loan Options'}</button>
       </div>
     </div>
 
@@ -337,14 +335,14 @@ function renderGarage() {
 
       </div>
       <div class="team-stat"><span>Driver</span><span class="${noDriver ? 'red' : ''}">${driverName}</span></div>
-      <div class="car-actions">
-        ${car.condition < 100 ? `<button class="btn btn-sm btn-warning" onclick="handleRepair('${car.id}', ${repairCost})">Repair (${fmt$(repairCost)})</button>` : `<span class="badge badge-green">Full Condition</span>`}
-        ${carFullyUpgraded(car)?'<span class="btn btn-sm btn-complete" role="status">Fully Upgraded</span>':`<button class="btn btn-sm btn-primary" onclick="showUpgradeModal('${car.id}')">Upgrade Car</button>`}
-      </div>
-      <button class="btn btn-primary car-studio-open" onclick="openCarStudio('career','${car.id}')">Customize Car</button>
       <div class="car-stats">
         ${condBar(car.condition)}
         ${raceFeatureRules(game.difficulty,game.raceRules).damage ? statBar("Lifetime health (permanent)", Math.ceil((car.lifetimeHealth ?? 100)*10)/10,100,'','%') : ""}
+      </div>
+      <div class="car-actions">
+        ${car.condition < 100 ? `<button class="btn btn-sm btn-warning" onclick="handleRepair('${car.id}', ${repairCost})">Repair (${fmt$(repairCost)})</button>` : ''}
+        ${carFullyUpgraded(car)?'<span class="btn btn-sm btn-complete" role="status">Fully Upgraded</span>':`<button class="btn btn-sm btn-primary" onclick="showUpgradeModal('${car.id}')">Upgrade Car</button>`}
+        <button class="btn btn-sm btn-secondary car-studio-open" onclick="openCarStudio('career','${car.id}')">Customize Car</button>
       </div>
       <details class="ui-details">
         <summary>Performance and race record</summary>
@@ -359,15 +357,18 @@ function renderGarage() {
       </div>
         </div>
       </details>
-        <div class="car-disposal-actions"><button class="btn btn-sm btn-danger" onclick="handleSellCar('${car.id}')" ${game.cars.length === 1 ? 'disabled title="You must keep at least one car."' : ''}>Sell</button><button class="btn btn-sm btn-danger" onclick="handleRetireCar('${car.id}')">Retire Car</button></div>
+        <details class="ui-details car-ownership"><summary>Sell or retire</summary><div class="ui-details-body car-disposal-actions"><button class="btn btn-sm btn-danger" onclick="handleSellCar('${car.id}')" ${game.cars.length === 1 ? 'disabled title="You must keep at least one car."' : ''}>Sell</button><button class="btn btn-sm btn-danger" onclick="handleRetireCar('${car.id}')">Retire Car</button></div></details>
     </div>`;
   }).join('');
 
   return `
   <div class="page-header">
-    <div class="btn-row" style="margin:0"><h2>Garage</h2><button class="btn btn-warning btn-repair-all" onclick="handleRepairAll()" ${game.cars.some(c=>c.condition<100)?'':'disabled'}>Repair All</button></div>
-    <button class="btn btn-secondary" onclick="showVehicleGraveyard()">Vehicle Graveyard (${(game.retiredCars||[]).length})</button>
-    <button class="btn btn-primary" onclick="showTab('market')">Browse Cars</button>
+    <div><h2>Garage</h2><p>${game.cars.length} of ${MAX_TEAM_CARS} spaces used</p></div>
+    <div class="garage-tools">
+      <button class="btn btn-secondary" onclick="showVehicleGraveyard()">Vehicle Graveyard (${(game.retiredCars||[]).length})</button>
+      <button class="btn btn-warning btn-repair-all" onclick="handleRepairAll()" ${game.cars.some(c=>c.condition<100)?'':'disabled'}>Repair All</button>
+      <button class="btn btn-primary" onclick="showMarketView('cars')">Browse Cars</button>
+    </div>
   </div>
   ${game.cars.length ? '' : '<div class="card"><p>No active cars. Buy a replacement in Market. Loans are available if you need funds.</p></div>'}
   <div class="car-grid">${carCards}</div>`;
@@ -678,7 +679,11 @@ function renderSchedule() {
 
 // ─── Market ──────────────────────────────────────────────────
 let marketView='cars';
-function showMarketView(view){marketView=['cars','loans','charity'].includes(view)?view:'cars';renderTab('market');document.querySelector(`[data-market-view="${marketView}"]`)?.focus({preventScroll:true});}
+function showMarketView(view) {
+  marketView = ['cars', 'loans', 'charity'].includes(view) ? view : 'cars';
+  showTab('market');
+  document.querySelector(`[data-market-view="${marketView}"]`)?.focus();
+}
 function renderMarket() {
   const series   = SERIES[game.currentSeries];
   const cls      = CAR_CLASSES[series.carClass];
@@ -691,6 +696,7 @@ function renderMarket() {
 
   const loanRows = loans.map(l => {
     const late = l.racesLeft <= 0;
+    const halfPayment = Math.min(l.balance, Math.max(500, Math.round(l.balance / 2)));
     return `<div class="loan-row${late ? ' is-late' : ''}">
       <div class="loan-info">
         <span class="loan-name">${l.name}${late ? ' - OVERDUE' : ''}</span>
@@ -702,9 +708,9 @@ function renderMarket() {
       </div>
       <div class="loan-actions">
         <button class="btn btn-sm btn-primary" onclick="handleRepayLoan('${l.id}')"
-          ${game.money <= 0 ? 'disabled' : ''}>Repay All</button>
-        <button class="btn btn-sm btn-ghost" onclick="handleRepayLoan('${l.id}', ${Math.max(500, Math.round(l.balance / 2))})"
-          ${game.money <= 0 ? 'disabled' : ''}>Pay Half</button>
+          ${game.money <= 0 ? 'disabled' : ''}>${game.money > 0 && game.money < l.balance ? `Pay ${fmt$(game.money)}` : 'Repay All'}</button>
+        <button class="btn btn-sm btn-ghost" onclick="handleRepayLoan('${l.id}', ${halfPayment})"
+          ${game.money < halfPayment || halfPayment === l.balance ? 'disabled' : ''}>Pay ${fmt$(halfPayment)}</button>
       </div>
     </div>`;
   }).join('') || '<p class="muted-text">No outstanding loans.</p>';
@@ -713,41 +719,38 @@ function renderMarket() {
     const principal = loanPrincipal(o);
     const owed = Math.round(principal * (1 + o.rate));
     const canTake = principal >= 500 && loans.length < 3;
-    return `<div class="staff-row">
-      <div class="staff-info">
-        <span class="staff-name">${o.name}</span>
-        <div class="staff-meta">Borrow ${fmt$(principal)} · repay ${fmt$(owed)} within ${o.term} races</div>
-        <div class="staff-meta muted-text">${o.blurb}</div>
-      </div>
-      ${canTake
-        ? `<button class="btn btn-sm btn-primary" onclick="handleTakeLoan('${o.id}')">Borrow</button>`
-        : `<button class="btn btn-sm" disabled>${loans.length >= 3 ? 'Loan Limit Reached' : 'No Credit Available'}</button>`}
-    </div>`;
+    return `<article class="finance-offer">
+      <h4>${o.name}</h4>
+      <dl>
+        <div><dt>Cash received</dt><dd>${fmt$(principal)}</dd></div>
+        <div><dt>Total repayment</dt><dd>${fmt$(owed)}</dd></div>
+        <div><dt>Due in</dt><dd>${o.term} races</dd></div>
+      </dl>
+      <button class="btn btn-primary" onclick="handleTakeLoan('${o.id}')" ${canTake ? '' : 'disabled'}>Borrow</button>
+    </article>`;
   }).join('');
 
-  const creditPct = limit > 0 ? Math.round((debt / limit) * 100) : 0;
   const bankCard = `
-    <div class="card mt">
-      <div class="card-header" id="market-loans">Loans and Financing</div>
-      ${game.money < 0 ? `<p class="form-warning">You are in the red. Borrowing now buys time, but the balance must be cleared before the term runs out.</p>` : ''}
-      <div class="team-stat"><span>Cash</span><span class="${game.money < 0 ? 'red' : 'highlight'}">${fmt$(game.money)}</span></div>
-      <div class="team-stat"><span>Total Debt</span><span class="${debt > 0 ? 'red' : ''}">${fmt$(debt)}</span></div>
-      <div class="team-stat"><span>Credit Limit</span><span>${fmt$(limit)}</span></div>
-      <div class="team-stat"><span>Available</span><span class="green">${fmt$(avail)}</span></div>
-      <div class="stat-row mt">
-        <span class="stat-label">Credit Used</span>
-        <div class="stat-bar-wrap"><div class="stat-bar ${creditPct >= 80 ? 'bar-red' : creditPct >= 50 ? 'bar-yellow' : 'bar-green'}" style="width:${clamp(creditPct,0,100)}%"></div></div>
-        <span class="stat-value">${creditPct}%</span>
-      </div>
-      <div class="card-header mt">Your Loans</div>
-      ${loanRows}
-      <section aria-label="Loan options">
-      <h3>Take out a loan</h3>
-      <div>
-      <p class="section-copy">Repay on time to avoid ${Math.round(LOAN_LATE_RATE * 100)}% interest per race on the remaining balance. Your reputation affects your credit limit.</p>
-      ${offerRows}
-      </div>
+    <div class="finance-workspace">
+      <section aria-labelledby="market-loans">
+        <div class="finance-heading">
+          <h3 id="market-loans">Loans and Financing</h3>
+          ${loans.length ? `<button class="btn btn-sm btn-ghost" onclick="document.getElementById('finance-active-loans').focus()">Your Loans (${loans.length})</button>` : ''}
+        </div>
+        ${loans.length >= 3 ? '<p class="form-warning">You have three active loans. Clear one before borrowing again.</p>'
+          : avail < 500 ? '<p class="form-warning">You need at least $500 in available credit to borrow.</p>' : ''}
+        <div class="finance-offers">${offerRows}</div>
+        <p class="section-copy">Overdue balances accrue ${Math.round(LOAN_LATE_RATE * 100)}% interest per race. Reputation affects your credit limit.</p>
       </section>
+      <aside class="card finance-balances">
+        <h3>Team finances</h3>
+        <div class="team-stat"><span>Cash</span><strong class="${game.money < 0 ? 'red' : ''}">${fmt$(game.money)}</strong></div>
+        <div class="team-stat"><span>Available credit</span><strong class="green">${fmt$(avail)}</strong></div>
+        <div class="team-stat"><span>Credit limit</span><strong>${fmt$(limit)}</strong></div>
+        <div class="team-stat"><span>Outstanding debt</span><strong>${fmt$(debt)}</strong></div>
+        <h4 id="finance-active-loans" tabindex="-1">Your Loans (${loans.length}/3)</h4>
+        ${loanRows}
+      </aside>
     </div>`;
 
   // ── Charity ─────────────────────────────────────────────
@@ -806,7 +809,7 @@ function renderMarket() {
             ? `<button class="btn btn-primary mt" onclick="handleBuyCar()">Buy Car (${fmt$(cls.buyCost)})</button>`
             : `<button class="btn mt" disabled>Not enough money (need ${fmt$(cls.buyCost)})</button>`}
       </div>`;
-  return `<div class="page-header"><h2>Market</h2><p>${series.name}</p></div><nav class="market-tabs team-views" aria-label="Market sections">${[['cars','Cars'],['loans','Financing'],['charity','Charity']].map(([id,label])=>`<button class="btn ${marketView===id?'team-view-active':'btn-ghost'}" data-market-view="${id}" aria-pressed="${marketView===id}" onclick="showMarketView('${id}')">${label}</button>`).join('')}</nav><div class="market-workspace">${marketView==='cars'?`<div class="market-cars">${buyCard}<aside class="market-finance-summary"><h3>Room for your next car</h3><p class="section-copy">${game.cars.length} of ${MAX_TEAM_CARS} garage spaces used.</p><div class="team-stat"><span>Available credit</span><strong class="green">${fmt$(avail)}</strong></div><div class="team-stat"><span>Outstanding debt</span><strong>${fmt$(debt)}</strong></div><button class="btn btn-secondary" onclick="showMarketView('loans')">View loan options</button></aside></div>`:marketView==='loans'?bankCard:charityCard}</div>`;
+  return `<div class="page-header"><h2>Market</h2><p>${series.name}</p></div><nav class="market-tabs team-views" aria-label="Market sections">${[['cars','Cars'],['loans','Financing'],['charity','Charity']].map(([id,label])=>`<button class="btn ${marketView===id?'team-view-active':'btn-ghost'}" data-market-view="${id}" aria-pressed="${marketView===id}" onclick="showMarketView('${id}')">${label}</button>`).join('')}</nav><div class="market-workspace">${marketView==='cars'?`<div class="market-cars">${buyCard}<aside class="market-finance-summary"><h3>Financing</h3><div class="team-stat"><span>Cash on hand</span><strong>${fmt$(game.money)}</strong></div><div class="team-stat"><span>Available credit</span><strong class="green">${fmt$(avail)}</strong></div><div class="team-stat"><span>Outstanding debt</span><strong>${fmt$(debt)}</strong></div><button class="btn btn-secondary" onclick="showMarketView('loans')">View loan options</button></aside></div>`:marketView==='loans'?bankCard:charityCard}</div>`;
 
 }
 
