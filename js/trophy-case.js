@@ -133,10 +133,10 @@ function createTrophyStage(container, key) {
   // Tiny local studio reflection panels; no external environment/image requests.
   const faces=Array.from({length:6},(_,i)=>{const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');x.fillStyle='#424c5a';x.fillRect(0,0,64,64);x.fillStyle=i===2?'#ffffff':'#c8d2dd';x.fillRect(8,3,13,58);x.fillStyle='#7c8796';x.fillRect(44,0,8,64);return c;});
   const env=new THREE.CubeTexture(faces);env.encoding=THREE.sRGBEncoding;env.needsUpdate=true;
-  const colors={gold:0xd9ad52,silver:0xcbd3dc,dark:0x20252c,wood:0x38251d,blue:0x286397};
+  const colors={gold:0xd9ad52,silver:0xcbd3dc,dark:0x20252c,wood:0x38251d,blue:0x286397,graphite:0x414448};
   for(const part of SC_TROPHY_MODELS[key].parts){
     const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(part.positions,3));geo.setAttribute('normal',new THREE.Float32BufferAttribute(part.normals,3));if(part.indices)geo.setIndex(part.indices);
-    const metal=['silver','gold'].includes(part.material);
+    const metal=['silver','gold','graphite'].includes(part.material);
     const mesh=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:new THREE.Color(colors[part.material]).convertSRGBToLinear(),metalness:metal?.82:.12,roughness:metal?.23:.5,envMap:env,envMapIntensity:.9}));mesh.castShadow=true;mesh.receiveShadow=true;model.add(mesh);
   }
   const floor=new THREE.Mesh(new THREE.PlaneGeometry(40,40),new THREE.MeshStandardMaterial({color:new THREE.Color(0x101316).convertSRGBToLinear(),roughness:.8}));floor.rotation.x=-Math.PI/2;floor.position.y=-.02;floor.receiveShadow=true;scene.add(floor);

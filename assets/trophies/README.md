@@ -4,11 +4,11 @@ Six original, simplified geometric models authored for the game; no third-party 
 
 | Model key | Design | Triangles |
 |---|---|---:|
-| grassroots-win | Basic handled gold cup |5100|
-| grassroots-championship | Three gold cups on a wood plinth |10788|
-| challenger-win | Silver cup, gold supports, blue base detail |7276|
-| challenger-championship | Swept checkered flags and silver center |3832|
-| premier-win | Silver cup suspended between tall gold handles |6732|
+| grassroots-win | Gold club cup with cast handles on a turned walnut base |5696|
+| grassroots-championship | Raised gold cup flanked by two smaller goblets on walnut |9668|
+| challenger-win | Silver cup with fitted gold handles and blue enamel collar |7136|
+| challenger-championship | Paired folded silver and graphite standards on a banded round base |9976|
+| premier-win | Silver chalice with gilded arches joining the pedestal to the rim |7040|
 | premier-championship | Broad silver cup with seven looping rings |15852|
 
 The three-cup, swept-flag and modern chalice silhouettes interpret the user's requested NASCAR-era inspiration. Generic loops replace track silhouettes. Reference research: [NASCAR Bill France Cup](https://careers.nascar.com/news-media/2020/03/02/nascar-cup-series-champion-to-receive-bill-france-cup-beginning-in-2020/), [NASCAR 2016 imagery](https://www.nascar.com/gallery/2016-season-review-kurt-busch/), [Winston Cup history](https://www.autoweek.com/racing/nascar/a42232028/how-rj-reynolds-sponsorship-winston-cup-became-nascar-game-changer-in-1971/).
