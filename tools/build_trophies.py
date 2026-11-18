@@ -68,11 +68,6 @@ def tube(name, points, radius, mat, closed=False, caps=False):
 def ring(name,r,z,mat='gold',tube_r=.035,x=0,y=0):
     return tube(name,[(x+r*math.cos(a*math.tau/64),y+r*math.sin(a*math.tau/64),z) for a in range(64)],tube_r,mat,True)
 
-def premier_championship_base(radius,mat='dark'):
-    lathe('Stepped plinth',[(0,0),(radius,0),(radius,.12),(radius*.92,.16),(radius*.92,.28),(0,.28)],mat)
-    ring('Base inlay',radius*.94,.17,'gold',.018)
-    box('Award plaque',(0,-radius*.93,.21),(radius*.86,.028,.12),'gold',.008)
-
 def turning(name, profile, finish, x=0, z=0, scale=1, segments=48):
     """Spin a closed section. Each optional finish colors the band below its point."""
     verts, faces, bands = [], [], []
@@ -212,7 +207,7 @@ def build(key):
                                 (.402,.13),(.385,.145),(0,.145)],'wood',z=.27)
         cup('Championship cup',0,.41,1.18,'gold')
         for side in (-1,1):
-            cup('Flanking goblet',side*.99,.27,.65,'gold',False,32)
+            cup('Flanking goblet',side*.99,.27,.65,'gold',True,32)
     elif key=='challenger-win':
         plinth('Ebonized base',.62,'dark','silver')
         turning('Enamel and silver pedestal',
@@ -242,18 +237,25 @@ def build(key):
                  ((.925,1.905),(.865,2.121),(.754,2.126),(.628,2.108))],
                  'gold',.049,.072)
     else:
-        premier_championship_base(.9)
+        turning('Black lacquer championship plinth',
+                [(0,0),(.85,0),(.89,.014),(.905,.039),(.905,.068),(.89,.085),
+                 (.866,.095),(.866,.116,'gold'),(.85,.126),(.836,.22),
+                 (.815,.259),(.786,.28),(0,.28)],'dark')
         lathe('Broad silver championship chalice',[(0,.28),(.55,.28),(.53,.46),(.35,.75),(.30,1.03),(.4,1.4),(.61,1.9),(.84,2.45),(1.02,2.9),(1.02,3.03),(.96,3.03),(.95,2.9),(.77,2.45),(.55,1.92),(.32,1.42),(0,1.3)],'silver')
         ring('Wide polished rim',.99,3.03,'silver',.055)
         # Abstract flowing loops replace copyrighted/track-specific silhouettes.
+        wall = [(1.03,.30),(1.40,.40),(1.90,.61),(2.45,.84),(2.90,1.02)]
         for j in range(7):
             pts=[]
             for i in range(96):
                 a=math.tau*i/96;z=1.15+j*.255+.075*math.sin(3*a+j*.65)
-                r=.35+(z-1.15)*.365+.07
+                for (low, inner), (high, outer) in zip(wall,wall[1:]):
+                    if low <= z <= high:
+                        r = inner + (outer-inner)*(z-low)/(high-low) + .012
+                        break
                 pts.append((r*math.cos(a),r*math.sin(a),z))
             tube('Encircling championship loop %d'%j,pts,.035,'silver',True)
-        ring('Gold champion collar',.48,.59,'gold',.045)
+        ring('Gold champion collar',.457,.59,'gold',.027)
     return collection
 
 bank={}
