@@ -245,12 +245,6 @@ function leaveQuickRaceResults() {
   showScreen('intro');
   document.querySelector('#screen-intro [data-panel]:not([hidden]) button')?.focus();
 }
-function setQuickRacePlayers(count) {
-  quickRacePlayers = count === 2 ? 2 : 1;
-  document.querySelectorAll('[data-players]').forEach(el => el.setAttribute('aria-pressed', String(Number(el.dataset.players) === quickRacePlayers)));
-  document.getElementById('quick-player-2').hidden = quickRacePlayers !== 2;
-  refreshQuickRaceNumberWarning();
-}
 function setQuickRaceCar(index, key, value) {
   const car = quickRaceCars[index];
   if (key === 'number') car.number = clamp(Math.round(Number(value) || 1), 1, 99);

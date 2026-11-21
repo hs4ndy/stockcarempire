@@ -219,7 +219,30 @@ body:not([data-screen="game"]) .skip-link { display: none; }
 .intro-logo .logo-main, .intro-logo .logo-empire { transform:skewX(-8deg); }
 #intro-popup { background:rgba(5,7,9,.65); }
 #intro-popup[hidden] { display:none; }
-.intro-popup-window { width:min(100%,440px); }
+.intro-popup-window { width:100%; max-width:500px; border:1px solid var(--line-2); }
+.intro-popup-window > section:not([hidden]) { display:flex; flex-direction:column; min-height:0; }
+.intro-popup-window .modal-header h3 { font-size:clamp(30px,5vw,42px); }
+.intro-popup-window [data-back] { min-height:44px; }
+.intro-mode-list { display:grid; gap:8px; }
+.intro-mode {
+  display:grid; gap:4px; position:relative;
+  padding:16px 42px 16px 16px; min-height:76px;
+  text-align:left; font:inherit; color:var(--text);
+  border:1px solid var(--line); border-radius:var(--radius);
+  background:var(--panel-2); cursor:pointer;
+}
+.intro-mode strong { font:700 25px/1.1 var(--font-display); }
+.intro-mode span { color:var(--text-dim); font-size:16px; line-height:1.35; }
+.intro-mode:not(:disabled)::after {
+  content:""; position:absolute; inset-inline-end:18px; top:50%;
+  width:7px; height:7px; border-top:1.5px solid currentColor; border-right:1.5px solid currentColor;
+  transform:translateY(-50%) rotate(45deg);
+}
+.intro-mode:hover:not(:disabled) { background:var(--panel-3); border-color:var(--line-2); }
+.intro-mode:disabled { background:transparent; color:var(--text-dim); cursor:default; }
+.intro-info { font-size:16px; line-height:1.5; }
+.intro-info h4 { margin:0 0 8px; font:700 24px/1.1 var(--font-display); }
+.intro-info p:last-child { margin:0; }
 .intro-buttons[hidden] { display:none; }
 .intro-buttons hr { border:0; height:1px; background:#4c4c50; width:100%; margin:5px 0; }
 .intro-buttons h2 { margin:0 0 8px; }
@@ -1044,8 +1067,8 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 
 /* Quick Race personalization and local split screen. */
 .r3d-pause-panel .r3d-pause-resume { width: min(220px, 100%); padding-inline: 10px; white-space: nowrap; }
-.quick-player-mode { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.quick-player-mode [aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+
 .quick-car-editor { padding: 24px 0; border-top: 1px solid var(--line); }
 .quick-car-editor[hidden], #quick-number-warning[hidden] { display: none; }
 .quick-car-editor h4 { margin: 0 0 16px; font-size: 20px; }
@@ -1226,7 +1249,7 @@ button.standing-driver .st-name { text-decoration:none; }
 .quick-wizard #quick-back {flex:0 0 120px;}
 .quick-player-toolbar {display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:24px;}
 .quick-player-toolbar h4 {margin:0;}
-.quick-wizard .quick-player-mode {margin:0;min-width:320px;}
+
 .quick-wizard .quick-setup-cars {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px;}
 .quick-wizard .quick-car-editor {margin:0;padding:0;border:0;min-width:0;}
 .quick-wizard .quick-car-editor+ .quick-car-editor {border-left:1px solid var(--line);padding-left:28px;}
@@ -1278,7 +1301,7 @@ button.standing-driver .st-name { text-decoration:none; }
  .quick-wizard .difficulty-card{padding:8px;font-size:14px;}.quick-wizard .difficulty-name{font-size:14px;}.quick-wizard .quick-series-btn{min-height:56px;padding:8px 10px;}
  .quick-wizard .quick-series-name{font-size:14px;}.quick-wizard .quick-series-meta{font-size:12px;}.quick-wizard #quick-difficulty-hint{font-size:12px;margin-top:8px;}
  .quick-wizard .compact-rules{display:grid;grid-template-columns:1fr 1fr;gap:8px;}.quick-wizard .compact-rules>p{grid-column:1/-1;margin:0;}.quick-wizard .compact-rules .radio-row{min-height:44px;padding:6px 0;font-size:14px;}
- .quick-player-toolbar{display:block;margin-bottom:16px;}.quick-wizard .quick-player-mode{min-width:0;margin-top:12px;}
+ .quick-player-toolbar{display:block;margin-bottom:16px;}
  .quick-wizard .quick-setup-cars{gap:16px;}.quick-wizard .quick-car-editor+.quick-car-editor{padding-left:16px;}.quick-wizard .quick-car-preview{height:80px;}
  .quick-wizard .quick-car-editor p{font-size:12px;}.quick-wizard .car-studio-open{font-size:14px;padding:10px 8px;}.quick-key-help{font-size:12px;line-height:1.5;}
  .driver-browse{grid-template-columns:1fr;}.market-tabs .btn{flex:1;padding-inline:12px;}
@@ -1346,39 +1369,83 @@ button.standing-driver .st-name { text-decoration:none; }
 <!-- ═══════════════════════════════════════════════════════ -->
 <div id="screen-intro" class="screen">
   <svg class="intro-tunnel" viewBox="0 0 1440 900" preserveAspectRatio="none" aria-hidden="true">
-    <path d="M 14 0 L 146 900 M 1426 0 L 1294 900" opacity="1"/>
-    <path d="M 55 0 L 187 900 M 1385 0 L 1253 900" opacity="0.7"/>
-    <path d="M 88 0 L 220 900 M 1352 0 L 1220 900" opacity="0.49"/>
-    <path d="M 112 0 L 244 900 M 1328 0 L 1196 900" opacity="0.33"/>
-    <path d="M 130 0 L 262 900 M 1310 0 L 1178 900" opacity="0.22"/>
-    <path d="M 144 0 L 276 900 M 1296 0 L 1164 900" opacity="0.14"/>
-    <path d="M 154 0 L 286 900 M 1286 0 L 1154 900" opacity="0.08"/>
+    <path d="M 18 0 L 143 900 M 1422 0 L 1297 900" opacity="0.94"/>
+    <path d="M 92 0 L 217 900 M 1348 0 L 1223 900" opacity="0.7"/>
+    <path d="M 164 0 L 289 900 M 1276 0 L 1151 900" opacity="0.49"/>
+    <path d="M 230 0 L 355 900 M 1210 0 L 1085 900" opacity="0.32"/>
+    <path d="M 290 0 L 415 900 M 1150 0 L 1025 900" opacity="0.21"/>
+    <path d="M 344 0 L 469 900 M 1096 0 L 971 900" opacity="0.13"/>
   </svg>
   <div class="intro-layout intro-center">
-    <div class="intro-logo"><div class="logo-main-wrap"><span class="logo-main">Stock Car</span> <span class="logo-empire">Empire</span></div><div class="intro-version logo-beta">BETA / VERSION 168</div></div>
-    <nav class="intro-buttons" data-panel="home" aria-label="Main menu"><button type="button" class="btn-game btn-game-ghost" data-menu="single">Single Player</button><button type="button" class="btn-game btn-game-ghost" data-menu="multi">Multiplayer</button><hr><button type="button" class="btn-game btn-game-ghost" data-menu="changes">Change Log</button><button type="button" class="btn-game btn-game-ghost" data-menu="about">About</button></nav>
+    <div class="intro-logo"><div class="logo-main-wrap"><span class="logo-main">Stock Car</span> <span class="logo-empire">Empire</span></div><div class="intro-version logo-beta">BETA / VERSION 169</div></div>
+    <nav class="intro-buttons" data-panel="home" aria-label="Main menu"><button type="button" class="btn-game btn-game-ghost" data-menu="single">Single Player</button><button type="button" class="btn-game btn-game-ghost" data-menu="multi">Multiplayer</button><hr><button type="button" class="btn-game btn-game-ghost" data-menu="changes">Changelog</button><button type="button" class="btn-game btn-game-ghost" data-menu="about">About</button></nav>
   </div>
   <div id="intro-popup" class="modal-overlay" hidden>
     <div class="modal intro-popup-window" role="dialog" aria-modal="true">
       <section data-panel="single" hidden>
-        <div class="modal-header"><h3 id="intro-title-single" tabindex="-1">Single Player</h3></div>
-        <div class="modal-body intro-buttons"><button type="button" class="btn-game btn-game-primary" data-menu="career">Career Mode</button><button type="button" class="btn-game btn-game-ghost"  id="btn-quick-race">Single Player Quick Race</button><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></div>
+        <div class="modal-header">
+          <h3 id="intro-title-single" tabindex="-1">Single Player</h3>
+          <button type="button" class="btn btn-ghost" data-back>Back</button>
+        </div>
+        <div class="modal-body intro-mode-list">
+          <button type="button" class="intro-mode" data-menu="career" aria-labelledby="intro-career-label" aria-describedby="intro-career-copy">
+            <strong id="intro-career-label">Career Mode</strong>
+            <span id="intro-career-copy">Build a team, drive races, and compete for championships.</span>
+          </button>
+          <button type="button" class="intro-mode" id="btn-quick-race" aria-labelledby="intro-quick-label" aria-describedby="intro-quick-copy">
+            <strong id="intro-quick-label">Quick Race</strong>
+            <span id="intro-quick-copy">Set up a standalone race against AI drivers.</span>
+          </button>
+        </div>
       </section>
       <section data-panel="career" hidden>
-        <div class="modal-header"><h3 id="intro-title-career" tabindex="-1">Career Mode</h3></div>
-        <div class="modal-body intro-buttons"><button type="button" class="btn-game btn-game-primary"  id="btn-start-new">New Career</button><button type="button" class="btn-game btn-game-ghost"  id="btn-load-game">Load a Game</button><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></div>
+        <div class="modal-header">
+          <h3 id="intro-title-career" tabindex="-1">Career Mode</h3>
+          <button type="button" class="btn btn-ghost" data-back>Back</button>
+        </div>
+        <div class="modal-body intro-mode-list">
+          <button type="button" class="intro-mode" id="btn-start-new" aria-labelledby="intro-new-label" aria-describedby="intro-new-copy">
+            <strong id="intro-new-label">New Career</strong>
+            <span id="intro-new-copy">Start your own team in the Grassroots Cup.</span>
+          </button>
+          <button type="button" class="intro-mode" id="btn-load-game" aria-labelledby="intro-load-label" aria-describedby="intro-load-copy">
+            <strong id="intro-load-label">Load a Career</strong>
+            <span id="intro-load-copy">Resume from a save slot.</span>
+          </button>
+        </div>
       </section>
       <section data-panel="multi" hidden>
-        <div class="modal-header"><h3 id="intro-title-multi" tabindex="-1">Multiplayer</h3></div>
-        <div class="modal-body intro-buttons"><button type="button" class="btn-game btn-game-primary"  id="btn-dual-race">Split Screen Multiplayer</button><button type="button" class="btn-game btn-game-ghost" disabled>Local Network Multiplayer <small>Coming Soon</small></button><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></div>
+        <div class="modal-header">
+          <h3 id="intro-title-multi" tabindex="-1">Multiplayer</h3>
+          <button type="button" class="btn btn-ghost" data-back>Back</button>
+        </div>
+        <div class="modal-body intro-mode-list">
+          <button type="button" class="intro-mode" id="btn-dual-race" aria-labelledby="intro-split-label" aria-describedby="intro-split-copy">
+            <strong id="intro-split-label">Split Screen</strong>
+            <span id="intro-split-copy">Race with a second player on the same device.</span>
+          </button>
+          <button type="button" class="intro-mode" disabled>
+            <strong>Local Network Multiplayer</strong>
+            <span>Coming Soon</span>
+          </button>
+        </div>
       </section>
       <section data-panel="changes" hidden>
-        <div class="modal-header"><h3 id="intro-title-changes" tabindex="-1">Change Log</h3></div>
-        <div class="modal-body intro-buttons"><p><strong>VERSION 168</strong><br>Home menu options now open in pop-up windows. The title and red side lines have been refined.</p><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></div>
+        <div class="modal-header">
+          <h3 id="intro-title-changes" tabindex="-1">Changelog</h3>
+          <button type="button" class="btn btn-ghost" data-back>Back</button>
+        </div>
+        <div class="modal-body intro-info">
+          <h4>Version 169</h4>
+          <p>Updated the home menu windows and widened the red side lines so their spacing scales with the window.</p>
+        </div>
       </section>
       <section data-panel="about" hidden>
-        <div class="modal-header"><h3 id="intro-title-about" tabindex="-1">About</h3></div>
-        <div class="modal-body intro-buttons"><p>About Stalker Empire.</p><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></div>
+        <div class="modal-header">
+          <h3 id="intro-title-about" tabindex="-1">About</h3>
+          <button type="button" class="btn btn-ghost" data-back>Back</button>
+        </div>
+        <div class="modal-body intro-info"><p>About Stalker Empire.</p></div>
       </section>
     </div>
   </div>
@@ -9235,7 +9302,7 @@ function renderQuickRaceModal() {
  <section><h4>Difficulty</h4><div class="difficulty-grid">${DIFFICULTIES.map(d=>`<button type="button" class="difficulty-card${d.id===quickRaceDifficulty?' selected':''}" data-diff="${d.id}" aria-pressed="${d.id===quickRaceDifficulty}" onclick="setQuickRaceDifficulty('${d.id}')"><span class="difficulty-name">${d.name}</span></button>`).join('')}</div><p id="quick-difficulty-hint" class="small muted-text">${summaries[quickRaceDifficulty]}</p></section>
  <section><h4>Series</h4><div class="quick-series">${SERIES.map(s=>`<button type="button" class="quick-series-btn" data-field-size="${s.fieldSize}" aria-pressed="false" onclick="selectQuickRaceSeries(${s.fieldSize})"><span class="quick-series-name" style="--series-color:${s.color}">${s.name}</span><span class="quick-series-meta">${s.fieldSize} cars</span></button>`).join('')}</div></section>
  <section><h4>Race settings</h4>${renderRaceLengthControl('quick',quickRaceLength)}${renderRaceGraphicsControl('quick')}<div id="quick-race-rules">${renderRaceRuleControls(quickRaceDifficulty,quickRaceRules,'quick')}</div></section></div>
- <div id="quick-stage-cars" hidden><div class="quick-player-toolbar"><h4>Players and cars</h4><div class="quick-player-mode" role="group" aria-label="Player mode"><button class="btn" data-players="1" aria-pressed="${quickRacePlayers===1}" onclick="setQuickRacePlayers(1)">Single player</button><button class="btn" data-players="2" aria-pressed="${quickRacePlayers===2}" onclick="setQuickRacePlayers(2)">Dual player</button></div></div>
+ <div id="quick-stage-cars" hidden><div class="quick-player-toolbar"><h4>${quickRacePlayers === 2 ? 'Players and cars' : 'Your car'}</h4></div>
  <div class="quick-setup-cars">${quickRaceCars.map((car,i)=>renderCarCustomizer(car,i)).join('')}</div><p class="small muted-text quick-key-help">Player 1: A / S / D · Player 2: J / K / L · Middle key brakes</p><p class="form-warning" id="quick-number-warning" hidden>Choose a different number for each player.</p></div></div>
  <div class="modal-footer quick-race-footer"><button type="button" class="btn btn-secondary" id="quick-back" onclick="setQuickRaceStep(1)" hidden>Back</button><button type="button" class="btn btn-primary btn-lg" id="quick-next" onclick="setQuickRaceStep(2)" disabled>Next: Players and cars</button><button type="button" class="btn btn-primary btn-lg" id="btn-quick-race-confirm" onclick="confirmQuickRace()" hidden disabled>Confirm Race</button></div></div></div>`;
 }
@@ -12737,12 +12804,6 @@ function leaveQuickRaceResults() {
   document.getElementById('screen-intro').inert = false;
   showScreen('intro');
   document.querySelector('#screen-intro [data-panel]:not([hidden]) button')?.focus();
-}
-function setQuickRacePlayers(count) {
-  quickRacePlayers = count === 2 ? 2 : 1;
-  document.querySelectorAll('[data-players]').forEach(el => el.setAttribute('aria-pressed', String(Number(el.dataset.players) === quickRacePlayers)));
-  document.getElementById('quick-player-2').hidden = quickRacePlayers !== 2;
-  refreshQuickRaceNumberWarning();
 }
 function setQuickRaceCar(index, key, value) {
   const car = quickRaceCars[index];

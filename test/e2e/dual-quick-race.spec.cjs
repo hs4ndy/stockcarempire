@@ -4,8 +4,8 @@ for(const [width,height] of [[1366,768],[375,850]]) test(`customized dual quick 
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.setViewportSize({width,height});await page.route('**/three.min.js',r=>r.fulfill({path:path.resolve('node_modules/three/build/three.min.js')}));
  await page.goto(pathToFileURL(path.resolve('releases/Stock-Car-Empire.html')).href);
- await chooseHomeAction(page,'#btn-quick-race');await page.locator('.quick-series-btn').last().click();
- await page.locator('#quick-next').click();await page.locator('[data-players="2"]').click();
+ await chooseHomeAction(page,'#btn-dual-race');await page.locator('.quick-series-btn').last().click();
+ await page.locator('#quick-next').click();
  for(const [i,num,color]of [[1,27,'#ff7e35'],[2,88,'#a47ae8']]){await page.locator(`#quick-player-${i}`).getByRole('button',{name:'Customize Car'}).click();await page.locator('#studio-number').fill(i===2?'27':String(num));if(i===2){await page.getByRole('button',{name:'Save Appearance'}).click();await expect(page.locator('#studio-error')).toContainText('not assigned');await page.locator('#studio-number').fill(String(num));}await page.locator('#studio-paint').evaluate((el,c)=>{el.value=c;el.dispatchEvent(new Event('input'));},color);await page.getByRole('button',{name:'Save Appearance'}).click();}
  await page.screenshot({path:`.impeccable/review/quick-custom-${width}.png`});
  if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator('#btn-quick-race-confirm').click();await page.waitForFunction(()=>window._r3d?.player2 && window._r3d?.mirrorRT);
@@ -32,7 +32,7 @@ for(const [width,height] of [[1366,768],[375,850]]) test(`customized dual quick 
  await page.evaluate(()=>{const e=window._r3d;e.player2.z=e.raceLength+1;e._checkFinish();});expect(await page.evaluate(()=>window._r3d.done)).toBe(true);
  await expect(page.locator('#r3d-finish')).toContainText('Player 1');await expect(page.locator('#r3d-finish')).toContainText('Player 2');
  await page.getByRole('button',{name:'Continue',exact:true}).click();await expect(page.locator('#screen-quick-results')).toBeVisible();await page.getByRole('button',{name:'Main Menu',exact:true}).click();await expect(page.locator('#btn-quick-race')).toBeVisible();
- await chooseHomeAction(page,'#btn-quick-race');await page.locator('.quick-series-btn').first().click();await page.locator('#quick-next').click();await page.locator('[data-players="1"]').click();await expect(page.locator('#quick-player-2')).toBeHidden();if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator('#btn-quick-race-confirm').click();await page.waitForFunction(()=>window._r3d?.mirrorRT);
+ await chooseHomeAction(page,'#btn-quick-race');await page.locator('.quick-series-btn').first().click();await page.locator('#quick-next').click();await expect(page.locator('#quick-player-2')).toBeHidden();if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator('#btn-quick-race-confirm').click();await page.waitForFunction(()=>window._r3d?.mirrorRT);
  expect(await page.evaluate(()=>[window._r3d.cars.length,window._r3d.player.number,!!window._r3d.player2])).toEqual([20,27,false]);
  await page.locator('#r3d-pause-btn').click();await page.locator('#r3d-quit').click();await expect(page.locator('#btn-quick-race')).toBeVisible();expect(errors).toEqual([]);
 });

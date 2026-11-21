@@ -23,11 +23,10 @@ for (const [preset, players, file, series] of [
     await expect(page.locator('#career-race-graphics')).toHaveValue('medium');
     await page.locator('#career-race-graphics').selectOption(preset);
     await page.reload();
-    await chooseHomeAction(page,'#btn-quick-race');
+    await chooseHomeAction(page, players === 2 ? '#btn-dual-race' : '#btn-quick-race');
     await expect(page.locator('#quick-race-graphics')).toHaveValue(preset);
     await page.locator('.quick-series-btn').nth(series).click();
     await page.locator('#quick-next').click();
-    await page.evaluate(players => setQuickRacePlayers(players), players);
     await page.locator('#btn-quick-race-confirm').click();
     await page.waitForFunction(() => window._r3d?.mirrorRT &&
       (window._r3d.paceMode || window._r3d.racing));

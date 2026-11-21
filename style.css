@@ -200,7 +200,30 @@ body:not([data-screen="game"]) .skip-link { display: none; }
 .intro-logo .logo-main, .intro-logo .logo-empire { transform:skewX(-8deg); }
 #intro-popup { background:rgba(5,7,9,.65); }
 #intro-popup[hidden] { display:none; }
-.intro-popup-window { width:min(100%,440px); }
+.intro-popup-window { width:100%; max-width:500px; border:1px solid var(--line-2); }
+.intro-popup-window > section:not([hidden]) { display:flex; flex-direction:column; min-height:0; }
+.intro-popup-window .modal-header h3 { font-size:clamp(30px,5vw,42px); }
+.intro-popup-window [data-back] { min-height:44px; }
+.intro-mode-list { display:grid; gap:8px; }
+.intro-mode {
+  display:grid; gap:4px; position:relative;
+  padding:16px 42px 16px 16px; min-height:76px;
+  text-align:left; font:inherit; color:var(--text);
+  border:1px solid var(--line); border-radius:var(--radius);
+  background:var(--panel-2); cursor:pointer;
+}
+.intro-mode strong { font:700 25px/1.1 var(--font-display); }
+.intro-mode span { color:var(--text-dim); font-size:16px; line-height:1.35; }
+.intro-mode:not(:disabled)::after {
+  content:""; position:absolute; inset-inline-end:18px; top:50%;
+  width:7px; height:7px; border-top:1.5px solid currentColor; border-right:1.5px solid currentColor;
+  transform:translateY(-50%) rotate(45deg);
+}
+.intro-mode:hover:not(:disabled) { background:var(--panel-3); border-color:var(--line-2); }
+.intro-mode:disabled { background:transparent; color:var(--text-dim); cursor:default; }
+.intro-info { font-size:16px; line-height:1.5; }
+.intro-info h4 { margin:0 0 8px; font:700 24px/1.1 var(--font-display); }
+.intro-info p:last-child { margin:0; }
 .intro-buttons[hidden] { display:none; }
 .intro-buttons hr { border:0; height:1px; background:#4c4c50; width:100%; margin:5px 0; }
 .intro-buttons h2 { margin:0 0 8px; }
@@ -1025,8 +1048,8 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 
 /* Quick Race personalization and local split screen. */
 .r3d-pause-panel .r3d-pause-resume { width: min(220px, 100%); padding-inline: 10px; white-space: nowrap; }
-.quick-player-mode { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.quick-player-mode [aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+
 .quick-car-editor { padding: 24px 0; border-top: 1px solid var(--line); }
 .quick-car-editor[hidden], #quick-number-warning[hidden] { display: none; }
 .quick-car-editor h4 { margin: 0 0 16px; font-size: 20px; }
@@ -1207,7 +1230,7 @@ button.standing-driver .st-name { text-decoration:none; }
 .quick-wizard #quick-back {flex:0 0 120px;}
 .quick-player-toolbar {display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:24px;}
 .quick-player-toolbar h4 {margin:0;}
-.quick-wizard .quick-player-mode {margin:0;min-width:320px;}
+
 .quick-wizard .quick-setup-cars {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px;}
 .quick-wizard .quick-car-editor {margin:0;padding:0;border:0;min-width:0;}
 .quick-wizard .quick-car-editor+ .quick-car-editor {border-left:1px solid var(--line);padding-left:28px;}
@@ -1259,7 +1282,7 @@ button.standing-driver .st-name { text-decoration:none; }
  .quick-wizard .difficulty-card{padding:8px;font-size:14px;}.quick-wizard .difficulty-name{font-size:14px;}.quick-wizard .quick-series-btn{min-height:56px;padding:8px 10px;}
  .quick-wizard .quick-series-name{font-size:14px;}.quick-wizard .quick-series-meta{font-size:12px;}.quick-wizard #quick-difficulty-hint{font-size:12px;margin-top:8px;}
  .quick-wizard .compact-rules{display:grid;grid-template-columns:1fr 1fr;gap:8px;}.quick-wizard .compact-rules>p{grid-column:1/-1;margin:0;}.quick-wizard .compact-rules .radio-row{min-height:44px;padding:6px 0;font-size:14px;}
- .quick-player-toolbar{display:block;margin-bottom:16px;}.quick-wizard .quick-player-mode{min-width:0;margin-top:12px;}
+ .quick-player-toolbar{display:block;margin-bottom:16px;}
  .quick-wizard .quick-setup-cars{gap:16px;}.quick-wizard .quick-car-editor+.quick-car-editor{padding-left:16px;}.quick-wizard .quick-car-preview{height:80px;}
  .quick-wizard .quick-car-editor p{font-size:12px;}.quick-wizard .car-studio-open{font-size:14px;padding:10px 8px;}.quick-key-help{font-size:12px;line-height:1.5;}
  .driver-browse{grid-template-columns:1fr;}.market-tabs .btn{flex:1;padding-inline:12px;}

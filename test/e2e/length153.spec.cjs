@@ -30,9 +30,9 @@ for(const [width,height,file,selected] of [[1440,900,'index.html',6],[1024,600,'
   });
 }
 test('Dual Quick Race shares selected distance and retains it after both players finish',async({page})=>{
-  await open(page);await chooseHomeAction(page,'#btn-quick-race');await page.locator('.quick-series-btn').last().click();
+  await open(page);await chooseHomeAction(page,'#btn-dual-race');await page.locator('.quick-series-btn').last().click();
   await page.locator('#quick-race-length').evaluate(el=>{el.value=1;el.dispatchEvent(new Event('input',{bubbles:true}));});
-  await page.locator('#quick-next').click();await page.evaluate(()=>setQuickRacePlayers(2));await page.locator('#btn-quick-race-confirm').click();
+  await page.locator('#quick-next').click();await page.locator('#btn-quick-race-confirm').click();
   await page.waitForFunction(()=>window._r3d?.player2&&window._r3d?.mirrorRT);
   expect(await page.evaluate(()=>window._r3d.raceLength)).toBe(9375);
   await page.evaluate(()=>{const e=window._r3d;cancelAnimationFrame(e._raf);e.player.z=e.raceLength+2;e.player2.z=e.raceLength+1;e._checkFinish();});
