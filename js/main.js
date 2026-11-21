@@ -37,25 +37,50 @@ function enterGame() {
 
 // ─── Intro / New Game ─────────────────────────────────────────
 function openIntroPanel(key, focusTarget) {
-  const panels = document.querySelectorAll('#screen-intro [data-panel]');
-  for (const panel of panels) panel.hidden = panel.dataset.panel !== key;
-  const active = document.querySelector('#screen-intro [data-panel="' + key + '"]');
-  (focusTarget || active.querySelector('h2, button'))?.focus();
+  const popup = document.getElementById('intro-popup');
+  const home = document.querySelector('.intro-layout');
+  const isHome = key === 'home';
+  home.inert = !isHome;
+  popup.hidden = isHome;
+  for (const panel of popup.querySelectorAll('[data-panel]')) {
+    panel.hidden = panel.dataset.panel !== key;
+  }
+  if (!isHome) {
+    const title = document.getElementById('intro-title-' + key);
+    popup.firstElementChild.setAttribute('aria-labelledby', title.id);
+    (focusTarget || title).focus();
+  } else {
+    focusTarget?.focus();
+  }
 }
 
 function backFromIntroPanel() {
-  const current = document.querySelector('#screen-intro [data-panel]:not([hidden])')?.dataset.panel;
-  if (!current || current === 'home') return;
+  const current = document.querySelector('#intro-popup [data-panel]:not([hidden])')?.dataset.panel;
+  if (!current) return;
   openIntroPanel(current === 'career' ? 'single' : 'home', document.querySelector('[data-menu="' + current + '"]'));
 }
 
 document.getElementById('screen-intro')?.addEventListener('click', event => {
   const button = event.target.closest('button');
   if (button?.dataset.menu) openIntroPanel(button.dataset.menu);
-  else if (button?.hasAttribute('data-back')) backFromIntroPanel();
+  else if (button?.hasAttribute('data-back') || event.target.id === 'intro-popup') backFromIntroPanel();
 });
-document.getElementById('screen-intro')?.addEventListener('keydown', event => {
-  if (event.key === 'Escape') backFromIntroPanel();
+
+document.getElementById('intro-popup')?.addEventListener('keydown', event => {
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    backFromIntroPanel();
+  }
+  if (event.key !== 'Tab') return;
+  const controls = event.currentTarget.querySelectorAll('section:not([hidden]) button:not(:disabled)');
+  const first = controls[0], last = controls[controls.length - 1];
+  if (event.shiftKey && (document.activeElement === first || document.activeElement.tagName === 'H3')) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
 });
 
 document.getElementById('btn-start-new')?.addEventListener('click', () => {
@@ -63,6 +88,7 @@ document.getElementById('btn-start-new')?.addEventListener('click', () => {
 });
 
 document.getElementById('btn-load-game')?.addEventListener('click', () => {
+  openIntroPanel('home');
   showLoadModal();
 });
 
@@ -148,6 +174,7 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
 // ─── Quick Race ───────────────────────────────────────────────
 function showQuickRaceScreen() {
   document.getElementById('quick-race-modal')?.remove();
+  openIntroPanel('home');
   quickRaceStep=1;
   document.body.insertAdjacentHTML('beforeend', renderQuickRaceModal());
   if (quickRaceSeries !== null) selectQuickRaceSeries(quickRaceSeries);
@@ -204,7 +231,7 @@ function showQuickRaceResults() {
 function closeQuickRaceSettings() {
   document.getElementById('quick-race-modal')?.remove();
   if (quickRaceLastResult) showQuickRaceResults();
-  else document.querySelector('#screen-intro [data-panel]:not([hidden]) [id$=race]')?.focus();
+  else document.querySelector('[data-menu="' + (quickRacePlayers === 2 ? 'multi' : 'single') + '"]')?.focus();
 }
 
 function leaveQuickRaceResults() {

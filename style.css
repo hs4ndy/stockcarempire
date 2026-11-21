@@ -193,9 +193,14 @@ body:not([data-screen="game"]) .skip-link { display: none; }
 .intro-buttons .btn-game { justify-content: center; }
 .btn-game { width: 100%; justify-content: flex-start; min-height: 60px; padding: 16px 24px; font-size: 19px; }
 .intro-footer { position: absolute; bottom: 28px; left: 5vw; right: 5vw; display: flex; justify-content: space-between; gap: 24px; color: var(--text-mute); font-size: 13px; }
-.intro-tunnel { position:absolute; inset:0; width:100%; height:100%; color:#db213a; pointer-events:none; }
+.intro-tunnel { position:absolute; inset:0; width:100%; height:100%; stroke:#db213a; fill:none; pointer-events:none; }
+.intro-tunnel path { stroke-width:1.25px; vector-effect:non-scaling-stroke; }
 .intro-layout { padding:24px 12px; background:radial-gradient(ellipse, var(--bg, #101214) 45%, transparent 74%); }
-.intro-logo .logo-main-wrap { transform:skewX(-8deg); }
+.intro-logo .logo-main-wrap { align-items:center; }
+.intro-logo .logo-main, .intro-logo .logo-empire { transform:skewX(-8deg); }
+#intro-popup { background:rgba(5,7,9,.65); }
+#intro-popup[hidden] { display:none; }
+.intro-popup-window { width:min(100%,440px); }
 .intro-buttons[hidden] { display:none; }
 .intro-buttons hr { border:0; height:1px; background:#4c4c50; width:100%; margin:5px 0; }
 .intro-buttons h2 { margin:0 0 8px; }

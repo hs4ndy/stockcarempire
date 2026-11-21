@@ -212,9 +212,14 @@ body:not([data-screen="game"]) .skip-link { display: none; }
 .intro-buttons .btn-game { justify-content: center; }
 .btn-game { width: 100%; justify-content: flex-start; min-height: 60px; padding: 16px 24px; font-size: 19px; }
 .intro-footer { position: absolute; bottom: 28px; left: 5vw; right: 5vw; display: flex; justify-content: space-between; gap: 24px; color: var(--text-mute); font-size: 13px; }
-.intro-tunnel { position:absolute; inset:0; width:100%; height:100%; color:#db213a; pointer-events:none; }
+.intro-tunnel { position:absolute; inset:0; width:100%; height:100%; stroke:#db213a; fill:none; pointer-events:none; }
+.intro-tunnel path { stroke-width:1.25px; vector-effect:non-scaling-stroke; }
 .intro-layout { padding:24px 12px; background:radial-gradient(ellipse, var(--bg, #101214) 45%, transparent 74%); }
-.intro-logo .logo-main-wrap { transform:skewX(-8deg); }
+.intro-logo .logo-main-wrap { align-items:center; }
+.intro-logo .logo-main, .intro-logo .logo-empire { transform:skewX(-8deg); }
+#intro-popup { background:rgba(5,7,9,.65); }
+#intro-popup[hidden] { display:none; }
+.intro-popup-window { width:min(100%,440px); }
 .intro-buttons[hidden] { display:none; }
 .intro-buttons hr { border:0; height:1px; background:#4c4c50; width:100%; margin:5px 0; }
 .intro-buttons h2 { margin:0 0 8px; }
@@ -1340,24 +1345,42 @@ button.standing-driver .st-name { text-decoration:none; }
 <!--  INTRO SCREEN                                          -->
 <!-- ═══════════════════════════════════════════════════════ -->
 <div id="screen-intro" class="screen">
-  <svg class="intro-tunnel" viewBox="0 0 1440 900" preserveAspectRatio="none" aria-hidden="true"><defs><path id="edge-pair" d="M -30 -40 L 245 940 M 1470 -40 L 1195 940" fill="none" stroke="currentColor" stroke-width="3"/></defs>
-    <use href="#edge-pair" transform="translate(720 450) scale(0.29) translate(-720 -450)" opacity="0.08"/>
-    <use href="#edge-pair" transform="translate(720 450) scale(0.34) translate(-720 -450)" opacity="0.12"/>
-    <use href="#edge-pair" transform="translate(720 450) scale(0.4) translate(-720 -450)" opacity="0.16"/>
-    <use href="#edge-pair" transform="translate(720 450) scale(0.48) translate(-720 -450)" opacity="0.23"/>
-    <use href="#edge-pair" transform="translate(720 450) scale(0.57) translate(-720 -450)" opacity="0.32"/>
-    <use href="#edge-pair" transform="translate(720 450) scale(0.68) translate(-720 -450)" opacity="0.46"/>
-    <use href="#edge-pair" transform="translate(720 450) scale(0.82) translate(-720 -450)" opacity="0.67"/>
-    <use href="#edge-pair" transform="translate(720 450) scale(1) translate(-720 -450)" opacity="1.00"/>
+  <svg class="intro-tunnel" viewBox="0 0 1440 900" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M 14 0 L 146 900 M 1426 0 L 1294 900" opacity="1"/>
+    <path d="M 55 0 L 187 900 M 1385 0 L 1253 900" opacity="0.7"/>
+    <path d="M 88 0 L 220 900 M 1352 0 L 1220 900" opacity="0.49"/>
+    <path d="M 112 0 L 244 900 M 1328 0 L 1196 900" opacity="0.33"/>
+    <path d="M 130 0 L 262 900 M 1310 0 L 1178 900" opacity="0.22"/>
+    <path d="M 144 0 L 276 900 M 1296 0 L 1164 900" opacity="0.14"/>
+    <path d="M 154 0 L 286 900 M 1286 0 L 1154 900" opacity="0.08"/>
   </svg>
   <div class="intro-layout intro-center">
-    <div class="intro-logo"><div class="logo-main-wrap"><span class="logo-main">Stock Car</span> <span class="logo-empire">Empire</span></div><div class="intro-version logo-beta">BETA / VERSION 167</div></div>
-    <nav class="intro-buttons" data-panel="home" aria-label="Main menu"><button type="button" class="btn-game btn-game-primary" data-menu="single">Single Player</button><button type="button" class="btn-game btn-game-ghost" data-menu="multi">Multiplayer</button><hr><button type="button" class="btn-game btn-game-ghost" data-menu="changes">Change Log</button><button type="button" class="btn-game btn-game-ghost" data-menu="about">About</button></nav>
-<section class="intro-buttons" data-panel="single" hidden aria-label="Single Player"><h2 tabindex="-1">Single Player</h2><button type="button" class="btn-game btn-game-primary" data-menu="career">Career Mode</button><button type="button" class="btn-game btn-game-ghost"  id="btn-quick-race">Single Player Quick Race</button><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></section>
-<section class="intro-buttons" data-panel="career" hidden aria-label="Career Mode"><h2 tabindex="-1">Career Mode</h2><button type="button" class="btn-game btn-game-primary"  id="btn-start-new">New Career</button><button type="button" class="btn-game btn-game-ghost"  id="btn-load-game">Load a Game</button><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></section>
-<section class="intro-buttons" data-panel="multi" hidden aria-label="Multiplayer"><h2 tabindex="-1">Multiplayer</h2><button type="button" class="btn-game btn-game-primary"  id="btn-dual-race">Split Screen Multiplayer</button><button type="button" class="btn-game btn-game-ghost" disabled>Local Network Multiplayer <small>Coming Soon</small></button><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></section>
-<section class="intro-buttons" data-panel="changes" hidden aria-label="Change Log"><h2 tabindex="-1">Change Log</h2><p><strong>VERSION 167</strong><br>The main menu now groups Career and Quick Race under Single Player. Open Multiplayer to race in split screen.</p><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></section>
-<section class="intro-buttons" data-panel="about" hidden aria-label="About"><h2 tabindex="-1">About</h2><p>About Stalker Empire.</p><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></section>
+    <div class="intro-logo"><div class="logo-main-wrap"><span class="logo-main">Stock Car</span> <span class="logo-empire">Empire</span></div><div class="intro-version logo-beta">BETA / VERSION 168</div></div>
+    <nav class="intro-buttons" data-panel="home" aria-label="Main menu"><button type="button" class="btn-game btn-game-ghost" data-menu="single">Single Player</button><button type="button" class="btn-game btn-game-ghost" data-menu="multi">Multiplayer</button><hr><button type="button" class="btn-game btn-game-ghost" data-menu="changes">Change Log</button><button type="button" class="btn-game btn-game-ghost" data-menu="about">About</button></nav>
+  </div>
+  <div id="intro-popup" class="modal-overlay" hidden>
+    <div class="modal intro-popup-window" role="dialog" aria-modal="true">
+      <section data-panel="single" hidden>
+        <div class="modal-header"><h3 id="intro-title-single" tabindex="-1">Single Player</h3></div>
+        <div class="modal-body intro-buttons"><button type="button" class="btn-game btn-game-primary" data-menu="career">Career Mode</button><button type="button" class="btn-game btn-game-ghost"  id="btn-quick-race">Single Player Quick Race</button><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></div>
+      </section>
+      <section data-panel="career" hidden>
+        <div class="modal-header"><h3 id="intro-title-career" tabindex="-1">Career Mode</h3></div>
+        <div class="modal-body intro-buttons"><button type="button" class="btn-game btn-game-primary"  id="btn-start-new">New Career</button><button type="button" class="btn-game btn-game-ghost"  id="btn-load-game">Load a Game</button><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></div>
+      </section>
+      <section data-panel="multi" hidden>
+        <div class="modal-header"><h3 id="intro-title-multi" tabindex="-1">Multiplayer</h3></div>
+        <div class="modal-body intro-buttons"><button type="button" class="btn-game btn-game-primary"  id="btn-dual-race">Split Screen Multiplayer</button><button type="button" class="btn-game btn-game-ghost" disabled>Local Network Multiplayer <small>Coming Soon</small></button><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></div>
+      </section>
+      <section data-panel="changes" hidden>
+        <div class="modal-header"><h3 id="intro-title-changes" tabindex="-1">Change Log</h3></div>
+        <div class="modal-body intro-buttons"><p><strong>VERSION 168</strong><br>Home menu options now open in pop-up windows. The title and red side lines have been refined.</p><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></div>
+      </section>
+      <section data-panel="about" hidden>
+        <div class="modal-header"><h3 id="intro-title-about" tabindex="-1">About</h3></div>
+        <div class="modal-body intro-buttons"><p>About Stalker Empire.</p><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></div>
+      </section>
+    </div>
   </div>
 </div>
 
@@ -12507,25 +12530,50 @@ function enterGame() {
 
 // ─── Intro / New Game ─────────────────────────────────────────
 function openIntroPanel(key, focusTarget) {
-  const panels = document.querySelectorAll('#screen-intro [data-panel]');
-  for (const panel of panels) panel.hidden = panel.dataset.panel !== key;
-  const active = document.querySelector('#screen-intro [data-panel="' + key + '"]');
-  (focusTarget || active.querySelector('h2, button'))?.focus();
+  const popup = document.getElementById('intro-popup');
+  const home = document.querySelector('.intro-layout');
+  const isHome = key === 'home';
+  home.inert = !isHome;
+  popup.hidden = isHome;
+  for (const panel of popup.querySelectorAll('[data-panel]')) {
+    panel.hidden = panel.dataset.panel !== key;
+  }
+  if (!isHome) {
+    const title = document.getElementById('intro-title-' + key);
+    popup.firstElementChild.setAttribute('aria-labelledby', title.id);
+    (focusTarget || title).focus();
+  } else {
+    focusTarget?.focus();
+  }
 }
 
 function backFromIntroPanel() {
-  const current = document.querySelector('#screen-intro [data-panel]:not([hidden])')?.dataset.panel;
-  if (!current || current === 'home') return;
+  const current = document.querySelector('#intro-popup [data-panel]:not([hidden])')?.dataset.panel;
+  if (!current) return;
   openIntroPanel(current === 'career' ? 'single' : 'home', document.querySelector('[data-menu="' + current + '"]'));
 }
 
 document.getElementById('screen-intro')?.addEventListener('click', event => {
   const button = event.target.closest('button');
   if (button?.dataset.menu) openIntroPanel(button.dataset.menu);
-  else if (button?.hasAttribute('data-back')) backFromIntroPanel();
+  else if (button?.hasAttribute('data-back') || event.target.id === 'intro-popup') backFromIntroPanel();
 });
-document.getElementById('screen-intro')?.addEventListener('keydown', event => {
-  if (event.key === 'Escape') backFromIntroPanel();
+
+document.getElementById('intro-popup')?.addEventListener('keydown', event => {
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    backFromIntroPanel();
+  }
+  if (event.key !== 'Tab') return;
+  const controls = event.currentTarget.querySelectorAll('section:not([hidden]) button:not(:disabled)');
+  const first = controls[0], last = controls[controls.length - 1];
+  if (event.shiftKey && (document.activeElement === first || document.activeElement.tagName === 'H3')) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
 });
 
 document.getElementById('btn-start-new')?.addEventListener('click', () => {
@@ -12533,6 +12581,7 @@ document.getElementById('btn-start-new')?.addEventListener('click', () => {
 });
 
 document.getElementById('btn-load-game')?.addEventListener('click', () => {
+  openIntroPanel('home');
   showLoadModal();
 });
 
@@ -12618,6 +12667,7 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
 // ─── Quick Race ───────────────────────────────────────────────
 function showQuickRaceScreen() {
   document.getElementById('quick-race-modal')?.remove();
+  openIntroPanel('home');
   quickRaceStep=1;
   document.body.insertAdjacentHTML('beforeend', renderQuickRaceModal());
   if (quickRaceSeries !== null) selectQuickRaceSeries(quickRaceSeries);
@@ -12674,7 +12724,7 @@ function showQuickRaceResults() {
 function closeQuickRaceSettings() {
   document.getElementById('quick-race-modal')?.remove();
   if (quickRaceLastResult) showQuickRaceResults();
-  else document.querySelector('#screen-intro [data-panel]:not([hidden]) [id$=race]')?.focus();
+  else document.querySelector('[data-menu="' + (quickRacePlayers === 2 ? 'multi' : 'single') + '"]')?.focus();
 }
 
 function leaveQuickRaceResults() {

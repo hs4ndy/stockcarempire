@@ -14,24 +14,42 @@
 <!--  INTRO SCREEN                                          -->
 <!-- ═══════════════════════════════════════════════════════ -->
 <div id="screen-intro" class="screen">
-  <svg class="intro-tunnel" viewBox="0 0 1440 900" preserveAspectRatio="none" aria-hidden="true"><defs><path id="edge-pair" d="M -30 -40 L 245 940 M 1470 -40 L 1195 940" fill="none" stroke="currentColor" stroke-width="3"/></defs>
-    <use href="#edge-pair" transform="translate(720 450) scale(0.29) translate(-720 -450)" opacity="0.08"/>
-    <use href="#edge-pair" transform="translate(720 450) scale(0.34) translate(-720 -450)" opacity="0.12"/>
-    <use href="#edge-pair" transform="translate(720 450) scale(0.4) translate(-720 -450)" opacity="0.16"/>
-    <use href="#edge-pair" transform="translate(720 450) scale(0.48) translate(-720 -450)" opacity="0.23"/>
-    <use href="#edge-pair" transform="translate(720 450) scale(0.57) translate(-720 -450)" opacity="0.32"/>
-    <use href="#edge-pair" transform="translate(720 450) scale(0.68) translate(-720 -450)" opacity="0.46"/>
-    <use href="#edge-pair" transform="translate(720 450) scale(0.82) translate(-720 -450)" opacity="0.67"/>
-    <use href="#edge-pair" transform="translate(720 450) scale(1) translate(-720 -450)" opacity="1.00"/>
+  <svg class="intro-tunnel" viewBox="0 0 1440 900" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M 14 0 L 146 900 M 1426 0 L 1294 900" opacity="1"/>
+    <path d="M 55 0 L 187 900 M 1385 0 L 1253 900" opacity="0.7"/>
+    <path d="M 88 0 L 220 900 M 1352 0 L 1220 900" opacity="0.49"/>
+    <path d="M 112 0 L 244 900 M 1328 0 L 1196 900" opacity="0.33"/>
+    <path d="M 130 0 L 262 900 M 1310 0 L 1178 900" opacity="0.22"/>
+    <path d="M 144 0 L 276 900 M 1296 0 L 1164 900" opacity="0.14"/>
+    <path d="M 154 0 L 286 900 M 1286 0 L 1154 900" opacity="0.08"/>
   </svg>
   <div class="intro-layout intro-center">
-    <div class="intro-logo"><div class="logo-main-wrap"><span class="logo-main">Stock Car</span> <span class="logo-empire">Empire</span></div><div class="intro-version logo-beta">BETA / VERSION 167</div></div>
-    <nav class="intro-buttons" data-panel="home" aria-label="Main menu"><button type="button" class="btn-game btn-game-primary" data-menu="single">Single Player</button><button type="button" class="btn-game btn-game-ghost" data-menu="multi">Multiplayer</button><hr><button type="button" class="btn-game btn-game-ghost" data-menu="changes">Change Log</button><button type="button" class="btn-game btn-game-ghost" data-menu="about">About</button></nav>
-<section class="intro-buttons" data-panel="single" hidden aria-label="Single Player"><h2 tabindex="-1">Single Player</h2><button type="button" class="btn-game btn-game-primary" data-menu="career">Career Mode</button><button type="button" class="btn-game btn-game-ghost"  id="btn-quick-race">Single Player Quick Race</button><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></section>
-<section class="intro-buttons" data-panel="career" hidden aria-label="Career Mode"><h2 tabindex="-1">Career Mode</h2><button type="button" class="btn-game btn-game-primary"  id="btn-start-new">New Career</button><button type="button" class="btn-game btn-game-ghost"  id="btn-load-game">Load a Game</button><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></section>
-<section class="intro-buttons" data-panel="multi" hidden aria-label="Multiplayer"><h2 tabindex="-1">Multiplayer</h2><button type="button" class="btn-game btn-game-primary"  id="btn-dual-race">Split Screen Multiplayer</button><button type="button" class="btn-game btn-game-ghost" disabled>Local Network Multiplayer <small>Coming Soon</small></button><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></section>
-<section class="intro-buttons" data-panel="changes" hidden aria-label="Change Log"><h2 tabindex="-1">Change Log</h2><p><strong>VERSION 167</strong><br>The main menu now groups Career and Quick Race under Single Player. Open Multiplayer to race in split screen.</p><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></section>
-<section class="intro-buttons" data-panel="about" hidden aria-label="About"><h2 tabindex="-1">About</h2><p>About Stalker Empire.</p><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></section>
+    <div class="intro-logo"><div class="logo-main-wrap"><span class="logo-main">Stock Car</span> <span class="logo-empire">Empire</span></div><div class="intro-version logo-beta">BETA / VERSION 168</div></div>
+    <nav class="intro-buttons" data-panel="home" aria-label="Main menu"><button type="button" class="btn-game btn-game-ghost" data-menu="single">Single Player</button><button type="button" class="btn-game btn-game-ghost" data-menu="multi">Multiplayer</button><hr><button type="button" class="btn-game btn-game-ghost" data-menu="changes">Change Log</button><button type="button" class="btn-game btn-game-ghost" data-menu="about">About</button></nav>
+  </div>
+  <div id="intro-popup" class="modal-overlay" hidden>
+    <div class="modal intro-popup-window" role="dialog" aria-modal="true">
+      <section data-panel="single" hidden>
+        <div class="modal-header"><h3 id="intro-title-single" tabindex="-1">Single Player</h3></div>
+        <div class="modal-body intro-buttons"><button type="button" class="btn-game btn-game-primary" data-menu="career">Career Mode</button><button type="button" class="btn-game btn-game-ghost"  id="btn-quick-race">Single Player Quick Race</button><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></div>
+      </section>
+      <section data-panel="career" hidden>
+        <div class="modal-header"><h3 id="intro-title-career" tabindex="-1">Career Mode</h3></div>
+        <div class="modal-body intro-buttons"><button type="button" class="btn-game btn-game-primary"  id="btn-start-new">New Career</button><button type="button" class="btn-game btn-game-ghost"  id="btn-load-game">Load a Game</button><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></div>
+      </section>
+      <section data-panel="multi" hidden>
+        <div class="modal-header"><h3 id="intro-title-multi" tabindex="-1">Multiplayer</h3></div>
+        <div class="modal-body intro-buttons"><button type="button" class="btn-game btn-game-primary"  id="btn-dual-race">Split Screen Multiplayer</button><button type="button" class="btn-game btn-game-ghost" disabled>Local Network Multiplayer <small>Coming Soon</small></button><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></div>
+      </section>
+      <section data-panel="changes" hidden>
+        <div class="modal-header"><h3 id="intro-title-changes" tabindex="-1">Change Log</h3></div>
+        <div class="modal-body intro-buttons"><p><strong>VERSION 168</strong><br>Home menu options now open in pop-up windows. The title and red side lines have been refined.</p><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></div>
+      </section>
+      <section data-panel="about" hidden>
+        <div class="modal-header"><h3 id="intro-title-about" tabindex="-1">About</h3></div>
+        <div class="modal-body intro-buttons"><p>About Stalker Empire.</p><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></div>
+      </section>
+    </div>
   </div>
 </div>
 
