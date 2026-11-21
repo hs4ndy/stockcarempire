@@ -36,6 +36,28 @@ function enterGame() {
 }
 
 // ─── Intro / New Game ─────────────────────────────────────────
+function openIntroPanel(key, focusTarget) {
+  const panels = document.querySelectorAll('#screen-intro [data-panel]');
+  for (const panel of panels) panel.hidden = panel.dataset.panel !== key;
+  const active = document.querySelector('#screen-intro [data-panel="' + key + '"]');
+  (focusTarget || active.querySelector('h2, button'))?.focus();
+}
+
+function backFromIntroPanel() {
+  const current = document.querySelector('#screen-intro [data-panel]:not([hidden])')?.dataset.panel;
+  if (!current || current === 'home') return;
+  openIntroPanel(current === 'career' ? 'single' : 'home', document.querySelector('[data-menu="' + current + '"]'));
+}
+
+document.getElementById('screen-intro')?.addEventListener('click', event => {
+  const button = event.target.closest('button');
+  if (button?.dataset.menu) openIntroPanel(button.dataset.menu);
+  else if (button?.hasAttribute('data-back')) backFromIntroPanel();
+});
+document.getElementById('screen-intro')?.addEventListener('keydown', event => {
+  if (event.key === 'Escape') backFromIntroPanel();
+});
+
 document.getElementById('btn-start-new')?.addEventListener('click', () => {
   showScreen('setup');
 });
@@ -44,7 +66,12 @@ document.getElementById('btn-load-game')?.addEventListener('click', () => {
   showLoadModal();
 });
 
+document.getElementById('btn-dual-race')?.addEventListener('click', () => {
+  quickRacePlayers = 2;
+  showQuickRaceScreen();
+});
 document.getElementById('btn-quick-race')?.addEventListener('click', () => {
+  quickRacePlayers = 1;
   showQuickRaceScreen();
 });
 
@@ -177,6 +204,7 @@ function showQuickRaceResults() {
 function closeQuickRaceSettings() {
   document.getElementById('quick-race-modal')?.remove();
   if (quickRaceLastResult) showQuickRaceResults();
+  else document.querySelector('#screen-intro [data-panel]:not([hidden]) [id$=race]')?.focus();
 }
 
 function leaveQuickRaceResults() {
@@ -188,7 +216,7 @@ function leaveQuickRaceResults() {
   document.getElementById('screen-quick-results')?.remove();
   document.getElementById('screen-intro').inert = false;
   showScreen('intro');
-  document.getElementById('btn-quick-race')?.focus();
+  document.querySelector('#screen-intro [data-panel]:not([hidden]) button')?.focus();
 }
 function setQuickRacePlayers(count) {
   quickRacePlayers = count === 2 ? 2 : 1;

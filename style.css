@@ -193,12 +193,16 @@ body:not([data-screen="game"]) .skip-link { display: none; }
 .intro-buttons .btn-game { justify-content: center; }
 .btn-game { width: 100%; justify-content: flex-start; min-height: 60px; padding: 16px 24px; font-size: 19px; }
 .intro-footer { position: absolute; bottom: 28px; left: 5vw; right: 5vw; display: flex; justify-content: space-between; gap: 24px; color: var(--text-mute); font-size: 13px; }
-.intro-bg-lines { position: absolute; inset: -20%; opacity: .5; transform: skewY(-5deg); overflow: hidden; pointer-events: none; }
-.intro-bg-lines span { position: absolute; left: -10%; width: 120%; height: 1px; background: #303438; transform: rotate(-7deg); }
-.intro-bg-lines span:nth-child(1) { top: 12%; } .intro-bg-lines span:nth-child(2) { top: 26%; }
-.intro-bg-lines span:nth-child(3) { top: 40%; } .intro-bg-lines span:nth-child(4) { top: 54%; }
-.intro-bg-lines span:nth-child(5) { top: 68%; } .intro-bg-lines span:nth-child(6) { top: 82%; }
-.intro-bg-lines span:nth-child(7) { top: 96%; } .intro-bg-lines span:nth-child(8) { top: 110%; }
+.intro-tunnel { position:absolute; inset:0; width:100%; height:100%; color:#db213a; pointer-events:none; }
+.intro-layout { padding:24px 12px; background:radial-gradient(ellipse, var(--bg, #101214) 45%, transparent 74%); }
+.intro-logo .logo-main-wrap { transform:skewX(-8deg); }
+.intro-buttons[hidden] { display:none; }
+.intro-buttons hr { border:0; height:1px; background:#4c4c50; width:100%; margin:5px 0; }
+.intro-buttons h2 { margin:0 0 8px; }
+.intro-buttons p { margin:0 0 12px; line-height:1.5; }
+.intro-buttons small { font-size:.72em; margin-left:8px; }
+.intro-buttons [disabled] { opacity:.65; cursor:default; }
+
 #screen-setup { min-height: 100svh; display: flex; align-items: center; justify-content: center; padding: 48px 24px; }
 .setup-bg-lines { display: none; }
 .setup-panel { width: 100%; max-width: 600px; background: var(--panel); border-radius: var(--radius); overflow: hidden; }
@@ -1083,7 +1087,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .dual-order { top: calc(5.25vw + 24px); }
 @media (max-width: 700px) { .dual-order { top: calc(11vw + 20px); } }
 
-.intro-version.logo-beta { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); margin: 0; white-space: nowrap; }
+.intro-version.logo-beta { display:block; margin:8px 0 0; }
 
 .race-news-modal .modal-body { overscroll-behavior: contain; }
 .race-news-modal .race-news-article h2 { font-size: clamp(30px, 4vw, 40px); }

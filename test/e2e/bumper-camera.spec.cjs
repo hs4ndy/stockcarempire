@@ -1,3 +1,4 @@
+const {chooseHomeAction} = require('../helpers/home-menu.cjs');
 const path = require('node:path');
 const { test, expect } = require('playwright/test');
 
@@ -9,7 +10,7 @@ test('bumper trains never put a forward car inside the rear-view image', async (
     contentType: 'application/javascript',
   }));
   await page.goto('/');
-  await page.locator('#btn-quick-race').click();
+  await chooseHomeAction(page,'#btn-quick-race');
   await page.locator('.quick-series-btn').last().click();
   if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator("#btn-quick-race-confirm").click();
   await page.waitForFunction(() => window._r3d?.mirrorRT);

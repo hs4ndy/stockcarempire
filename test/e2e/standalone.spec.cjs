@@ -1,3 +1,4 @@
+const {chooseHomeAction} = require('../helpers/home-menu.cjs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { test, expect } = require('playwright/test');
@@ -12,7 +13,7 @@ test('standalone game launches directly from a local file without network assets
 
   const standalone = pathToFileURL(path.resolve(__dirname, '../../releases/Stock-Car-Empire.html')).href;
   await page.goto(standalone);
-  await page.locator('#btn-quick-race').click();
+  await chooseHomeAction(page,'#btn-quick-race');
   await page.locator('.quick-series-btn').first().click();
   if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator("#btn-quick-race-confirm").click();
   await page.waitForFunction(() => window._r3d?.racing && window._r3d?.mirrorRT);
@@ -38,7 +39,7 @@ test('standalone game launches directly from a local file without network assets
     title: 'Stock Car Empire Beta', road: true, wall: true, fence: true, legacyPlayer: true,
   });
   await page.goto(standalone);
-  await page.locator('#btn-start-new').click();
+  await chooseHomeAction(page,'#btn-start-new');
   await page.locator('#inp-team-name').fill('Offline Team');
   await page.locator('#inp-driver-name').fill('Offline Driver');
   await page.locator('#inp-car-name').fill('Offline Car');

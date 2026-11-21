@@ -1,3 +1,4 @@
+const {chooseHomeAction} = require('../helpers/home-menu.cjs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { test, expect } = require('playwright/test');
@@ -24,7 +25,7 @@ for (const [label, viewport, dpr] of [
     }));
     await page.goto(label === 'direct-file'
       ? pathToFileURL(path.resolve(__dirname, '../../index.html')).href : '/');
-    await page.locator('#btn-quick-race').click();
+    await chooseHomeAction(page,'#btn-quick-race');
     await page.locator('#quick-race-graphics').selectOption('high');
     await page.locator('.quick-series-btn').last().click();
     if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator("#btn-quick-race-confirm").click();

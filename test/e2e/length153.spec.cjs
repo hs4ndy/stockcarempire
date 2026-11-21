@@ -1,3 +1,4 @@
+const {chooseHomeAction} = require('../helpers/home-menu.cjs');
 const {test,expect}=require('playwright/test');
 const fs=require('node:fs'),path=require('node:path'),{pathToFileURL}=require('node:url');
 async function open(page,file='index.html') {
@@ -7,7 +8,7 @@ async function open(page,file='index.html') {
 for(const [width,height,file,selected] of [[1440,900,'index.html',6],[1024,600,'index.html',0],[390,844,'releases/Stock-Car-Empire.html',3],[844,390,'index.html',5]]) {
   test(`Quick length slider keyboard, layout and actual distance ${width}`,async({page})=>{
     await page.setViewportSize({width,height});await open(page,file);
-    await page.locator('#btn-quick-race').click();await page.locator('.quick-series-btn').first().click();
+    await chooseHomeAction(page,'#btn-quick-race');await page.locator('.quick-series-btn').first().click();
     const slider=page.locator('#quick-race-length');
     await expect(slider).toHaveValue('3');
     await slider.focus();await page.keyboard.press('End');await expect(slider).toHaveAttribute('aria-valuetext','Longest');
@@ -29,7 +30,7 @@ for(const [width,height,file,selected] of [[1440,900,'index.html',6],[1024,600,'
   });
 }
 test('Dual Quick Race shares selected distance and retains it after both players finish',async({page})=>{
-  await open(page);await page.locator('#btn-quick-race').click();await page.locator('.quick-series-btn').last().click();
+  await open(page);await chooseHomeAction(page,'#btn-quick-race');await page.locator('.quick-series-btn').last().click();
   await page.locator('#quick-race-length').evaluate(el=>{el.value=1;el.dispatchEvent(new Event('input',{bubbles:true}));});
   await page.locator('#quick-next').click();await page.evaluate(()=>setQuickRacePlayers(2));await page.locator('#btn-quick-race-confirm').click();
   await page.waitForFunction(()=>window._r3d?.player2&&window._r3d?.mirrorRT);

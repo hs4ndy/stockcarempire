@@ -1,3 +1,4 @@
+const {chooseHomeAction} = require('../helpers/home-menu.cjs');
 const {test, expect} = require('playwright/test');
 const path = require('node:path');
 const {pathToFileURL} = require('node:url');
@@ -22,7 +23,7 @@ for (const [preset, players, file, series] of [
     await expect(page.locator('#career-race-graphics')).toHaveValue('medium');
     await page.locator('#career-race-graphics').selectOption(preset);
     await page.reload();
-    await page.locator('#btn-quick-race').click();
+    await chooseHomeAction(page,'#btn-quick-race');
     await expect(page.locator('#quick-race-graphics')).toHaveValue(preset);
     await page.locator('.quick-series-btn').nth(series).click();
     await page.locator('#quick-next').click();

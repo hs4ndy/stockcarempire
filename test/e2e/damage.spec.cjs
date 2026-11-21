@@ -1,7 +1,8 @@
+const {chooseHomeAction} = require('../helpers/home-menu.cjs');
 const {test,expect}=require('playwright/test'),path=require('path');
 async function open(page){await page.route('**/three.min.js',r=>r.fulfill({path:path.resolve('node_modules/three/build/three.min.js')}));await page.goto(process.env.STOCKCAR_TEST_FILE ? require('url').pathToFileURL(path.resolve(process.env.STOCKCAR_TEST_FILE)).href : '/');}
 test('Quick switches preserve preferences, easy modes disable hazards, and both humans show health',async({page})=>{
- await open(page);await page.locator('#btn-quick-race').click();await page.locator('[data-diff="pro"]').click();
+ await open(page);await chooseHomeAction(page,'#btn-quick-race');await page.locator('[data-diff="pro"]').click();
  const crashes=page.locator('[data-race-rule="crashes"]'),damage=page.locator('[data-race-rule="damage"]');await expect(crashes).toBeChecked();await expect(damage).toBeChecked();
  await crashes.uncheck();await page.locator('[data-diff="beginner"]').click();await expect(crashes).toBeDisabled();await expect(damage).not.toBeChecked();await page.locator('[data-diff="pro"]').click();await expect(crashes).not.toBeChecked();await expect(damage).toBeChecked();await page.locator('#quick-race-rules').scrollIntoViewIfNeeded();await page.waitForTimeout(250);await page.screenshot({path:'.impeccable/review/damage-quick.png'});
  await page.locator('.quick-series-btn').last().click();await page.locator('#quick-next').click();await page.locator('[data-players="2"]').click();if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator('#btn-quick-race-confirm').click();await page.waitForFunction(()=>window._r3d?.player2);

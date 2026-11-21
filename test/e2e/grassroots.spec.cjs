@@ -1,3 +1,4 @@
+const {chooseHomeAction} = require('../helpers/home-menu.cjs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { test, expect } = require('playwright/test');
@@ -11,7 +12,7 @@ test('Grassroots has its own track, legacy cars and 90-percent player and AI pac
   }));
   for (const series of [0, 1, 2]) {
     await page.goto('/');
-    await page.locator('#btn-quick-race').click();
+    await chooseHomeAction(page,'#btn-quick-race');
     await page.locator('.quick-series-btn').nth(series).click();
     if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator("#btn-quick-race-confirm").click();
     await page.waitForFunction(() => window._r3d?.mirrorRT && window._r3d.trackGroup.children.every(m =>
@@ -81,7 +82,7 @@ test('Grassroots has its own track, legacy cars and 90-percent player and AI pac
   }
   // Verify the High preset loads its embedded textures from the local HTML file.
   await page.goto(pathToFileURL(path.resolve(__dirname, '../../index.html')).href);
-  await page.locator('#btn-quick-race').click();
+  await chooseHomeAction(page,'#btn-quick-race');
   await page.locator('#quick-race-graphics').selectOption('high');
   await page.locator('.quick-series-btn').first().click();
   if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator("#btn-quick-race-confirm").click();

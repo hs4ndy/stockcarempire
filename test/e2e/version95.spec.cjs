@@ -1,3 +1,4 @@
+const {chooseHomeAction} = require('../helpers/home-menu.cjs');
 const {test,expect}=require('playwright/test');const path=require('path'),{pathToFileURL}=require('url');
 for(const [width,file] of [[1440,'index.html'],[375,'releases/Stock-Car-Empire.html']])test(`recurring Career rivals, fair AI grid and Career DNF ${width}`,async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.setViewportSize({width,height:850});await page.route('**/three.min.js',r=>r.fulfill({path:path.resolve('node_modules/three/build/three.min.js')}));await page.goto(pathToFileURL(path.resolve(file)).href);
@@ -12,7 +13,7 @@ for(const [width,file] of [[1440,'index.html'],[375,'releases/Stock-Car-Empire.h
 
 test('Pro Premier brake-created dropout returns to a useful tow in the real browser engine',async({page})=>{
  test.setTimeout(90000);await page.route('**/three.min.js',r=>r.fulfill({path:path.resolve('node_modules/three/build/three.min.js')}));await page.addInitScript(()=>{let s=17;Math.random=()=>((s=(s*1664525+1013904223)>>>0)/4294967296);});await page.goto(pathToFileURL(path.resolve('index.html')).href);await page.addScriptTag({path:path.resolve('test/helpers/race-driver.js')});
- await page.locator('#btn-quick-race').click();await page.locator('[data-diff="pro"]').last().click();await page.locator('.quick-series-btn').last().click();if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator('#btn-quick-race-confirm').click();await page.waitForFunction(()=>window._r3d?.mirrorRT);
+ await chooseHomeAction(page,'#btn-quick-race');await page.locator('[data-diff="pro"]').last().click();await page.locator('.quick-series-btn').last().click();if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator('#btn-quick-race-confirm').click();await page.waitForFunction(()=>window._r3d?.mirrorRT);
  const result=await page.evaluate(()=>{const e=window._r3d;cancelAnimationFrame(e._raf);e.paceMode=false;e.racing=true;e.paused=false;e.wreckCooldown=Infinity;let braked=false,released=null,rejoined=null,max=0,peakGap=0;const driver={};
   for(let frame=0;frame<60*85&&!e.done;frame++){
    raceDriverStep(e,driver,1/60,'race');const next=e.cars.filter(c=>c!==e.player&&!c.finished&&!c.dnf&&c.z>e.player.z).sort((a,b)=>a.z-b.z)[0];

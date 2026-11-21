@@ -1,3 +1,4 @@
+const {chooseHomeAction} = require('../helpers/home-menu.cjs');
 const fs = require('node:fs');
 const path = require('node:path');
 const { test, expect } = require('playwright/test');
@@ -28,7 +29,7 @@ for (const [name, viewport] of [
     await page.evaluate(() => document.fonts.ready);
     await expect(page.locator('.intro-showcase')).toHaveCount(0);
     await capture(page, 'intro-' + name);
-    await page.locator('#btn-start-new').click();
+    await chooseHomeAction(page,'#btn-start-new');
     await page.locator('#inp-team-name').fill('Thunder Valley Racing');
     await page.locator('#inp-driver-name').fill('James Carter');
     await page.locator('#inp-car-name').fill('SC-01');
@@ -82,7 +83,7 @@ for (const [name, viewport] of [
     await page.setViewportSize(viewport);
     await page.route('**/three.min.js', route => route.fulfill({ path: path.resolve(__dirname, '../../node_modules/three/build/three.min.js'), contentType: 'application/javascript' }));
     await page.goto('/');
-    await page.locator('#btn-quick-race').click();
+    await chooseHomeAction(page,'#btn-quick-race');
     await page.locator('.quick-series-btn').last().click();
     if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator("#btn-quick-race-confirm").click();
     await page.waitForFunction(() => window._r3d?.racing);

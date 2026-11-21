@@ -14,38 +14,25 @@
 <!--  INTRO SCREEN                                          -->
 <!-- ═══════════════════════════════════════════════════════ -->
 <div id="screen-intro" class="screen">
-  <div class="intro-checker-strip top"></div>
-  <div class="intro-bg-lines" aria-hidden="true">
-    <span></span><span></span><span></span><span></span>
-    <span></span><span></span><span></span><span></span>
+  <svg class="intro-tunnel" viewBox="0 0 1440 900" preserveAspectRatio="none" aria-hidden="true"><defs><path id="edge-pair" d="M -30 -40 L 245 940 M 1470 -40 L 1195 940" fill="none" stroke="currentColor" stroke-width="3"/></defs>
+    <use href="#edge-pair" transform="translate(720 450) scale(0.29) translate(-720 -450)" opacity="0.08"/>
+    <use href="#edge-pair" transform="translate(720 450) scale(0.34) translate(-720 -450)" opacity="0.12"/>
+    <use href="#edge-pair" transform="translate(720 450) scale(0.4) translate(-720 -450)" opacity="0.16"/>
+    <use href="#edge-pair" transform="translate(720 450) scale(0.48) translate(-720 -450)" opacity="0.23"/>
+    <use href="#edge-pair" transform="translate(720 450) scale(0.57) translate(-720 -450)" opacity="0.32"/>
+    <use href="#edge-pair" transform="translate(720 450) scale(0.68) translate(-720 -450)" opacity="0.46"/>
+    <use href="#edge-pair" transform="translate(720 450) scale(0.82) translate(-720 -450)" opacity="0.67"/>
+    <use href="#edge-pair" transform="translate(720 450) scale(1) translate(-720 -450)" opacity="1.00"/>
+  </svg>
+  <div class="intro-layout intro-center">
+    <div class="intro-logo"><div class="logo-main-wrap"><span class="logo-main">Stock Car</span> <span class="logo-empire">Empire</span></div><div class="intro-version logo-beta">BETA / VERSION 167</div></div>
+    <nav class="intro-buttons" data-panel="home" aria-label="Main menu"><button type="button" class="btn-game btn-game-primary" data-menu="single">Single Player</button><button type="button" class="btn-game btn-game-ghost" data-menu="multi">Multiplayer</button><hr><button type="button" class="btn-game btn-game-ghost" data-menu="changes">Change Log</button><button type="button" class="btn-game btn-game-ghost" data-menu="about">About</button></nav>
+<section class="intro-buttons" data-panel="single" hidden aria-label="Single Player"><h2 tabindex="-1">Single Player</h2><button type="button" class="btn-game btn-game-primary" data-menu="career">Career Mode</button><button type="button" class="btn-game btn-game-ghost"  id="btn-quick-race">Single Player Quick Race</button><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></section>
+<section class="intro-buttons" data-panel="career" hidden aria-label="Career Mode"><h2 tabindex="-1">Career Mode</h2><button type="button" class="btn-game btn-game-primary"  id="btn-start-new">New Career</button><button type="button" class="btn-game btn-game-ghost"  id="btn-load-game">Load a Game</button><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></section>
+<section class="intro-buttons" data-panel="multi" hidden aria-label="Multiplayer"><h2 tabindex="-1">Multiplayer</h2><button type="button" class="btn-game btn-game-primary"  id="btn-dual-race">Split Screen Multiplayer</button><button type="button" class="btn-game btn-game-ghost" disabled>Local Network Multiplayer <small>Coming Soon</small></button><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></section>
+<section class="intro-buttons" data-panel="changes" hidden aria-label="Change Log"><h2 tabindex="-1">Change Log</h2><p><strong>VERSION 167</strong><br>The main menu now groups Career and Quick Race under Single Player. Open Multiplayer to race in split screen.</p><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></section>
+<section class="intro-buttons" data-panel="about" hidden aria-label="About"><h2 tabindex="-1">About</h2><p>About Stalker Empire.</p><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></section>
   </div>
-
-  <div class="intro-layout">
-    <div class="intro-center">
-      <div class="intro-logo">
-        <div class="logo-main-wrap">
-          <span class="logo-main">Stock Car</span>
-          <span class="logo-empire">Empire</span>
-        </div>
-        <div class="logo-beta">BETA</div>
-        <div class="logo-stripe"></div>
-      </div>
-
-      <div class="intro-buttons">
-        <button class="btn-game btn-game-primary" id="btn-start-new">
-          <span>New Career</span>
-        </button>
-        <button class="btn-game btn-game-ghost" id="btn-load-game">
-          <span>Load a Game</span>
-        </button>
-        <button class="btn-game btn-game-ghost" id="btn-quick-race">
-          <span>Quick Race</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <footer class="intro-version logo-beta">BETA / VERSION 166</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->

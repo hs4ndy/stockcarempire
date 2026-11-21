@@ -1,3 +1,4 @@
+const {chooseHomeAction} = require('../helpers/home-menu.cjs');
 const path = require('node:path');
 const { test, expect } = require('playwright/test');
 
@@ -14,7 +15,7 @@ for (const [name, viewport] of [
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.goto('/');
-    await page.locator('#btn-quick-race').click();
+    await chooseHomeAction(page,'#btn-quick-race');
     const quick = page.locator('#quick-race-modal .difficulty-card').nth(1);
     await quick.focus();
     await page.keyboard.press('Space');
@@ -22,7 +23,7 @@ for (const [name, viewport] of [
     await expect(quick).toBeFocused();
     await page.locator('#quick-race-modal .modal-close').click();
 
-    await page.locator('#btn-start-new').click();
+    await chooseHomeAction(page,'#btn-start-new');
     await page.locator('#inp-team-name').fill('W'.repeat(40));
     await page.locator('#inp-driver-name').fill('W'.repeat(30));
     await page.locator('#inp-car-name').fill('W'.repeat(30));

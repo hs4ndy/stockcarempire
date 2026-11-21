@@ -1,3 +1,4 @@
+const {chooseHomeAction} = require('../helpers/home-menu.cjs');
 const path = require('node:path');
 const { test, expect } = require('playwright/test');
 
@@ -14,7 +15,7 @@ for (const [name, viewport] of [
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.goto('/');
-    await page.locator('#btn-start-new').click();
+    await chooseHomeAction(page,'#btn-start-new');
     await page.locator('#inp-team-name').fill('Super Racing');
     await page.locator('#inp-driver-name').fill('Bob Smith');
     await page.locator('#inp-car-name').fill('The One');

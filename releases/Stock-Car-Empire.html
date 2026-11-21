@@ -212,12 +212,16 @@ body:not([data-screen="game"]) .skip-link { display: none; }
 .intro-buttons .btn-game { justify-content: center; }
 .btn-game { width: 100%; justify-content: flex-start; min-height: 60px; padding: 16px 24px; font-size: 19px; }
 .intro-footer { position: absolute; bottom: 28px; left: 5vw; right: 5vw; display: flex; justify-content: space-between; gap: 24px; color: var(--text-mute); font-size: 13px; }
-.intro-bg-lines { position: absolute; inset: -20%; opacity: .5; transform: skewY(-5deg); overflow: hidden; pointer-events: none; }
-.intro-bg-lines span { position: absolute; left: -10%; width: 120%; height: 1px; background: #303438; transform: rotate(-7deg); }
-.intro-bg-lines span:nth-child(1) { top: 12%; } .intro-bg-lines span:nth-child(2) { top: 26%; }
-.intro-bg-lines span:nth-child(3) { top: 40%; } .intro-bg-lines span:nth-child(4) { top: 54%; }
-.intro-bg-lines span:nth-child(5) { top: 68%; } .intro-bg-lines span:nth-child(6) { top: 82%; }
-.intro-bg-lines span:nth-child(7) { top: 96%; } .intro-bg-lines span:nth-child(8) { top: 110%; }
+.intro-tunnel { position:absolute; inset:0; width:100%; height:100%; color:#db213a; pointer-events:none; }
+.intro-layout { padding:24px 12px; background:radial-gradient(ellipse, var(--bg, #101214) 45%, transparent 74%); }
+.intro-logo .logo-main-wrap { transform:skewX(-8deg); }
+.intro-buttons[hidden] { display:none; }
+.intro-buttons hr { border:0; height:1px; background:#4c4c50; width:100%; margin:5px 0; }
+.intro-buttons h2 { margin:0 0 8px; }
+.intro-buttons p { margin:0 0 12px; line-height:1.5; }
+.intro-buttons small { font-size:.72em; margin-left:8px; }
+.intro-buttons [disabled] { opacity:.65; cursor:default; }
+
 #screen-setup { min-height: 100svh; display: flex; align-items: center; justify-content: center; padding: 48px 24px; }
 .setup-bg-lines { display: none; }
 .setup-panel { width: 100%; max-width: 600px; background: var(--panel); border-radius: var(--radius); overflow: hidden; }
@@ -1102,7 +1106,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .dual-order { top: calc(5.25vw + 24px); }
 @media (max-width: 700px) { .dual-order { top: calc(11vw + 20px); } }
 
-.intro-version.logo-beta { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); margin: 0; white-space: nowrap; }
+.intro-version.logo-beta { display:block; margin:8px 0 0; }
 
 .race-news-modal .modal-body { overscroll-behavior: contain; }
 .race-news-modal .race-news-article h2 { font-size: clamp(30px, 4vw, 40px); }
@@ -1336,38 +1340,25 @@ button.standing-driver .st-name { text-decoration:none; }
 <!--  INTRO SCREEN                                          -->
 <!-- ═══════════════════════════════════════════════════════ -->
 <div id="screen-intro" class="screen">
-  <div class="intro-checker-strip top"></div>
-  <div class="intro-bg-lines" aria-hidden="true">
-    <span></span><span></span><span></span><span></span>
-    <span></span><span></span><span></span><span></span>
+  <svg class="intro-tunnel" viewBox="0 0 1440 900" preserveAspectRatio="none" aria-hidden="true"><defs><path id="edge-pair" d="M -30 -40 L 245 940 M 1470 -40 L 1195 940" fill="none" stroke="currentColor" stroke-width="3"/></defs>
+    <use href="#edge-pair" transform="translate(720 450) scale(0.29) translate(-720 -450)" opacity="0.08"/>
+    <use href="#edge-pair" transform="translate(720 450) scale(0.34) translate(-720 -450)" opacity="0.12"/>
+    <use href="#edge-pair" transform="translate(720 450) scale(0.4) translate(-720 -450)" opacity="0.16"/>
+    <use href="#edge-pair" transform="translate(720 450) scale(0.48) translate(-720 -450)" opacity="0.23"/>
+    <use href="#edge-pair" transform="translate(720 450) scale(0.57) translate(-720 -450)" opacity="0.32"/>
+    <use href="#edge-pair" transform="translate(720 450) scale(0.68) translate(-720 -450)" opacity="0.46"/>
+    <use href="#edge-pair" transform="translate(720 450) scale(0.82) translate(-720 -450)" opacity="0.67"/>
+    <use href="#edge-pair" transform="translate(720 450) scale(1) translate(-720 -450)" opacity="1.00"/>
+  </svg>
+  <div class="intro-layout intro-center">
+    <div class="intro-logo"><div class="logo-main-wrap"><span class="logo-main">Stock Car</span> <span class="logo-empire">Empire</span></div><div class="intro-version logo-beta">BETA / VERSION 167</div></div>
+    <nav class="intro-buttons" data-panel="home" aria-label="Main menu"><button type="button" class="btn-game btn-game-primary" data-menu="single">Single Player</button><button type="button" class="btn-game btn-game-ghost" data-menu="multi">Multiplayer</button><hr><button type="button" class="btn-game btn-game-ghost" data-menu="changes">Change Log</button><button type="button" class="btn-game btn-game-ghost" data-menu="about">About</button></nav>
+<section class="intro-buttons" data-panel="single" hidden aria-label="Single Player"><h2 tabindex="-1">Single Player</h2><button type="button" class="btn-game btn-game-primary" data-menu="career">Career Mode</button><button type="button" class="btn-game btn-game-ghost"  id="btn-quick-race">Single Player Quick Race</button><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></section>
+<section class="intro-buttons" data-panel="career" hidden aria-label="Career Mode"><h2 tabindex="-1">Career Mode</h2><button type="button" class="btn-game btn-game-primary"  id="btn-start-new">New Career</button><button type="button" class="btn-game btn-game-ghost"  id="btn-load-game">Load a Game</button><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></section>
+<section class="intro-buttons" data-panel="multi" hidden aria-label="Multiplayer"><h2 tabindex="-1">Multiplayer</h2><button type="button" class="btn-game btn-game-primary"  id="btn-dual-race">Split Screen Multiplayer</button><button type="button" class="btn-game btn-game-ghost" disabled>Local Network Multiplayer <small>Coming Soon</small></button><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></section>
+<section class="intro-buttons" data-panel="changes" hidden aria-label="Change Log"><h2 tabindex="-1">Change Log</h2><p><strong>VERSION 167</strong><br>The main menu now groups Career and Quick Race under Single Player. Open Multiplayer to race in split screen.</p><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></section>
+<section class="intro-buttons" data-panel="about" hidden aria-label="About"><h2 tabindex="-1">About</h2><p>About Stalker Empire.</p><button type="button" class="btn-game btn-game-ghost" data-back>Back</button></section>
   </div>
-
-  <div class="intro-layout">
-    <div class="intro-center">
-      <div class="intro-logo">
-        <div class="logo-main-wrap">
-          <span class="logo-main">Stock Car</span>
-          <span class="logo-empire">Empire</span>
-        </div>
-        <div class="logo-beta">BETA</div>
-        <div class="logo-stripe"></div>
-      </div>
-
-      <div class="intro-buttons">
-        <button class="btn-game btn-game-primary" id="btn-start-new">
-          <span>New Career</span>
-        </button>
-        <button class="btn-game btn-game-ghost" id="btn-load-game">
-          <span>Load a Game</span>
-        </button>
-        <button class="btn-game btn-game-ghost" id="btn-quick-race">
-          <span>Quick Race</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <footer class="intro-version logo-beta">BETA / VERSION 166</footer>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -7825,6 +7816,7 @@ function showScreen(name) {
   document.body.dataset.screen = name;
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
   document.getElementById('screen-' + name)?.classList.remove('hidden');
+  if (name === 'intro') openIntroPanel('home');
 }
 
 function showTab(tabName) {
@@ -12514,6 +12506,28 @@ function enterGame() {
 }
 
 // ─── Intro / New Game ─────────────────────────────────────────
+function openIntroPanel(key, focusTarget) {
+  const panels = document.querySelectorAll('#screen-intro [data-panel]');
+  for (const panel of panels) panel.hidden = panel.dataset.panel !== key;
+  const active = document.querySelector('#screen-intro [data-panel="' + key + '"]');
+  (focusTarget || active.querySelector('h2, button'))?.focus();
+}
+
+function backFromIntroPanel() {
+  const current = document.querySelector('#screen-intro [data-panel]:not([hidden])')?.dataset.panel;
+  if (!current || current === 'home') return;
+  openIntroPanel(current === 'career' ? 'single' : 'home', document.querySelector('[data-menu="' + current + '"]'));
+}
+
+document.getElementById('screen-intro')?.addEventListener('click', event => {
+  const button = event.target.closest('button');
+  if (button?.dataset.menu) openIntroPanel(button.dataset.menu);
+  else if (button?.hasAttribute('data-back')) backFromIntroPanel();
+});
+document.getElementById('screen-intro')?.addEventListener('keydown', event => {
+  if (event.key === 'Escape') backFromIntroPanel();
+});
+
 document.getElementById('btn-start-new')?.addEventListener('click', () => {
   showScreen('setup');
 });
@@ -12522,7 +12536,12 @@ document.getElementById('btn-load-game')?.addEventListener('click', () => {
   showLoadModal();
 });
 
+document.getElementById('btn-dual-race')?.addEventListener('click', () => {
+  quickRacePlayers = 2;
+  showQuickRaceScreen();
+});
 document.getElementById('btn-quick-race')?.addEventListener('click', () => {
+  quickRacePlayers = 1;
   showQuickRaceScreen();
 });
 
@@ -12655,6 +12674,7 @@ function showQuickRaceResults() {
 function closeQuickRaceSettings() {
   document.getElementById('quick-race-modal')?.remove();
   if (quickRaceLastResult) showQuickRaceResults();
+  else document.querySelector('#screen-intro [data-panel]:not([hidden]) [id$=race]')?.focus();
 }
 
 function leaveQuickRaceResults() {
@@ -12666,7 +12686,7 @@ function leaveQuickRaceResults() {
   document.getElementById('screen-quick-results')?.remove();
   document.getElementById('screen-intro').inert = false;
   showScreen('intro');
-  document.getElementById('btn-quick-race')?.focus();
+  document.querySelector('#screen-intro [data-panel]:not([hidden]) button')?.focus();
 }
 function setQuickRacePlayers(count) {
   quickRacePlayers = count === 2 ? 2 : 1;

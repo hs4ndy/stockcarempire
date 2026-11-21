@@ -7,6 +7,7 @@ function showScreen(name) {
   document.body.dataset.screen = name;
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
   document.getElementById('screen-' + name)?.classList.remove('hidden');
+  if (name === 'intro') openIntroPanel('home');
 }
 
 function showTab(tabName) {

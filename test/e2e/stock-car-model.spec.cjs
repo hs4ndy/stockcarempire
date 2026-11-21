@@ -1,3 +1,4 @@
+const {chooseHomeAction} = require('../helpers/home-menu.cjs');
 const path = require('node:path');
 const { test, expect } = require('playwright/test');
 
@@ -10,7 +11,7 @@ test(`Series cars share geometry and retain identities in the ${fieldSize}-car s
     contentType: 'application/javascript',
   }));
   await page.goto('/');
-  await page.locator('#btn-quick-race').click();
+  await chooseHomeAction(page,'#btn-quick-race');
   await page.locator('.quick-series-btn').nth(series).click();
   if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator("#btn-quick-race-confirm").click();
   await page.waitForFunction(() => window._r3d?.mirrorRT && window._r3d.racing && !window._r3d.paceMode);

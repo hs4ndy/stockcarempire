@@ -1,3 +1,4 @@
+const {chooseHomeAction} = require('../helpers/home-menu.cjs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { test, expect } = require('playwright/test');
@@ -12,7 +13,7 @@ for (const [name, url] of [
     page.on('pageerror', error => errors.push(error.message));
     await page.route('**/three.min.js', route => route.fulfill({ path: path.resolve(__dirname, '../../node_modules/three/build/three.min.js'), contentType: 'application/javascript' }));
     await page.goto(url);
-    await page.locator('#btn-start-new').click();
+    await chooseHomeAction(page,'#btn-start-new');
     await page.locator('#inp-team-name').fill('Owner Driver Racing');
     await page.locator('#inp-driver-name').fill('Owner Driver');
     await page.locator('#inp-car-name').fill('Player Car');

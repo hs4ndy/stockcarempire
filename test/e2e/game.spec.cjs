@@ -1,3 +1,4 @@
+const {chooseHomeAction} = require('../helpers/home-menu.cjs');
 const path = require('node:path');
 const { test, expect } = require('playwright/test');
 
@@ -49,7 +50,7 @@ for (const [label, viewport] of [
   test(`sports career dashboard preserves responsive panel alignment (${label})`, async ({ page }, testInfo) => {
     await page.setViewportSize(viewport);
     await page.goto('/');
-    await page.locator('#btn-start-new').click();
+    await chooseHomeAction(page,'#btn-start-new');
     await page.locator('#inp-team-name').fill('Apex Test Racing');
     await page.locator('#inp-driver-name').fill('Taylor Tester');
     await page.locator('#inp-car-name').fill('Test Mule');
@@ -118,7 +119,7 @@ for (const [label, viewport] of [
 
 test('a win opens a dedicated race winner menu', async ({ page }, testInfo) => {
   await page.goto('/');
-  await page.locator('#btn-start-new').click();
+  await chooseHomeAction(page,'#btn-start-new');
   await page.locator('#inp-team-name').fill('Victory Test Racing');
   await page.locator('#inp-driver-name').fill('Taylor Winner');
   await page.locator('#inp-car-name').fill('Victory Car');
@@ -186,7 +187,7 @@ test('a new career completes both setup steps and creates a 20-entry field', asy
   page.on('pageerror', error => pageErrors.push(error.message));
 
   await page.goto('/');
-  await page.locator('#btn-start-new').click();
+  await chooseHomeAction(page,'#btn-start-new');
   await page.locator('#inp-team-name').fill('Regression Racing');
   await page.locator('#inp-driver-name').fill('Taylor Tester');
   await page.locator('#inp-car-name').fill('Test Mule');
@@ -207,7 +208,7 @@ test('rear-view mirror stays readable and renders correctly across five real 3D 
   for (let run = 1; run <= 5; run++) {
     await page.setViewportSize({ width: [1440, 1024, 768, 390, 1440][run - 1], height: 900 });
     await page.goto('/');
-    await page.locator('#btn-quick-race').click();
+    await chooseHomeAction(page,'#btn-quick-race');
     await page.locator('.quick-series-btn').first().click();
     if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator("#btn-quick-race-confirm").click();
 

@@ -1,3 +1,4 @@
+const {chooseHomeAction} = require('../helpers/home-menu.cjs');
 const path = require('node:path');
 const { test, expect } = require('playwright/test');
 
@@ -12,7 +13,7 @@ test.beforeEach(async ({ page }) => {
 
 async function createCareer(page) {
   await page.goto('/');
-  await page.locator('#btn-start-new').click();
+  await chooseHomeAction(page,'#btn-start-new');
   await page.locator('#inp-team-name').fill('Tutorial Test Racing');
   await page.locator('#inp-driver-name').fill('Taylor Test');
   await page.locator('#inp-car-name').fill('First Car');
@@ -32,7 +33,7 @@ test('a new career offers the tutorial, and skipping stays with that save', asyn
   await page.locator('#btn-hdr-save').click();
   await page.locator('#save-slot-modal [onclick="handleSaveToSlot(0)"]').click();
   await page.reload();
-  await page.locator('#btn-load-game').click();
+  await chooseHomeAction(page,'#btn-load-game');
   await page.locator('#save-slot-modal [onclick="handleLoadFromSlot(0)"]').click();
   await expect(page.locator('#career-tutorial')).toHaveCount(0);
 
@@ -43,7 +44,7 @@ test('a new career offers the tutorial, and skipping stays with that save', asyn
     localStorage.setItem('sce_slot_0', JSON.stringify(old));
   });
   await page.reload();
-  await page.locator('#btn-load-game').click();
+  await chooseHomeAction(page,'#btn-load-game');
   await page.locator('#save-slot-modal [onclick="handleLoadFromSlot(0)"]').click();
   await expect(page.locator('#career-tutorial')).toHaveCount(0);
 });
@@ -76,7 +77,7 @@ test('guided screens, back navigation, save, and restart work on mobile', async 
   await page.locator('[data-tutorial-action="save"]').click();
   await page.locator('#save-slot-modal [onclick="handleSaveToSlot(0)"]').click();
   await page.reload();
-  await page.locator('#btn-load-game').click();
+  await chooseHomeAction(page,'#btn-load-game');
   await page.locator('#save-slot-modal [onclick="handleLoadFromSlot(0)"]').click();
   await expect(page.locator('#career-tutorial-title')).toHaveText('Your command center');
   await expect(page.locator('[data-tutorial-action="skip"]')).toHaveCount(0);
@@ -123,12 +124,12 @@ test('practice has its own short finish and never changes career progress', asyn
   await page.locator('#btn-hdr-save').click();
   await page.locator('#save-slot-modal [onclick="handleSaveToSlot(0)"]').click();
   await page.goto('/');
-  await page.locator('#btn-load-game').click();
+  await chooseHomeAction(page,'#btn-load-game');
   await page.locator('#save-slot-modal [onclick="handleLoadFromSlot(0)"]').click();
   await expect(page.locator('#career-tutorial')).toHaveCount(0);
 
   await page.goto('/');
-  await page.locator('#btn-quick-race').click();
+  await chooseHomeAction(page,'#btn-quick-race');
   await page.locator('.quick-series-btn').first().click();
   if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator("#btn-quick-race-confirm").click();
   await page.waitForFunction(() => Boolean(window._r3d));

@@ -1,3 +1,4 @@
+const {chooseHomeAction} = require('../helpers/home-menu.cjs');
 const path = require('node:path');
 const { test, expect } = require('playwright/test');
 const { pathToFileURL } = require('node:url');
@@ -8,7 +9,7 @@ for (const [series, name] of [[0, 'Grassroots'], [1, 'Challenger'], [2, 'Premier
     await page.route('**/three.min.js', route => route.fulfill({ path: path.resolve(__dirname, '../../node_modules/three/build/three.min.js'), contentType: 'application/javascript' }));
     await page.setViewportSize({ width: 1600, height: 1000 });
     await page.goto(process.env.STOCKCAR_TEST_FILE ? pathToFileURL(path.resolve(process.env.STOCKCAR_TEST_FILE)).href : '/');
-    await page.locator('#btn-quick-race').click();
+    await chooseHomeAction(page,'#btn-quick-race');
     await page.locator('.quick-series-btn').nth(series).click();
     if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator('#btn-quick-race-confirm').click();
     await page.waitForFunction(() => window._r3d?.mirrorRT);

@@ -1,3 +1,4 @@
+const {chooseHomeAction} = require('../helpers/home-menu.cjs');
 const path = require('node:path');
 const {pathToFileURL} = require('node:url');
 const {test, expect} = require('playwright/test');
@@ -10,7 +11,7 @@ for (const [series, decks, mode] of [[0,1,'desktop'],[1,2,'desktop'],[2,4,'deskt
     page.on('console',m=>{if(m.type()==='error' && /texture|CORS|WebGL/i.test(m.text())) errors.push(m.text());});
     await page.route('**/three.min.js',route=>route.fulfill({path:path.resolve(__dirname,'../../node_modules/three/build/three.min.js'),contentType:'application/javascript'}));
     await page.goto(mode==='file'?pathToFileURL(path.resolve(__dirname,'../../index.html')).href:'/');
-    await page.locator('#btn-quick-race').click();
+    await chooseHomeAction(page,'#btn-quick-race');
     await page.locator('#quick-race-graphics').selectOption('high');
     await page.locator('.quick-series-btn').nth(series).click();
     if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator("#btn-quick-race-confirm").click();

@@ -1,3 +1,4 @@
+const {chooseHomeAction} = require('../helpers/home-menu.cjs');
 const path = require('node:path');
 const { test, expect } = require('playwright/test');
 
@@ -10,7 +11,7 @@ test.beforeEach(async ({ page }) => {
 
 async function startRace(page) {
   await page.goto('/');
-  await page.locator('#btn-quick-race').click();
+  await chooseHomeAction(page,'#btn-quick-race');
   await page.locator('.quick-series-btn').last().click();
   if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator("#btn-quick-race-confirm").click();
   await page.waitForFunction(() => window._r3d?.mirrorRT);
@@ -230,7 +231,7 @@ test('three complete career races preserve on-track classification in saved resu
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.goto('/');
-  await page.locator('#btn-start-new').click();
+  await chooseHomeAction(page,'#btn-start-new');
   await page.locator('#inp-team-name').fill('Racecraft Racing');
   await page.locator('#inp-driver-name').fill('Test Driver');
   await page.locator('#inp-car-name').fill('Test Mule');

@@ -1,3 +1,4 @@
+const {chooseHomeAction} = require('../helpers/home-menu.cjs');
 const path = require('node:path');
 const {test, expect} = require('playwright/test');
 
@@ -14,7 +15,7 @@ for (const difficulty of ['beginner','amateur','semipro','pro','allout']) {
     }));
     await page.goto('/');
     await page.addScriptTag({path:path.resolve(__dirname,'../helpers/race-driver.js')});
-    await page.locator('#btn-quick-race').click();
+    await chooseHomeAction(page,'#btn-quick-race');
     await page.locator(`#quick-race-modal [data-diff="${difficulty}"]`).click();
     await page.locator('.quick-series-btn').last().click();
     if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator("#btn-quick-race-confirm").click();

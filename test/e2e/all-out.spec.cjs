@@ -1,3 +1,4 @@
+const {chooseHomeAction} = require('../helpers/home-menu.cjs');
 const {test,expect}=require('playwright/test');
 const path=require('node:path');
 const {pathToFileURL}=require('node:url');
@@ -7,7 +8,7 @@ for(const [name,file,width] of [['source','index.html',1440],['offline','release
     await page.setViewportSize({width,height:850});
     await page.route('**/three.min.js',r=>r.fulfill({path:path.resolve(__dirname,'../../node_modules/three/build/three.min.js')}));
     await page.goto(pathToFileURL(path.resolve(__dirname,'../..',file)).href);
-    await page.locator('#btn-start-new').click();
+    await chooseHomeAction(page,'#btn-start-new');
     await page.locator('#inp-team-name').fill('All Out Racing');await page.locator('#inp-driver-name').fill('Challenger');await page.locator('#inp-car-name').fill('Car');await page.locator('#btn-create-team').click();
     await expect(page.locator('#setup-difficulty-grid .difficulty-card')).toHaveCount(4);
     await expect(page.locator('#setup-difficulty-grid [data-diff="allout"]')).toHaveCount(0);
@@ -29,7 +30,7 @@ for(const [name,file,width] of [['source','index.html',1440],['offline','release
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await page.evaluate(()=>document.getElementById('toast-container').replaceChildren());await page.waitForTimeout(240);
     await page.screenshot({path:`.impeccable/review/all-out-settings-${name}.png`,animations:'disabled'});
-    await page.evaluate(()=>showScreen('intro'));await page.locator('#btn-quick-race').click();
+    await page.evaluate(()=>showScreen('intro'));await chooseHomeAction(page,'#btn-quick-race');
     await page.locator('#quick-race-modal [data-diff="allout"]').click();await page.locator('.quick-series-btn').last().click();
     await expect(page.locator('#quick-next')).toBeVisible();
     await page.mouse.move(0,0);await page.waitForTimeout(240);

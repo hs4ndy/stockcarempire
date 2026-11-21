@@ -1,3 +1,4 @@
+const {chooseHomeAction} = require('../helpers/home-menu.cjs');
 const {test,expect}=require('playwright/test');const path=require('path'),{pathToFileURL}=require('url');
 for(const [width,file] of [[1440,'index.html'],[390,'releases/Stock-Car-Empire.html']]) test(`Career difficulty wins persist separately ${width}`,async({page})=>{
  await page.setViewportSize({width,height:900});await page.goto(pathToFileURL(path.resolve(file)).href);
@@ -11,6 +12,6 @@ for(const [width,file] of [[1440,'index.html'],[390,'releases/Stock-Car-Empire.h
  expect(await page.locator('.difficulty-wins').first().evaluate(el=>getComputedStyle(el).fontWeight)).toBe('400');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.screenshot({path:`.impeccable/review/difficulty-wins-${width}.png`,fullPage:true});
- await page.evaluate(()=>showScreen('intro'));await page.locator('#btn-quick-race').click();await expect(page.locator('#quick-race-modal .difficulty-wins')).toHaveCount(0);
+ await page.evaluate(()=>showScreen('intro'));await chooseHomeAction(page,'#btn-quick-race');await expect(page.locator('#quick-race-modal .difficulty-wins')).toHaveCount(0);
 });
 

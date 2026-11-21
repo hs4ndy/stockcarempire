@@ -1,3 +1,4 @@
+const {chooseHomeAction} = require('../helpers/home-menu.cjs');
 const { test, expect } = require('playwright/test');
 const path = require('path');
 const { pathToFileURL } = require('url');
@@ -5,7 +6,7 @@ const { pathToFileURL } = require('url');
 test('quick race confirmation starts the playable race', async ({ page }) => {
   await page.route('**/three.min.js', route => route.fulfill({ path: path.resolve(__dirname, '../../node_modules/three/build/three.min.js'), contentType: 'application/javascript' }));
   await page.goto(process.env.STOCKCAR_TEST_FILE ? pathToFileURL(path.resolve(process.env.STOCKCAR_TEST_FILE)).href : '/');
-  await page.locator('#btn-quick-race').click();
+  await chooseHomeAction(page,'#btn-quick-race');
   await page.locator('[data-diff="beginner"]').click();
   await page.locator('.quick-series-btn').first().click();
   expect(await page.evaluate(() => Boolean(window._r3d?.racing))).toBe(false);
@@ -28,7 +29,7 @@ for (const [name, viewport] of [
       window.quickRaceLaunches = [];
       window.launch3DRace = config => window.quickRaceLaunches.push(config);
     });
-    await page.locator('#btn-quick-race').click();
+    await chooseHomeAction(page,'#btn-quick-race');
     const confirm = page.locator('#btn-quick-race-confirm');
     await expect(confirm).toBeDisabled();
     await page.locator('[data-diff="pro"]').click();
