@@ -23,7 +23,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "832f036366e732d55ca463457ca96e16ae3e4021d441fed60b6d6509640d4027"
+      "hash": "718fe6d71720ebd02c4bfc022cf409fc4c28905909e7ab9cd329bfbda1fbebd2"
     },
     {
       "name": "_loadSurfaceTexture",
@@ -95,7 +95,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "9b84fed329780845fefc9ccdc19374c47ea3deaf1e2b522c6247f35280d9b80a"
+      "hash": "675a86435a7de6011c4c3398e1e4472e8e8d78f5ef67b412e78c9de2d3e2a762"
     },
     {
       "name": "_buildMinimap",

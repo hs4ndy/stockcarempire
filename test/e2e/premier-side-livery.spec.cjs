@@ -40,20 +40,20 @@ for (const [series, entry] of [[0, 'index.html'], [1, 'index.html'], [2, 'releas
       return { doors: numbers.map(n => n.position.z), panels };
     }
     const expected = {
-      doors: series === 2 ? [.50, .50] : [.04, .04],
+      doors: series === 2 ? [.47, .47] : [.04, .04],
       panels: series === 2 ? Array(2).fill({readable:true, behind:true}) : [null, null],
     };
     await page.waitForFunction(() => carStudio?.preview?.mesh.getObjectByName('Primary hood sponsor')
       ?.material.map.image.naturalWidth && !carStudio.frame);
     const preview = await page.evaluateHandle(() => carStudio.preview);
     expect(await preview.evaluate(measure)).toEqual(expected);
-    for (const side of [-1, 1]) {
-      await page.evaluate(side => {
-        Object.assign(carStudio, {yaw:side < 0 ? -1.34 : .99, elevation:.22, distance:5.25});
+    for (const [view,yaw,elevation] of [['door',-1.34,.22], ['quarter',.63,.22], ['front',0,.15], ['roof',.1,1.2]]) {
+      await page.evaluate(({yaw,elevation}) => {
+        Object.assign(carStudio, {yaw, elevation, distance:5.5});
         carStudio.render();
-      }, side);
+      }, {yaw,elevation});
       await page.waitForFunction(() => carStudio.frame === 0);
-      await page.locator('.studio-viewport').screenshot({path:info.outputPath(`side-${side}.png`)});
+      await page.locator('.studio-viewport').screenshot({path:info.outputPath(`${view}.png`)});
     }
     await page.getByRole('button', {name:'Cancel', exact:true}).click();
     await page.evaluate(() => handleStartRace());

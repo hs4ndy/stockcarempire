@@ -6,12 +6,17 @@ in the modeling helpers are game coordinates (Y up, +Z towards the nose).
 import json
 import math
 from itertools import groupby
+import sys
 from pathlib import Path
 
 import bpy
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.dont_write_bytecode = True
+import grassroots_nose
 
 OUT = Path(__file__).resolve().parents[1] / "assets" / "cars"
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -58,17 +63,30 @@ def object_mesh(name, points, faces, material):
 
 def add_detail(name, material, rows):
     """One strip, grouped by material in the race and individually editable in Blender."""
+    add_grid(name, material, rows)
+
+
+def add_grid(name, material, rows, reverse=False, shading=None):
+    columns = len(rows[0])
     vertices = [p for row in rows for p in row]
     faces = []
-    for j in range(0, len(vertices) - 2, 2):
-        faces.extend([(j, j + 1, j + 2), (j + 2, j + 1, j + 3)])
+    for row in range(len(rows) - 1):
+        for col in range(columns - 1):
+            i = row * columns + col
+            faces.extend([(i,i+1,i+columns),(i+columns,i+1,i+columns+1)])
+    if reverse:
+        faces = [face[::-1] for face in faces]
     obj = object_mesh(name, vertices, faces, material)
     bucket = details.setdefault(material, {"position": [], "normal": [], "index": []})
     start = len(bucket["position"]) // 3
-    for point, vertex in zip(vertices, obj.data.vertices):
+    if shading is not None:
+        for face in obj.data.polygons:
+            face.use_smooth = True
+        obj.data.normals_split_custom_set([blender_point(shading[loop.vertex_index]) for loop in obj.data.loops])
+    for i,(point, vertex) in enumerate(zip(vertices, obj.data.vertices)):
         normal = vertex.normal
         bucket["position"].extend(round(v, 5) for v in point)
-        bucket["normal"].extend(round(v, 5) for v in (normal.x, normal.z, -normal.y))
+        bucket["normal"].extend(round(v, 5) for v in (shading[i] if shading is not None else (normal.x, normal.z, -normal.y)))
     bucket["index"].extend(start + i for face in faces for i in face)
 
 
@@ -90,37 +108,97 @@ def fascia(name, material, stations, end, side, lift):
 
 
 def shape_gen7():
-    for side in (-1, 1):
-        # Close the narrow opening between the swept pillar and curved glass.
-        add_detail("Windshield side reveal", "trim", [
-            [(side*.676,1.222,.423),(side*.716,1.183,.432)],
-            [(side*.784,1.036,.687),(side*.837,1.011,.690)],
-            [(side*.886,.845,.942),(side*.907,.845,.940)],
-        ])
-        add_detail("Upper A-pillar return", "paint", [
-            [(side*.706,1.196,.31),(side*.747,1.182,.31)],
-            [(side*.680,1.220,.421),(side*.715,1.184,.435)],
-        ])
-        fascia("Smoked headlamp pocket", "trim",
-               [(.47,.525,.563),(.62,.527,.577),(.74,.542,.594),
-                (.84,.553,.610),(.93,.575,.619)], 1, side, .009)
-        fascia("Swept reflector blade", "metal",
-               [(.50,.548,.551),(.64,.554,.566),(.76,.570,.583),
-                (.84,.583,.596),(.91,.598,.604)], 1, side, .013)
-        for x in (.74, .80):
-            fascia("Lower projector facet", "metal",
-                   [(x,.549+(x-.74)*.17,.555+(x-.74)*.17),
-                    (x+.042,.558+(x-.74)*.17,.568+(x-.74)*.17)], 1, side, .013)
-        for y in (.24, .30, .36):
-            fascia("Brake duct louver", "metal",
-                   [(.824,y,y+.010),(.908,y+.012,y+.019)], 1, side, .009)
-        # Floating dark cuts subdivide the existing continuous red tail lamps.
-        for x in (.61, .70, .775):
-            fascia("Tail lens separation", "trim",
-                   [(x,.623,.662),(x+.012,.624,.663)], -1, side, .012)
-    for y, width in ((.24,.61),(.31,.56)):
-        fascia("Radiator cross slat", "metal",
-               [(-width,y,y+.009),(0,y,y+.009),(width,y,y+.009)], 1, 1, .015)
+    # Start from the original nose and give its paper-thin splitter a rolled edge.
+    outline = [(-1.07,1.87),(-1.065,2.06),(-.97,2.23),(-.70,2.295),
+               (.70,2.295),(.97,2.23),(1.065,2.06),(1.07,1.87)]
+    add_detail("Splitter edge return", "trim",
+               [[(x,.113,z),(x*.997,.102,1.87+(z-1.87)*.993)] for x,z in outline])
+
+
+def gen7_brow(part):
+    # The original hood and bumper use different samples around the curved
+    # corners. Trace both actual edges before lofting a common return between them.
+    positions = triples(part["position"])
+    normals = triples(part["normal"])
+    hood_edge, bumper_edge = {}, {}
+    for point, normal in zip(positions,normals):
+        x,y,z = point
+        depth = 2.273 - .245*(abs(x)/1.025)**4
+        if abs(z - (depth-.003)) < .00003 and y > .64 and normal[1] > .28:
+            hood_edge[x] = (point,normal)
+        if abs(z-depth) < .00003 and abs(y-.615) < .00003 and abs(normal[1]) < .012:
+            bumper_edge[x] = (point,normal)
+    def sample(edge, x):
+        keys = sorted(edge)
+        for a,b in zip(keys,keys[1:]):
+            if a <= x <= b:
+                t = (x-a)/(b-a)
+                return [Vector(first).lerp(Vector(second),t)
+                        for first,second in zip(edge[a],edge[b])]
+        raise ValueError("Open Gen-7 front shoulder")
+    columns = sorted(hood_edge.keys() | bumper_edge.keys())
+    rows, shading = [], []
+    for t in (0,.42,.76,1):
+        row = []
+        for x in columns:
+            low, ln = sample(bumper_edge,x)
+            high, hn = sample(hood_edge,x)
+            pt = low.lerp(high,t)
+            pt.z += .006*math.sin(math.pi*t)
+            row.append(tuple(pt))
+            shading.append(ln.lerp(hn,t*t).normalized())
+        rows.append(row)
+    add_grid("Rolled original bumper brow","paint",rows,shading=shading)
+
+
+def crown_height(x,z):
+    along = max(0, 1-((z+.21)/.645)**2)
+    across = max(0, 1-(abs(x)/.76)**2)
+    return 1.288 + .015*across + .012*along + .021*across*along
+
+
+def roof_width(z):
+    return .74+.025*max(0,1-((z+.21)/.645)**2)
+
+
+def roof_and_pillars():
+    stations = (-.86,-.76,-.58,-.4,-.21,0,.2,.35,.435)
+    across = (-1,-.93,-.7,-.4,0,.4,.7,.93,1)
+    rows = [[(roof_width(z)*t,crown_height(roof_width(z)*t,z),z) for t in across]
+            for z in stations]
+    add_grid("One-piece crowned roof","paint",rows,reverse=True)
+    for edge,glass_z,glass_y in [(rows[0],-.85,1.29),(rows[-1],.43,1.30)]:
+        add_grid("Roof window reveal","paint",[edge,[(.74*t,glass_y,glass_z) for t in across]])
+    for side in (-1,1):
+        glass_top = lambda z: (.755*side,1.28,z)
+        add_grid("Roof drip rail","paint",[[(side*roof_width(z),crown_height(roof_width(z),z),z),
+                 glass_top(max(-.83,min(.41,z)))] for z in stations])
+        for name,wind_top,wind_base,side_top,side_base in [
+            ("A pillar",(.74,1.30,.43),(.87,.92,.99),(.755,1.28,.41),(.94,.915,.85)),
+            ("Rear sail panel",(.74,1.29,-.85),(.89,.91,-1.50),(.755,1.28,-.83),(.94,.915,-1.30))]:
+            panel = []
+            for t in (0,.3,.7,1):
+                wind = Vector(wind_top).lerp(Vector(wind_base),t)
+                sill = Vector(side_top).lerp(Vector(side_base),t)
+                ridge = wind.lerp(sill,.55)
+                ridge.x += .009
+                panel.append([(side*p.x,p.y,p.z) for p in (wind,ridge,sill)])
+            add_grid(name,"paint",panel)
+
+
+def roof_overlay(width, back, front):
+    data = {"position":[],"normal":[],"uv":[],"index":[]}
+    for j in range(9):
+        z = back + (front-back)*j/8
+        for i in range(9):
+            x = width*(i/4-1)
+            data["position"].extend((round(x,5),round(crown_height(x,z)+.0035,5),round(z,5)))
+            data["normal"].extend((0,1,0))
+            data["uv"].extend((i/8,1-j/8))
+            if i<8 and j<8:
+                a = j*9+i
+                data["index"].extend((a,a+9,a+1,a+1,a+9,a+10))
+    return data
 
 
 def shape_sc01():
@@ -141,17 +219,6 @@ def shape_sc01():
             rows.insert(0, [(x,.20,z) for x,_,z in rows[0]])
             rows.append([(x,.20,z) for x,_,z in rows[-1]])
             add_detail("Rolled fender return", "paint", rows)
-        fascia("Recessed segmented lamp", "trim",
-               [(.55,.555,.597),(.70,.548,.597),(.838,.540,.588)], 1, side, .006)
-        for x in (.566,.700):
-            fascia("Prismatic reflector", "metal",
-                   [(x,.558,.584),(x+.072,.553,.585),(x+.104,.560,.585)], 1, side, .010)
-        fascia("Upper lens strip", "headlight",
-               [(.545,.596,.606),(.695,.595,.605),(.85,.587,.598)], 1, side, .010)
-        fascia("Recessed cooling duct", "trim",
-               [(.63,.244,.308),(.80,.240,.342),(.87,.261,.329)], 1, side, .005)
-        fascia("Duct lower lip", "metal",
-               [(.65,.248,.254),(.80,.246,.255),(.856,.262,.266)], 1, side, .009)
         for x in (.45,.62,.79):
             fascia("Tail lens upper bevel", "taillight",
                    [(x-.049,.609,.619),(x+.049,.611,.622)], -1, side, .004)
@@ -163,14 +230,14 @@ def side_sponsor():
     packet = {"position": [], "uv": [], "index": []}
     for side in (-1, 1):
         start = len(packet["position"]) // 3
-        for y in (.345, .57, .785):
+        for y in (.331, .56, .793):
             for u in (0, .5, 1):
-                z = -.45 + (.5 - u) * side * .80
+                z = -.39 + (.5 - u) * side * .84
                 hit, _, _, _ = bumper.ray_cast((2 * side,y,z), (-side,0,0))
                 if hit is None:
                     raise ValueError("Missing Premier side panel")
                 packet["position"].extend((round(hit.x + side * .005,5), y, round(z,5)))
-                packet["uv"].extend((u, round((y - .345) / .44,5)))
+                packet["uv"].extend((u, round((y - .331) / .462,5)))
         for row in (0, 1):
             for col in (0, 1):
                 a = start + row * 3 + col
@@ -219,13 +286,18 @@ def display_numbers(premier, grassroots):
         curve.body = "27"
         curve.font = font
         curve.align_x = curve.align_y = "CENTER"
-        curve.size = .52 if grassroots else .50
+        curve.size = .53 if premier else .52 if grassroots else .50
         obj = bpy.data.objects.new("Door number", curve)
         collection.objects.link(obj)
         obj.location = (offset + side * (1.045 if grassroots else 1.026),
-                        -.50 if premier else -.04, .58 if grassroots else .55)
+                        -.47 if premier else -.04, .58 if grassroots else .55)
         obj.rotation_euler = (math.pi / 2, 0, side * math.pi / 2)
         curve.materials.append(materials["accent"])
+    roof_text = curve.copy()
+    roof_text.size = .72
+    obj = bpy.data.objects.new("Roof race number",roof_text)
+    collection.objects.link(obj)
+    obj.location = (offset,.21,1.342 if grassroots else 1.308)
 
 
 def display_sponsor(packet):
@@ -255,27 +327,85 @@ for key, file, offset in [("grassroots","legacy-stock-car-model.js",-1.65),
     collection = bpy.data.collections.new(model["name"])
     scene.collection.children.link(collection)
     points, triangles = [], []
-    keep_ranges = []
+    base_ranges = {}
     for name, part in model["parts"].items():
         vertices, faces = triples(part["position"]), triples(part["index"])
-        if key == "grassroots" and name == "paint":
-            # Long contiguous runs identify the four tubular arch meshes in
-            # the baked paint batch. Short matches belong to the shell itself.
-            def on_lip(index):
-                x,y,z = vertices[index]
-                r = math.hypot(abs(z) - 1.42, y - .40)
-                return 1.0648 < abs(x) < 1.0912 and y >= .385 and abs(r - .465) < .014
-
-            cursor = 0
-            for match, group in groupby(enumerate(faces), lambda f: all(on_lip(i) for i in f[1])):
+        if key == "grassroots":
+            keep = [True] * len(faces)
+            if name == "paint":
+                # In the original bake the continuous body is the first mesh.
+                # Only remove the capped arch tubes in the long later runs.
+                def on_lip(index):
+                    x,y,z = vertices[index]
+                    return (1.0648 < abs(x) < 1.0912 and y >= .385 and
+                            abs(math.hypot(abs(z)-1.42,y-.40)-.465) < .014)
+                for match, group in groupby(enumerate(faces),lambda f: all(on_lip(i) for i in f[1])):
+                    run = list(group)
+                    if match and len(run) >= 280:
+                        for i,_ in run:
+                            keep[i] = False
+                def on_roof(index):
+                    x,y,z = vertices[index]
+                    return y>=1.2474 and abs(x)<=.7601 and -.901<z<.461
+                for match, group in groupby(enumerate(faces),lambda f: all(on_roof(i) for i in f[1])):
+                    run = list(group)
+                    if match and len(run) > 100:
+                        for i,_ in run:
+                            keep[i] = False
+                # Replace the SC-01's three exposed round tubes on each side
+                # with sheet-metal returns between the existing glass edges.
+                for side in (-1,1):
+                    for start,end,radius in [
+                        ((.765,1.29,.43),(.91,.90,.98),.047),
+                        ((.77,1.28,-.88),(.95,.91,-1.50),.070),
+                        ((.77,1.30,-.83),(.77,1.30,.43),.022)]:
+                        a,b = [Vector((side*x,y,z)) for x,y,z in (start,end)]
+                        axis = (b-a).normalized()
+                        members = set()
+                        for i,xyz in enumerate(vertices):
+                            delta = Vector(xyz)-a
+                            along = delta.dot(axis)
+                            if (-.0001 <= along <= (b-a).length+.0001 and
+                                    abs((delta-axis*along).length-radius) < .0001):
+                                members.add(i)
+                        for i,f in enumerate(faces):
+                            if members.issuperset(f):
+                                keep[i] = False
+            for i, f in enumerate(faces):
+                pts = [vertices[k] for k in f]
+                front = min(p[2] for p in pts)
+                floor = min(p[1] for p in pts)
+                # Keep the windshield pillars and small mirrors at the cowl.
+                if name == "paint" and front >= .89999 and (front >= 1 or max(p[1] for p in pts) < .911):
+                    keep[i] = False
+                if (name == "accent" and front >= .989) or name == "headlight":
+                    keep[i] = False
+                if name == "metal" and front > 2.40:
+                    keep[i] = False
+                if name == "trim" and (front >= 2.10 or floor >= 1.322 or
+                        all(y<=.1826 and abs(x)<=.931 and abs(z)<=2.301 for x,y,z in pts) or
+                        (1.07 < front < 1.43 and floor > .76 and all(abs(p[0]) < .68 for p in pts))):
+                    keep[i] = False
+            if not all(keep):
+                base_ranges[name] = []
+                for retained, group in groupby(enumerate(keep), lambda entry: entry[1]):
+                    run = list(group)
+                    if retained:
+                        base_ranges[name].append([run[0][0]*3,(run[-1][0]+1)*3])
+                faces = [f for i,f in enumerate(faces) if keep[i]]
+        if key == "gen7" and name == "paint":
+            def original_brow(face):
+                xyz = [vertices[i] for i in face]
+                return (any(abs(y-.615)<.00002 for x,y,z in xyz) and max(p[1] for p in xyz)>.64
+                        and all(y>=.61499 and abs(z-(2.273-.245*(abs(x)/1.025)**4))<.0031 for x,y,z in xyz))
+            base_ranges[name] = []
+            for keep, group in groupby(enumerate(faces),lambda item: not original_brow(item[1])):
                 run = list(group)
-                if match and len(run) >= 280:
-                    keep_ranges.append([cursor, run[0][0] * 3])
-                    cursor = (run[-1][0] + 1) * 3
-            if len(keep_ranges) != 2:
-                raise ValueError("SC-01 paint topology changed; inspect the arch selection")
-            keep_ranges.append([cursor, len(part["index"])])
-            faces = [face for a,b in keep_ranges for face in faces[a//3:b//3]]
+                if keep:
+                    base_ranges[name].append([run[0][0]*3,(run[-1][0]+1)*3])
+            faces = [f for i,f in enumerate(faces) if not original_brow(f)]
+        if not faces:
+            continue
         obj = object_mesh(name, vertices, faces, name)
         obj.data.validate()
         for face in obj.data.polygons:
@@ -285,7 +415,7 @@ for key, file, offset in [("grassroots","legacy-stock-car-model.js",-1.65),
             triangles.extend([start + i for i in face] for face in faces)
             points.extend(vertices)
     wheel = model["wheel"]
-    hub = wheel_finish(key == "grassroots")
+    hub = wheel_finish(True) if key == "grassroots" else {"position":[], "color":[], "index":[], "normal":[]}
     wheel_base = len(wheel["position"]) // 3
     wheel_object = object_mesh("Wheel", triples(wheel["position"] + hub["position"]),
                                triples(wheel["index"] + [wheel_base + i for i in hub["index"]]), "wheel")
@@ -298,11 +428,23 @@ for key, file, offset in [("grassroots","legacy-stock-car-model.js",-1.65),
         instance.location = Vector(blender_point(pos)) + Vector((offset, 0, 0))
     bumper = BVHTree.FromPolygons(points, triangles, all_triangles=True)
     details = {}
-    (shape_sc01 if key == "grassroots" else shape_gen7)()
-    if keep_ranges:
-        details["paint"]["baseIndexRanges"] = keep_ranges
+    if key == "grassroots":
+        shape_sc01()
+        grassroots_nose.build(add_grid)
+        skin = details["paint"]
+        bumper = BVHTree.FromPolygons(triples(skin["position"]), triples(skin["index"]), all_triangles=True)
+        grassroots_nose.lamps(fascia)
+        for material, ranges in base_ranges.items():
+            details[material]["baseIndexRanges"] = ranges
+        details["wheel"] = hub
+        roof_and_pillars()
+        payload["grassrootsRoofDecal"] = roof_overlay(.51,-.73,.30)
+        payload["grassrootsTeamBand"] = roof_overlay(.73,.275,.395)
+    else:
+        shape_gen7()
+        gen7_brow(model["parts"]["paint"])
+        details["paint"]["baseIndexRanges"] = base_ranges["paint"]
     payload[key] = details
-    details["wheel"] = hub
     if key == "gen7":
         payload["premierSponsor"] = side_sponsor()
         collection.name = "Challenger • Empire Gen-7"

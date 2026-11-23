@@ -93,9 +93,10 @@
       parts: Object.fromEntries(Object.entries(this.carModel.parts)
         .map(([name, data]) => [name, decode(data, finishes[name])])),
       wheel: decode(this.carModel.wheel, finishes.wheel),
-      decalDoor: new THREE.PlaneGeometry(0.80, this.isGrassroots ? 0.58 : 0.48),
-      decalRoof: this.isGrassroots ? new THREE.PlaneGeometry(1.04, 1.04) : decode(this.carModel.roofDecal),
-      teamBand: this.isGrassroots ? new THREE.BoxGeometry(1.48, .012, .12) : decode(this.carModel.teamBand),
+      decalDoor: new THREE.PlaneGeometry(this.isPremier ? .76 : .80,
+        this.isGrassroots ? .58 : this.isPremier ? .54 : .48),
+      decalRoof: decode(this.isGrassroots ? SC_BODY_FINISHES.grassrootsRoofDecal : this.carModel.roofDecal),
+      teamBand: decode(this.isGrassroots ? SC_BODY_FINISHES.grassrootsTeamBand : this.carModel.teamBand),
     };
     if(typeof SC_RACING_STRIPES!=='undefined'){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(SC_RACING_STRIPES.position,3));g.setIndex(SC_RACING_STRIPES.index);g.computeVertexNormals();this.G.racingStripes=g;}
     if (typeof SC_HOOD_LOGO_MESHES !== 'undefined') {
@@ -103,13 +104,15 @@
     }
     // Tint the upper glazing toward the sky and keep the lower edge dark.
     // Shared vertex colors add depth under both race and studio lighting.
-    const glass = this.G.parts.glass;
-    const glassColor = [];
-    for (let i = 0; i < glass.attributes.position.count; i++) {
-      const height = clamp((glass.attributes.position.getY(i) - .84) / .46, 0, 1);
-      glassColor.push(.38 + .46 * height, .46 + .48 * height, .55 + .45 * height);
+    if (this.isGrassroots) {
+      const glass = this.G.parts.glass;
+      const glassColor = [];
+      for (let i = 0; i < glass.attributes.position.count; i++) {
+        const height = clamp((glass.attributes.position.getY(i) - .84) / .46, 0, 1);
+        glassColor.push(.38 + .46 * height, .46 + .48 * height, .55 + .45 * height);
+      }
+      glass.setAttribute('color', new THREE.Float32BufferAttribute(glassColor, 3));
     }
-    glass.setAttribute('color', new THREE.Float32BufferAttribute(glassColor, 3));
     // The track uses intentionally bright arcade lighting. A paint-only
     // reflectance layer keeps saturated liveries from clipping into flat neon,
     // so the new hood and fender normals remain readable without relighting
@@ -124,7 +127,8 @@
     paint.setAttribute('color', new THREE.BufferAttribute(reflectance, 3));
     this.M = {
       trim: new THREE.MeshLambertMaterial({ color: 0x191d23, side: THREE.DoubleSide }),
-      glass: new THREE.MeshPhongMaterial({ color: 0x38536a, vertexColors: true, shininess: 80, side: THREE.DoubleSide }),
+      glass: new THREE.MeshPhongMaterial({ color: this.isGrassroots ? 0x38536a : 0x233e50,
+        vertexColors: this.isGrassroots, shininess: this.isGrassroots ? 80 : 65, side: THREE.DoubleSide }),
       metal: new THREE.MeshPhongMaterial({ color: 0x8d989e, shininess: 48, side: THREE.DoubleSide }),
       headlight: new THREE.MeshBasicMaterial({ color: 0xe5ece3, side: THREE.DoubleSide }),
       taillight: new THREE.MeshBasicMaterial({ color: 0x9c1223, side: THREE.DoubleSide }),
@@ -262,18 +266,13 @@
       polygonOffset: true, polygonOffsetFactor: -1,
     });
     const roofDecal = new THREE.Mesh(G.decalRoof, decalMat);
-    // Generated overlay already conforms to the Gen-7 roof in car coordinates.
-    if (this.isGrassroots) {
-      roofDecal.position.set(0, 1.334, -.20);
-      roofDecal.rotation.x = -Math.PI / 2;
-    }
     roofDecal.name = 'Roof number';
     g.add(roofDecal);
     // Outward-facing normals on both doors prevent mirrored or invisible numbers.
     [[-(this.isGrassroots ? 1.045 : 1.023), -Math.PI / 2], [this.isGrassroots ? 1.045 : 1.023, Math.PI / 2]].forEach(([sx, ry]) => {
       const door = new THREE.Mesh(G.decalDoor, decalMat);
       door.position.set(this.isPremier ? Math.sign(sx) * 1.026 : sx,
-        this.isGrassroots ? .58 : .55, this.isPremier ? .50 : .04);
+        this.isGrassroots ? .58 : .55, this.isPremier ? .47 : .04);
       door.rotation.y = ry;
       door.name = 'Door number';
       g.add(door);
@@ -281,7 +280,6 @@
 
     if (isTeammate || isRival) {
       const roofBand = new THREE.Mesh(G.teamBand, accMat);
-      if (this.isGrassroots) roofBand.position.set(0, 1.33, .34);
       g.add(roofBand);
     }
 

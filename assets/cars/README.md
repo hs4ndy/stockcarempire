@@ -4,13 +4,16 @@
 
 `empire-body-finishes.blend` contains the SC-01 and both Gen-7 series liveries with editable fascia and fender details. The Premier example shares the Challenger meshes and carries a forward door number and a packed Horizon National Bank logo. Open the collections separately to inspect each car. Regenerate this scene and `body-finishes.js` with Blender in background mode using `--python tools/build_car_finish.py`.
 
-The game combines those details with the original material and wheel buffers once per race or Car Studio visit. The SC-01 replaces its segmented arch tubes with continuous fender lips. The Gen-7 closes the windshield pillars and adds segmented light pockets and brake duct louvers. Both cars use brighter wheel socket bevels and graduated glass tint. The Premier side logos share the existing hood sponsor draw and use the same active contract or AI sponsor. Unsponsored cars carry only their numbers. Challenger and Grassroots retain centered door numbers.
+The SC-01 uses a new continuous front clip from the windshield forward. The fenders rise independently of the hood, the intake is recessed, and the lamp graphics follow the bumper. Its crowned roof carries the race number directly on the paint. The Gen-7 uses the pre-170 fascia, glass and wheels, with a fitted hood-to-bumper joint and a narrow molded edge on the original splitter. Both versions reuse existing draw batches.
+
+Premier carries a taller, slightly narrower door number and its primary sponsor behind it on both sides. Challenger and Grassroots retain centered numbers. The sponsor marks use the existing hood logo material. After rebuilding the Blender scene, run `node tools/build_hood_logos.cjs` to project the hood artwork onto the revised SC-01 skin before rebuilding the offline release.
+
+References for this revision include [Five Star’s late-model front and side body studies](https://www.fivestarbodies.com/Files/Resources/Catalog/NGLMSCCatalogPages.pdf), its [street-stock nose graphics](https://www.fivestarbodies.com/ConfigurableProduct/VSS-GraphicKits.htm), and [NASCAR’s explanation of forward numbering and sponsor space](https://www.nascar.com/news-media/2021/08/27/nascar-confirms-number-placement-change-on-2022-next-gen-car/). The fictional bodywork and graphics were modeled for this game.
 
 Grassroots now uses `legacy-stock-car-model.js`, restored from commit
 `687d839` (the original Empire SC-01). Challenger and Premier use Gen-7.
 The legacy body is scaled 0.9 along its length and 0.91 across its width to fit
-today's 4.6 by 2.15 contact envelope; its original roof and door number placement is
-restored. The locally edited legacy Blender file and backup are not touched.
+today's 4.6 by 2.15 contact envelope; its centered door number and roof number are preserved. The locally edited legacy Blender file and backup are not touched.
 
 Original generic Gen-7/P3-inspired stock car for all three Stock Car Empire series. This is a fictional, independently modeled asset, not an official NASCAR or manufacturer model.
 
