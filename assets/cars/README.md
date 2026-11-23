@@ -1,5 +1,11 @@
 # Empire Gen-7
 
+## Current body finishes and Premier livery
+
+`empire-body-finishes.blend` contains the SC-01 and both Gen-7 series liveries with editable fascia and fender details. The Premier example shares the Challenger meshes and carries a forward door number and a packed Horizon National Bank logo. Open the collections separately to inspect each car. Regenerate this scene and `body-finishes.js` with Blender in background mode using `--python tools/build_car_finish.py`.
+
+The game combines those details with the original material and wheel buffers once per race or Car Studio visit. The SC-01 replaces its segmented arch tubes with continuous fender lips. The Gen-7 closes the windshield pillars and adds segmented light pockets and brake duct louvers. Both cars use brighter wheel socket bevels and graduated glass tint. The Premier side logos share the existing hood sponsor draw and use the same active contract or AI sponsor. Unsponsored cars carry only their numbers. Challenger and Grassroots retain centered door numbers.
+
 Grassroots now uses `legacy-stock-car-model.js`, restored from commit
 `687d839` (the original Empire SC-01). Challenger and Premier use Gen-7.
 The legacy body is scaled 0.9 along its length and 0.91 across its width to fit

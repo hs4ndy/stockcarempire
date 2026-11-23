@@ -286,7 +286,8 @@ class Race3DEngine {
     this.raceLength   = Number.isFinite(config.finishDistance) &&
       config.finishDistance >= 1000 && config.finishDistance <= fullDistance
       ? config.finishDistance : fullDistance * raceLengthOption(config.raceLength).scale;
-    this.isGrassroots = (config.seriesId || SERIES.find(s => s.fieldSize === config.fieldSize)?.id) === 'grassroots';
+    this.isGrassroots = seriesId === 'grassroots';
+    this.isPremier = seriesId === 'premier';
     this.speedScale = this.isGrassroots ? 0.9 : 1;
     this.trackHalfWidth = R3D.HALF_W * (this.isGrassroots ? .94 : 1);
     this.carModel = this.isGrassroots ? SC_LEGACY_STOCK_CAR_MODEL : SC_STOCK_CAR_MODEL;

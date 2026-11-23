@@ -71,26 +71,45 @@
   _initGeometries() {
     // Blender exports local, indexed geometry. Decode once per race; every car
     // shares these GPU buffers. No asynchronous model loading during a start.
-    const decode = data => {
+    const decode = (data, detail) => {
       const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute('position', new THREE.Float32BufferAttribute(data.position, 3));
-      geometry.setAttribute('normal', new THREE.Float32BufferAttribute(data.normal, 3));
-      if (data.color) geometry.setAttribute('color', new THREE.Float32BufferAttribute(data.color, 3));
-      if (data.uv) geometry.setAttribute('uv', new THREE.Float32BufferAttribute(data.uv, 2));
-      geometry.setIndex(data.index);
+      for (const key of ['position', 'normal', 'color', 'uv']) {
+        if (!data[key]) continue;
+        const values = detail ? data[key].concat(detail[key]) : data[key];
+        geometry.setAttribute(key, new THREE.Float32BufferAttribute(values, key === 'uv' ? 2 : 3));
+      }
+      const offset = data.position.length / 3;
+      const baseIndex = detail?.baseIndexRanges
+        ? detail.baseIndexRanges.flatMap(([start, end]) => data.index.slice(start, end))
+        : data.index;
+      geometry.setIndex(detail ? baseIndex.concat(detail.index.map(i => i + offset)) : baseIndex);
+      if (!data.normal) geometry.computeVertexNormals();
       geometry.computeBoundingSphere();
       return geometry;
     };
+    const bodyKey = this.isGrassroots ? 'grassroots' : 'gen7';
+    const finishes = SC_BODY_FINISHES[bodyKey];
     this.G = {
       parts: Object.fromEntries(Object.entries(this.carModel.parts)
-        .map(([name, data]) => [name, decode(data)])),
-      wheel: decode(this.carModel.wheel),
+        .map(([name, data]) => [name, decode(data, finishes[name])])),
+      wheel: decode(this.carModel.wheel, finishes.wheel),
       decalDoor: new THREE.PlaneGeometry(0.80, this.isGrassroots ? 0.58 : 0.48),
       decalRoof: this.isGrassroots ? new THREE.PlaneGeometry(1.04, 1.04) : decode(this.carModel.roofDecal),
       teamBand: this.isGrassroots ? new THREE.BoxGeometry(1.48, .012, .12) : decode(this.carModel.teamBand),
     };
     if(typeof SC_RACING_STRIPES!=='undefined'){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(SC_RACING_STRIPES.position,3));g.setIndex(SC_RACING_STRIPES.index);g.computeVertexNormals();this.G.racingStripes=g;}
-    if(typeof SC_HOOD_LOGO_MESHES!=='undefined'){const data=SC_HOOD_LOGO_MESHES[this.isGrassroots?'grassroots':'gen7'],g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(data.position,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(data.uv,2));g.setIndex(data.index);g.computeVertexNormals();this.G.hoodLogo=g;}
+    if (typeof SC_HOOD_LOGO_MESHES !== 'undefined') {
+      this.G.hoodLogo = decode(SC_HOOD_LOGO_MESHES[bodyKey], this.isPremier && SC_BODY_FINISHES.premierSponsor);
+    }
+    // Tint the upper glazing toward the sky and keep the lower edge dark.
+    // Shared vertex colors add depth under both race and studio lighting.
+    const glass = this.G.parts.glass;
+    const glassColor = [];
+    for (let i = 0; i < glass.attributes.position.count; i++) {
+      const height = clamp((glass.attributes.position.getY(i) - .84) / .46, 0, 1);
+      glassColor.push(.38 + .46 * height, .46 + .48 * height, .55 + .45 * height);
+    }
+    glass.setAttribute('color', new THREE.Float32BufferAttribute(glassColor, 3));
     // The track uses intentionally bright arcade lighting. A paint-only
     // reflectance layer keeps saturated liveries from clipping into flat neon,
     // so the new hood and fender normals remain readable without relighting
@@ -105,7 +124,7 @@
     paint.setAttribute('color', new THREE.BufferAttribute(reflectance, 3));
     this.M = {
       trim: new THREE.MeshLambertMaterial({ color: 0x191d23, side: THREE.DoubleSide }),
-      glass: new THREE.MeshPhongMaterial({ color: 0x233e50, shininess: 65, side: THREE.DoubleSide }),
+      glass: new THREE.MeshPhongMaterial({ color: 0x38536a, vertexColors: true, shininess: 80, side: THREE.DoubleSide }),
       metal: new THREE.MeshPhongMaterial({ color: 0x8d989e, shininess: 48, side: THREE.DoubleSide }),
       headlight: new THREE.MeshBasicMaterial({ color: 0xe5ece3, side: THREE.DoubleSide }),
       taillight: new THREE.MeshBasicMaterial({ color: 0x9c1223, side: THREE.DoubleSide }),
@@ -253,7 +272,8 @@
     // Outward-facing normals on both doors prevent mirrored or invisible numbers.
     [[-(this.isGrassroots ? 1.045 : 1.023), -Math.PI / 2], [this.isGrassroots ? 1.045 : 1.023, Math.PI / 2]].forEach(([sx, ry]) => {
       const door = new THREE.Mesh(G.decalDoor, decalMat);
-      door.position.set(sx, this.isGrassroots ? .58 : .55, .04);
+      door.position.set(this.isPremier ? Math.sign(sx) * 1.026 : sx,
+        this.isGrassroots ? .58 : .55, this.isPremier ? .50 : .04);
       door.rotation.y = ry;
       door.name = 'Door number';
       g.add(door);
