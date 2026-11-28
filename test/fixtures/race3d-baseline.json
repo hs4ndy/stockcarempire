@@ -111,7 +111,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "39ba1348aaf10521979f9ad300633caad1ea8ac4d7a7eb95366dfac7f6dab88f"
+      "hash": "26b97d2d09dda199564487c0478eda285d83712c110e9cd4a50f5334cc7484d4"
     },
     {
       "name": "_update",
@@ -511,7 +511,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "385bab696b715891b435c1826dda27385dd1fecb0a6830a395992b62bb323280"
+      "hash": "f3df75c369d98a1f599b968b4e73e39ab150dfbcc3c740955dd49cc0993ec805"
     },
     {
       "name": "_configureGraphics",
@@ -575,7 +575,7 @@
     {
       "name": "launch3DRace",
       "length": 2,
-      "hash": "6b94e3c238a8284534d62f2a82b3e88efe0494f70d52e8267465ebb2e70f9d11"
+      "hash": "cf5c1201140dc710acbdeb618e73998357561f547f8c426f605f119795dcde37"
     }
   ],
   "sourceCommit": "20c3f0c77f0934c085371c2e19c73357fe1c9b58",

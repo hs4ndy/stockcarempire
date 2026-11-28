@@ -201,7 +201,7 @@ function launch3DRace(config, onComplete) {
 
       <div class="r3d-warning hidden" id="r3d-warn"></div>
       ${config.practiceTips ? '<div class="r3d-practice-tip" id="r3d-practice-tip" role="status" aria-live="polite">A and D steer. S brakes. The car accelerates automatically.</div>' : ''}
-      <div class="r3d-countdown" id="r3d-countdown"></div>
+      <div class="r3d-countdown" id="r3d-countdown" role="status" aria-live="polite" aria-atomic="true"></div>
       <div class="r3d-finish" id="r3d-finish" style="display:none"></div>
 
       <div id="r3d-pause-overlay">
@@ -446,40 +446,36 @@ class Race3DEngine {
     const hint = document.getElementById('r3d-hint');
     this.paceMode = true;
 
-    const setMsg = (txt, big = false) => {
-      if (!el) return;
-      el.textContent = txt;
-      el.style.opacity = '1';
-      el.style.fontSize = big ? '1.5rem' : '';
-      el.style.letterSpacing = big ? '0.12em' : '';
-      el.classList.remove('go');
+    const later = (delay, action) => {
+      this._startTimer = setTimeout(() => {
+        if (!this.done && !this._disposed) action();
+      }, delay);
     };
-
-    setMsg(`FORMATION LAP  -  P${this._startingPos} START`, true);
-    setTimeout(() => {
-      if (this.done) return;
-      setMsg('3');
-      setTimeout(() => {
-        if (this.done) return;
-        setMsg('2');
-        setTimeout(() => {
-          if (this.done) return;
-          setMsg('1');
-          setTimeout(() => {
-            if (this.done) return;
-            if (el) {
-              el.textContent = 'GREEN FLAG';
-              el.style.fontSize = ''; el.style.letterSpacing = '';
-              el.classList.add('go');
-            }
-            this.paceMode = false;
-            this.racing = true;
-            if (hint) hint.style.opacity = '0';
-            setTimeout(() => { if (el) el.style.opacity = '0'; }, 1100);
-          }, 1000);
-        }, 1000);
-      }, 1000);
-    }, 3000);
+    const formation = this.player2
+      ? `Player 1 · P${this._newsGrid.player} Player 2 · P${this._newsGrid.player2}`
+      : `Starting P${this._startingPos}`;
+    if (el) {
+      el.dataset.phase = 'formation';
+      el.innerHTML = `<strong>Formation lap</strong><span>${formation}</span>`;
+    }
+    const tick = seconds => {
+      if (el) {
+        el.dataset.phase = seconds ? 'count' : 'green';
+        el.innerHTML = seconds
+          ? `<div class="r3d-start-lights" aria-hidden="true">${[1, 2, 3].map(lamp =>
+              `<i class="${lamp <= 4 - seconds ? 'lit' : ''}"></i>`).join('')}</div><strong>${seconds}</strong>`
+          : '<i class="r3d-start-flag" aria-hidden="true"></i><strong>Green flag</strong>';
+      }
+      if (seconds) {
+        later(1000, () => tick(seconds - 1));
+        return;
+      }
+      this.paceMode = false;
+      this.racing = true;
+      if (hint) hint.style.opacity = '0';
+      later(1100, () => { if (el) el.textContent = ''; });
+    };
+    later(3000, () => tick(3));
   }
 
   // ── Main update ──────────────────────────────────────────────
@@ -576,6 +572,7 @@ class Race3DEngine {
 
   destroy() {
     this._disposed = true;
+    clearTimeout(this._startTimer);
     cancelAnimationFrame(this._raf);
     this._raf = null;
     clearTimeout(this._warnTimeout);
