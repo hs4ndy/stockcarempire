@@ -9,27 +9,43 @@
     const nx = sk > 0 ? (Math.random() - 0.5) * sk : 0;
     const ny = sk > 0 ? (Math.random() - 0.5) * sk * 0.4 : 0;
 
-    // Perceived speed is deliberately decoupled from simulation speed. A low,
-    // elevated camera and a broad race-speed FOV preserve the arcade sensation
-    // without making every car cover the track unrealistically quickly.
     const speedFeel = r3dSmooth(clamp((p.speed - R3D.PACE_SPEED) / (245 - R3D.PACE_SPEED), 0, 1));
-    const fovTarget = R3D.CAMERA_FOV_MIN +
+    const close = p.cameraView === 1;
+    const roof = p.cameraView === 2;
+    const chaseFov = R3D.CAMERA_FOV_MIN +
       (R3D.CAMERA_FOV_MAX - R3D.CAMERA_FOV_MIN) * speedFeel;
-    this.camera.fov += (fovTarget - this.camera.fov) * (1 - Math.exp(-4.35 * dt));
-    this.camera.updateProjectionMatrix();
+    const camera = this.camera;
+    const fovTarget = roof ? 69 : chaseFov;
+    camera.fov += (fovTarget - camera.fov) * (1 - Math.exp(-4.35 * dt));
+    camera.updateProjectionMatrix();
 
-    const tx = p.x * 0.85 + nx;
-    const ty = 6.0 + ny;
-    const followZ = R3D.CAMERA_NEAR_Z + (R3D.CAMERA_FAR_Z - R3D.CAMERA_NEAR_Z) * speedFeel;
-    const tz = p.z - followZ + nx * 0.15;
-    this.camera.position.x += (tx - this.camera.position.x) * (1 - Math.exp(-6 * dt));
-    this.camera.position.y += (ty - this.camera.position.y) * (1 - Math.exp(-5 * dt));
-    // Longitudinal camera lag changed the apparent following distance with
-    // FPS and draft speed. Keep the familiar race-speed framing at a fixed
-    // distance; ease lateral motion without changing the size of the pack.
-    this.camera.position.z = tz;
-    this.camera.lookAt(p.x * 0.55, 0.8, p.z + 30);
-    this.camera.rotateZ(-p.lv / R3D.LAT_MAX * 0.026);
+    if (roof) {
+      // Both Gen-7 series share a shell. The SC-01 has a higher, flatter
+      // roof and its windshield starts slightly farther forward.
+      const height = this.isGrassroots ? 1.46 : 1.42;
+      const front = this.isGrassroots ? .49 : .44;
+      p.mesh.updateWorldMatrix(true, false);
+      p.mesh.localToWorld(camera.position.set(.29, height, front));
+      const look = this._roofLook ??= new THREE.Vector3();
+      p.mesh.localToWorld(look.set(.29, height - 2.6, front + 28));
+      camera.lookAt(look);
+    } else {
+      // Perceived speed is deliberately decoupled from simulation speed. A low,
+      // elevated camera and a broad race-speed FOV preserve the arcade sensation
+      // without making every car cover the track unrealistically quickly.
+      const tx = p.x * 0.85 + nx;
+      const ty = (close ? 4.25 : 6.0) + ny;
+      const followZ = (R3D.CAMERA_NEAR_Z + (R3D.CAMERA_FAR_Z - R3D.CAMERA_NEAR_Z) * speedFeel) * (close ? .69 : 1);
+      const tz = p.z - followZ + nx * 0.15;
+      this.camera.position.x += (tx - this.camera.position.x) * (1 - Math.exp(-6 * dt));
+      this.camera.position.y += (ty - this.camera.position.y) * (1 - Math.exp(-5 * dt));
+      // Longitudinal camera lag changed the apparent following distance with
+      // FPS and draft speed. Keep the familiar race-speed framing at a fixed
+      // distance; ease lateral motion without changing the size of the pack.
+      this.camera.position.z = tz;
+      this.camera.lookAt(p.x * 0.55, 0.8, p.z + 30);
+      this.camera.rotateZ(-p.lv / R3D.LAT_MAX * 0.026);
+    }
     this.camShake = Math.max(0, sk - dt * 2.5);
 
     // Virtual interior mirror: enough eye-to-bumper distance to show the

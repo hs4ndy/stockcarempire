@@ -318,7 +318,7 @@ function handleStartQuickRace(fieldSize) {
   const AI_COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#c0392b','#16a085','#8e44ad','#2980b9','#27ae60'];
   const aiEntries = [];
   const usedNumbers = new Set(quickRaceCars.slice(0, quickRacePlayers).map(c => c.number));
-  if (quickRacePlayers === 2) aiEntries.push({entrantId: 'player2', name: 'PLAYER 2', number: quickRaceCars[1].number, appearance:carAppearance(quickRaceCars[1]), color: quickRaceCars[1].color, power: 0.75, isSecondPlayer: true});
+  if (quickRacePlayers === 2) aiEntries.push({entrantId: 'player2', name: 'PLAYER 2', number: quickRaceCars[1].number, appearance:{...carAppearance(quickRaceCars[1]),hoodSponsorId:quickRaceCars[1].hoodSponsorId}, color: quickRaceCars[1].color, power: 0.75, isSecondPlayer: true});
   // Unique human driver names for the field
   const namePool = [...AI_DRIVER_NAMES].sort(() => Math.random() - 0.5);
   for (let i = 0; i < fieldSize - quickRacePlayers; i++) {
@@ -328,7 +328,7 @@ function handleStartQuickRace(fieldSize) {
   }
   showScreen('game-race');
   launch3DRace(
-    { playerAppearance:carAppearance(quickRaceCars[0]), playerColor: quickRaceCars[0].color, playerNumber: quickRaceCars[0].number, playerName: quickRacePlayers === 2 ? 'PLAYER 1' : 'YOU', dualPlayer: quickRacePlayers === 2, playerPower: 0.75, fieldSize,
+    { playerAppearance:{...carAppearance(quickRaceCars[0]),hoodSponsorId:quickRaceCars[0].hoodSponsorId}, playerColor: quickRaceCars[0].color, playerNumber: quickRaceCars[0].number, playerName: quickRacePlayers === 2 ? 'PLAYER 1' : 'YOU', dualPlayer: quickRacePlayers === 2, playerPower: 0.75, fieldSize,
       seriesId: series.id,
       difficulty: quickRaceDifficulty, raceLength:quickRaceLength, raceRules:{...quickRaceRules}, captureFinishPhoto:true, onQuit:leaveQuickRaceResults, aiEntries },
     (pos, order, photo, quitDNF, facts) => {

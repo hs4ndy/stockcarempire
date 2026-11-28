@@ -213,7 +213,7 @@ function launch3DRace(config, onComplete) {
       </div>
     </div>
     <div class="r3d-controls-hint" id="r3d-hint">
-      <span>A</span> Steer Left &nbsp;|&nbsp; <span>D</span> Steer Right &nbsp;|&nbsp; <span>S</span> Brake
+      <span>A</span> Steer Left &nbsp;|&nbsp; <span>D</span> Steer Right &nbsp;|&nbsp; <span>S</span> Brake &nbsp;|&nbsp; <span>C</span> Camera
     </div>
   `;
 
@@ -244,7 +244,8 @@ function launch3DRace(config, onComplete) {
         ${n === 1 ? '<div class="r3d-order dual-order" id="dual-order-1"></div>' : ''}
         <div class="dual-data">${raceFeatureRules(config.difficulty,config.raceRules).damage ? `<span class="dual-health" id="dual-health-${n}">Vehicle condition 100%</span>` : ''}<span id="dual-pos-${n}"></span><span><strong id="dual-speed-${n}">0</strong> MPH</span><span>Draft <strong id="dual-draft-${n}">0</strong>%</span></div>
       </section>`).join('')}</div><div class="dual-progress" aria-label="Race progress for both players"><span>Start</span><span>Finish</span><div>${[1,2].map(n=>`<i id="dual-progress-${n}" aria-label="Player ${n} progress"></i>`).join('')}</div></div>`);
-    document.getElementById('r3d-hint').textContent = 'P1: A / S / D     P2: J / K / L     Esc: Pause';
+    document.getElementById('r3d-hint').innerHTML =
+      'P1: A / S / D · <span>C</span> Camera &nbsp;|&nbsp; P2: J / K / L · <span>N</span> Camera &nbsp;|&nbsp; Esc: Pause';
   }
   const canvas = document.getElementById('r3d-canvas');
 
@@ -378,6 +379,12 @@ class Race3DEngine {
     // Input
     this._kd = e => {
       const k = e.key.toLowerCase();
+      if ((k === 'c' || (k === 'n' && this.player2)) && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        const player = k === 'c' ? this.player : this.player2;
+        if (!e.repeat && !this.done) player.cameraView = ((player.cameraView ?? 0) + 1) % 3;
+        return;
+      }
       if (k === 'j') this.keys2.a = true;
       if (k === 'l') this.keys2.d = true;
       if (k === 'k') this.keys2.s = true;

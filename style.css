@@ -931,6 +931,9 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
   left: 50%;
   bottom: 18px;
   transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 24px);
+  text-align: center;
   padding: 7px 16px;
   background: #1e2124;
   border: 1px solid var(--line);
@@ -1091,7 +1094,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
   .r3d-tele-speed { margin: 0; }
   .r3d-draft { flex: 1; min-width: 70px; padding: 0; }
   .r3d-progress-wrap { width: calc(100vw - 24px); bottom: 92px; }
-  .r3d-controls-hint { display: none; }
+  .r3d-controls-hint { bottom: 116px; padding-inline: 8px; }
 }
 @media (max-width: 520px) {
   /* Keep the centered mirror clear of the pause button in the corner */
@@ -1142,6 +1145,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .dual-progress > div { position: absolute; top: 16px; height: 3px; width: 100%; background: rgba(255,255,255,.3); }
 .dual-progress i { display: block; height: 100%; width: 100%; background: var(--accent-solid); transform-origin: left; transform: scaleX(0); }
 .dual-race .r3d-pause-btn { z-index: 3; }
+.dual-race .r3d-controls-hint { bottom: 86px; }
 .dual-race .r3d-countdown, .dual-race .r3d-finish, .dual-race #r3d-pause-overlay { z-index: 5; }
 @media (max-width: 700px) {
   .dual-race .r3d-countdown { top: 50%; }
@@ -1260,7 +1264,7 @@ button.standing-driver .st-name { text-decoration:none; }
 .studio-fields {flex:1;min-height:0;overflow:auto;padding:28px 32px 20px;}
 .studio-controls>#studio-error{padding:0 32px;}
 .studio-controls h3 {font-size:20px;margin-bottom:20px;}.studio-controls label {display:block;margin:20px 0 8px;}
-.studio-controls input[type=number], .studio-controls input[type=text] {width:100%;min-height:48px;background:var(--panel-2);color:var(--text);border:1px solid var(--line-2);border-radius:4px;padding:12px;}
+.studio-controls input[type=number], .studio-controls input[type=text], .studio-controls select {width:100%;min-height:48px;background:var(--panel-2);color:var(--text);border:1px solid var(--line-2);border-radius:4px;padding:12px;}
 .studio-controls input[type=color] {width:100%;height:48px;cursor:pointer;background:var(--panel-2);border:1px solid var(--line-2);}
 .studio-controls .studio-toggle {display:flex;align-items:center;gap:12px;min-height:44px;}.studio-toggle input{width:20px;height:20px;}
 .studio-brand {border-top:1px solid var(--line);margin-top:28px;padding-top:24px;}.studio-brand h3{margin-bottom:12px;}

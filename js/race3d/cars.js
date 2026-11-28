@@ -251,7 +251,18 @@
     }
 
     if(!this.isGrassroots&&G.racingStripes){const stripes=new THREE.Mesh(G.racingStripes,new THREE.MeshLambertMaterial({color:look.stripeColor,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1}));stripes.name='Racing stripes';stripes.visible=look.stripes;g.add(stripes);}
-    if(G.hoodLogo&&appearance?.hoodSponsorId&&typeof hoodLogoTexture==='function'){const map=hoodLogoTexture(appearance.hoodSponsorId,this.previewOnAssetReady);if(map){const logo=new THREE.Mesh(G.hoodLogo,new THREE.MeshBasicMaterial({map,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,side:THREE.DoubleSide}));logo.name='Primary hood sponsor';logo.renderOrder=2;g.add(logo);}}
+    if (G.hoodLogo && typeof hoodLogoTexture === 'function') {
+      const map = hoodLogoTexture(appearance?.hoodSponsorId, this.previewOnAssetReady);
+      if (map || this.preview) {
+        const logo = new THREE.Mesh(G.hoodLogo, new THREE.MeshBasicMaterial({
+          map, transparent:true, depthWrite:false, polygonOffset:true, polygonOffsetFactor:-2, side:THREE.DoubleSide,
+        }));
+        logo.name = 'Primary hood sponsor';
+        logo.visible = !!map;
+        logo.renderOrder = 2;
+        g.add(logo);
+      }
+    }
     const wheels = this.carModel.wheelPositions.map(([wx, wy, wz]) => {
       const wheel = new THREE.Mesh(G.wheel, M.wheel);
       wheel.name = 'Rolling stock-car wheel';

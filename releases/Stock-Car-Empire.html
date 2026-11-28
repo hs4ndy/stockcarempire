@@ -950,6 +950,9 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
   left: 50%;
   bottom: 18px;
   transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 24px);
+  text-align: center;
   padding: 7px 16px;
   background: #1e2124;
   border: 1px solid var(--line);
@@ -1110,7 +1113,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
   .r3d-tele-speed { margin: 0; }
   .r3d-draft { flex: 1; min-width: 70px; padding: 0; }
   .r3d-progress-wrap { width: calc(100vw - 24px); bottom: 92px; }
-  .r3d-controls-hint { display: none; }
+  .r3d-controls-hint { bottom: 116px; padding-inline: 8px; }
 }
 @media (max-width: 520px) {
   /* Keep the centered mirror clear of the pause button in the corner */
@@ -1161,6 +1164,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .dual-progress > div { position: absolute; top: 16px; height: 3px; width: 100%; background: rgba(255,255,255,.3); }
 .dual-progress i { display: block; height: 100%; width: 100%; background: var(--accent-solid); transform-origin: left; transform: scaleX(0); }
 .dual-race .r3d-pause-btn { z-index: 3; }
+.dual-race .r3d-controls-hint { bottom: 86px; }
 .dual-race .r3d-countdown, .dual-race .r3d-finish, .dual-race #r3d-pause-overlay { z-index: 5; }
 @media (max-width: 700px) {
   .dual-race .r3d-countdown { top: 50%; }
@@ -1279,7 +1283,7 @@ button.standing-driver .st-name { text-decoration:none; }
 .studio-fields {flex:1;min-height:0;overflow:auto;padding:28px 32px 20px;}
 .studio-controls>#studio-error{padding:0 32px;}
 .studio-controls h3 {font-size:20px;margin-bottom:20px;}.studio-controls label {display:block;margin:20px 0 8px;}
-.studio-controls input[type=number], .studio-controls input[type=text] {width:100%;min-height:48px;background:var(--panel-2);color:var(--text);border:1px solid var(--line-2);border-radius:4px;padding:12px;}
+.studio-controls input[type=number], .studio-controls input[type=text], .studio-controls select {width:100%;min-height:48px;background:var(--panel-2);color:var(--text);border:1px solid var(--line-2);border-radius:4px;padding:12px;}
 .studio-controls input[type=color] {width:100%;height:48px;cursor:pointer;background:var(--panel-2);border:1px solid var(--line-2);}
 .studio-controls .studio-toggle {display:flex;align-items:center;gap:12px;min-height:44px;}.studio-toggle input{width:20px;height:20px;}
 .studio-brand {border-top:1px solid var(--line);margin-top:28px;padding-top:24px;}.studio-brand h3{margin-bottom:12px;}
@@ -1505,7 +1509,7 @@ button.standing-driver .st-name { text-decoration:none; }
     <path d="M 344 0 L 469 900 M 1096 0 L 971 900" opacity="0.13"/>
   </svg>
   <div class="intro-layout intro-center">
-    <div class="intro-logo"><div class="logo-main-wrap"><span class="logo-main">Stock Car</span> <span class="logo-empire">Empire</span></div><div class="intro-version logo-beta">BETA / VERSION 177</div></div>
+    <div class="intro-logo"><div class="logo-main-wrap"><span class="logo-main">Stock Car</span> <span class="logo-empire">Empire</span></div><div class="intro-version logo-beta">BETA / VERSION 178</div></div>
     <nav class="intro-buttons" data-panel="home" aria-label="Main menu"><button type="button" class="btn-game btn-game-ghost" data-menu="single">Single Player</button><button type="button" class="btn-game btn-game-ghost" data-menu="multi">Multiplayer</button><hr><button type="button" class="btn-game btn-game-ghost" data-menu="changes">Changelog</button><button type="button" class="btn-game btn-game-ghost" data-menu="about">About</button></nav>
   </div>
   <div id="intro-popup" class="modal-overlay" hidden>
@@ -1564,6 +1568,8 @@ button.standing-driver .st-name { text-decoration:none; }
           <button type="button" class="btn btn-ghost" data-back>Back</button>
         </div>
         <div class="modal-body intro-info">
+          <h4>Version 178</h4>
+          <p>Quick Race Car Studio offers sponsor decals. Cycle between Chase, Close Chase and Roof cameras with C, or N for Player 2.</p>
           <h4>Version 177</h4>
           <p>Green Flag now animates out. Race length and graphics use three-stop sliders, and Low and Medium have cleaner race rendering.</p>
           <h4>Version 176</h4>
@@ -5276,7 +5282,7 @@ function launch3DRace(config, onComplete) {
       </div>
     </div>
     <div class="r3d-controls-hint" id="r3d-hint">
-      <span>A</span> Steer Left &nbsp;|&nbsp; <span>D</span> Steer Right &nbsp;|&nbsp; <span>S</span> Brake
+      <span>A</span> Steer Left &nbsp;|&nbsp; <span>D</span> Steer Right &nbsp;|&nbsp; <span>S</span> Brake &nbsp;|&nbsp; <span>C</span> Camera
     </div>
   `;
 
@@ -5307,7 +5313,8 @@ function launch3DRace(config, onComplete) {
         ${n === 1 ? '<div class="r3d-order dual-order" id="dual-order-1"></div>' : ''}
         <div class="dual-data">${raceFeatureRules(config.difficulty,config.raceRules).damage ? `<span class="dual-health" id="dual-health-${n}">Vehicle condition 100%</span>` : ''}<span id="dual-pos-${n}"></span><span><strong id="dual-speed-${n}">0</strong> MPH</span><span>Draft <strong id="dual-draft-${n}">0</strong>%</span></div>
       </section>`).join('')}</div><div class="dual-progress" aria-label="Race progress for both players"><span>Start</span><span>Finish</span><div>${[1,2].map(n=>`<i id="dual-progress-${n}" aria-label="Player ${n} progress"></i>`).join('')}</div></div>`);
-    document.getElementById('r3d-hint').textContent = 'P1: A / S / D     P2: J / K / L     Esc: Pause';
+    document.getElementById('r3d-hint').innerHTML =
+      'P1: A / S / D · <span>C</span> Camera &nbsp;|&nbsp; P2: J / K / L · <span>N</span> Camera &nbsp;|&nbsp; Esc: Pause';
   }
   const canvas = document.getElementById('r3d-canvas');
 
@@ -5441,6 +5448,12 @@ class Race3DEngine {
     // Input
     this._kd = e => {
       const k = e.key.toLowerCase();
+      if ((k === 'c' || (k === 'n' && this.player2)) && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        const player = k === 'c' ? this.player : this.player2;
+        if (!e.repeat && !this.done) player.cameraView = ((player.cameraView ?? 0) + 1) % 3;
+        return;
+      }
       if (k === 'j') this.keys2.a = true;
       if (k === 'l') this.keys2.d = true;
       if (k === 'k') this.keys2.s = true;
@@ -6283,7 +6296,18 @@ class Race3DEngine {
     }
 
     if(!this.isGrassroots&&G.racingStripes){const stripes=new THREE.Mesh(G.racingStripes,new THREE.MeshLambertMaterial({color:look.stripeColor,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1}));stripes.name='Racing stripes';stripes.visible=look.stripes;g.add(stripes);}
-    if(G.hoodLogo&&appearance?.hoodSponsorId&&typeof hoodLogoTexture==='function'){const map=hoodLogoTexture(appearance.hoodSponsorId,this.previewOnAssetReady);if(map){const logo=new THREE.Mesh(G.hoodLogo,new THREE.MeshBasicMaterial({map,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,side:THREE.DoubleSide}));logo.name='Primary hood sponsor';logo.renderOrder=2;g.add(logo);}}
+    if (G.hoodLogo && typeof hoodLogoTexture === 'function') {
+      const map = hoodLogoTexture(appearance?.hoodSponsorId, this.previewOnAssetReady);
+      if (map || this.preview) {
+        const logo = new THREE.Mesh(G.hoodLogo, new THREE.MeshBasicMaterial({
+          map, transparent:true, depthWrite:false, polygonOffset:true, polygonOffsetFactor:-2, side:THREE.DoubleSide,
+        }));
+        logo.name = 'Primary hood sponsor';
+        logo.visible = !!map;
+        logo.renderOrder = 2;
+        g.add(logo);
+      }
+    }
     const wheels = this.carModel.wheelPositions.map(([wx, wy, wz]) => {
       const wheel = new THREE.Mesh(G.wheel, M.wheel);
       wheel.name = 'Rolling stock-car wheel';
@@ -7267,27 +7291,43 @@ class Race3DEngine {
     const nx = sk > 0 ? (Math.random() - 0.5) * sk : 0;
     const ny = sk > 0 ? (Math.random() - 0.5) * sk * 0.4 : 0;
 
-    // Perceived speed is deliberately decoupled from simulation speed. A low,
-    // elevated camera and a broad race-speed FOV preserve the arcade sensation
-    // without making every car cover the track unrealistically quickly.
     const speedFeel = r3dSmooth(clamp((p.speed - R3D.PACE_SPEED) / (245 - R3D.PACE_SPEED), 0, 1));
-    const fovTarget = R3D.CAMERA_FOV_MIN +
+    const close = p.cameraView === 1;
+    const roof = p.cameraView === 2;
+    const chaseFov = R3D.CAMERA_FOV_MIN +
       (R3D.CAMERA_FOV_MAX - R3D.CAMERA_FOV_MIN) * speedFeel;
-    this.camera.fov += (fovTarget - this.camera.fov) * (1 - Math.exp(-4.35 * dt));
-    this.camera.updateProjectionMatrix();
+    const camera = this.camera;
+    const fovTarget = roof ? 69 : chaseFov;
+    camera.fov += (fovTarget - camera.fov) * (1 - Math.exp(-4.35 * dt));
+    camera.updateProjectionMatrix();
 
-    const tx = p.x * 0.85 + nx;
-    const ty = 6.0 + ny;
-    const followZ = R3D.CAMERA_NEAR_Z + (R3D.CAMERA_FAR_Z - R3D.CAMERA_NEAR_Z) * speedFeel;
-    const tz = p.z - followZ + nx * 0.15;
-    this.camera.position.x += (tx - this.camera.position.x) * (1 - Math.exp(-6 * dt));
-    this.camera.position.y += (ty - this.camera.position.y) * (1 - Math.exp(-5 * dt));
-    // Longitudinal camera lag changed the apparent following distance with
-    // FPS and draft speed. Keep the familiar race-speed framing at a fixed
-    // distance; ease lateral motion without changing the size of the pack.
-    this.camera.position.z = tz;
-    this.camera.lookAt(p.x * 0.55, 0.8, p.z + 30);
-    this.camera.rotateZ(-p.lv / R3D.LAT_MAX * 0.026);
+    if (roof) {
+      // Both Gen-7 series share a shell. The SC-01 has a higher, flatter
+      // roof and its windshield starts slightly farther forward.
+      const height = this.isGrassroots ? 1.46 : 1.42;
+      const front = this.isGrassroots ? .49 : .44;
+      p.mesh.updateWorldMatrix(true, false);
+      p.mesh.localToWorld(camera.position.set(.29, height, front));
+      const look = this._roofLook ??= new THREE.Vector3();
+      p.mesh.localToWorld(look.set(.29, height - 2.6, front + 28));
+      camera.lookAt(look);
+    } else {
+      // Perceived speed is deliberately decoupled from simulation speed. A low,
+      // elevated camera and a broad race-speed FOV preserve the arcade sensation
+      // without making every car cover the track unrealistically quickly.
+      const tx = p.x * 0.85 + nx;
+      const ty = (close ? 4.25 : 6.0) + ny;
+      const followZ = (R3D.CAMERA_NEAR_Z + (R3D.CAMERA_FAR_Z - R3D.CAMERA_NEAR_Z) * speedFeel) * (close ? .69 : 1);
+      const tz = p.z - followZ + nx * 0.15;
+      this.camera.position.x += (tx - this.camera.position.x) * (1 - Math.exp(-6 * dt));
+      this.camera.position.y += (ty - this.camera.position.y) * (1 - Math.exp(-5 * dt));
+      // Longitudinal camera lag changed the apparent following distance with
+      // FPS and draft speed. Keep the familiar race-speed framing at a fixed
+      // distance; ease lateral motion without changing the size of the pack.
+      this.camera.position.z = tz;
+      this.camera.lookAt(p.x * 0.55, 0.8, p.z + 30);
+      this.camera.rotateZ(-p.lv / R3D.LAT_MAX * 0.026);
+    }
     this.camShake = Math.max(0, sk - dt * 2.5);
 
     // Virtual interior mirror: enough eye-to-bumper distance to show the
@@ -7822,12 +7862,19 @@ function openCarStudio(scope,id){
  if(carStudio)return;
  const car=scope==='career'?game?.cars.find(c=>c.id===id):quickRaceCars[id];if(!car)return;
  const previous=document.activeElement,look=carAppearance(car),primary=scope==='career'?(game.sponsorship?.contracts||[]).find(c=>sponsorCompany(c.companyId)?.tier==='primary'):null;
+ const sponsorId = scope === 'quick' ? car.hoodSponsorId : primary?.companyId;
+ const sponsorOptions = scope === 'quick' ? SERIES.map((series, index) => {
+   const options = aiSponsorPools[index].map(id =>
+     `<option value="${id}"${id === sponsorId ? ' selected' : ''}>${careerArchiveEscape(sponsorCompany(id).name)}</option>`).join('');
+   return options ? `<optgroup label="${series.name}">${options}</optgroup>` : '';
+ }).join('') : '';
  const modelId=scope==='career'?car.classId:(SERIES.find(s=>s.fieldSize===quickRaceSeries)?.carClass||'stock');
  const shield=[...document.body.children].filter(e=>e.tagName!=='SCRIPT').map(e=>[e,e.inert]);shield.forEach(([e])=>e.inert=true);
  const overlay=document.createElement('div');overlay.id='car-studio';overlay.className='car-studio';overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-labelledby','studio-title');
- overlay.innerHTML=`<header class="studio-header"><div><h2 id="studio-title">Car Studio</h2><p>${careerArchiveEscape(scope==='career'?car.name:`Player ${id+1}`)}</p></div><button class="btn btn-secondary" onclick="closeCarStudio(false)">Cancel</button></header><div class="studio-layout"><form class="studio-controls"><div class="studio-fields"><h3>Appearance</h3>${scope==='career'?`<label for="studio-name">Car name</label><input id="studio-name" type="text" value="${careerArchiveEscape(car.name)}">`:''}<label for="studio-number">Car number</label><input id="studio-number" type="number" min="1" max="99" step="1" value="${car.number||1}"><label for="studio-paint">Body color</label><input id="studio-paint" type="color" value="${car.color||'#e8001d'}"><label for="studio-stripes" class="studio-toggle"><input id="studio-stripes" type="checkbox" ${look.stripes?'checked':''}> Racing stripes</label><label for="studio-stripe-color">Stripe color</label><input id="studio-stripe-color" type="color" value="${look.stripeColor}"><label for="studio-number-color">Number color</label><input id="studio-number-color" type="color" value="${look.numberColor}">${scope==='career'?`<button type="button" class="btn btn-secondary car-studio-open" onclick="copyStudioDesignToFleet()" ${game.cars.length<2?'disabled':''}>Copy to all other cars</button>`:''}<div class="studio-brand"><h3>${modelId==='premier'?'Primary sponsor':'Hood sponsor'}</h3><p>${primary?careerArchiveEscape(sponsorCompany(primary.companyId).name):'No primary sponsor'}</p><p class="muted-text small">${primary?(modelId==='premier'?'Your primary sponsor appears on the hood and both sides.':'Your primary sponsor appears on the hood of every team car.'):'Sign a primary sponsor in Career to display its hood logo.'}</p></div></div><p id="studio-error" class="red" role="status"></p><button class="btn btn-primary btn-lg" type="submit">Save Appearance</button></form><section class="studio-stage" aria-label="3D car preview"><div class="studio-viewport"></div><p class="studio-help">Drag to rotate · Scroll to zoom · <button class="link" type="button" id="studio-reset">Reset view</button></p></section></div>`;
+ overlay.innerHTML=`<header class="studio-header"><div><h2 id="studio-title">Car Studio</h2><p>${careerArchiveEscape(scope==='career'?car.name:`Player ${id+1}`)}</p></div><button class="btn btn-secondary" onclick="closeCarStudio(false)">Cancel</button></header><div class="studio-layout"><form class="studio-controls"><div class="studio-fields"><h3>Appearance</h3>${scope==='career'?`<label for="studio-name">Car name</label><input id="studio-name" type="text" value="${careerArchiveEscape(car.name)}">`:''}<label for="studio-number">Car number</label><input id="studio-number" type="number" min="1" max="99" step="1" value="${car.number||1}"><label for="studio-paint">Body color</label><input id="studio-paint" type="color" value="${car.color||'#e8001d'}"><label for="studio-stripes" class="studio-toggle"><input id="studio-stripes" type="checkbox" ${look.stripes?'checked':''}> Racing stripes</label><label for="studio-stripe-color">Stripe color</label><input id="studio-stripe-color" type="color" value="${look.stripeColor}"><label for="studio-number-color">Number color</label><input id="studio-number-color" type="color" value="${look.numberColor}">${scope==='career'?`<button type="button" class="btn btn-secondary car-studio-open" onclick="copyStudioDesignToFleet()" ${game.cars.length<2?'disabled':''}>Copy to all other cars</button>`:''}${scope==='quick'? `<div class="studio-brand"><label for="studio-sponsor">Sponsor</label>
+ <select id="studio-sponsor" class="form-select"><option value="">No sponsor</option>${sponsorOptions}</select></div>` : `<div class="studio-brand"><h3>${modelId==='premier'?'Primary sponsor':'Hood sponsor'}</h3><p>${primary?careerArchiveEscape(sponsorCompany(primary.companyId).name):'No primary sponsor'}</p><p class="muted-text small">${primary?(modelId==='premier'?'Your primary sponsor appears on the hood and both sides.':'Your primary sponsor appears on the hood of every team car.'):'Sign a primary sponsor in Career to display its hood logo.'}</p></div>`}</div><p id="studio-error" class="red" role="status"></p><button class="btn btn-primary btn-lg" type="submit">Save Appearance</button></form><section class="studio-stage" aria-label="3D car preview"><div class="studio-viewport"></div><p class="studio-help">Drag to rotate · Scroll to zoom · <button class="link" type="button" id="studio-reset">Reset view</button></p></section></div>`;
  document.body.append(overlay);
- const draft={...look,color:car.color||'#e8001d',number:car.number||1,...(scope==='career'?{name:car.name}:{})};carStudio={scope,id,car,draft,overlay,previous,shield,yaw:.65,elevation:.40,distance:7,frame:0};
+ const draft={...look,color:car.color||'#e8001d',number:car.number||1,...(scope==='career'?{name:car.name}:{hoodSponsorId:sponsorId || ''})};carStudio={scope,id,car,draft,overlay,previous,shield,yaw:.65,elevation:.40,distance:7,frame:0};
  const error=overlay.querySelector('#studio-error');
  const nameInput=overlay.querySelector('#studio-name');if(nameInput)nameInput.oninput=e=>{carStudio.draft.name=e.target.value.trim()||car.name;};
  try{
@@ -7837,7 +7884,7 @@ function openCarStudio(scope,id){
  scene.add(new THREE.HemisphereLight(0xc5d1e0,0x101318,.4));const spot=new THREE.SpotLight(0xffffff,1.8,24,Math.PI/5,.65,1);spot.position.set(1,7,3);spot.castShadow=true;spot.shadow.mapSize.set(1024,1024);spot.shadow.normalBias=.025;spot.shadow.bias=-.00015;scene.add(spot);spot.target.position.set(0,.5,0);scene.add(spot.target);
  const fill=new THREE.DirectionalLight(0xa6bad6,.35);fill.position.set(-4,2,-3);scene.add(fill);
  const floor=new THREE.Mesh(new THREE.PlaneGeometry(40,40),new THREE.MeshStandardMaterial({color:0x080a0d,roughness:.8}));floor.rotation.x=-Math.PI/2;floor.position.y=-.03;floor.receiveShadow=true;scene.add(floor);
- const engine=Object.create(Race3DEngine.prototype);state.engine=engine;engine.previewOnAssetReady=()=>state.render?.();engine.preview=true;engine.isGrassroots=modelId==='stock';engine.isPremier=modelId==='premier';engine.carModel=engine.isGrassroots?SC_LEGACY_STOCK_CAR_MODEL:SC_STOCK_CAR_MODEL;engine.scene=scene;engine._initGeometries();const preview=engine._makeCar(0,0,{color:draft.color,number:draft.number,power:.75,isPlayer:true,isTeammate:false,appearance:{...draft,hoodSponsorId:primary?.companyId}});
+ const engine=Object.create(Race3DEngine.prototype);state.engine=engine;engine.previewOnAssetReady=()=>state.render?.();engine.preview=true;engine.isGrassroots=modelId==='stock';engine.isPremier=modelId==='premier';engine.carModel=engine.isGrassroots?SC_LEGACY_STOCK_CAR_MODEL:SC_STOCK_CAR_MODEL;engine.scene=scene;engine._initGeometries();const preview=engine._makeCar(0,0,{color:draft.color,number:draft.number,power:.75,isPlayer:true,isTeammate:false,appearance:{...draft,hoodSponsorId:sponsorId}});
  Object.assign(state,{renderer,scene,camera,engine,preview});
  const sphere=new THREE.Box3().setFromObject(preview.mesh).getBoundingSphere(new THREE.Sphere());
  state.render=()=>{if(state.frame)return;state.frame=requestAnimationFrame(()=>{state.frame=0;if(carStudio!==state)return;const w=stage.clientWidth,h=stage.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();const halfFov=Math.min(THREE.MathUtils.degToRad(camera.fov/2),Math.atan(Math.tan(THREE.MathUtils.degToRad(camera.fov/2))*camera.aspect)),fitDistance=Math.max(7,sphere.radius/Math.sin(halfFov)*1.07),distance=fitDistance*state.distance/7;scene.fog.near=distance+sphere.radius+1;scene.fog.far=scene.fog.near+12;camera.far=Math.max(40,distance+20);camera.updateProjectionMatrix();camera.position.set(sphere.center.x+Math.sin(state.yaw)*Math.cos(state.elevation)*distance,sphere.center.y+Math.sin(state.elevation)*distance,sphere.center.z+Math.cos(state.yaw)*Math.cos(state.elevation)*distance);camera.lookAt(sphere.center);renderer.render(scene,camera);});};
@@ -7848,7 +7895,18 @@ function openCarStudio(scope,id){
  state.update=()=>{preview.mesh.traverse(m=>{if(!m.isMesh)return;if(m.name==='paint')m.material.color.set(draft.color);if(m.name==='Racing stripes'||(engine.isGrassroots&&m.name==='accent')){m.visible=draft.stripes;m.material.color.set(draft.stripeColor);}if(m.name==='Roof number'||m.name==='Door number')m.material.map=r3dRoundelTex(draft.number,draft.numberColor);});state.render();};state.render();
  }catch(e){error.textContent='The 3D preview could not start. You can still edit and save appearance.';console.warn('Car Studio preview',e);}
  for(const [selector,key]of [['#studio-number','number'],['#studio-paint','color'],['#studio-stripes','stripes'],['#studio-stripe-color','stripeColor'],['#studio-number-color','numberColor']])overlay.querySelector(selector).oninput=e=>{carStudio.draft[key]=key==='stripes'?e.target.checked:key==='number'?Number(e.target.value):e.target.value;carStudio.update?.();};
- overlay.querySelector('form').onsubmit=e=>{e.preventDefault();closeCarStudio(true);};overlay.onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();closeCarStudio(false);}if(e.key==='Tab'){const nodes=[...overlay.querySelectorAll('button,input,canvas[tabindex]')],first=nodes[0],last=nodes.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}};overlay.querySelector('#studio-number').focus();
+ const sponsorInput = overlay.querySelector('#studio-sponsor');
+ if (sponsorInput) sponsorInput.onchange = () => {
+   draft.hoodSponsorId = sponsorInput.value;
+   const state = carStudio;
+   const logo = state.preview?.mesh.getObjectByName('Primary hood sponsor');
+   if (!logo) return;
+   logo.material.map = hoodLogoTexture(draft.hoodSponsorId, state.engine.previewOnAssetReady);
+   logo.material.needsUpdate = true;
+   logo.visible = !!logo.material.map;
+   state.render();
+ };
+ overlay.querySelector('form').onsubmit=e=>{e.preventDefault();closeCarStudio(true);};overlay.onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();closeCarStudio(false);}if(e.key==='Tab'){const nodes=[...overlay.querySelectorAll('button,input,select,canvas[tabindex]')],first=nodes[0],last=nodes.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}};overlay.querySelector('#studio-number').focus();
 }
 function closeCarStudio(save){
  const s=carStudio;if(!s)return;
@@ -13084,7 +13142,7 @@ function handleStartQuickRace(fieldSize) {
   const AI_COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#c0392b','#16a085','#8e44ad','#2980b9','#27ae60'];
   const aiEntries = [];
   const usedNumbers = new Set(quickRaceCars.slice(0, quickRacePlayers).map(c => c.number));
-  if (quickRacePlayers === 2) aiEntries.push({entrantId: 'player2', name: 'PLAYER 2', number: quickRaceCars[1].number, appearance:carAppearance(quickRaceCars[1]), color: quickRaceCars[1].color, power: 0.75, isSecondPlayer: true});
+  if (quickRacePlayers === 2) aiEntries.push({entrantId: 'player2', name: 'PLAYER 2', number: quickRaceCars[1].number, appearance:{...carAppearance(quickRaceCars[1]),hoodSponsorId:quickRaceCars[1].hoodSponsorId}, color: quickRaceCars[1].color, power: 0.75, isSecondPlayer: true});
   // Unique human driver names for the field
   const namePool = [...AI_DRIVER_NAMES].sort(() => Math.random() - 0.5);
   for (let i = 0; i < fieldSize - quickRacePlayers; i++) {
@@ -13094,7 +13152,7 @@ function handleStartQuickRace(fieldSize) {
   }
   showScreen('game-race');
   launch3DRace(
-    { playerAppearance:carAppearance(quickRaceCars[0]), playerColor: quickRaceCars[0].color, playerNumber: quickRaceCars[0].number, playerName: quickRacePlayers === 2 ? 'PLAYER 1' : 'YOU', dualPlayer: quickRacePlayers === 2, playerPower: 0.75, fieldSize,
+    { playerAppearance:{...carAppearance(quickRaceCars[0]),hoodSponsorId:quickRaceCars[0].hoodSponsorId}, playerColor: quickRaceCars[0].color, playerNumber: quickRaceCars[0].number, playerName: quickRacePlayers === 2 ? 'PLAYER 1' : 'YOU', dualPlayer: quickRacePlayers === 2, playerPower: 0.75, fieldSize,
       seriesId: series.id,
       difficulty: quickRaceDifficulty, raceLength:quickRaceLength, raceRules:{...quickRaceRules}, captureFinishPhoto:true, onQuit:leaveQuickRaceResults, aiEntries },
     (pos, order, photo, quitDNF, facts) => {
