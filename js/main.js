@@ -1191,8 +1191,8 @@ function setRaceGraphicsPreset(select) {
   }
 }
 
-function setRaceLength(scope, index) {
-  const selected = RACE_LENGTHS[Number(index)] || RACE_LENGTHS[3];
+function setRaceLength(scope, id) {
+  const selected = raceLengthOption(id);
   let option = selected;
   if (scope === 'quick') quickRaceLength = selected.id;
   else {
@@ -1204,12 +1204,7 @@ function setRaceLength(scope, index) {
       toast('Race length could not be saved.', 'error');
     }
   }
-  const value = RACE_LENGTHS.indexOf(option);
-  const input = document.getElementById(`${scope}-race-length`);
-  input.value = value;
-  input.setAttribute('aria-valuetext', option.label);
-  input.style.setProperty('--length-progress', `${value / 6 * 100}%`);
-  document.getElementById(`${scope}-race-length-value`).textContent = `${option.label} · ${option.scale * 100}%`;
+  document.getElementById(`${scope}-race-length`).value = option.id;
 }
 
 function setQuickRaceStep(step) {

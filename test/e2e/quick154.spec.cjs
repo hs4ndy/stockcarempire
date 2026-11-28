@@ -1,12 +1,12 @@
+const {chooseHomeAction}=require('../helpers/home-menu.cjs');
 const {test,expect}=require('playwright/test');
 const path=require('path'),{pathToFileURL}=require('url');
 for(const [width,height,file] of [[1440,900,'index.html'],[390,844,'releases/Stock-Car-Empire.html'],[844,390,'index.html']]){
-test(`session averages and slider dots ${width}`,async({page})=>{
+test(`session averages and distance choices ${width}`,async({page})=>{
  await page.setViewportSize({width,height});await page.goto(pathToFileURL(path.resolve(file)).href);
- await page.evaluate(()=>document.fonts.ready);await page.click('#btn-quick-race');await expect(page.locator('.race-length-labels span')).toHaveCount(7);
- expect(await page.locator('.race-length-labels').textContent()).toBe('');
- await page.locator('#quick-race-length').focus();await page.keyboard.press('End');await expect(page.locator('#quick-race-length-value')).toHaveText('Longest · 200%');
- await page.screenshot({path:`.impeccable/review/quick154-slider-${width}.png`});
+ await page.evaluate(()=>document.fonts.ready);await chooseHomeAction(page,'#btn-quick-race');
+ await expect(page.locator('#quick-race-length option')).toHaveText(['Short','Normal','Long']);
+ await page.locator('#quick-race-length').selectOption('long');
  await page.evaluate(()=>{
    document.getElementById('quick-race-modal').remove();quickRacePlayers=2;
    launch3DRace=(config,done)=>done(4,[{isPlayer:true,entrantId:'player',number:1,teamColor:'#e8001d',position:4},{isPlayer:true,entrantId:'player2',number:2,teamColor:'#58a6ff',position:1}],null,false,{startingPositions:{player:2,player2:3}});

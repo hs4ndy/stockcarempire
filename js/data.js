@@ -23,12 +23,15 @@ function raceGraphicsPreset() {
 }
 
 const RACE_LENGTHS = [
-  {id:'shortest',label:'Shortest',scale:.25}, {id:'shorter',label:'Shorter',scale:.5},
-  {id:'short',label:'Short',scale:.75}, {id:'standard',label:'Standard',scale:1},
-  {id:'long',label:'Long',scale:1.25}, {id:'longer',label:'Longer',scale:1.5},
-  {id:'longest',label:'Longest',scale:2},
+  {id:'short',label:'Short',scale:.75},
+  {id:'standard',label:'Normal',scale:1},
+  {id:'long',label:'Long',scale:1.5},
 ];
-function raceLengthOption(id) { return RACE_LENGTHS.find(option=>option.id===id) || RACE_LENGTHS[3]; }
+function raceLengthOption(id) {
+  if (id === 'shortest' || id === 'shorter') id = 'short';
+  if (id === 'longer' || id === 'longest') id = 'long';
+  return RACE_LENGTHS.find(option => option.id === id) || RACE_LENGTHS[1];
+}
 
 const SERIES = [
   {

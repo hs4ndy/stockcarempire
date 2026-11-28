@@ -144,18 +144,8 @@
 .race-graphics-control { margin-bottom:16px; }
 .race-graphics-control select { min-height:44px; }
 .race-graphics-control p { margin:6px 0 0; }
-.race-length-control { margin:0 0 20px; }
-.race-length-heading { display:flex;align-items:baseline;justify-content:space-between;gap:12px;font-size:14px; }
-.race-length-heading label { font-weight:600;color:var(--text); }
-.race-length-heading output { color:var(--text-dim);font-variant-numeric:tabular-nums; }
-.race-length-control input[type=range] { appearance:none;display:block;width:100%;height:44px;margin:4px 0;padding:0;border:0;background:transparent;cursor:pointer; }
-.race-length-control input::-webkit-slider-runnable-track { height:6px;border-radius:4px;background:linear-gradient(to right,var(--accent-solid) var(--length-progress),var(--line-2) var(--length-progress)); }
-.race-length-control input::-webkit-slider-thumb { appearance:none;width:22px;height:22px;border-radius:50%;background:var(--text);border:3px solid var(--accent-solid);margin-top:-8px; }
-.race-length-control input::-moz-range-track { height:6px;background:var(--line-2);border-radius:4px; }
-.race-length-control input::-moz-range-progress { height:6px;background:var(--accent-solid); }
-.race-length-control input::-moz-range-thumb { width:16px;height:16px;border-radius:50%;background:var(--text);border:3px solid var(--accent-solid); }
-.race-length-labels { display:flex;justify-content:space-between;padding:0 8px; }
-.race-length-labels span { width:6px;height:6px;border-radius:50%;background:var(--text-dim); }
+.race-length-control { margin-bottom: 16px; }
+.race-length-control select { min-height: 44px; }
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 html { color-scheme: dark; scrollbar-color: var(--line-2) var(--bg); scrollbar-width: thin; scroll-padding-top: 152px; }
@@ -863,7 +853,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 }
 .r3d-countdown:empty { visibility: hidden; }
 .r3d-countdown strong {
-  font: 800 clamp(1.5rem, 4vw, 2.25rem)/1 var(--font-display);
+  font: 800 1.5rem/1 var(--font-display);
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -876,20 +866,23 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
   border: 1px solid var(--line-2);
 }
 .r3d-start-lights .lit { background: var(--accent); border-color: var(--danger-text); }
-.r3d-countdown[data-phase="count"] {
+.r3d-countdown[data-phase] {
   top: 33%;
-  min-height: 44px;
+  width: 184px;
+  height: 48px;
+  min-height: 0;
+  padding: 8px 12px;
 }
 .r3d-countdown[data-phase="green"] {
-  background: #1b6b3d;
+  background: #217846;
   color: var(--text);
   animation: r3d-start-release 220ms cubic-bezier(.15,.75,.25,1) both;
 }
 .r3d-countdown[data-phase="green"] strong { font-style: italic; }
 .r3d-start-flag {
   position: relative;
-  width: 27px;
-  height: 28px;
+  width: 22px;
+  height: 23px;
   transform: skew(-12deg);
   border-left: 2px solid currentColor;
 }
@@ -1117,7 +1110,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
   .r3d-map-track { height: 184px; }
   .r3d-order-row:nth-child(n+6) { display: none; }
   .r3d-countdown { top: 48%; min-height: 60px; padding-block: 8px; }
-  .r3d-countdown[data-phase="count"] { top: 42%; }
+  .r3d-countdown[data-phase] { top: 42%; }
 }
 
 /* Quick Race personalization and local split screen. */
@@ -1156,7 +1149,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .dual-race .r3d-countdown, .dual-race .r3d-finish, .dual-race #r3d-pause-overlay { z-index: 5; }
 @media (max-width: 700px) {
   .dual-race .r3d-countdown { top: 50%; }
-  .dual-race .r3d-countdown[data-phase="count"] { top: 44%; }
+  .dual-race .r3d-countdown[data-phase] { top: 44%; }
   .dual-views { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
   .dual-view { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.4); }
   .dual-mirror { height: 48px; top: 8px; left: 50%; }
@@ -1454,11 +1447,10 @@ button.standing-driver .st-name { text-decoration:none; }
   .quick-wizard .quick-choices .difficulty-card:last-child {grid-column:1/-1;}
 }
 @media (max-width:600px), (max-height:620px) {
-  .quick-wizard .race-graphics-control {display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;column-gap:10px;margin-bottom:4px;}
-  .quick-wizard .race-graphics-control label {margin:0;}
+  .quick-wizard :is(.race-graphics-control,.race-length-control) {display:grid;grid-template-columns:4.75rem minmax(0,1fr);align-items:center;column-gap:10px;margin-bottom:4px;}
+  .quick-wizard :is(.race-graphics-control,.race-length-control) label {margin:0;}
   .quick-wizard .race-graphics-control p {grid-column:2;margin-top:3px;}
   .quick-wizard .race-length-control {margin-bottom:8px;}
-  .quick-wizard .race-length-control input {margin-block:0;}
   .quick-wizard .compact-rules {display:flex;flex-wrap:wrap;column-gap:12px;}
   .quick-wizard .compact-rules>p {width:100%;margin:0;}
   .quick-wizard .compact-rules .radio-row {padding:4px 0;gap:6px;font-size:.84rem;}
@@ -1496,7 +1488,7 @@ button.standing-driver .st-name { text-decoration:none; }
     <path d="M 344 0 L 469 900 M 1096 0 L 971 900" opacity="0.13"/>
   </svg>
   <div class="intro-layout intro-center">
-    <div class="intro-logo"><div class="logo-main-wrap"><span class="logo-main">Stock Car</span> <span class="logo-empire">Empire</span></div><div class="intro-version logo-beta">BETA / VERSION 175</div></div>
+    <div class="intro-logo"><div class="logo-main-wrap"><span class="logo-main">Stock Car</span> <span class="logo-empire">Empire</span></div><div class="intro-version logo-beta">BETA / VERSION 176</div></div>
     <nav class="intro-buttons" data-panel="home" aria-label="Main menu"><button type="button" class="btn-game btn-game-ghost" data-menu="single">Single Player</button><button type="button" class="btn-game btn-game-ghost" data-menu="multi">Multiplayer</button><hr><button type="button" class="btn-game btn-game-ghost" data-menu="changes">Changelog</button><button type="button" class="btn-game btn-game-ghost" data-menu="about">About</button></nav>
   </div>
   <div id="intro-popup" class="modal-overlay" hidden>
@@ -1555,6 +1547,8 @@ button.standing-driver .st-name { text-decoration:none; }
           <button type="button" class="btn btn-ghost" data-back>Back</button>
         </div>
         <div class="modal-body intro-info">
+          <h4>Version 176</h4>
+          <p>The rolling start opens with all lamps dark. Green Flag appears in the same panel. Race length offers Short, Normal and Long.</p>
           <h4>Version 175</h4>
           <p>Rolling starts use six lights without numbers and a darker green-flag banner.</p>
           <h4>Version 174</h4>
@@ -1771,12 +1765,15 @@ function raceGraphicsPreset() {
 }
 
 const RACE_LENGTHS = [
-  {id:'shortest',label:'Shortest',scale:.25}, {id:'shorter',label:'Shorter',scale:.5},
-  {id:'short',label:'Short',scale:.75}, {id:'standard',label:'Standard',scale:1},
-  {id:'long',label:'Long',scale:1.25}, {id:'longer',label:'Longer',scale:1.5},
-  {id:'longest',label:'Longest',scale:2},
+  {id:'short',label:'Short',scale:.75},
+  {id:'standard',label:'Normal',scale:1},
+  {id:'long',label:'Long',scale:1.5},
 ];
-function raceLengthOption(id) { return RACE_LENGTHS.find(option=>option.id===id) || RACE_LENGTHS[3]; }
+function raceLengthOption(id) {
+  if (id === 'shortest' || id === 'shorter') id = 'short';
+  if (id === 'longer' || id === 'longest') id = 'long';
+  return RACE_LENGTHS.find(option => option.id === id) || RACE_LENGTHS[1];
+}
 
 const SERIES = [
   {
@@ -5519,7 +5516,7 @@ class Race3DEngine {
       if (hint) hint.style.opacity = '0';
       later(1100, () => { if (el) el.textContent = ''; });
     };
-    tick(lightCount);
+    tick(lightCount + 1);
   }
 
   // ── Main update ──────────────────────────────────────────────
@@ -9490,10 +9487,11 @@ function renderRaceGraphicsControl(scope) {
 }
 
 function renderRaceLengthControl(scope, value) {
-  const option = raceLengthOption(value), index = RACE_LENGTHS.indexOf(option);
-  return `<div class="race-length-control"><div class="race-length-heading"><label for="${scope}-race-length">Race length</label><output id="${scope}-race-length-value" for="${scope}-race-length">${option.label} · ${option.scale * 100}%</output></div>
-    <input id="${scope}-race-length" type="range" min="0" max="6" step="1" value="${index}" aria-valuetext="${option.label}" style="--length-progress:${index / 6 * 100}%" oninput="setRaceLength('${scope}',this.value)">
-    <div class="race-length-labels" aria-hidden="true">${RACE_LENGTHS.map(()=>`<span></span>`).join('')}</div></div>`;
+  const current = raceLengthOption(value);
+  const options = RACE_LENGTHS.map(option =>
+    `<option value="${option.id}"${option === current ? ' selected' : ''}>${option.label}</option>`).join('');
+  return `<div class="race-length-control"><label class="form-label" for="${scope}-race-length">Race length</label>
+    <select class="form-select" id="${scope}-race-length" onchange="setRaceLength('${scope}',this.value)">${options}</select></div>`;
 }
 
 function renderRaceRuleControls(difficulty,preferences={},scope='career') {
@@ -13917,8 +13915,8 @@ function setRaceGraphicsPreset(select) {
   }
 }
 
-function setRaceLength(scope, index) {
-  const selected = RACE_LENGTHS[Number(index)] || RACE_LENGTHS[3];
+function setRaceLength(scope, id) {
+  const selected = raceLengthOption(id);
   let option = selected;
   if (scope === 'quick') quickRaceLength = selected.id;
   else {
@@ -13930,12 +13928,7 @@ function setRaceLength(scope, index) {
       toast('Race length could not be saved.', 'error');
     }
   }
-  const value = RACE_LENGTHS.indexOf(option);
-  const input = document.getElementById(`${scope}-race-length`);
-  input.value = value;
-  input.setAttribute('aria-valuetext', option.label);
-  input.style.setProperty('--length-progress', `${value / 6 * 100}%`);
-  document.getElementById(`${scope}-race-length-value`).textContent = `${option.label} · ${option.scale * 100}%`;
+  document.getElementById(`${scope}-race-length`).value = option.id;
 }
 
 function setQuickRaceStep(step) {

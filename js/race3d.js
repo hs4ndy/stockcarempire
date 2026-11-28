@@ -472,7 +472,7 @@ class Race3DEngine {
       if (hint) hint.style.opacity = '0';
       later(1100, () => { if (el) el.textContent = ''; });
     };
-    tick(lightCount);
+    tick(lightCount + 1);
   }
 
   // ── Main update ──────────────────────────────────────────────

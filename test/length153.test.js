@@ -1,13 +1,13 @@
 const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm');
 const {entries}=require('./helpers/race-sources.cjs');
-test('all seven settings scale actual constructor distances in every series',()=>{
+test('all three settings scale actual constructor distances in every series',()=>{
   const c=context();c.THREE=require('three');c.SC_LEGACY_STOCK_CAR_MODEL={};c.SC_STOCK_CAR_MODEL={};
   assert.equal(vm.runInContext(`(()=>{Race3DEngine.prototype._init=function(){};return SERIES.every(s=>RACE_LENGTHS.every(o=>new Race3DEngine({}, {seriesId:s.id,raceLength:o.id},()=>{}).raceLength===(s.id==='premier'?18750:17250)*o.scale));})()`,c),true);
 });
 function context(){const c=vm.createContext({console,localStorage:{getItem(){return null},setItem(){},removeItem(){}}});for(const[f,s]of entries(['js/data.js','js/game.js','js/race3d.js']))vm.runInContext(s,c);return c;}
-test('seven length options preserve Standard, increase monotonically and normalize legacy saves',()=>{
+test('three length options preserve Normal, increase monotonically and normalize legacy saves',()=>{
   const c=context();
-  assert.equal(vm.runInContext(`(()=>{newGame('T','D','C');delete game.raceLength;normalizeVehicleState();return game.raceLength==='standard'&&raceLengthOption('unknown').scale===1&&RACE_LENGTHS.map(o=>o.scale).join(',')==='0.25,0.5,0.75,1,1.25,1.5,2';})()`,c),true);
+  assert.equal(vm.runInContext(`(()=>{newGame('T','D','C');delete game.raceLength;normalizeVehicleState();return game.raceLength==='standard'&&raceLengthOption('unknown').scale===1&&RACE_LENGTHS.map(o=>o.scale).join(',')==='0.75,1,1.5'&&['shortest','shorter','longer','longest'].map(id=>raceLengthOption(id).id).join(',')==='short,short,long,long';})()`,c),true);
 });
 test('post-crash target is shared, capped, fades at the pack and grants no clean-driving bonus',()=>{
   const c=context();

@@ -1441,10 +1441,11 @@ function renderRaceGraphicsControl(scope) {
 }
 
 function renderRaceLengthControl(scope, value) {
-  const option = raceLengthOption(value), index = RACE_LENGTHS.indexOf(option);
-  return `<div class="race-length-control"><div class="race-length-heading"><label for="${scope}-race-length">Race length</label><output id="${scope}-race-length-value" for="${scope}-race-length">${option.label} · ${option.scale * 100}%</output></div>
-    <input id="${scope}-race-length" type="range" min="0" max="6" step="1" value="${index}" aria-valuetext="${option.label}" style="--length-progress:${index / 6 * 100}%" oninput="setRaceLength('${scope}',this.value)">
-    <div class="race-length-labels" aria-hidden="true">${RACE_LENGTHS.map(()=>`<span></span>`).join('')}</div></div>`;
+  const current = raceLengthOption(value);
+  const options = RACE_LENGTHS.map(option =>
+    `<option value="${option.id}"${option === current ? ' selected' : ''}>${option.label}</option>`).join('');
+  return `<div class="race-length-control"><label class="form-label" for="${scope}-race-length">Race length</label>
+    <select class="form-select" id="${scope}-race-length" onchange="setRaceLength('${scope}',this.value)">${options}</select></div>`;
 }
 
 function renderRaceRuleControls(difficulty,preferences={},scope='career') {
