@@ -859,6 +859,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
   border-radius: 6px;
   font: 600 1rem/1.2 var(--font);
   color: var(--text);
+  transition-property: none;
 }
 .r3d-countdown:empty { visibility: hidden; }
 .r3d-countdown strong {
@@ -866,27 +867,25 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
   text-transform: uppercase;
   white-space: nowrap;
 }
-.r3d-start-lights { display: flex; gap: 5px; }
+.r3d-start-lights { display: flex; gap: 8px; }
 .r3d-start-lights i {
-  width: 13px;
-  height: 13px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: var(--panel-3);
   border: 1px solid var(--line-2);
 }
 .r3d-start-lights .lit { background: var(--accent); border-color: var(--danger-text); }
-.r3d-countdown[data-phase="count"] strong {
-  width: 1ch;
-  margin-left: 4px;
-  text-align: center;
-  font-size: clamp(2.25rem, 5vw, 3rem);
-  font-variant-numeric: tabular-nums;
+.r3d-countdown[data-phase="count"] {
+  top: 33%;
+  min-height: 44px;
 }
 .r3d-countdown[data-phase="green"] {
-  background: var(--good);
-  color: var(--bg);
+  background: #1b6b3d;
+  color: var(--text);
   animation: r3d-start-release 220ms cubic-bezier(.15,.75,.25,1) both;
 }
+.r3d-countdown[data-phase="green"] strong { font-style: italic; }
 .r3d-start-flag {
   position: relative;
   width: 27px;
@@ -1118,6 +1117,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
   .r3d-map-track { height: 184px; }
   .r3d-order-row:nth-child(n+6) { display: none; }
   .r3d-countdown { top: 48%; min-height: 60px; padding-block: 8px; }
+  .r3d-countdown[data-phase="count"] { top: 42%; }
 }
 
 /* Quick Race personalization and local split screen. */
@@ -1156,6 +1156,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .dual-race .r3d-countdown, .dual-race .r3d-finish, .dual-race #r3d-pause-overlay { z-index: 5; }
 @media (max-width: 700px) {
   .dual-race .r3d-countdown { top: 50%; }
+  .dual-race .r3d-countdown[data-phase="count"] { top: 44%; }
   .dual-views { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
   .dual-view { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.4); }
   .dual-mirror { height: 48px; top: 8px; left: 50%; }
@@ -1495,7 +1496,7 @@ button.standing-driver .st-name { text-decoration:none; }
     <path d="M 344 0 L 469 900 M 1096 0 L 971 900" opacity="0.13"/>
   </svg>
   <div class="intro-layout intro-center">
-    <div class="intro-logo"><div class="logo-main-wrap"><span class="logo-main">Stock Car</span> <span class="logo-empire">Empire</span></div><div class="intro-version logo-beta">BETA / VERSION 174</div></div>
+    <div class="intro-logo"><div class="logo-main-wrap"><span class="logo-main">Stock Car</span> <span class="logo-empire">Empire</span></div><div class="intro-version logo-beta">BETA / VERSION 175</div></div>
     <nav class="intro-buttons" data-panel="home" aria-label="Main menu"><button type="button" class="btn-game btn-game-ghost" data-menu="single">Single Player</button><button type="button" class="btn-game btn-game-ghost" data-menu="multi">Multiplayer</button><hr><button type="button" class="btn-game btn-game-ghost" data-menu="changes">Changelog</button><button type="button" class="btn-game btn-game-ghost" data-menu="about">About</button></nav>
   </div>
   <div id="intro-popup" class="modal-overlay" hidden>
@@ -1554,6 +1555,8 @@ button.standing-driver .st-name { text-decoration:none; }
           <button type="button" class="btn btn-ghost" data-back>Back</button>
         </div>
         <div class="modal-body intro-info">
+          <h4>Version 175</h4>
+          <p>Rolling starts use six lights without numbers and a darker green-flag banner.</p>
           <h4>Version 174</h4>
           <p>The field rolls toward green during the five-light countdown.</p>
           <h4>Version 173</h4>
@@ -5496,12 +5499,15 @@ class Race3DEngine {
         if (!this.done && !this._disposed) action();
       }, delay);
     };
+    const lightCount = 6;
     const tick = seconds => {
       if (el) {
         el.dataset.phase = seconds ? 'count' : 'green';
+        const lit = lightCount - seconds + 1;
         el.innerHTML = seconds
-          ? `<div class="r3d-start-lights" aria-hidden="true">${[1, 2, 3, 4, 5].map(lamp =>
-              `<i class="${lamp <= 6 - seconds ? 'lit' : ''}"></i>`).join('')}</div><strong>${seconds}</strong>`
+          ? `<div class="r3d-start-lights" role="img" aria-label="${seconds} ${seconds === 1 ? 'second' : 'seconds'} to green">
+              ${Array.from({length:lightCount}, (_, i) => `<i${i < lit ? ' class="lit"' : ''}></i>`).join('')}
+            </div>`
           : '<i class="r3d-start-flag" aria-hidden="true"></i><strong>Green flag</strong>';
       }
       if (seconds) {
@@ -5513,7 +5519,7 @@ class Race3DEngine {
       if (hint) hint.style.opacity = '0';
       later(1100, () => { if (el) el.textContent = ''; });
     };
-    tick(5);
+    tick(lightCount);
   }
 
   // ── Main update ──────────────────────────────────────────────

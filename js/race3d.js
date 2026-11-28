@@ -452,12 +452,15 @@ class Race3DEngine {
         if (!this.done && !this._disposed) action();
       }, delay);
     };
+    const lightCount = 6;
     const tick = seconds => {
       if (el) {
         el.dataset.phase = seconds ? 'count' : 'green';
+        const lit = lightCount - seconds + 1;
         el.innerHTML = seconds
-          ? `<div class="r3d-start-lights" aria-hidden="true">${[1, 2, 3, 4, 5].map(lamp =>
-              `<i class="${lamp <= 6 - seconds ? 'lit' : ''}"></i>`).join('')}</div><strong>${seconds}</strong>`
+          ? `<div class="r3d-start-lights" role="img" aria-label="${seconds} ${seconds === 1 ? 'second' : 'seconds'} to green">
+              ${Array.from({length:lightCount}, (_, i) => `<i${i < lit ? ' class="lit"' : ''}></i>`).join('')}
+            </div>`
           : '<i class="r3d-start-flag" aria-hidden="true"></i><strong>Green flag</strong>';
       }
       if (seconds) {
@@ -469,7 +472,7 @@ class Race3DEngine {
       if (hint) hint.style.opacity = '0';
       later(1100, () => { if (el) el.textContent = ''; });
     };
-    tick(5);
+    tick(lightCount);
   }
 
   // ── Main update ──────────────────────────────────────────────

@@ -840,6 +840,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
   border-radius: 6px;
   font: 600 1rem/1.2 var(--font);
   color: var(--text);
+  transition-property: none;
 }
 .r3d-countdown:empty { visibility: hidden; }
 .r3d-countdown strong {
@@ -847,27 +848,25 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
   text-transform: uppercase;
   white-space: nowrap;
 }
-.r3d-start-lights { display: flex; gap: 5px; }
+.r3d-start-lights { display: flex; gap: 8px; }
 .r3d-start-lights i {
-  width: 13px;
-  height: 13px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: var(--panel-3);
   border: 1px solid var(--line-2);
 }
 .r3d-start-lights .lit { background: var(--accent); border-color: var(--danger-text); }
-.r3d-countdown[data-phase="count"] strong {
-  width: 1ch;
-  margin-left: 4px;
-  text-align: center;
-  font-size: clamp(2.25rem, 5vw, 3rem);
-  font-variant-numeric: tabular-nums;
+.r3d-countdown[data-phase="count"] {
+  top: 33%;
+  min-height: 44px;
 }
 .r3d-countdown[data-phase="green"] {
-  background: var(--good);
-  color: var(--bg);
+  background: #1b6b3d;
+  color: var(--text);
   animation: r3d-start-release 220ms cubic-bezier(.15,.75,.25,1) both;
 }
+.r3d-countdown[data-phase="green"] strong { font-style: italic; }
 .r3d-start-flag {
   position: relative;
   width: 27px;
@@ -1099,6 +1098,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
   .r3d-map-track { height: 184px; }
   .r3d-order-row:nth-child(n+6) { display: none; }
   .r3d-countdown { top: 48%; min-height: 60px; padding-block: 8px; }
+  .r3d-countdown[data-phase="count"] { top: 42%; }
 }
 
 /* Quick Race personalization and local split screen. */
@@ -1137,6 +1137,7 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
 .dual-race .r3d-countdown, .dual-race .r3d-finish, .dual-race #r3d-pause-overlay { z-index: 5; }
 @media (max-width: 700px) {
   .dual-race .r3d-countdown { top: 50%; }
+  .dual-race .r3d-countdown[data-phase="count"] { top: 44%; }
   .dual-views { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
   .dual-view { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.4); }
   .dual-mirror { height: 48px; top: 8px; left: 50%; }
