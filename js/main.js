@@ -1182,17 +1182,29 @@ function closeVehicleModal(id) {
 
 async function handleRepairAll(){const cost=game.cars.reduce((n,c)=>n+carRepairCost(c),0);if(!await gameConfirm(`Repair all damaged cars for ${fmt$(cost)}? Lifetime health will not change.`))return;const r=repairAllCars();if(!r.ok){toast(r.msg,'error');return;}updateHeader();renderTab('garage');toast(`${r.count} cars repaired for ${fmt$(r.cost)}.`,'success');}
 
-function setRaceGraphicsPreset(select) {
-  try {
-    localStorage.setItem('sce_graphics_preset', normalizeGraphicsPreset(select.value));
-  } catch (_) {
-    select.value = raceGraphicsPreset();
-    toast('Graphics setting could not be saved.', 'error');
-  }
+function syncRaceSlider(input, options, id) {
+  const index = options.findIndex(option => option.id === id);
+  const label = options[index].label;
+  input.value = index;
+  input.setAttribute('aria-valuetext', label);
+  input.style.setProperty('--slider-progress', `${index / (options.length - 1) * 100}%`);
+  document.getElementById(`${input.id}-value`).textContent = label;
 }
 
-function setRaceLength(scope, id) {
-  const selected = raceLengthOption(id);
+function setRaceGraphicsPreset(input) {
+  const options = graphicsSliderOptions();
+  let id = options[Number(input.value)].id;
+  try {
+    localStorage.setItem('sce_graphics_preset', id);
+  } catch (_) {
+    id = raceGraphicsPreset();
+    toast('Graphics setting could not be saved.', 'error');
+  }
+  syncRaceSlider(input, options, id);
+}
+
+function setRaceLength(scope, index) {
+  const selected = RACE_LENGTHS[Number(index)] || raceLengthOption();
   let option = selected;
   if (scope === 'quick') quickRaceLength = selected.id;
   else {
@@ -1204,7 +1216,7 @@ function setRaceLength(scope, id) {
       toast('Race length could not be saved.', 'error');
     }
   }
-  document.getElementById(`${scope}-race-length`).value = option.id;
+  syncRaceSlider(document.getElementById(`${scope}-race-length`), RACE_LENGTHS, option.id);
 }
 
 function setQuickRaceStep(step) {

@@ -10,9 +10,13 @@ for(const [width,height,file,selected] of [[1440,900,'index.html',2],[1024,600,'
     await page.setViewportSize({width,height});await open(page,file);
     await chooseHomeAction(page,'#btn-quick-race');await page.locator('.quick-series-btn').first().click();
     const distance=page.locator('#quick-race-length');
-    await expect(distance).toHaveValue('standard');
-    await expect(distance.locator('option')).toHaveText(['Short','Normal','Long']);
-    await distance.selectOption({index:selected});
+    await expect(distance).toHaveValue('1');
+    await expect(distance).toHaveAttribute('aria-valuetext','Normal');
+    await distance.press('Home');
+    await expect(distance).toHaveAttribute('aria-valuetext','Short');
+    await distance.press('End');
+    await expect(distance).toHaveAttribute('aria-valuetext','Long');
+    await distance.fill(String(selected));
     fs.mkdirSync('.impeccable/review',{recursive:true});await page.screenshot({path:`.impeccable/review/length153-quick-${width}.png`});
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await page.locator('#quick-next').click();await page.locator('#btn-quick-race-confirm').click();
@@ -26,7 +30,7 @@ for(const [width,height,file,selected] of [[1440,900,'index.html',2],[1024,600,'
 }
 test('Dual Quick Race shares selected distance and retains it after both players finish',async({page})=>{
   await open(page);await chooseHomeAction(page,'#btn-dual-race');await page.locator('.quick-series-btn').last().click();
-  await page.locator('#quick-race-length').selectOption('short');
+  await page.locator('#quick-race-length').fill('0');
   await page.locator('#quick-next').click();await page.locator('#btn-quick-race-confirm').click();
   await page.waitForFunction(()=>window._r3d?.player2&&window._r3d?.mirrorRT);
   expect(await page.evaluate(()=>window._r3d.raceLength)).toBe(14062.5);
@@ -39,11 +43,11 @@ test('Dual Quick Race shares selected distance and retains it after both players
 test('Career length persists, old saves default Normal, failed writes revert and actual Premier length follows selection',async({page})=>{
   await open(page);
   await page.evaluate(()=>{newGame('Team','Driver','Car');game.currentSeries=2;game.cars[0].classId=SERIES[2].carClass;game.season.aiTeams=generateAITeams(2);game.season.calendar=generateCalendar(2);game.tutorial.status='skipped';rebuildStandings();saveToSlot(0);enterGame();showTab('settings');});
-  await page.locator('#career-race-length').selectOption('long');
+  await page.locator('#career-race-length').fill('2');
   expect(await page.evaluate(()=>{loadFromSlot(0);return game.raceLength;})).toBe('long');
   await page.evaluate(()=>showTab('settings'));
   await page.locator('#career-race-length').scrollIntoViewIfNeeded();await page.screenshot({path:'.impeccable/review/length153-career.png'});
-  await page.evaluate(()=>{const original=Storage.prototype.setItem;try{Storage.prototype.setItem=()=>{throw new Error('quota');};setRaceLength('career','short');}finally{Storage.prototype.setItem=original;}});
+  await page.evaluate(()=>{const original=Storage.prototype.setItem;try{Storage.prototype.setItem=()=>{throw new Error('quota');};setRaceLength('career',0);}finally{Storage.prototype.setItem=original;}});
   expect(await page.evaluate(()=>game.raceLength)).toBe('long');
   await page.evaluate(()=>handleStartRace());await page.waitForFunction(()=>window._r3d?.mirrorRT);
   expect(await page.evaluate(()=>window._r3d.raceLength)).toBe(18750*1.5);

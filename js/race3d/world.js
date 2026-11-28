@@ -14,9 +14,13 @@
       if (Math.abs(basis[10]) <= spread) return;
       const center = mesh.matrixWorld.elements[14];
       const eye = Math.floor((basis[14] - center) / pitch);
+      // Conservative Z extent of the perspective frustum at its far plane.
+      const forwardReach = Math.ceil(camera.far * (Math.abs(basis[10]) + spread) / pitch) + 2;
       let first = -reach, last = reach;
       if (basis[10] < 0) first = Math.max(first, eye - 1);
       else last = Math.min(last, eye + 1);
+      if (basis[10] < 0) last = Math.min(last, eye + forwardReach);
+      else first = Math.max(first, eye - forwardReach);
       if (inner && first <= -inner && last >= inner) return;
       if (inner && first > -inner) first = Math.max(inner, first);
       if (inner && last < inner) last = Math.min(-inner, last);
@@ -38,7 +42,7 @@
     geometry.computeBoundingBox();
     const {min, max} = geometry.boundingBox;
     const positions = [], normals = [], uv = [], colors = [], indices = [];
-    const samples = [1, .96, .91, .85, .89, .96, .91, .86, .90, .96, .91, .85, .91, .96, 1];
+    const samples = [1, .97, .94, .95, .94, .97, 1];
     samples.forEach((shade, i) => {
       const u = i / (samples.length - 1);
       const x = min.x + (max.x - min.x) * u;
@@ -226,7 +230,9 @@
       fragmentShader: 'uniform vec3 horizon; uniform vec3 zenith; varying vec3 direction; void main(){ float t=smoothstep(0.0,0.65,normalize(direction).y); gl_FragColor=vec4(mix(horizon,zenith,t),1.0); }',
       side: THREE.BackSide, depthWrite: false, toneMapped: false
     }));
-    this.sky.name = 'environment:clear-midday'; this.sky.frustumCulled = false; this.sky.renderOrder = -100;
+    // The shader writes far-plane depth. Draw after opaque scenery so depth
+    // testing rejects the road and stands before running the sky shader.
+    this.sky.name = 'environment:clear-midday'; this.sky.frustumCulled = false; this.sky.renderOrder = 100;
     this.scene.add(this.sky);
   }
 

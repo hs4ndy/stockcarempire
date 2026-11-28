@@ -1429,23 +1429,27 @@ function attachTabListeners(tabName) {
   // Nothing extra for most tabs; specific interactions are via onclick attributes
 }
 
+function renderRaceSlider(id, title, options, selected, onInput) {
+  const index = options.findIndex(option => option.id === selected);
+  const label = options[index].label;
+  return `<div class="race-slider"><div class="race-slider-heading">
+    <label for="${id}">${title}</label><output id="${id}-value" for="${id}" aria-hidden="true">${label}</output></div>
+    <input id="${id}" type="range" min="0" max="${options.length - 1}" step="1" value="${index}" aria-valuetext="${label}" style="--slider-progress:${index / (options.length - 1) * 100}%" oninput="${onInput}">
+    <div class="race-slider-dots" aria-hidden="true">${options.map(() => '<span></span>').join('')}</div>
+  </div>`;
+}
+
+function graphicsSliderOptions() {
+  return GRAPHICS_PRESETS.map(id => ({id, label:id[0].toUpperCase() + id.slice(1)}));
+}
+
 function renderRaceGraphicsControl(scope) {
-  const id = `${scope}-race-graphics`;
-  const preset = raceGraphicsPreset();
-  const options = GRAPHICS_PRESETS.map(value =>
-    `<option value="${value}"${value === preset ? ' selected' : ''}>${scope === 'quick' && value === 'high' ? 'High · Track textures' : value[0].toUpperCase() + value.slice(1)}</option>`
-  ).join('');
-  return `<div class="race-graphics-control"><label class="form-label" for="${id}">Graphics</label>
-    <select class="form-select" id="${id}" onchange="setRaceGraphicsPreset(this)"${scope === 'quick' ? '' : ` aria-describedby="${id}-hint"`}>${options}</select>
-    ${scope === 'quick' ? '' : `<p class="small muted-text" id="${id}-hint">High enables track textures.</p>`}</div>`;
+  return renderRaceSlider(`${scope}-race-graphics`, 'Graphics', graphicsSliderOptions(), raceGraphicsPreset(), 'setRaceGraphicsPreset(this)');
 }
 
 function renderRaceLengthControl(scope, value) {
-  const current = raceLengthOption(value);
-  const options = RACE_LENGTHS.map(option =>
-    `<option value="${option.id}"${option === current ? ' selected' : ''}>${option.label}</option>`).join('');
-  return `<div class="race-length-control"><label class="form-label" for="${scope}-race-length">Race length</label>
-    <select class="form-select" id="${scope}-race-length" onchange="setRaceLength('${scope}',this.value)">${options}</select></div>`;
+  return renderRaceSlider(`${scope}-race-length`, 'Race length', RACE_LENGTHS, raceLengthOption(value).id,
+    `setRaceLength('${scope}',this.value)`);
 }
 
 function renderRaceRuleControls(difficulty,preferences={},scope='career') {

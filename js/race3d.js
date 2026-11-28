@@ -337,7 +337,7 @@ class Race3DEngine {
     this.mirrorCam = new THREE.PerspectiveCamera(72, 3.5, 0.5, 4000);
     this.mirrorCam.position.set(0, 4, 0);
 
-    this.renderer = new THREE.WebGLRenderer({ canvas: c, antialias: this.config.graphicsMode === 'high' });
+    this.renderer = new THREE.WebGLRenderer({ canvas: c, antialias: this.config.graphicsMode !== 'low' });
     // Budget rendering work rather than multiplying every screen pixel by four.
     this._configureGraphics();
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -470,7 +470,11 @@ class Race3DEngine {
       this.paceMode = false;
       this.racing = true;
       if (hint) hint.style.opacity = '0';
-      later(1100, () => { if (el) el.textContent = ''; });
+      later(1100, () => {
+        if (!el) return;
+        el.dataset.phase = 'green-exit';
+        later(220, () => { el.textContent = ''; });
+      });
     };
     tick(lightCount + 1);
   }

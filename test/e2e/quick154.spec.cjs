@@ -5,8 +5,8 @@ for(const [width,height,file] of [[1440,900,'index.html'],[390,844,'releases/Sto
 test(`session averages and distance choices ${width}`,async({page})=>{
  await page.setViewportSize({width,height});await page.goto(pathToFileURL(path.resolve(file)).href);
  await page.evaluate(()=>document.fonts.ready);await chooseHomeAction(page,'#btn-quick-race');
- await expect(page.locator('#quick-race-length option')).toHaveText(['Short','Normal','Long']);
- await page.locator('#quick-race-length').selectOption('long');
+ await expect(page.locator('#quick-race-length')).toHaveAttribute('max','2');
+ await page.locator('#quick-race-length').fill('2');
  await page.evaluate(()=>{
    document.getElementById('quick-race-modal').remove();quickRacePlayers=2;
    launch3DRace=(config,done)=>done(4,[{isPlayer:true,entrantId:'player',number:1,teamColor:'#e8001d',position:4},{isPlayer:true,entrantId:'player2',number:2,teamColor:'#58a6ff',position:1}],null,false,{startingPositions:{player:2,player2:3}});

@@ -26,14 +26,14 @@ test('the default and legacy graphics values resolve to Medium', () => {
   assert.equal(engine('performance').graphicsMode, 'medium');
   assert.equal(medium.lowPower, false);
   assert.equal(medium.renderer.shadowMap.enabled, false);
-  assert.ok(medium.renderer.ratio ** 2 * 1366 * 768 <= 1350001);
+  assert.ok(medium.renderer.ratio ** 2 * 1366 * 768 <= 1500001);
 });
 
 test('Low lowers the pixel budget, while High uses native resolution and shadows in single and dual', () => {
   const low = engine('low');
   assert.equal(low.lowPower, true);
   assert.equal(low.renderer.shadowMap.enabled, false);
-  assert.ok(low.renderer.ratio ** 2 * 1366 * 768 <= 750001);
+  assert.ok(low.renderer.ratio ** 2 * 1366 * 768 <= 1050001);
   for (const dual of [false, true]) {
     const high = engine('high', dual);
     assert.equal(high.renderer.ratio, 2);

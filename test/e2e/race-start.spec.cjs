@@ -33,15 +33,16 @@ for (const [width, height, players, offline] of [[1440,900,1,false],[1280,720,2,
         });
       };
       record();
-      new MutationObserver(record).observe(cue, {childList:true});
+      new MutationObserver(record).observe(cue, {childList:true, attributes:true, attributeFilter:['data-phase']});
     });
     const cue = page.locator('#r3d-countdown');
     await page.keyboard.down('a');
+    await expect(cue).toHaveText('');
     await expect(cue).toBeHidden();
     await page.keyboard.up('a');
     const events = await page.evaluate(() => window.startTrace);
-    expect(events.map(e=>e.phase)).toEqual(['','','','','','','','Green flag','']);
-    expect(events.map(e=>e.lights)).toEqual([0,1,2,3,4,5,6,0,0]);
+    expect(events.map(e=>e.phase)).toEqual(['','','','','','','','Green flag','Green flag','']);
+    expect(events.map(e=>e.lights)).toEqual([0,1,2,3,4,5,6,0,0,0]);
     expect(events.slice(0,7).every(e=>e.pace && !e.racing && e.fits && e.lampCount===6)).toBe(true);
     expect(events[0].center).toBeCloseTo(width < 700 ? .44 : .33, 2);
     expect(events[0].grid.every(car=>car[2]>0)).toBe(true);
@@ -59,7 +60,8 @@ for (const [width, height, players, offline] of [[1440,900,1,false],[1280,720,2,
       background:'rgb(33, 120, 70)', italic:'italic',
       width:events[0].width, height:events[0].height, center:events[0].center,
     });
-    for (const [i, delay] of [1000,1000,1000,1000,1000,1000,1000,1100].entries()) {
+    expect(events[8]).toMatchObject({animation:offline?'none':'r3d-start-exit', width:events[7].width, height:events[7].height});
+    for (const [i, delay] of [1000,1000,1000,1000,1000,1000,1000,1100,220].entries()) {
       expect(events[i+1].time-events[i].time).toBeGreaterThanOrEqual(delay-(i===0 ? 500 : 60));
     }
   });

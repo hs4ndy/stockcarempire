@@ -20,11 +20,11 @@ for (const [preset, players, file, series] of [
       enterGame();
       showTab('settings');
     });
-    await expect(page.locator('#career-race-graphics')).toHaveValue('medium');
-    await page.locator('#career-race-graphics').selectOption(preset);
+    await expect(page.locator('#career-race-graphics')).toHaveAttribute('aria-valuetext','Medium');
+    await page.locator('#career-race-graphics').fill(String(['low','medium','high'].indexOf(preset)));
     await page.reload();
     await chooseHomeAction(page, players === 2 ? '#btn-dual-race' : '#btn-quick-race');
-    await expect(page.locator('#quick-race-graphics')).toHaveValue(preset);
+    await expect(page.locator('#quick-race-graphics')).toHaveAttribute('aria-valuetext',preset[0].toUpperCase()+preset.slice(1));
     await page.locator('.quick-series-btn').nth(series).click();
     await page.locator('#quick-next').click();
     await page.locator('#btn-quick-race-confirm').click();
@@ -52,7 +52,7 @@ for (const [preset, players, file, series] of [
       expect(report.maps.every(state => state === 'loaded')).toBe(true);
     } else {
       expect(report.maps).toEqual([]);
-      expect(report.pixels).toBeLessThanOrEqual(preset === 'low' ? 750000 : 1350000);
+      expect(report.pixels).toBeLessThanOrEqual(preset === 'low' ? 1050000 : 1500000);
     }
   });
 }

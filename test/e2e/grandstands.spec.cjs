@@ -12,7 +12,7 @@ for (const [series, decks, mode] of [[0,1,'desktop'],[1,2,'desktop'],[2,4,'deskt
     await page.route('**/three.min.js',route=>route.fulfill({path:path.resolve(__dirname,'../../node_modules/three/build/three.min.js'),contentType:'application/javascript'}));
     await page.goto(mode==='file'?pathToFileURL(path.resolve(__dirname,'../../index.html')).href:'/');
     await chooseHomeAction(page,'#btn-quick-race');
-    await page.locator('#quick-race-graphics').selectOption('high');
+    await page.locator('#quick-race-graphics').fill('2');
     await page.locator('.quick-series-btn').nth(series).click();
     if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator("#btn-quick-race-confirm").click();
     await page.waitForFunction(()=>window._r3d?.racing && window._r3d?.grandstandGroup?.children.every(m=>!m.material.map || m.material.map.image?.naturalWidth>0));

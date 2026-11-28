@@ -26,7 +26,7 @@ for (const [label, viewport, dpr] of [
     await page.goto(label === 'direct-file'
       ? pathToFileURL(path.resolve(__dirname, '../../index.html')).href : '/');
     await chooseHomeAction(page,'#btn-quick-race');
-    await page.locator('#quick-race-graphics').selectOption('high');
+    await page.locator('#quick-race-graphics').fill('2');
     await page.locator('.quick-series-btn').last().click();
     if(await page.locator('#quick-next').isVisible()) await page.locator('#quick-next').click();await page.locator("#btn-quick-race-confirm").click();
     await page.waitForFunction(() => {
