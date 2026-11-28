@@ -37,7 +37,7 @@
     const tgt = this._postCrashTarget(p, this._playerRecoveryTarget(normalPace, nextCar, gap) * (this.speedScale ?? 1) * this._healthPace(p));
     let braking = false;
     if (this.keys.s) {
-      p.speed = Math.max(Math.min(tgt * 0.38, p.speed), p.speed - R3D.BRAKE_FORCE * dt);
+      p.speed = Math.max(tgt * 0.38, p.speed - R3D.BRAKE_FORCE * dt);
       braking = true;
     } else {
       const accel = 2.2 + (R3D.ACCEL - 2.2) * clamp((p.speed - 180) / 30, 0, 1);

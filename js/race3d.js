@@ -440,12 +440,12 @@ class Race3DEngine {
     finally { this.player = player; this.keys = keys; this.camera = camera; }
   }
 
-  // Standing start
+  // Rolling start
   _countdown() {
     const el   = document.getElementById('r3d-countdown');
     const hint = document.getElementById('r3d-hint');
     this.paceMode = true;
-    for (const car of this.cars) car.speed = 0;
+    for (const car of this.cars) car.speed = R3D.PACE_SPEED * (this.speedScale ?? 1);
 
     const later = (delay, action) => {
       this._startTimer = setTimeout(() => {
@@ -477,6 +477,8 @@ class Race3DEngine {
     if (this.paused) return;
 
     if (this.paceMode) {
+      this._updatePaceLap(dt);
+      this._animateCars(dt);
       if (!this.player2) this._updateCamera(dt);
       this._updateHUD(dt);
       return;
@@ -507,6 +509,24 @@ class Race3DEngine {
     if (!this.player2) this._updateCamera(dt);
     this._updateHUD(dt);
 
+  }
+
+  _updatePaceLap(dt) {
+    for (const [p, keys] of [[this.player,this.keys], ...(this.player2 ? [[this.player2,this.keys2]] : [])]) {
+      const hw = (this.trackHalfWidth ?? R3D.HALF_W) - 1.2;
+      const desired = (Number(keys.a)-Number(keys.d))*R3D.LAT_MAX*.6;
+      p.lv = (p.lv || 0) + clamp((desired-(p.lv || 0))*(1-Math.exp(-4*dt)),-R3D.LAT_ACC*dt,R3D.LAT_ACC*dt);
+      p.lv=clamp(p.lv,-R3D.LAT_MAX*.6,R3D.LAT_MAX*.6);
+      p.x=clamp(p.x+p.lv*dt,-hw,hw);
+    }
+    for (const car of this.cars) {
+      // Every row advances together during the countdown. Letting each car
+      // converge from its power-based race speed changed the live order before
+      // the green flag, so the HUD could disagree with the starting grid.
+      car.speed = R3D.PACE_SPEED * (this.speedScale ?? 1);
+      car.z += car.speed * dt;
+      car.mesh.position.set(car.x, 0, car.z);
+    }
   }
 
   // Pause

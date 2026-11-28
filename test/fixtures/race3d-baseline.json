@@ -111,7 +111,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "8a09bac3dae808dfd092491033f744a53df8f7e4eff4ed64afe0fc4a147d1df7"
+      "hash": "5587e71fb985139ff14743f89f461aa91921c8673fb3e7b6259a9d955c5ab619"
     },
     {
       "name": "_update",
@@ -119,7 +119,15 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "23dc5adacd5295fa807ffe94726716454d612853db1fef846f91d92ccbdc8fe1"
+      "hash": "8992c031c53377df3c7ae394b0a78b5b4d428bf899428c55f041759b0cbe4e18"
+    },
+    {
+      "name": "_updatePaceLap",
+      "length": 1,
+      "enumerable": false,
+      "configurable": true,
+      "writable": true,
+      "hash": "4f0407c4f59aa5c60309984271067c12ff171530a8e4ff1a341c2e677130c452"
     },
     {
       "name": "_updatePlayer",
@@ -127,7 +135,7 @@
       "enumerable": false,
       "configurable": true,
       "writable": true,
-      "hash": "0d7484eb65c92b1edd0e6b93ef70119e328ebf697c2573dc211dd403c4a84ea5"
+      "hash": "f54bd5a7f9caaf0159892e86463219c3c0fe00b49458f7eb63a8a23eca0d54e1"
     },
     {
       "name": "_naturalAIPace",
