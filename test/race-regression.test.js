@@ -696,33 +696,6 @@ test('an unmatched legacy backmarker cannot steal a later stable match', () => {
   assert.equal(merged[2].entrantId, 'player');
 });
 
-test('formation lap preserves the starting order despite different race speeds', () => {
-  const context = makeContext();
-  const result = readJson(context, `(() => {
-    const makeMesh = () => ({ position: { set(x, y, z) { this.x = x; this.y = y; this.z = z; } } });
-    const cars = [
-      { x: -3.5, z: 56, speed: 220, mesh: makeMesh() },
-      { x:  3.5, z: 26, speed: 150, mesh: makeMesh() },
-      { x: -3.5, z:  0, speed: 190, mesh: makeMesh() },
-    ];
-    const engine = {
-      cars,
-      player: cars[1],
-      keys: { a: false, d: false },
-    };
-    const before = cars.map(car => car.z);
-    Race3DEngine.prototype._updatePaceLap.call(engine, 0.5);
-    return {
-      gapsBefore: [before[0] - before[1], before[1] - before[2]],
-      gapsAfter: [cars[0].z - cars[1].z, cars[1].z - cars[2].z],
-      speeds: cars.map(car => car.speed),
-    };
-  })()`);
-
-  assert.deepEqual(result.gapsAfter, result.gapsBefore);
-  assert.deepEqual(result.speeds, [65, 65, 65]);
-});
-
 test('same-frame finishers are classified by distance and force a final tower refresh', () => {
   const context = makeContext();
   const result = readJson(context, `(() => {

@@ -3,6 +3,34 @@ const { test, expect } = require('playwright/test');
 const path = require('path');
 const { pathToFileURL } = require('url');
 
+test('solo paint and number update in place and carry into the race', async ({ page }, info) => {
+  await page.setViewportSize({width:390,height:740});
+  await page.goto('/');
+  await chooseHomeAction(page,'#btn-quick-race');
+  await page.locator('.quick-series-btn').last().click();
+  await page.locator('[data-diff="pro"]').click();
+  await page.locator('.quick-wizard').screenshot({path:info.outputPath('race-setup.png')});
+  await page.locator('#quick-next').click();
+  const car = page.locator('#quick-player-1');
+  await expect(page.locator('#quick-car-summary')).toContainText(/Premier.*Pro/);
+  await car.getByRole('button',{name:'Blue',exact:true}).click();
+  await expect(car.getByRole('button',{name:'Blue',exact:true})).toBeFocused();
+  await expect(car.getByRole('button',{name:'Blue',exact:true})).toHaveAttribute('aria-pressed','true');
+  await car.getByLabel('Custom color').fill('#256749');
+  await car.getByLabel('Car number').fill('42');
+  await car.getByLabel('Car number').press('Tab');
+  await expect(car.locator('.quick-car-preview')).toHaveText('42');
+  await page.locator('.quick-wizard').screenshot({path:info.outputPath('car-setup.png')});
+  await page.locator('#quick-back').click();
+  await page.locator('#quick-next').click();
+  await expect(car.getByLabel('Custom color')).toHaveValue('#256749');
+  await page.evaluate(() => { window.launch3DRace = config => { window.startConfig = config; }; });
+  await page.locator('#btn-quick-race-confirm').click();
+  expect(await page.evaluate(() => window.startConfig)).toMatchObject({
+    playerNumber:42, playerColor:'#256749', dualPlayer:false, difficulty:'pro', seriesId:'premier',
+  });
+});
+
 test('quick race confirmation starts the playable race', async ({ page }) => {
   await page.route('**/three.min.js', route => route.fulfill({ path: path.resolve(__dirname, '../../node_modules/three/build/three.min.js'), contentType: 'application/javascript' }));
   await page.goto(process.env.STOCKCAR_TEST_FILE ? pathToFileURL(path.resolve(process.env.STOCKCAR_TEST_FILE)).href : '/');

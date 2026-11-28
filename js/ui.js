@@ -1357,6 +1357,20 @@ function renderCarCustomizer(car, i, career = false) {
   const id = career ? `career-custom-${car.id}` : `quick-player-${i+1}`;
   const prefix = career ? `setCareerCarAppearance('${car.id}',` : `setQuickRaceCar(${i},`;
   const color = car.color || '#e8001d', number = car.number || 1;
+  if (!career && quickRacePlayers === 1 && i === 0) {
+    const look = carAppearance(car);
+    return `<section class="quick-car-editor quick-solo-car" id="${id}" aria-label="Car appearance">
+      <div class="quick-car-preview" style="--car-color:${color}" aria-hidden="true"><strong style="color:${look.numberColor}">${String(number).padStart(2,'0')}</strong></div>
+      <div class="quick-solo-controls">
+        <label class="quick-solo-number">Car number <input type="number" id="quick-solo-number" min="1" max="99" step="1" value="${number}" onchange="setQuickRaceCar(0,'number',this.value)"></label>
+        <fieldset class="quick-solo-paint"><legend>Body paint</legend>
+          <div class="quick-paint">${QUICK_COLORS.map((paint,n) => `<button type="button" class="quick-swatch" style="--paint:${paint}" aria-label="${['Red','Blue','Green','Gold','White','Purple','Orange','Graphite'][n]}" data-color="${paint}" aria-pressed="${color===paint}" onclick="setQuickRaceCar(0,'color','${paint}')"></button>`).join('')}</div>
+          <label class="quick-custom-paint">Custom color<input id="quick-solo-color" type="color" value="${color}" oninput="setQuickRaceCar(0,'color',this.value)"></label>
+        </fieldset>
+        <button type="button" class="btn btn-secondary car-studio-open" onclick="openCarStudio('quick',0)" aria-label="Customize Car">Open Car Studio</button>
+      </div>
+    </section>`;
+  }
   if(!career)return `<section class="quick-car-editor" id="${id}" ${i===1&&quickRacePlayers===1?'hidden':''}><h4>Player ${i+1}</h4><div class="quick-car-preview" style="--car-color:${color}" aria-hidden="true"><strong style="color:${carAppearance(car).numberColor}">${String(number).padStart(2,'0')}</strong></div><p class="muted-text small">Number, paint and stripes.</p><button class="btn btn-primary car-studio-open" onclick="openCarStudio('quick',${i})">Customize Car</button></section>`;
   return `<section class="quick-car-editor" id="${id}" ${!career && i === 1 && quickRacePlayers === 1 ? 'hidden' : ''}>
     <h4>${career ? 'Car appearance' : `Player ${i+1}`}</h4>
@@ -1400,12 +1414,14 @@ function renderQuickRaceModal() {
  return `<div class="modal-overlay" id="quick-race-modal"><div class="modal quick-setup-modal quick-wizard" role="dialog" aria-modal="true" aria-labelledby="quick-title">
  <div class="modal-header"><div><h3 id="quick-title">Quick Race</h3><p class="small muted-text" id="quick-step-label">Race setup · Step 1 of 2</p></div><button class="modal-close" onclick="closeQuickRaceSettings()">Close</button></div>
  <div class="modal-body quick-setup-body"><div id="quick-stage-race" class="quick-race-stage">
- <section><h4>Difficulty</h4><div class="difficulty-grid">${DIFFICULTIES.map(d=>`<button type="button" class="difficulty-card${d.id===quickRaceDifficulty?' selected':''}" data-diff="${d.id}" aria-pressed="${d.id===quickRaceDifficulty}" onclick="setQuickRaceDifficulty('${d.id}')"><span class="difficulty-name">${d.name}</span></button>`).join('')}</div><p id="quick-difficulty-hint" class="small muted-text">${summaries[quickRaceDifficulty]}</p></section>
+ <div class="quick-choices">
  <section><h4>Series</h4><div class="quick-series">${SERIES.map(s=>`<button type="button" class="quick-series-btn" data-field-size="${s.fieldSize}" aria-pressed="false" onclick="selectQuickRaceSeries(${s.fieldSize})"><span class="quick-series-name" style="--series-color:${s.color}">${s.name}</span><span class="quick-series-meta">${s.fieldSize} cars</span></button>`).join('')}</div></section>
+ <section><h4>Difficulty</h4><div class="difficulty-grid">${DIFFICULTIES.map(d=>`<button type="button" class="difficulty-card${d.id===quickRaceDifficulty?' selected':''}" data-diff="${d.id}" aria-pressed="${d.id===quickRaceDifficulty}" onclick="setQuickRaceDifficulty('${d.id}')"><span class="difficulty-name">${d.name}</span></button>`).join('')}</div><p id="quick-difficulty-hint" class="small muted-text">${summaries[quickRaceDifficulty]}</p></section>
+ </div>
  <section><h4>Race settings</h4>${renderRaceLengthControl('quick',quickRaceLength)}${renderRaceGraphicsControl('quick')}<div id="quick-race-rules">${renderRaceRuleControls(quickRaceDifficulty,quickRaceRules,'quick')}</div></section></div>
- <div id="quick-stage-cars" hidden><div class="quick-player-toolbar"><h4>${quickRacePlayers === 2 ? 'Players and cars' : 'Your car'}</h4></div>
- <div class="quick-setup-cars">${quickRaceCars.map((car,i)=>renderCarCustomizer(car,i)).join('')}</div><p class="small muted-text quick-key-help">Player 1: A / S / D · Player 2: J / K / L · Middle key brakes</p><p class="form-warning" id="quick-number-warning" hidden>Choose a different number for each player.</p></div></div>
- <div class="modal-footer quick-race-footer"><button type="button" class="btn btn-secondary" id="quick-back" onclick="setQuickRaceStep(1)" hidden>Back</button><button type="button" class="btn btn-primary btn-lg" id="quick-next" onclick="setQuickRaceStep(2)" disabled>Next: Players and cars</button><button type="button" class="btn btn-primary btn-lg" id="btn-quick-race-confirm" onclick="confirmQuickRace()" hidden disabled>Confirm Race</button></div></div></div>`;
+ <div id="quick-stage-cars" hidden><div class="quick-player-toolbar"><h4>${quickRacePlayers === 2 ? 'Players and cars' : 'Your car'}</h4><p class="muted-text" id="quick-car-summary"></p></div>
+ <div class="quick-setup-cars${quickRacePlayers===1?' is-solo':''}">${quickRaceCars.map((car,i)=>renderCarCustomizer(car,i)).join('')}</div><p class="small muted-text quick-key-help">${quickRacePlayers===2?'Player 1: A / S / D · Player 2: J / K / L · Middle key brakes':'A / D to steer · S to brake'}</p><p class="form-warning" id="quick-number-warning" hidden>Choose a different number for each player.</p></div></div>
+ <div class="modal-footer quick-race-footer"><button type="button" class="btn btn-secondary" id="quick-back" onclick="setQuickRaceStep(1)" hidden>Back</button><button type="button" class="btn btn-primary btn-lg" id="quick-next" onclick="setQuickRaceStep(2)" disabled>${quickRacePlayers===2?'Next: Players and cars':'Next: Your car'}</button><button type="button" class="btn btn-primary btn-lg" id="btn-quick-race-confirm" onclick="confirmQuickRace()" hidden disabled>Confirm Race</button></div></div></div>`;
 }
 
 // ─── Listeners wired after each tab render ───────────────────
@@ -1417,11 +1433,11 @@ function renderRaceGraphicsControl(scope) {
   const id = `${scope}-race-graphics`;
   const preset = raceGraphicsPreset();
   const options = GRAPHICS_PRESETS.map(value =>
-    `<option value="${value}"${value === preset ? ' selected' : ''}>${value[0].toUpperCase() + value.slice(1)}</option>`
+    `<option value="${value}"${value === preset ? ' selected' : ''}>${scope === 'quick' && value === 'high' ? 'High · Track textures' : value[0].toUpperCase() + value.slice(1)}</option>`
   ).join('');
   return `<div class="race-graphics-control"><label class="form-label" for="${id}">Graphics</label>
-    <select class="form-select" id="${id}" onchange="setRaceGraphicsPreset(this)" aria-describedby="${id}-hint">${options}</select>
-    <p class="small muted-text" id="${id}-hint">High enables track textures.</p></div>`;
+    <select class="form-select" id="${id}" onchange="setRaceGraphicsPreset(this)"${scope === 'quick' ? '' : ` aria-describedby="${id}-hint"`}>${options}</select>
+    ${scope === 'quick' ? '' : `<p class="small muted-text" id="${id}-hint">High enables track textures.</p>`}</div>`;
 }
 
 function renderRaceLengthControl(scope, value) {
@@ -1433,7 +1449,7 @@ function renderRaceLengthControl(scope, value) {
 
 function renderRaceRuleControls(difficulty,preferences={},scope='career') {
   const eligible=['semipro','pro','allout'].includes(difficulty);
-  if(scope==='quick')return `<div class="race-rule-controls compact-rules"><p class="small muted-text">${eligible?'Recoverable contact and damage.':'Available on Semi-Pro and above.'}</p>${[['crashes','Contact crashes'],['damage','Vehicle damage']].map(([key,label])=>`<label class="radio-row"><input type="checkbox" data-race-rule="${key}" ${eligible&&preferences[key]!==false?'checked':''} ${eligible?'':'disabled'} onchange="handleRaceRule('${key}',this.checked,'quick')"><span>${label}</span></label>`).join('')}</div>`;
+  if(scope==='quick')return `<div class="race-rule-controls compact-rules">${eligible?'':'<p class="small muted-text">Crashes and damage unlock at Semi-Pro.</p>'}${[['crashes','Contact crashes'],['damage','Vehicle damage']].map(([key,label])=>`<label class="radio-row"><input type="checkbox" data-race-rule="${key}" ${eligible&&preferences[key]!==false?'checked':''} ${eligible?'':'disabled'} onchange="handleRaceRule('${key}',this.checked,'quick')"><span>${label}</span></label>`).join('')}</div>`;
 
   return `<div class="race-rule-controls"><p class="section-copy">${eligible ? 'Crashes recover at reduced performance. Normal front/rear drafting does not trigger side-contact crashes.' : 'Crashes and vehicle health are unavailable on Beginner and Amateur. Your preferences return on higher difficulties.'}</p>
     <label class="radio-row"><input type="checkbox" data-race-rule="crashes" ${eligible&&preferences?.crashes!==false?'checked':''} ${eligible?'':'disabled'} onchange="handleRaceRule('crashes',this.checked,'${scope}')"><span>Contact crashes<span class="form-hint">Repeated aggressive side contact can cause recoverable wrecks. Off also prevents zero-health spinouts.</span></span></label>

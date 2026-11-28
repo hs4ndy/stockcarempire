@@ -847,8 +847,6 @@ input[type="radio"] { accent-color: var(--accent-solid); width: 18px; height: 18
   text-transform: uppercase;
   white-space: nowrap;
 }
-.r3d-countdown[data-phase="formation"] { flex-direction: column; gap: 4px; }
-.r3d-countdown[data-phase="formation"] span { color: var(--text-dim); }
 .r3d-start-lights { display: flex; gap: 5px; }
 .r3d-start-lights i {
   width: 13px;
@@ -1268,21 +1266,21 @@ button.standing-driver .st-name { text-decoration:none; }
 .btn.btn-repair-all:disabled {background:transparent;border-color:var(--warn);color:var(--warn);opacity:.55;}
 /* Focused management menus: shared sports identity, quieter task hierarchy. */
 [hidden] {display:none !important;}
-#quick-race-modal .quick-wizard {width:min(1180px,calc(100vw - 32px));max-width:1180px;max-height:calc(100svh - 24px);}
+#quick-race-modal .quick-wizard {width:min(980px,calc(100vw - 32px));max-width:980px;max-height:calc(100svh - 24px);}
 .quick-wizard .modal-header {padding:20px 28px;flex-shrink:0;}
 .quick-wizard .quick-setup-body {padding:24px 28px;overflow:auto;min-height:0;flex:0 1 auto;}
-.quick-race-stage {display:grid;grid-template-columns:1fr 1fr .95fr;gap:32px;align-items:start;}
-.quick-race-stage>section+section {border-left:1px solid var(--line);padding-left:28px;}
+.quick-race-stage {display:grid;grid-template-columns:minmax(0,1.28fr) minmax(0,1fr);gap:28px;align-items:start;}
+.quick-race-stage>.quick-choices+section {border-left:1px solid var(--line);padding-left:28px;}
 .quick-wizard h4 {font:700 24px var(--font-display);margin-bottom:16px;}
-.quick-wizard .difficulty-grid {display:grid;grid-template-columns:1fr;gap:8px;margin:0;}
-.quick-wizard .difficulty-card {min-height:44px;padding:10px 16px;display:block;text-align:left;}
+.quick-wizard .difficulty-grid {display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:0;}
+.quick-wizard .difficulty-card {min-height:44px;padding:8px 4px;display:grid;place-items:center;text-align:center;}
 .quick-wizard #quick-difficulty-hint {margin-top:12px;}
 .quick-wizard .quick-series {display:grid;gap:8px;}
-.quick-wizard .quick-series-btn {min-height:72px;padding:14px 16px;}
+.quick-wizard .quick-series-btn {min-height:48px;padding:10px 12px;flex-direction:row;align-items:center;justify-content:space-between;}
 .quick-wizard .quick-series-name {font-size:16px;}
-.quick-wizard .quick-series-meta {font-size:14px;margin-top:2px;}
-.quick-wizard .compact-rules .radio-row {min-height:60px;padding:14px 0;gap:12px;}
-.quick-wizard .compact-rules>p {margin-bottom:16px;}
+.quick-wizard .quick-series-meta {font-size:14px;margin:0;white-space:nowrap;}
+.quick-wizard .compact-rules .radio-row {min-height:44px;padding:8px 0;gap:12px;}
+.quick-wizard .compact-rules>p {margin-bottom:4px;}
 .quick-wizard .quick-race-footer {display:flex;gap:12px;padding:16px 28px;flex-shrink:0;}
 .quick-wizard .quick-race-footer .btn {width:auto;flex:1;}
 .quick-wizard #quick-back {flex:0 0 120px;}
@@ -1318,13 +1316,13 @@ button.standing-driver .st-name { text-decoration:none; }
 .market-workspace .card-header {font:700 24px var(--font-display);margin-bottom:20px;}
 .market-workspace .staff-row {padding:20px 0;}
 @media(min-width:601px) and (max-width:1000px){
- .quick-race-stage{grid-template-columns:1fr 1fr 1.6fr;gap:20px;}
- .quick-race-stage>section+section{padding-left:20px;}
+ .quick-race-stage{gap:20px;}
+ .quick-race-stage>.quick-choices+section{padding-left:20px;}
 }
 @media(max-width:800px){
  #main-content[data-tab=team] .team-workspace,.market-cars {grid-template-columns:1fr;gap:24px;}
  .driver-browse {grid-template-columns:1fr 150px;}
- .quick-race-stage {gap:20px;}.quick-race-stage>section+section{padding-left:20px;}
+ .quick-race-stage {gap:20px;}.quick-race-stage>.quick-choices+section{padding-left:20px;}
 }
 @media(max-height:620px) and (min-width:601px){
  .quick-wizard .modal-header{padding:12px 20px;}.quick-wizard .quick-setup-body{padding:16px 20px;}.quick-wizard .quick-race-footer{padding:12px 20px;}
@@ -1335,7 +1333,7 @@ button.standing-driver .st-name { text-decoration:none; }
 @media(max-width:600px){
  #quick-race-modal .quick-wizard{width:calc(100vw - 20px);max-height:calc(100svh - 20px);}
  .quick-wizard .modal-header{padding:12px 16px;}.quick-wizard .quick-setup-body{padding:16px;}.quick-wizard .quick-race-footer{padding:12px 16px;}
- .quick-race-stage{grid-template-columns:1fr 1fr;gap:16px;}.quick-race-stage>section+section{border:0;padding:0;}.quick-race-stage>section:last-child{grid-column:1/-1;border-top:1px solid var(--line);padding-top:12px;}
+ .quick-race-stage{grid-template-columns:minmax(0,1fr);gap:16px;}.quick-race-stage>.quick-choices+section{border:0;padding:0;}.quick-race-stage>section:last-child{grid-column:1/-1;border-top:1px solid var(--line);padding-top:12px;}
  .quick-wizard h4{font-size:20px;margin-bottom:10px;}.quick-wizard .difficulty-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;}
  .quick-wizard .difficulty-card{padding:8px;font-size:14px;}.quick-wizard .difficulty-name{font-size:14px;}.quick-wizard .quick-series-btn{min-height:56px;padding:8px 10px;}
  .quick-wizard .quick-series-name{font-size:14px;}.quick-wizard .quick-series-meta{font-size:12px;}.quick-wizard #quick-difficulty-hint{font-size:12px;margin-top:8px;}
@@ -1396,4 +1394,66 @@ button.standing-driver .st-name { text-decoration:none; }
 @media (max-width: 585px) {
   .finance-offers { grid-template-columns: 1fr; }
   .finance-offer dl { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* Quick Race setup */
+.quick-choices {display:grid;gap:20px;min-width:0;}
+.quick-wizard .quick-choices .difficulty-card:last-child {grid-column:auto;}
+.quick-wizard .quick-choices .difficulty-name {font-size:clamp(.83rem,1.5vw,1rem);white-space:nowrap;}
+#quick-car-summary {font-size:.9rem;margin:0;}
+.quick-wizard .quick-setup-cars.is-solo {grid-template-columns:minmax(0,1fr);}
+.quick-wizard .quick-solo-car {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:stretch;}
+.quick-wizard .quick-solo-car .quick-car-preview {height:auto;min-height:200px;}
+.quick-wizard .quick-solo-car .quick-car-preview strong {font-size:clamp(3rem,9vw,6rem);line-height:1;}
+.quick-solo-controls {display:grid;gap:12px;align-content:center;}
+.quick-solo-number,.quick-solo-controls .quick-custom-paint {display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:600;}
+.quick-solo-number input {width:76px;min-height:44px;color:var(--text);background:var(--panel-2);border:1px solid var(--line-2);border-radius:6px;padding:6px 10px;font:inherit;}
+.quick-solo-paint {min-width:0;margin:0;padding:12px 0 0;border:0;border-top:1px solid var(--line);}
+.quick-solo-paint legend {padding-right:8px;font-weight:600;}
+.quick-solo-paint .quick-paint {display:grid;grid-template-columns:repeat(4,44px);gap:8px;margin:0 0 8px;}
+.quick-wizard .quick-solo-controls .car-studio-open {margin:0;min-height:44px;}
+@media (max-width:800px) {
+  .quick-wizard .quick-choices .difficulty-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
+  .quick-wizard .quick-choices .difficulty-card:last-child {grid-column:1/-1;}
+}
+@media (max-width:600px) {
+  .quick-wizard .quick-solo-car {grid-template-columns:minmax(0,1fr);gap:16px;}
+  .quick-wizard .quick-solo-car .quick-car-preview {min-height:112px;}
+  #quick-car-summary {margin-top:4px;}
+}
+@media (max-width:600px) {
+  .quick-choices {grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:12px;}
+  .quick-wizard .quick-series-btn {align-items:flex-start;flex-direction:column;justify-content:center;gap:2px;}
+  .quick-wizard .quick-choices .difficulty-card {padding-inline:3px;}
+  .quick-wizard .race-graphics-control,.quick-wizard .race-length-control {margin-bottom:12px;}
+}
+@media (max-height:620px) and (min-width:601px) {
+  .quick-race-stage {grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.2fr);gap:18px;}
+  .quick-choices {display:contents;}
+  .quick-race-stage>.quick-choices+section {border-left:1px solid var(--line);padding-left:14px;}
+  .quick-wizard .quick-choices .difficulty-card:last-child {grid-column:1/-1;}
+}
+@media (max-width:600px), (max-height:620px) {
+  .quick-wizard .race-graphics-control {display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;column-gap:10px;margin-bottom:4px;}
+  .quick-wizard .race-graphics-control label {margin:0;}
+  .quick-wizard .race-graphics-control p {grid-column:2;margin-top:3px;}
+  .quick-wizard .race-length-control {margin-bottom:8px;}
+  .quick-wizard .race-length-control input {margin-block:0;}
+  .quick-wizard .compact-rules {display:flex;flex-wrap:wrap;column-gap:12px;}
+  .quick-wizard .compact-rules>p {width:100%;margin:0;}
+  .quick-wizard .compact-rules .radio-row {padding:4px 0;gap:6px;font-size:.84rem;}
+}
+@media (max-width:600px) {
+  .quick-wizard .quick-series-btn {min-height:44px;padding-block:4px;}
+  .quick-wizard .quick-series {gap:6px;}
+  .quick-wizard .compact-rules {column-gap:16px;}
+}
+@media (max-width:600px) {
+  .quick-race-stage {gap:12px;}
+  .quick-wizard .quick-setup-body {padding-block:12px;}
+}
+@media (max-width:600px), (max-height:620px) {
+  .quick-wizard .compact-rules {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 8px;}
+  .quick-wizard .compact-rules>p {grid-column:1/-1;}
+  .quick-wizard #quick-race-rules {margin-top:0;}
 }

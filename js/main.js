@@ -250,9 +250,19 @@ function setQuickRaceCar(index, key, value) {
   if (key === 'number') car.number = clamp(Math.round(Number(value) || 1), 1, 99);
   if (key === 'color' && /^#[0-9a-f]{6}$/i.test(value)) car.color = value;
   const root = document.getElementById(`quick-player-${index + 1}`);
-  root.querySelector('.quick-car-preview').style.setProperty('--car-color', car.color);
-  root.querySelector('.quick-car-preview strong').textContent = String(car.number).padStart(2, '0');
-  root.outerHTML = renderCarCustomizer(car,index);
+  if (!root) return;
+  const preview = root.querySelector('.quick-car-preview');
+  preview.style.setProperty('--car-color', car.color);
+  const digits = preview.querySelector('strong');
+  digits.textContent = String(car.number).padStart(2, '0');
+  digits.style.color = carAppearance(car).numberColor;
+  const numberInput = root.querySelector('#quick-solo-number');
+  const paintInput = root.querySelector('#quick-solo-color');
+  if (numberInput) numberInput.value = car.number;
+  if (paintInput && paintInput.value !== car.color) paintInput.value = car.color;
+  for (const swatch of root.querySelectorAll('.quick-swatch')) {
+    swatch.setAttribute('aria-pressed', String(swatch.dataset.color === car.color));
+  }
   refreshQuickRaceNumberWarning();
 }
 function refreshQuickRaceNumberWarning() {
@@ -1211,6 +1221,11 @@ function setQuickRaceStep(step) {
   document.getElementById('quick-back').hidden = quickRaceStep !== 2;
   document.getElementById('btn-quick-race-confirm').hidden = quickRaceStep !== 2;
   document.getElementById('quick-step-label').textContent = quickRaceStep === 1
-    ? 'Race setup · Step 1 of 2' : 'Players and cars · Step 2 of 2';
+    ? 'Race setup · Step 1 of 2' : 'Car setup · Step 2 of 2';
+  if (quickRaceStep === 2) {
+    const series = SERIES.find(s => s.fieldSize === quickRaceSeries);
+    document.getElementById('quick-car-summary').textContent = `${series.name} · ${difficultyById(quickRaceDifficulty).name}`;
+  }
+  document.querySelector('#quick-race-modal .quick-setup-body').scrollTop = 0;
   document.getElementById(quickRaceStep === 2 ? 'btn-quick-race-confirm' : 'quick-next').focus();
 }

@@ -440,30 +440,24 @@ class Race3DEngine {
     finally { this.player = player; this.keys = keys; this.camera = camera; }
   }
 
-  // Rolling start
+  // Standing start
   _countdown() {
     const el   = document.getElementById('r3d-countdown');
     const hint = document.getElementById('r3d-hint');
     this.paceMode = true;
+    for (const car of this.cars) car.speed = 0;
 
     const later = (delay, action) => {
       this._startTimer = setTimeout(() => {
         if (!this.done && !this._disposed) action();
       }, delay);
     };
-    const formation = this.player2
-      ? `Player 1 · P${this._newsGrid.player} Player 2 · P${this._newsGrid.player2}`
-      : `Starting P${this._startingPos}`;
-    if (el) {
-      el.dataset.phase = 'formation';
-      el.innerHTML = `<strong>Formation lap</strong><span>${formation}</span>`;
-    }
     const tick = seconds => {
       if (el) {
         el.dataset.phase = seconds ? 'count' : 'green';
         el.innerHTML = seconds
-          ? `<div class="r3d-start-lights" aria-hidden="true">${[1, 2, 3].map(lamp =>
-              `<i class="${lamp <= 4 - seconds ? 'lit' : ''}"></i>`).join('')}</div><strong>${seconds}</strong>`
+          ? `<div class="r3d-start-lights" aria-hidden="true">${[1, 2, 3, 4, 5].map(lamp =>
+              `<i class="${lamp <= 6 - seconds ? 'lit' : ''}"></i>`).join('')}</div><strong>${seconds}</strong>`
           : '<i class="r3d-start-flag" aria-hidden="true"></i><strong>Green flag</strong>';
       }
       if (seconds) {
@@ -475,7 +469,7 @@ class Race3DEngine {
       if (hint) hint.style.opacity = '0';
       later(1100, () => { if (el) el.textContent = ''; });
     };
-    later(3000, () => tick(3));
+    tick(5);
   }
 
   // ── Main update ──────────────────────────────────────────────
@@ -483,8 +477,6 @@ class Race3DEngine {
     if (this.paused) return;
 
     if (this.paceMode) {
-      this._updatePaceLap(dt);
-      this._animateCars(dt);
       if (!this.player2) this._updateCamera(dt);
       this._updateHUD(dt);
       return;
@@ -515,24 +507,6 @@ class Race3DEngine {
     if (!this.player2) this._updateCamera(dt);
     this._updateHUD(dt);
 
-  }
-
-  _updatePaceLap(dt) {
-    for (const [p, keys] of [[this.player,this.keys], ...(this.player2 ? [[this.player2,this.keys2]] : [])]) {
-      const hw = (this.trackHalfWidth ?? R3D.HALF_W) - 1.2;
-      const desired = (Number(keys.a)-Number(keys.d))*R3D.LAT_MAX*.6;
-      p.lv = (p.lv || 0) + clamp((desired-(p.lv || 0))*(1-Math.exp(-4*dt)),-R3D.LAT_ACC*dt,R3D.LAT_ACC*dt);
-      p.lv=clamp(p.lv,-R3D.LAT_MAX*.6,R3D.LAT_MAX*.6);
-      p.x=clamp(p.x+p.lv*dt,-hw,hw);
-    }
-    for (const car of this.cars) {
-      // Every row advances together on the formation lap. Letting each car
-      // converge from its power-based race speed changed the live order before
-      // the green flag, so the HUD could disagree with the announced grid spot.
-      car.speed = R3D.PACE_SPEED * (this.speedScale ?? 1);
-      car.z += car.speed * dt;
-      car.mesh.position.set(car.x, 0, car.z);
-    }
   }
 
   // Pause
